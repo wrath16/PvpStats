@@ -1,0 +1,15 @@
+{
+  "Author": "SaMo",
+  "Name": "The Wolf's Heart",
+  "Punchline": "PvP stats and match history.",
+  "Description": "Record and browse PvP match history and statistics.",
+  "InternalName": "PvpStats",
+  "RepoUrl": "",
+  "ApplicableVersion": "any",
+  "Changelog": "Initial release.",
+  "Tags": [
+    "pvp",
+    "statistics"
+  ],
+  "IconUrl": ""
+}
