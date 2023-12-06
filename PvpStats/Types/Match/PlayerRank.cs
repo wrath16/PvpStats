@@ -45,4 +45,11 @@ public class PlayerRank {
         Tier = tier;
         Riser = riser;
     }
+
+    public override string ToString() {
+        if (Riser != null) {
+            return $"{Tier} {Riser}";
+        }
+        return $"{Tier}";
+    }
 }

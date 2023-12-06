@@ -66,4 +66,8 @@
 	<PackageReference Include="LiteDB" Version="5.0.16" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Windows\Filter\" />
+  </ItemGroup>
+
 </Project>

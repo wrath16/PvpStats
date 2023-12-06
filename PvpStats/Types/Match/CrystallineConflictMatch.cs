@@ -26,6 +26,7 @@ public class CrystallineConflictMatch {
 
     public bool NeedsPlayerNameValidation { get; set; }
     public PlayerAlias? LocalPlayer { get; set; }
+    public string? DataCenter { get; set; }
     //public CrystallineConflictTeam? FirstTeam { get; set; }
     //public CrystallineConflictTeam? SecondTeam { get; set; }
     public Dictionary<CrystallineConflictTeamName, CrystallineConflictTeam> Teams { get; set; } = new();

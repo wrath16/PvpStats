@@ -149,6 +149,8 @@ internal class MatchManager : IDisposable {
             }
             if (rankNode != null && rankNode->Type == NodeType.Text) {
                 rank = rankNode->GetAsAtkTextNode()->NodeText.ToString();
+                //set ranked as fallback
+                _currentMatch!.MatchType = CrystallineConflictMatchType.Ranked;
 
                 //don't need to translate for Japanese
                 if (_plugin.ClientState.ClientLanguage != ClientLanguage.Japanese) {
@@ -180,8 +182,9 @@ internal class MatchManager : IDisposable {
             _plugin.Log.Warning($"Duplicate team found: {team.TeamName}");
         }
 
-        //set local player
+        //set local player and data center
         _currentMatch.LocalPlayer ??= (PlayerAlias)_plugin.GetCurrentPlayer();
+        _currentMatch.DataCenter ??= _plugin.ClientState.LocalPlayer?.CurrentWorld.GameData?.DataCenter.Value?.Name.ToString();
 
         _plugin.StorageManager.UpdateCCMatch(_currentMatch);
 
