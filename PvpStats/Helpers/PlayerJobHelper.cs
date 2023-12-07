@@ -1,4 +1,5 @@
-﻿using PvpStats.Types.Player;
+﻿using Dalamud.Plugin.Services;
+using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -28,9 +29,35 @@ internal static class PlayerJobHelper {
         { Job.RDM, "Red Mage" },
     };
 
-    public static bool IsAbbreviatedAliasMatch(PlayerAlias player, string fullName) {
+    internal static Dictionary<Job, uint> JobIcons = new() {
+        { Job.PLD, 62119 },
+        { Job.WAR, 62121 },
+        { Job.DRK, 62132 },
+        { Job.GNB, 62137 },
+        { Job.MNK, 62120 },
+        { Job.DRG, 62122 },
+        { Job.NIN, 62130 },
+        { Job.SAM, 62134 },
+        { Job.RPR, 62139 },
+        { Job.WHM, 62124 },
+        { Job.SCH, 62128 },
+        { Job.AST, 62133 },
+        { Job.SGE, 62140 },
+        { Job.BRD, 62123 },
+        { Job.MCH, 62131 },
+        { Job.DNC, 62138 },
+        { Job.BLM, 62125 },
+        { Job.SMN, 62127 },
+        { Job.RDM, 62135 },
+    };
+
+    public static bool IsAbbreviatedAliasMatch(PlayerAlias player, string name) {
         string pattern = "^" + player.FirstName.Replace(".", @"[\w'-]*") + " " + player.LastName.Replace(".", "");
-        return Regex.IsMatch(fullName, pattern);
+        return Regex.IsMatch(name, pattern);
+    }
+
+    public static bool IsAbbreviatedAliasMatch(string player, string name) {
+        return IsAbbreviatedAliasMatch((PlayerAlias)$"{player} whocares", name);
     }
 
     internal static Job? GetJobFromName(string jobName) {
@@ -79,5 +106,14 @@ internal static class PlayerJobHelper {
             default:
                 return null;
         }
+    }
+
+    internal static Job? GetJobFromIcon(uint iconId) {
+        foreach (var kvp in JobIcons) {
+            if (kvp.Value == iconId) {
+                return kvp.Key;
+            }
+        }
+        return null;
     }
 }

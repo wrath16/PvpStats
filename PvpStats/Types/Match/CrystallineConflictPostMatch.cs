@@ -6,7 +6,7 @@ namespace PvpStats.Types.Match;
 public class CrystallineConflictPostMatch {
     public CrystallineConflictTeamName MatchWinner { get; set; }
     public TimeSpan MatchDuration { get; set; }
-    public Dictionary<CrystallineConflictTeamName, CrystallineConflictPostMatchTeam> Teams { get; set; }
+    public Dictionary<CrystallineConflictTeamName, CrystallineConflictPostMatchTeam> Teams { get; set; } = new();
 
     public PlayerRank? RankBefore { get; set; }
     public PlayerRank? RankAfter { get; set; }
@@ -15,12 +15,13 @@ public class CrystallineConflictPostMatch {
 public class CrystallineConflictPostMatchTeam {
     public CrystallineConflictTeamName TeamName { get; set; }
     public float Progress { get; set; }
-    public CrystallineConflictPostMatchRow TeamStats { get; set; }
+    public CrystallineConflictPostMatchRow TeamStats { get; set; } = new();
     public List<CrystallineConflictPostMatchRow> PlayerStats { get; set; } = new();
 }
 
 public class CrystallineConflictPostMatchRow {
     public PlayerAlias? Player { get; set; }
+    public Job? Job { get; set; }
     public PlayerRank? PlayerRank { get; set; }
     public int Kills { get; set; }
     public int Deaths { get; set; }

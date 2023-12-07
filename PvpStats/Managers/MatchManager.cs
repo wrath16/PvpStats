@@ -12,6 +12,7 @@ using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using System;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace PvpStats.Managers;
 internal class MatchManager : IDisposable {
@@ -75,7 +76,7 @@ internal class MatchManager : IDisposable {
         _currentMatch!.MatchStartTime = DateTime.Now;
 
         if (_currentMatch.NeedsPlayerNameValidation) {
-            _currentMatch.NeedsPlayerNameValidation = !(bool)ValidatePlayerAliases();
+            _currentMatch.NeedsPlayerNameValidation = !ValidatePlayerAliases() ?? true;
         }
         _plugin.StorageManager.UpdateCCMatch(_currentMatch);
 
@@ -105,6 +106,13 @@ internal class MatchManager : IDisposable {
         else {
             _currentMatch.MatchWinner = _currentMatch.Teams.ElementAt(1).Key;
         }
+        var winningTeam = _currentMatch.Teams[(CrystallineConflictTeamName)_currentMatch.MatchWinner];
+        //correct 99.9% on non-overtime wins
+        if (winningTeam.Progress > 99f && winningTeam.Progress < 100f && _currentMatch.MatchDuration.Value.TotalSeconds < 5 * 60  && !_currentMatch.IsOvertime) {
+            _plugin.Log.Verbose("Correcting 99.9% to 100%...");
+            winningTeam.Progress = 100f;
+        }
+
         _plugin.StorageManager.UpdateCCMatch(_currentMatch);
     }
 
@@ -150,7 +158,7 @@ internal class MatchManager : IDisposable {
             if (rankNode != null && rankNode->Type == NodeType.Text) {
                 rank = rankNode->GetAsAtkTextNode()->NodeText.ToString();
                 //set ranked as fallback
-                _currentMatch!.MatchType = CrystallineConflictMatchType.Ranked;
+                //_currentMatch!.MatchType = CrystallineConflictMatchType.Ranked;
 
                 //don't need to translate for Japanese
                 if (_plugin.ClientState.ClientLanguage != ClientLanguage.Japanese) {
@@ -206,8 +214,13 @@ internal class MatchManager : IDisposable {
         var timerSecondsNode = addon->GetNodeById(27)->GetAsAtkTextNode();
         bool isOvertime = addon->GetNodeById(23) != null ? addon->GetNodeById(23)->IsVisible : false;
 
-        //check for parse results?
-        _currentMatch!.MatchTimer = new TimeSpan(0, int.Parse(timerMinsNode->NodeText.ToString()), int.Parse(timerSecondsNode->NodeText.ToString()));
+        //check for parse results? this is causing error!
+        try {
+            _currentMatch!.MatchTimer = new TimeSpan(0, int.Parse(timerMinsNode->NodeText.ToString()), int.Parse(timerSecondsNode->NodeText.ToString()));
+        } catch {
+            //hehe
+        }
+        
 
         if (!_currentMatch!.IsOvertime) {
             _currentMatch.IsOvertime = isOvertime;
@@ -234,13 +247,118 @@ internal class MatchManager : IDisposable {
 
     private unsafe void OnPvPResults(AddonEvent type, AddonArgs args) {
         _plugin.Log.Debug("pvp record pre-setup.");
-        //AtkNodeHelper.PrintAtkValues((AtkUnitBase*)args.Addon);
 
-        //if((DateTime.Now - _lastHeaderUpdateTime).TotalSeconds > 10) {
-        //    var addon = (AtkUnitBase*)args.Addon;
-        //    _lastHeaderUpdateTime = DateTime.Now;
-        //    PrintAtkValues(addon);
-        //}
+        if(!IsMatchInProgress()) {
+            return;
+        }
+        CrystallineConflictPostMatch postMatch = new();
+
+        var addon = (AtkUnitBase*)args.Addon;
+        //AtkNodeHelper.PrintAtkValues(addon);
+
+        var matchWinner = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[3]);
+        postMatch.MatchWinner = MatchHelper.GetTeamName(Regex.Match(matchWinner, @"^\w*").Value);
+
+        var matchDuration = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[22]);
+        postMatch.MatchDuration = TimeSpan.Parse("00:" + matchDuration);
+
+        var leftTeamName = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[1526]);  
+        var leftTeamProgress = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[1538]);
+        var leftTeamKills = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[1542]);
+        var leftTeamDeaths = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[1544]);
+        var leftTeamAssists = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[1546]);
+
+        CrystallineConflictPostMatchTeam leftTeam = new() {
+            TeamName = MatchHelper.GetTeamName(leftTeamName),
+            Progress = (float)MatchHelper.ConvertProgressStringToFloat(leftTeamProgress),
+            TeamStats = new() {
+                Kills = int.Parse(Regex.Match(leftTeamKills, @"\d*$").Value),
+                Deaths = int.Parse(Regex.Match(leftTeamDeaths, @"\d*$").Value),
+                Assists = int.Parse(Regex.Match(leftTeamAssists, @"\d*$").Value),
+            }
+        };
+
+        var rightTeamName = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[1527]);
+        var rightTeamProgress = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[1539]);
+        var rightTeamKills = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[1543]);
+        var rightTeamDeaths = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[1545]);
+        var rightTeamAssists = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[1547]);
+
+        CrystallineConflictPostMatchTeam rightTeam = new() {
+            TeamName = MatchHelper.GetTeamName(rightTeamName),
+            Progress = (float)MatchHelper.ConvertProgressStringToFloat(rightTeamProgress),
+            TeamStats = new() {
+                Kills = int.Parse(Regex.Match(rightTeamKills, @"\d*$").Value),
+                Deaths = int.Parse(Regex.Match(rightTeamDeaths, @"\d*$").Value),
+                Assists = int.Parse(Regex.Match(rightTeamAssists, @"\d*$").Value),
+            }
+        };
+
+        var rankChange = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[1536]);
+
+        _plugin.Log.Debug($"{matchWinner}");
+        _plugin.Log.Debug($"match duration: {matchDuration}");
+        _plugin.Log.Debug($"rank change: {rankChange}");
+        _plugin.Log.Debug(string.Format("{4,-6}: progress: {0,-6} kills: {1,-3} deaths: {2,-3} assists: {3,-3}", leftTeamProgress, leftTeamKills, leftTeamDeaths, leftTeamAssists, leftTeamName));
+        _plugin.Log.Debug(string.Format("{4,-6}: progress: {0,-6} kills: {1,-3} deaths: {2,-3} assists: {3,-3}", rightTeamProgress, rightTeamKills, rightTeamDeaths, rightTeamAssists, rightTeamName));
+        _plugin.Log.Debug(string.Format("{0,-25} {1,-15} {2,-5} {3,-15} {4,-8} {5,-8} {6,-8} {7,-15} {8,-15} {9,-15} {10,-15}", "NAME", "WORLD", "JOB", "TIER", "KILLS", "DEATHS", "ASSISTS", "DAMAGE DEALT", "DAMAGE TAKEN", "HP RESTORED", "TIME ON CRYSTAL"));
+
+        postMatch.Teams.Add(leftTeam.TeamName, leftTeam);
+        postMatch.Teams.Add(rightTeam.TeamName, rightTeam);
+
+        for (int i = 0; i < 10; i++) {
+            //todo check for missing players...
+            int offset = i * 20 + 25;
+            var playerName = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[offset]);
+            var playerJobIconId = addon->AtkValues[offset + 1].UInt;
+            var playerJob = PlayerJobHelper.GetJobFromIcon(playerJobIconId);
+            var playerWorld = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[offset + 2]);
+            var playerKills = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[offset + 3]);
+            var playerDeaths = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[offset + 4]);
+            var playerAssists = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[offset + 15]);
+            var playerDamageDealt = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[offset + 6]);
+            var playerDamageTaken = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[offset + 7]);
+            var playerHPRestored = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[offset + 8]);
+            var playerTimeOnCrystal = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[offset + 10]);
+            var playerTier = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[offset + 9]);
+
+            _plugin.Log.Debug(string.Format("{0,-25} {1,-15} {2,-5} {3,-15} {4,-8} {5,-8} {6,-8} {7,-15} {8,-15} {9,-15} {10,-15}", playerName, playerWorld, playerJob, playerTier, playerKills, playerDeaths, playerAssists, playerDamageDealt, playerDamageTaken, playerHPRestored, playerTimeOnCrystal));
+
+            CrystallineConflictPostMatchRow playerRow = new() {
+                Job = playerJob,
+                Kills = int.Parse(playerKills),
+                Deaths = int.Parse(playerDeaths),
+                Assists = int.Parse(playerAssists),
+                DamageDealt = int.Parse(playerDamageDealt),
+                DamageTaken = int.Parse(playerDamageTaken),
+                HPRestored = int.Parse(playerHPRestored),
+                TimeOnCrystal = TimeSpan.Parse("00:" + playerTimeOnCrystal),
+                PlayerRank = new PlayerRank() {
+                    Tier = MatchHelper.GetTier(playerTier)
+                }
+            };
+
+            //validate player name and add to team stats
+            foreach(var team in _currentMatch.Teams) {
+                foreach(var teamPlayer in team.Value.Players) {
+                    bool homeWorldMatch = playerWorld.Equals(teamPlayer.Alias.HomeWorld, StringComparison.OrdinalIgnoreCase);
+                    bool jobMatch = playerJob == teamPlayer.Job;
+                    if (PlayerJobHelper.IsAbbreviatedAliasMatch(playerName, teamPlayer.Alias.Name) && homeWorldMatch && jobMatch) {
+                        playerRow.Player = teamPlayer.Alias;
+                        postMatch.Teams[team.Key].PlayerStats.Add(playerRow);
+                        postMatch.Teams[team.Key].TeamStats.DamageDealt += playerRow.DamageDealt;
+                        postMatch.Teams[team.Key].TeamStats.DamageTaken += playerRow.DamageTaken;
+                        postMatch.Teams[team.Key].TeamStats.HPRestored += playerRow.HPRestored;
+                        postMatch.Teams[team.Key].TeamStats.TimeOnCrystal += playerRow.TimeOnCrystal;
+                    }
+                }
+            }
+        }
+
+        if(_currentMatch!.PostMatch is null) {
+            _currentMatch.PostMatch = postMatch;
+            _plugin.StorageManager.UpdateCCMatch(_currentMatch);
+        }
     }
 
     public bool IsMatchInProgress() {

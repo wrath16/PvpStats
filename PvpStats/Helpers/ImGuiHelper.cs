@@ -16,4 +16,10 @@ internal static class ImGuiHelper {
         var posX = ImGui.GetCursorPosX() + (ImGui.GetColumnWidth() - ImGui.CalcTextSize(text).X) / 2f;
         ImGui.SetCursorPosX(posX);
     }
+
+    //internal static void CenterAlignCursorVertical(string text) {
+    //    var size = ImGui.CalcTextSize(text);
+    //    var posY = ImGui.GetCursorPosY() + (ImGui.R - ImGui.CalcTextSize(text).Y) / 2f;
+    //    ImGui.SetCursorPosY(posY);
+    //}
 }

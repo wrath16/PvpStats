@@ -18,6 +18,8 @@ using PvpStats.Windows;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PvpStats;
 
@@ -62,8 +64,11 @@ public sealed class Plugin : IDalamudPlugin {
     private DateTime _lastHeaderUpdateTime;
 
     internal bool DataReadWrite { get; set; }
+    //coordinates all data sequence-sensitive operations
+    internal SemaphoreSlim DataLock { get; init; } = new SemaphoreSlim(1, 1);
 
-    internal readonly Dictionary<Job, IDalamudTextureWrap> JobIcons;
+    internal readonly Dictionary<Job, IDalamudTextureWrap> JobIcons = new();
+
 
     public Plugin(
         [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
@@ -98,27 +103,32 @@ public sealed class Plugin : IDalamudPlugin {
 
             AtkNodeHelper.Log = Log;
 
-            JobIcons = new Dictionary<Job, IDalamudTextureWrap>() {
-                { Job.PLD, TextureProvider.GetIcon(62119)! },
-                { Job.WAR, TextureProvider.GetIcon(62121)! },
-                { Job.DRK, TextureProvider.GetIcon(62132)! },
-                { Job.GNB, TextureProvider.GetIcon(62137)! },
-                { Job.MNK, TextureProvider.GetIcon(62120)! },
-                { Job.DRG, TextureProvider.GetIcon(62122)! },
-                { Job.NIN, TextureProvider.GetIcon(62130)! },
-                { Job.SAM, TextureProvider.GetIcon(62134)! },
-                { Job.RPR, TextureProvider.GetIcon(62139)! },
-                { Job.WHM, TextureProvider.GetIcon(62124)! },
-                { Job.SCH, TextureProvider.GetIcon(62128)! },
-                { Job.AST, TextureProvider.GetIcon(62133)! },
-                { Job.SGE, TextureProvider.GetIcon(62140)! },
-                { Job.BRD, TextureProvider.GetIcon(62123)! },
-                { Job.MCH, TextureProvider.GetIcon(62131)! },
-                { Job.DNC, TextureProvider.GetIcon(62138)! },
-                { Job.BLM, TextureProvider.GetIcon(62125)! },
-                { Job.SMN, TextureProvider.GetIcon(62127)! },
-                { Job.RDM, TextureProvider.GetIcon(62135)! },
-            };
+            foreach(var icon in PlayerJobHelper.JobIcons) {
+                JobIcons.Add(icon.Key, TextureProvider.GetIcon(icon.Value));
+            }
+
+
+            //JobIcons = new Dictionary<Job, IDalamudTextureWrap>() {
+            //    { Job.PLD, TextureProvider.GetIcon(62119)! },
+            //    { Job.WAR, TextureProvider.GetIcon(62121)! },
+            //    { Job.DRK, TextureProvider.GetIcon(62132)! },
+            //    { Job.GNB, TextureProvider.GetIcon(62137)! },
+            //    { Job.MNK, TextureProvider.GetIcon(62120)! },
+            //    { Job.DRG, TextureProvider.GetIcon(62122)! },
+            //    { Job.NIN, TextureProvider.GetIcon(62130)! },
+            //    { Job.SAM, TextureProvider.GetIcon(62134)! },
+            //    { Job.RPR, TextureProvider.GetIcon(62139)! },
+            //    { Job.WHM, TextureProvider.GetIcon(62124)! },
+            //    { Job.SCH, TextureProvider.GetIcon(62128)! },
+            //    { Job.AST, TextureProvider.GetIcon(62133)! },
+            //    { Job.SGE, TextureProvider.GetIcon(62140)! },
+            //    { Job.BRD, TextureProvider.GetIcon(62123)! },
+            //    { Job.MCH, TextureProvider.GetIcon(62131)! },
+            //    { Job.DNC, TextureProvider.GetIcon(62138)! },
+            //    { Job.BLM, TextureProvider.GetIcon(62125)! },
+            //    { Job.SMN, TextureProvider.GetIcon(62127)! },
+            //    { Job.RDM, TextureProvider.GetIcon(62135)! },
+            //};
 
             Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             Configuration.Initialize(this);
@@ -290,6 +300,19 @@ public sealed class Plugin : IDalamudPlugin {
 
     internal unsafe ushort GetCurrentDutyId() {
         return GameMain.Instance()->CurrentContentFinderConditionId;
+    }
+
+    internal Task Refresh() {
+        return Task.Run(async () => {
+            try {
+                await DataLock.WaitAsync();
+                Task mainWindowTask = MainWindow.Refresh();
+                Task.WaitAll([mainWindowTask]);
+            }
+            finally {
+                DataLock.Release();
+            }
+        });
     }
 
     private void testMethod() {

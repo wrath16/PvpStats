@@ -16,6 +16,8 @@ public class CrystallineConflictMatch {
     public DateTime DutyStartTime { get; init; }
     public DateTime? MatchStartTime { get; set; }
     public DateTime? MatchEndTime { get; set; }
+    [BsonIgnore]
+    public TimeSpan? MatchDuration => MatchEndTime - MatchStartTime;
 
     public CrystallineConflictMatchType MatchType { get; set; }
     //should this be id only?
@@ -39,6 +41,7 @@ public class CrystallineConflictMatch {
     public List<ChatMessage> ChatLog { get; set; } = new();
 
     //stats results...
+    public CrystallineConflictPostMatch? PostMatch { get; set; }
 
     //this might have performance impact if accessed frequently
     [BsonIgnore]

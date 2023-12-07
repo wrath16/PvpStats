@@ -61,7 +61,7 @@ internal class StorageManager : IDisposable {
                 await _dbLock.WaitAsync();
                 action.Invoke();
                 if (toSave) {
-                    //_plugin.Save();
+                    _plugin.Refresh();
                 }
             }
             finally {

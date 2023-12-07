@@ -1,4 +1,5 @@
 ﻿using Dalamud.Interface.Colors;
+using Dalamud.Interface.Style;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
@@ -7,8 +8,21 @@ using PvpStats.Types.Match;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
+using static Lumina.Data.Parsing.Layer.LayerCommon;
 
 namespace PvpStats.Windows.Detail;
+
+enum SortableColumn {
+    Name,
+    Kills,
+    Deaths,
+    Assists,
+    DamageDealt,
+    DamageTaken,
+    HPRestored,
+    TimeOnCrystal
+}
+
 internal class CrystallineConflictMatchDetail : Window {
 
     private Plugin _plugin;
@@ -18,10 +32,12 @@ internal class CrystallineConflictMatchDetail : Window {
     internal CrystallineConflictMatchDetail(Plugin plugin, CrystallineConflictMatch match) : base($"Match Details: {match.Id}") {
         ForceMainWindow = true;
         PositionCondition = ImGuiCond.Appearing;
+        CollapsedCondition = ImGuiCond.Appearing;
         Position = new Vector2(0, 0);
+        Collapsed = false;
         SizeConstraints = new WindowSizeConstraints {
             MinimumSize = new Vector2(500, 400),
-            MaximumSize = new Vector2(750, 1500)
+            MaximumSize = new Vector2(800, 1500)
         };
         _plugin = plugin;
         _dataModel = match;
@@ -171,8 +187,94 @@ internal class CrystallineConflictMatchDetail : Window {
                 //ImGui.TableNextColumn();
             }
             ImGui.EndTable();
+        }
+        ImGui.NewLine();
+        if (_dataModel.PostMatch is null) {
+            ImGui.Text("Post game statistics unavailable.");
+        } else {
+            ImGui.BeginTable("players", 8, ImGuiTableFlags.Sortable);
+            ImGui.TableSetupColumn("", ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableSetupColumn("Kills", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 52f);
+            ImGui.TableSetupColumn("Deaths", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 52f);
+            ImGui.TableSetupColumn("Assists", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 52f);
+            ImGui.TableSetupColumn("Damage\nDealt", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 65f);
+            ImGui.TableSetupColumn("Damage\nTaken", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 65f);
+            ImGui.TableSetupColumn("HP\nRestored", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 65f);
+            ImGui.TableSetupColumn("Time on\nCrystal", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 60f);
 
-            ImGui.Separator();
+            //ImGui.TableHeadersRow();
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("");
+            ImGui.TableNextColumn();
+            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f);
+            ImGui.TableHeader("Kills");
+            ImGui.TableNextColumn();
+            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f);
+            ImGui.TableHeader("Deaths");
+            ImGui.TableNextColumn();
+            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f);
+            ImGui.TableHeader("Assists");
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("Damage\nDealt");
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("Damage\nTaken");
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("HP\nRestored");
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("Time on\nCrystal");
+
+            ImGuiTableSortSpecsPtr sortSpecs;
+
+            //if(sortSpecs == ImGui.TableGetSortSpecs())
+
+
+            ImGui.TableNextRow();
+
+
+            foreach (var team in _dataModel.PostMatch.Teams) {
+                //ImGui.PushStyleColor(ImGuiCol.TableRowBg, new Vector4(0.7058824f, 0f, 0f, 1f));
+                ImGui.TableNextColumn();
+                var rowColor = team.Key == _dataModel.LocalPlayerTeam.TeamName ? new Vector4(0f, 0.6f, 1f, 0.5f) : new Vector4(0.7058824f, 0f, 0f, 0.5f);
+                ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(rowColor));
+                ImGui.Text($" {MatchHelper.GetTeamName(team.Value.TeamName)}");
+                ImGui.TableNextColumn();
+                ImGui.Text($"{team.Value.TeamStats.Kills}");
+                ImGui.TableNextColumn();
+                ImGui.Text($"{team.Value.TeamStats.Deaths}");
+                ImGui.TableNextColumn();
+                ImGui.Text($"{team.Value.TeamStats.Assists}");
+                ImGui.TableNextColumn();
+                ImGui.Text($"{team.Value.TeamStats.DamageDealt}");
+                ImGui.TableNextColumn();
+                ImGui.Text($"{team.Value.TeamStats.DamageTaken}");
+                ImGui.TableNextColumn();
+                ImGui.Text($"{team.Value.TeamStats.HPRestored}");
+                ImGui.TableNextColumn();
+                ImGui.Text($"{team.Value.TeamStats.TimeOnCrystal.Minutes}{team.Value.TeamStats.TimeOnCrystal.ToString(@"\:ss")}");
+                //ImGui.PopStyleColor();
+                foreach (var player in team.Value.PlayerStats) {
+                    ImGui.TableNextColumn();
+                    rowColor = team.Key == _dataModel.LocalPlayerTeam.TeamName ? new Vector4(0f, 0.6f, 1f, 0.2f) : new Vector4(0.7058824f, 0f, 0f, 0.2f);
+                    ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(rowColor));
+                    //ImGui.Text($" {player.Player.Name}");
+                    ImGui.TextColored(_dataModel.LocalPlayer.Equals(player.Player) ? ImGuiColors.DalamudYellow : ImGuiColors.DalamudWhite, $" {player.Player.Name}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{player.Kills}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{player.Deaths}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{player.Assists}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{player.DamageDealt}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{player.DamageTaken}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{player.HPRestored}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{player.TimeOnCrystal.Minutes}{player.TimeOnCrystal.ToString(@"\:ss")}");
+                }
+            }
+            ImGui.EndTable();
         }
         //ImGui.Image(_plugin.TextureProvider.GetIcon(62123).ImGuiHandle, new Vector2(25,25));
 

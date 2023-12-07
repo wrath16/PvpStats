@@ -2,6 +2,7 @@ using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using PvpStats.Windows.List;
 using System.Numerics;
+using System.Threading.Tasks;
 
 namespace PvpStats.Windows;
 
@@ -29,7 +30,13 @@ internal class MainWindow : Window {
         base.PreDraw();
     }
 
-    private int _selectedIndex = 0;
+    public Task Refresh() {
+        return Task.Run(async() => {
+            await ccMatches.Refresh();
+        });
+        
+    }
+
     public override void Draw() {
         if (ImGui.BeginTabBar("TabBar", ImGuiTabBarFlags.None)) {
             if (ImGui.BeginTabItem("Match History")) {

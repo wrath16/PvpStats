@@ -163,6 +163,13 @@ internal static class AtkNodeHelper {
         }
     }
 
+    //internal static unsafe AtkValue* ValidatedAtkValue(AtkUnitBase* addon, int index) {
+    //    var value = addon->AtkValues[index];
+    //    //if(value == 0) {
+
+    //    //}
+    //}
+
     internal static unsafe string ConvertAtkValueToString(AtkValue value) {
         switch (value.Type) {
             case FFXIVClientStructs.FFXIV.Component.GUI.ValueType.Int:

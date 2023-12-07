@@ -1,5 +1,6 @@
 ﻿using PvpStats.Types.Match;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace PvpStats.Helpers;
 public static class MatchHelper {
@@ -69,18 +70,19 @@ public static class MatchHelper {
 
     public static CrystallineConflictTeamName GetTeamName(string name) {
         name = name.ToLower().Trim();
-        switch (name) {
-            case "astra": return CrystallineConflictTeamName.Astra;
-            case "umbra": return CrystallineConflictTeamName.Umbra;
-            default: return CrystallineConflictTeamName.Unknown;
+        if(Regex.IsMatch(name, @"\bastra\b", RegexOptions.IgnoreCase)) {
+            return CrystallineConflictTeamName.Astra;
+        } else if(Regex.IsMatch(name, @"\bumbra\b", RegexOptions.IgnoreCase)) {
+            return CrystallineConflictTeamName.Umbra;
         }
+        return CrystallineConflictTeamName.Unknown;
     }
 
     public static string GetTeamName(CrystallineConflictTeamName team) {
         switch (team) {
             case CrystallineConflictTeamName.Astra: return "Astra";
             case CrystallineConflictTeamName.Umbra: return "Umbra";
-            default: return "Unknown Team Name";
+            default: return "Unknown";
         }
     }
 
@@ -92,5 +94,13 @@ public static class MatchHelper {
             }
         }
         return ArenaTier.None;
+    }
+
+    public static float? ConvertProgressStringToFloat(string progress) {
+        if (float.TryParse(progress.Replace("%", "").Replace(",", "."), out float parseResult)) {
+            return parseResult;
+        } else {
+            return null;
+        }
     }
 }
