@@ -21,6 +21,7 @@ public class CrystallineConflictPostMatchTeam {
 
 public class CrystallineConflictPostMatchRow {
     public PlayerAlias? Player { get; set; }
+    public CrystallineConflictTeamName? Team { get; set; }
     public Job? Job { get; set; }
     public PlayerRank? PlayerRank { get; set; }
     public int Kills { get; set; }

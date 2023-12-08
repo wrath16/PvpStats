@@ -31,10 +31,10 @@ internal class MainWindow : Window {
     }
 
     public Task Refresh() {
-        return Task.Run(async() => {
+        return Task.Run(async () => {
             await ccMatches.Refresh();
         });
-        
+
     }
 
     public override void Draw() {

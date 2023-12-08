@@ -108,7 +108,7 @@ internal class MatchManager : IDisposable {
         }
         var winningTeam = _currentMatch.Teams[(CrystallineConflictTeamName)_currentMatch.MatchWinner];
         //correct 99.9% on non-overtime wins
-        if (winningTeam.Progress > 99f && winningTeam.Progress < 100f && _currentMatch.MatchDuration.Value.TotalSeconds < 5 * 60  && !_currentMatch.IsOvertime) {
+        if (winningTeam.Progress > 99f && winningTeam.Progress < 100f && _currentMatch.MatchDuration.Value.TotalSeconds < 5 * 60 && !_currentMatch.IsOvertime) {
             _plugin.Log.Verbose("Correcting 99.9% to 100%...");
             winningTeam.Progress = 100f;
         }
@@ -217,10 +217,10 @@ internal class MatchManager : IDisposable {
         //check for parse results? this is causing error!
         try {
             _currentMatch!.MatchTimer = new TimeSpan(0, int.Parse(timerMinsNode->NodeText.ToString()), int.Parse(timerSecondsNode->NodeText.ToString()));
-        } catch {
+        }
+        catch {
             //hehe
         }
-        
 
         if (!_currentMatch!.IsOvertime) {
             _currentMatch.IsOvertime = isOvertime;
@@ -248,7 +248,7 @@ internal class MatchManager : IDisposable {
     private unsafe void OnPvPResults(AddonEvent type, AddonArgs args) {
         _plugin.Log.Debug("pvp record pre-setup.");
 
-        if(!IsMatchInProgress()) {
+        if (!IsMatchInProgress()) {
             return;
         }
         CrystallineConflictPostMatch postMatch = new();
@@ -262,7 +262,7 @@ internal class MatchManager : IDisposable {
         var matchDuration = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[22]);
         postMatch.MatchDuration = TimeSpan.Parse("00:" + matchDuration);
 
-        var leftTeamName = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[1526]);  
+        var leftTeamName = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[1526]);
         var leftTeamProgress = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[1538]);
         var leftTeamKills = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[1542]);
         var leftTeamDeaths = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[1544]);
@@ -272,6 +272,7 @@ internal class MatchManager : IDisposable {
             TeamName = MatchHelper.GetTeamName(leftTeamName),
             Progress = (float)MatchHelper.ConvertProgressStringToFloat(leftTeamProgress),
             TeamStats = new() {
+                Team = MatchHelper.GetTeamName(leftTeamName),
                 Kills = int.Parse(Regex.Match(leftTeamKills, @"\d*$").Value),
                 Deaths = int.Parse(Regex.Match(leftTeamDeaths, @"\d*$").Value),
                 Assists = int.Parse(Regex.Match(leftTeamAssists, @"\d*$").Value),
@@ -339,12 +340,13 @@ internal class MatchManager : IDisposable {
             };
 
             //validate player name and add to team stats
-            foreach(var team in _currentMatch.Teams) {
-                foreach(var teamPlayer in team.Value.Players) {
+            foreach (var team in _currentMatch.Teams) {
+                foreach (var teamPlayer in team.Value.Players) {
                     bool homeWorldMatch = playerWorld.Equals(teamPlayer.Alias.HomeWorld, StringComparison.OrdinalIgnoreCase);
                     bool jobMatch = playerJob == teamPlayer.Job;
                     if (PlayerJobHelper.IsAbbreviatedAliasMatch(playerName, teamPlayer.Alias.Name) && homeWorldMatch && jobMatch) {
                         playerRow.Player = teamPlayer.Alias;
+                        playerRow.Team = team.Key;
                         postMatch.Teams[team.Key].PlayerStats.Add(playerRow);
                         postMatch.Teams[team.Key].TeamStats.DamageDealt += playerRow.DamageDealt;
                         postMatch.Teams[team.Key].TeamStats.DamageTaken += playerRow.DamageTaken;
@@ -355,7 +357,7 @@ internal class MatchManager : IDisposable {
             }
         }
 
-        if(_currentMatch!.PostMatch is null) {
+        if (_currentMatch!.PostMatch is null) {
             _currentMatch.PostMatch = postMatch;
             _plugin.StorageManager.UpdateCCMatch(_currentMatch);
         }

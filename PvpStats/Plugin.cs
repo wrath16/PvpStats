@@ -69,7 +69,6 @@ public sealed class Plugin : IDalamudPlugin {
 
     internal readonly Dictionary<Job, IDalamudTextureWrap> JobIcons = new();
 
-
     public Plugin(
         [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
         [RequiredVersion("1.0")] ICommandManager commandManager,
@@ -103,10 +102,9 @@ public sealed class Plugin : IDalamudPlugin {
 
             AtkNodeHelper.Log = Log;
 
-            foreach(var icon in PlayerJobHelper.JobIcons) {
+            foreach (var icon in PlayerJobHelper.JobIcons) {
                 JobIcons.Add(icon.Key, TextureProvider.GetIcon(icon.Value));
             }
-
 
             //JobIcons = new Dictionary<Job, IDalamudTextureWrap>() {
             //    { Job.PLD, TextureProvider.GetIcon(62119)! },

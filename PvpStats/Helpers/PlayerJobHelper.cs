@@ -1,5 +1,4 @@
-﻿using Dalamud.Plugin.Services;
-using PvpStats.Types.Player;
+﻿using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;

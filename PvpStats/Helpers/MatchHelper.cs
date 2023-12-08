@@ -70,9 +70,10 @@ public static class MatchHelper {
 
     public static CrystallineConflictTeamName GetTeamName(string name) {
         name = name.ToLower().Trim();
-        if(Regex.IsMatch(name, @"\bastra\b", RegexOptions.IgnoreCase)) {
+        if (Regex.IsMatch(name, @"\bastra\b", RegexOptions.IgnoreCase)) {
             return CrystallineConflictTeamName.Astra;
-        } else if(Regex.IsMatch(name, @"\bumbra\b", RegexOptions.IgnoreCase)) {
+        }
+        else if (Regex.IsMatch(name, @"\bumbra\b", RegexOptions.IgnoreCase)) {
             return CrystallineConflictTeamName.Umbra;
         }
         return CrystallineConflictTeamName.Unknown;
@@ -99,7 +100,8 @@ public static class MatchHelper {
     public static float? ConvertProgressStringToFloat(string progress) {
         if (float.TryParse(progress.Replace("%", "").Replace(",", "."), out float parseResult)) {
             return parseResult;
-        } else {
+        }
+        else {
             return null;
         }
     }
