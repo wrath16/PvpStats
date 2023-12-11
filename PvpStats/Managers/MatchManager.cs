@@ -13,6 +13,7 @@ using PvpStats.Types.Player;
 using System;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace PvpStats.Managers;
 internal class MatchManager : IDisposable {
@@ -20,6 +21,7 @@ internal class MatchManager : IDisposable {
     private Plugin _plugin;
     private CrystallineConflictMatch? _currentMatch;
     private DateTime _lastHeaderUpdateTime;
+    private CrystallineConflictTeamName _lastMoved;
 
     public MatchManager(Plugin plugin) {
         _plugin = plugin;
@@ -30,6 +32,7 @@ internal class MatchManager : IDisposable {
 
         _plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "PvPMKSIntroduction", OnPvPIntro);
         _plugin.AddonLifecycle.RegisterListener(AddonEvent.PostUpdate, "PvPMKSHeader", OnPvPHeaderUpdate);
+        _plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "PvPMKSHeader", OnPvPHeaderUpdate);
         _plugin.AddonLifecycle.RegisterListener(AddonEvent.PreSetup, "MKSRecord", OnPvPResults);
     }
 
@@ -64,6 +67,7 @@ internal class MatchManager : IDisposable {
         }
         else {
             _currentMatch = null;
+            _plugin.Refresh();
         }
     }
 
@@ -95,25 +99,35 @@ internal class MatchManager : IDisposable {
         if (!IsMatchInProgress()) {
             return;
         }
-
-        _plugin.Log.Debug("Match has ended.");
         _currentMatch!.MatchEndTime = DateTime.Now;
-        _currentMatch!.IsCompleted = true;
-        //set winner todo: check for draws!
-        if (_currentMatch.Teams.ElementAt(0).Value.Progress > _currentMatch.Teams.ElementAt(1).Value.Progress) {
-            _currentMatch.MatchWinner = _currentMatch.Teams.ElementAt(0).Key;
-        }
-        else {
-            _currentMatch.MatchWinner = _currentMatch.Teams.ElementAt(1).Key;
-        }
-        var winningTeam = _currentMatch.Teams[(CrystallineConflictTeamName)_currentMatch.MatchWinner];
-        //correct 99.9% on non-overtime wins
-        if (winningTeam.Progress > 99f && winningTeam.Progress < 100f && _currentMatch.MatchDuration.Value.TotalSeconds < 5 * 60 && !_currentMatch.IsOvertime) {
-            _plugin.Log.Verbose("Correcting 99.9% to 100%...");
-            winningTeam.Progress = 100f;
-        }
 
-        _plugin.StorageManager.UpdateCCMatch(_currentMatch);
+        var currentMatchTemp = _currentMatch;
+
+        //add delay to get last of header updates
+        //this could cause issues with players instaleaving
+        Task.Delay(100).ContinueWith(t => {
+            _plugin.Log.Debug("Match has ended.");
+            currentMatchTemp!.IsCompleted = true;
+
+            //set winner todo: check for draws!
+            if (currentMatchTemp.Teams.ElementAt(0).Value.Progress > currentMatchTemp.Teams.ElementAt(1).Value.Progress) {
+                currentMatchTemp.MatchWinner = currentMatchTemp.Teams.ElementAt(0).Key;
+            }
+            else if (currentMatchTemp.Teams.ElementAt(0).Value.Progress < currentMatchTemp.Teams.ElementAt(1).Value.Progress) {
+                currentMatchTemp.MatchWinner = currentMatchTemp.Teams.ElementAt(1).Key;
+            }
+
+            var winningTeam = currentMatchTemp.Teams[(CrystallineConflictTeamName)currentMatchTemp.MatchWinner];
+            //correct 99.9% on non-overtime wins
+            _plugin.Log.Debug($"winner prog: {winningTeam.Progress} match seconds: {currentMatchTemp.MatchDuration.Value.TotalSeconds} isovertime : {currentMatchTemp.IsOvertime}");
+            _plugin.Log.Debug($"{winningTeam.Progress > 99f} {winningTeam.Progress < 100f} {currentMatchTemp.MatchDuration.Value.TotalSeconds < 5 * 60} {!currentMatchTemp.IsOvertime}");
+            if (winningTeam.Progress > 99f && winningTeam.Progress < 100f && currentMatchTemp.MatchDuration.Value.TotalSeconds < 5 * 60 && !currentMatchTemp.IsOvertime) {
+                _plugin.Log.Verbose("Correcting 99.9% to 100%...");
+                winningTeam.Progress = 100f;
+            }
+
+            _plugin.StorageManager.UpdateCCMatch(currentMatchTemp);
+        });
     }
 
     //build team data
@@ -200,7 +214,7 @@ internal class MatchManager : IDisposable {
     }
 
     private unsafe void OnPvPHeaderUpdate(AddonEvent type, AddonArgs args) {
-        if (!IsMatchInProgress()) {
+        if (!IsMatchInProgress() || _currentMatch!.IsCompleted) {
             return;
         }
 
@@ -233,7 +247,8 @@ internal class MatchManager : IDisposable {
             _currentMatch.Teams[rightTeamName].Progress = float.Parse(rightProgressNode->NodeText.ToString().Replace("%", "").Replace(",", "."));
         }
 
-        _plugin.StorageManager.UpdateCCMatch(_currentMatch);
+        //don't refresh because this gets triggered too often!
+        _plugin.StorageManager.UpdateCCMatch(_currentMatch, false);
 
         if ((DateTime.Now - _lastHeaderUpdateTime).TotalSeconds > 60) {
             _lastHeaderUpdateTime = DateTime.Now;

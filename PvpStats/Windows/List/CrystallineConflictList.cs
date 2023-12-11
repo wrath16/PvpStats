@@ -70,4 +70,20 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
             }
         });
     }
+
+    public override void OpenFullEditDetail(CrystallineConflictMatch item) {
+        var fullEditDetail = new FullEditDetail<CrystallineConflictMatch>(_plugin, item);
+        fullEditDetail.IsOpen = true;
+        try {
+            _plugin.WindowSystem.AddWindow(fullEditDetail);
+        }
+        catch {
+            ////attempt to open existing window
+            //var window = _plugin.WindowSystem.Windows.Where(w => w.WindowName == $"Match Details: {item.Id}").FirstOrDefault();
+            //if (window is not null) {
+            //    window.BringToFront();
+            //    window.IsOpen = true;
+            //}
+        }
+    }
 }

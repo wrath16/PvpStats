@@ -1,6 +1,11 @@
 ﻿using Dalamud.Interface.Utility;
 using ImGuiNET;
+using LiteDB;
+using Newtonsoft.Json;
+using PvpStats.Windows.Detail;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
@@ -32,6 +37,7 @@ internal abstract class FilteredList<T> {
     public abstract void RefreshDataModel();
     public abstract void DrawListItem(T item);
     public abstract void OpenItemDetail(T item);
+    public abstract void OpenFullEditDetail(T item);
 
     public FilteredList(Plugin plugin) {
         _plugin = plugin;
@@ -66,9 +72,29 @@ internal abstract class FilteredList<T> {
         ImGui.TableNextRow();
         foreach (var item in CurrentPage) {
             ImGui.TableNextColumn();
-            if (ImGui.Selectable($"##{item.GetHashCode()}", false, ImGuiSelectableFlags.SpanAllColumns)) {
+            if (ImGui.Selectable($"##{item!.GetHashCode()}-selectable", false, ImGuiSelectableFlags.SpanAllColumns)) {
                 OpenItemDetail(item);
             }
+#if DEBUG
+            if (ImGui.BeginPopupContextItem($"##{item!.GetHashCode()}--ContextMenu", ImGuiPopupFlags.MouseButtonRight)) {
+                if (ImGui.MenuItem($"Edit document##{item!.GetHashCode()}--FullEditContext")) {
+                    //_plugin.Log.Debug($"{BsonMapper.Global.Serialize(typeof(T), item).ToString()}");
+                    //var x = BsonMapper.Global.Serialize(typeof(T), item).ToString();
+                    //var stringReader = new StringReader(x);
+                    //var stringWriter = new StringWriter();
+                    //var jsonReader = new JsonTextReader(stringReader);
+                    //var jsonWriter = new JsonTextWriter(stringWriter) {
+                    //    Formatting = Formatting.Indented
+                    //};
+                    //jsonWriter.WriteToken(jsonReader);
+                    //_plugin.Log.Debug($"{stringWriter.ToString()}");
+
+                    //_plugin.Log.Debug($"{BsonMapper.Global.ToDocument(typeof(T), item).ToString()}");
+                    OpenFullEditDetail(item);
+                }
+                ImGui.EndPopup();
+            }
+#endif
             ImGui.SameLine();
             DrawListItem(item);
         }

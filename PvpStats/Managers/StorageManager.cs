@@ -38,16 +38,16 @@ internal class StorageManager : IDisposable {
         return Database.GetCollection<CrystallineConflictMatch>(CCTable);
     }
 
-    internal Task AddCCMatch(CrystallineConflictMatch match) {
-        return AsyncWriteToDatabase(() => GetCCMatches().Insert(match));
+    internal Task AddCCMatch(CrystallineConflictMatch match, bool toSave = true) {
+        return AsyncWriteToDatabase(() => GetCCMatches().Insert(match), toSave);
     }
 
-    internal Task AddCCMatches(IEnumerable<CrystallineConflictMatch> matches) {
-        return AsyncWriteToDatabase(() => GetCCMatches().Insert(matches));
+    internal Task AddCCMatches(IEnumerable<CrystallineConflictMatch> matches, bool toSave = true) {
+        return AsyncWriteToDatabase(() => GetCCMatches().Insert(matches), toSave);
     }
 
-    internal Task UpdateCCMatch(CrystallineConflictMatch match) {
-        return AsyncWriteToDatabase(() => GetCCMatches().Update(match));
+    internal Task UpdateCCMatch(CrystallineConflictMatch match, bool toSave = true) {
+        return AsyncWriteToDatabase(() => GetCCMatches().Update(match), toSave);
     }
 
     internal Task UpdateCCMatches(IEnumerable<CrystallineConflictMatch> matches) {

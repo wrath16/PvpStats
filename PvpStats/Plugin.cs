@@ -16,6 +16,7 @@ using PvpStats.Settings;
 using PvpStats.Types.Player;
 using PvpStats.Windows;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
@@ -66,6 +67,7 @@ public sealed class Plugin : IDalamudPlugin {
     internal bool DataReadWrite { get; set; }
     //coordinates all data sequence-sensitive operations
     internal SemaphoreSlim DataLock { get; init; } = new SemaphoreSlim(1, 1);
+    internal ConcurrentQueue<Task> DataTaskQueue { get; init; } = new();
 
     internal readonly Dictionary<Job, IDalamudTextureWrap> JobIcons = new();
 
@@ -311,6 +313,26 @@ public sealed class Plugin : IDalamudPlugin {
                 DataLock.Release();
             }
         });
+    }
+
+    internal void AddTask(Task task) {
+        DataTaskQueue.Enqueue(task);
+        RunNextTask();
+    }
+
+    private async void RunNextTask() {
+        try {
+            await DataLock.WaitAsync();
+            if (DataTaskQueue.TryDequeue(out Task nextTask)) {
+                nextTask.Start();
+                await nextTask;
+            }
+            else {
+                Log.Warning($"Unable to dequeue next task. Tasks remaining: {DataTaskQueue.Count}");
+            }
+        } finally {
+            DataLock.Release();
+        }
     }
 
     private void testMethod() {
