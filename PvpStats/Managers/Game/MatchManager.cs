@@ -6,7 +6,6 @@ using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.GeneratedSheets2;
-//using Lumina.Excel.GeneratedSheets;
 using PvpStats.Helpers;
 using PvpStats.Types.Match;
 using PvpStats.Types.Player;
@@ -15,7 +14,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace PvpStats.Managers;
+namespace PvpStats.Managers.Game;
 internal class MatchManager : IDisposable {
 
     private Plugin _plugin;
@@ -50,9 +49,9 @@ internal class MatchManager : IDisposable {
     }
 
     private void OnTerritoryChanged(ushort territoryId) {
-        var dutyId = _plugin.GetCurrentDutyId();
+        var dutyId = _plugin.GameState.GetCurrentDutyId();
         var duty = _plugin.DataManager.GetExcelSheet<ContentFinderCondition>()?.GetRow(dutyId);
-        _plugin.Log.Debug($"Territory changed: {territoryId}, Current duty: {_plugin.GetCurrentDutyId()}");
+        _plugin.Log.Debug($"Territory changed: {territoryId}, Current duty: {dutyId}");
 
         if (MatchHelper.IsCrystallineConflictTerritory(territoryId)) {
             //sometimes client state is unavailable at this time
@@ -63,11 +62,11 @@ internal class MatchManager : IDisposable {
                 Arena = MatchHelper.CrystallineConflictMapLookup[territoryId],
                 MatchType = MatchHelper.GetMatchType(dutyId),
             };
-            _plugin.StorageManager.AddCCMatch(_currentMatch);
+            _plugin.Storage.AddCCMatch(_currentMatch);
         }
         else {
             _currentMatch = null;
-            _plugin.Refresh();
+            _plugin.WindowManager.Refresh();
         }
     }
 
@@ -82,7 +81,7 @@ internal class MatchManager : IDisposable {
         if (_currentMatch.NeedsPlayerNameValidation) {
             _currentMatch.NeedsPlayerNameValidation = !ValidatePlayerAliases() ?? true;
         }
-        _plugin.StorageManager.UpdateCCMatch(_currentMatch);
+        _plugin.Storage.UpdateCCMatch(_currentMatch);
 
         //foreach (var obj in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
         //    _plugin.Log.Debug($"player object: {obj.Name}");
@@ -115,6 +114,8 @@ internal class MatchManager : IDisposable {
             }
             else if (currentMatchTemp.Teams.ElementAt(0).Value.Progress < currentMatchTemp.Teams.ElementAt(1).Value.Progress) {
                 currentMatchTemp.MatchWinner = currentMatchTemp.Teams.ElementAt(1).Key;
+            } else {
+                //overtime winner at same prog
             }
 
             var winningTeam = currentMatchTemp.Teams[(CrystallineConflictTeamName)currentMatchTemp.MatchWinner];
@@ -126,7 +127,7 @@ internal class MatchManager : IDisposable {
                 winningTeam.Progress = 100f;
             }
 
-            _plugin.StorageManager.UpdateCCMatch(currentMatchTemp);
+            _plugin.Storage.UpdateCCMatch(currentMatchTemp);
         });
     }
 
@@ -145,7 +146,7 @@ internal class MatchManager : IDisposable {
 
         //team name
         string teamName = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[4]);
-        string translatedTeamName = _plugin.LocalizationManager.TranslateDataTableEntry<Addon>(teamName, "Text", ClientLanguage.English);
+        string translatedTeamName = _plugin.Localization.TranslateDataTableEntry<Addon>(teamName, "Text", ClientLanguage.English);
         team.TeamName = MatchHelper.GetTeamName(translatedTeamName);
 
         _plugin.Log.Debug(teamName);
@@ -159,7 +160,7 @@ internal class MatchManager : IDisposable {
             string player = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[offset]);
             string world = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[offset + 6]);
             string job = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[offset + 5]);
-            string translatedJob = _plugin.LocalizationManager.TranslateDataTableEntry<ClassJob>(job, "Name", ClientLanguage.English);
+            string translatedJob = _plugin.Localization.TranslateDataTableEntry<ClassJob>(job, "Name", ClientLanguage.English);
             string rank = "";
             string? translatedRank = null;
 
@@ -176,7 +177,7 @@ internal class MatchManager : IDisposable {
 
                 //don't need to translate for Japanese
                 if (_plugin.ClientState.ClientLanguage != ClientLanguage.Japanese) {
-                    translatedRank = _plugin.LocalizationManager.TranslateRankString(rank, ClientLanguage.English);
+                    translatedRank = _plugin.Localization.TranslateRankString(rank, ClientLanguage.English);
                 }
                 else {
                     translatedRank = rank;
@@ -205,10 +206,10 @@ internal class MatchManager : IDisposable {
         }
 
         //set local player and data center
-        _currentMatch.LocalPlayer ??= (PlayerAlias)_plugin.GetCurrentPlayer();
+        _currentMatch.LocalPlayer ??= (PlayerAlias)_plugin.GameState.GetCurrentPlayer();
         _currentMatch.DataCenter ??= _plugin.ClientState.LocalPlayer?.CurrentWorld.GameData?.DataCenter.Value?.Name.ToString();
 
-        _plugin.StorageManager.UpdateCCMatch(_currentMatch);
+        _plugin.Storage.UpdateCCMatch(_currentMatch);
 
         _plugin.Log.Debug("");
     }
@@ -241,14 +242,14 @@ internal class MatchManager : IDisposable {
         }
 
         if (_currentMatch.Teams.Count == 2) {
-            var leftTeamName = MatchHelper.GetTeamName(_plugin.LocalizationManager.TranslateDataTableEntry<Addon>(leftTeamNode->NodeText.ToString(), "Text", ClientLanguage.English));
-            var rightTeamName = MatchHelper.GetTeamName(_plugin.LocalizationManager.TranslateDataTableEntry<Addon>(rightTeamNode->NodeText.ToString(), "Text", ClientLanguage.English));
+            var leftTeamName = MatchHelper.GetTeamName(_plugin.Localization.TranslateDataTableEntry<Addon>(leftTeamNode->NodeText.ToString(), "Text", ClientLanguage.English));
+            var rightTeamName = MatchHelper.GetTeamName(_plugin.Localization.TranslateDataTableEntry<Addon>(rightTeamNode->NodeText.ToString(), "Text", ClientLanguage.English));
             _currentMatch.Teams[leftTeamName].Progress = float.Parse(leftProgressNode->NodeText.ToString().Replace("%", "").Replace(",", "."));
             _currentMatch.Teams[rightTeamName].Progress = float.Parse(rightProgressNode->NodeText.ToString().Replace("%", "").Replace(",", "."));
         }
 
         //don't refresh because this gets triggered too often!
-        _plugin.StorageManager.UpdateCCMatch(_currentMatch, false);
+        _plugin.Storage.UpdateCCMatch(_currentMatch, false);
 
         if ((DateTime.Now - _lastHeaderUpdateTime).TotalSeconds > 60) {
             _lastHeaderUpdateTime = DateTime.Now;
@@ -323,9 +324,12 @@ internal class MatchManager : IDisposable {
         postMatch.Teams.Add(rightTeam.TeamName, rightTeam);
 
         for (int i = 0; i < 10; i++) {
-            //todo check for missing players...
             int offset = i * 20 + 25;
             var playerName = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[offset]);
+            //missing player
+            if (playerName.IsNullOrEmpty()) {
+                continue;
+            }
             var playerJobIconId = addon->AtkValues[offset + 1].UInt;
             var playerJob = PlayerJobHelper.GetJobFromIcon(playerJobIconId);
             var playerWorld = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[offset + 2]);
@@ -374,7 +378,7 @@ internal class MatchManager : IDisposable {
 
         if (_currentMatch!.PostMatch is null) {
             _currentMatch.PostMatch = postMatch;
-            _plugin.StorageManager.UpdateCCMatch(_currentMatch);
+            _plugin.Storage.UpdateCCMatch(_currentMatch);
         }
     }
 
@@ -407,10 +411,10 @@ internal class MatchManager : IDisposable {
     private bool ValidatePlayerAgainstObjectTable(CrystallineConflictPlayer player, bool? isPartyMember = null, bool updateAlias = false) {
         foreach (PlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
             bool homeWorldMatch = player.Alias.HomeWorld.Equals(pc.HomeWorld.GameData.Name.ToString());
-            string translatedJobName = _plugin.LocalizationManager.TranslateDataTableEntry<ClassJob>(pc.ClassJob.GameData.Name.ToString(), "Name", ClientLanguage.English);
+            string translatedJobName = _plugin.Localization.TranslateDataTableEntry<ClassJob>(pc.ClassJob.GameData.Name.ToString(), "Name", ClientLanguage.English);
             bool jobMatch = player.Job.Equals(PlayerJobHelper.GetJobFromName(translatedJobName));
             bool isSelf = _plugin.ClientState.LocalPlayer.ObjectId == pc.ObjectId;
-            bool teamMatch = isPartyMember is null || ((bool)isPartyMember && pc.StatusFlags.HasFlag(StatusFlags.PartyMember) || !(bool)isPartyMember && !pc.StatusFlags.HasFlag(StatusFlags.PartyMember));
+            bool teamMatch = isPartyMember is null || (bool)isPartyMember && pc.StatusFlags.HasFlag(StatusFlags.PartyMember) || !(bool)isPartyMember && !pc.StatusFlags.HasFlag(StatusFlags.PartyMember);
             //_plugin.Log.Debug($"Checking against... {pc.Name.ToString()} worldmatch: {homeWorldMatch} jobmatch: {jobMatch} teamMatch:{teamMatch}");
             //_plugin.Log.Debug($"team null? {isPlayerTeam is null} player team? {isPlayerTeam} is p member? {pc.StatusFlags.HasFlag(StatusFlags.PartyMember)} isSelf? {isSelf}");
             if (homeWorldMatch && jobMatch && (isSelf || teamMatch) && PlayerJobHelper.IsAbbreviatedAliasMatch(player.Alias, pc.Name.ToString())) {

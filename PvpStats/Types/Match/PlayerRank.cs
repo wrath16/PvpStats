@@ -7,6 +7,7 @@ public class PlayerRank {
 
     public ArenaTier Tier { get; set; }
     public int? Riser { get; set; }
+    public int? Stars { get; set; }
     public int? Credit { get; set; }
 
     public static explicit operator PlayerRank(string s) {

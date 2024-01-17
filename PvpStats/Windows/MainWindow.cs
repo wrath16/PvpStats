@@ -30,11 +30,8 @@ internal class MainWindow : Window {
         base.PreDraw();
     }
 
-    public Task Refresh() {
-        return Task.Run(async () => {
-            await ccMatches.Refresh();
-        });
-
+    public void Refresh() {
+        ccMatches.Refresh();
     }
 
     public override void Draw() {

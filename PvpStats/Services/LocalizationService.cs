@@ -5,14 +5,14 @@ using System;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace PvpStats.Managers;
-internal class LocalizationManager {
+namespace PvpStats.Services;
+internal class LocalizationService {
 
     public static readonly ClientLanguage[] SupportedLanguages = { ClientLanguage.English, ClientLanguage.French, ClientLanguage.German, ClientLanguage.Japanese };
 
     private Plugin _plugin;
 
-    public LocalizationManager(Plugin plugin) {
+    public LocalizationService(Plugin plugin) {
         _plugin = plugin;
     }
 

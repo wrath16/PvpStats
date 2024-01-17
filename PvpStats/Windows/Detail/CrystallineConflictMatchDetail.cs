@@ -121,10 +121,7 @@ internal class CrystallineConflictMatchDetail : Window {
     }
 
     public override void OnClose() {
-        _plugin.WindowSystem.RemoveWindow(this);
-        //foreach (var window in _plugin.WindowSystem.Windows) {
-        //    _plugin.Log.Debug($"window name: {window.WindowName}");
-        //}
+        _plugin.WindowManager.RemoveWindow(this);
     }
 
     public override void PreDraw() {
@@ -154,6 +151,7 @@ internal class CrystallineConflictMatchDetail : Window {
         ImGui.Text($"{_dataModel.MatchType}");
         ImGui.TableNextColumn();
         bool noWinner = _dataModel.MatchWinner is null;
+        bool isCustom = _dataModel.LocalPlayerTeam is null;
         bool isWin = _dataModel.MatchWinner == _dataModel.LocalPlayerTeam?.TeamName;
         var color = isWin ? ImGuiColors.HealerGreen : ImGuiColors.DalamudRed;
         color = noWinner ? ImGuiColors.DalamudGrey : color;
@@ -264,8 +262,8 @@ internal class CrystallineConflictMatchDetail : Window {
                 ImGui.Text($"{team.Key}: {team.Value.Progress}");
                 ImGui.SameLine();
             }
+            ImGui.Text($"winner: {_dataModel.PostMatch.MatchWinner}");
             ImGui.NewLine();
-
 
             //ImGui.Checkbox("Show team contribution", ref _showPercentages);
             ImGuiComponents.ToggleButton("##showPercentages", ref _showPercentages);

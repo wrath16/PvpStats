@@ -18,6 +18,7 @@ public class CrystallineConflictMatch {
     public DateTime? MatchEndTime { get; set; }
     [BsonIgnore]
     public TimeSpan? MatchDuration => MatchEndTime - MatchStartTime;
+    public CrystallineConflictTeamName? MatchWinner { get; set; }
 
     public CrystallineConflictMatchType MatchType { get; set; }
     //should this be id only?
@@ -32,7 +33,6 @@ public class CrystallineConflictMatch {
     //public CrystallineConflictTeam? FirstTeam { get; set; }
     //public CrystallineConflictTeam? SecondTeam { get; set; }
     public Dictionary<CrystallineConflictTeamName, CrystallineConflictTeam> Teams { get; set; } = new();
-    public CrystallineConflictTeamName? MatchWinner { get; set; }
 
     //public bool IsCountdown { get; set; }
     public TimeSpan MatchTimer { get; set; }

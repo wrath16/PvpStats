@@ -1,4 +1,5 @@
-﻿using Dalamud.Interface.Windowing;
+﻿using Dalamud.Interface.Utility;
+using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using LiteDB;
 using Newtonsoft.Json;
@@ -19,7 +20,7 @@ internal class FullEditDetail<T> : Window {
     public FullEditDetail(Plugin plugin, T dataRow) : base("Full Edit") {
         SizeConstraints = new WindowSizeConstraints {
             MinimumSize = new Vector2(500, 400),
-            MaximumSize = new Vector2(1200, 1500)
+            MaximumSize = new Vector2(800, 800)
         };
 
         _plugin = plugin;
@@ -37,7 +38,26 @@ internal class FullEditDetail<T> : Window {
     }
 
     public override void Draw() {
-        ImGui.InputTextMultiline("", ref _dataString, 999999, new Vector2(500, 500));
+        if(ImGui.BeginChild("scrolling", new Vector2(0, -(25 + ImGui.GetStyle().ItemSpacing.Y) * ImGuiHelpers.GlobalScale), false, ImGuiWindowFlags.AlwaysAutoResize)) {
+            ImGui.InputTextMultiline("", ref _dataString, 999999, new Vector2(500, 500));
+            ImGui.EndChild();
+        }
+        if(ImGui.Button("Save")) {
+            var returnValue = LiteDB.JsonSerializer.Deserialize(_dataString);
+            var x = BsonMapper.Global.Deserialize<CrystallineConflictMatch>(returnValue);
+            _plugin.Storage.UpdateCCMatch(x);
+
+
+            //using(var reader = new StreamReader(_dataString)) {
+            //    var returnValue = LiteDB.JsonSerializer.Deserialize(_dataString);
+            //    var x = BsonMapper.Global.Deserialize<CrystallineConflictMatch>(returnValue);
+            //    _plugin.Storage.UpdateCCMatch(x);
+            //    //var ccMatch = returnValue.AsDocument.;
+            //}
+
+            //var ccMatch = (CrystallineConflictMatch)BsonMapper.Global.Deserialize(typeof(CrystallineConflictMatch), _dataString);
+            //_plugin.Storage.UpdateCCMatch(ccMatch);
+        }
     }
 
     private void DrawProperty(PropertyInfo prop) {

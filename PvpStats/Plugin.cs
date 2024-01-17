@@ -12,6 +12,8 @@ using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json;
 using PvpStats.Helpers;
 using PvpStats.Managers;
+using PvpStats.Managers.Game;
+using PvpStats.Services;
 using PvpStats.Settings;
 using PvpStats.Types.Player;
 using PvpStats.Windows;
@@ -27,7 +29,7 @@ namespace PvpStats;
 public sealed class Plugin : IDalamudPlugin {
     public string Name => "PvpStats";
 
-    private const string DatabaseName = "data.db";
+    internal const string DatabaseName = "data.db";
 
     private const string CommandName = "/pvpstats";
     private const string DebugCommandName = "/pvpstatsdebug";
@@ -50,24 +52,25 @@ public sealed class Plugin : IDalamudPlugin {
     internal ITextureProvider TextureProvider { get; init; }
 
     internal MatchManager MatchManager { get; init; }
-    internal LocalizationManager LocalizationManager { get; init; }
-    internal StorageManager StorageManager { get; init; }
+    internal WindowManager WindowManager { get; init; }
+
+    internal DataQueueService DataQueue { get; init; }
+    internal LocalizationService Localization { get; init; }
+    internal StorageService Storage { get; init; }
+    internal GameStateService GameState { get; init; }
 
     public Configuration Configuration { get; init; }
     internal GameFunctions Functions { get; init; }
 
     //UI
-    internal WindowSystem WindowSystem = new("Pvp Stats");
-    private MainWindow MainWindow;
-    private DebugWindow DebugWindow;
+    //internal WindowSystem WindowSystem = new("Pvp Stats");
+    //private MainWindow MainWindow;
+    //private DebugWindow DebugWindow;
 
     private bool _matchInProgress;
     private DateTime _lastHeaderUpdateTime;
 
     internal bool DataReadWrite { get; set; }
-    //coordinates all data sequence-sensitive operations
-    internal SemaphoreSlim DataLock { get; init; } = new SemaphoreSlim(1, 1);
-    internal ConcurrentQueue<Task> DataTaskQueue { get; init; } = new();
 
     internal readonly Dictionary<Job, IDalamudTextureWrap> JobIcons = new();
 
@@ -133,37 +136,36 @@ public sealed class Plugin : IDalamudPlugin {
             Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             Configuration.Initialize(this);
 
-            MatchManager = new MatchManager(this);
-            LocalizationManager = new LocalizationManager(this);
-            StorageManager = new StorageManager(this, $"{PluginInterface.GetPluginConfigDirectory()}\\{DatabaseName}");
+            DataQueue = new(this);
+            Storage = new(this, $"{PluginInterface.GetPluginConfigDirectory()}\\{DatabaseName}");
+            GameState = new(this);
+            Localization = new(this);
+            WindowManager = new(this);
+            MatchManager = new(this);
 
-            MainWindow = new MainWindow(this);
-            WindowSystem.AddWindow(MainWindow);
+            //            MainWindow = new MainWindow(this);
+            //            WindowSystem.AddWindow(MainWindow);
             CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand) {
                 HelpMessage = "Opens stats window."
             });
 
-#if DEBUG
-            DebugWindow = new DebugWindow(this);
-            WindowSystem.AddWindow(DebugWindow);
-            CommandManager.AddHandler(DebugCommandName, new CommandInfo(OnDebugCommand) {
-                HelpMessage = "Opens debug window."
-            });
-            DataReadWrite = true;
-#endif
+            //#if DEBUG
+            //            DebugWindow = new DebugWindow(this);
+            //            WindowSystem.AddWindow(DebugWindow);
+            //            CommandManager.AddHandler(DebugCommandName, new CommandInfo(OnDebugCommand) {
+            //                HelpMessage = "Opens debug window."
+            //            });
+            //            DataReadWrite = true;
+            //#endif
 
             CommandManager.AddHandler(ConfigCommandName, new CommandInfo(OnConfigCommand) {
                 HelpMessage = "Open settings window."
             });
 
-            PluginInterface.UiBuilder.Draw += DrawUI;
-            PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
-
-            Framework.Update += OnFrameworkUpdate;
             ChatGui.ChatMessage += OnChatMessage;
-            ClientState.TerritoryChanged += OnTerritoryChanged;
+            //ClientState.TerritoryChanged += OnTerritoryChanged;
 
-            Log.Debug("starting up");
+            Log.Debug("The Wolf's Heart has started.");
             //AddonLifecycle.RegisterListener(AddonEvent.PostSetup, "PvPMKSIntroduction", OnPvPIntro);
             //AddonLifecycle.RegisterListener(AddonEvent.PostDraw, "PvPMKSIntroduction", OnPvPIntroUpdate);
             //AddonLifecycle.RegisterListener(AddonEvent.PreSetup, "PvPMKSIntroduction", OnPvPIntroPreSetup);
@@ -200,11 +202,10 @@ public sealed class Plugin : IDalamudPlugin {
         Log.Debug("disposing plugin");
 #endif
 
-        WindowSystem.RemoveAllWindows();
+        //WindowSystem.RemoveAllWindows();
         CommandManager.RemoveHandler(CommandName);
         CommandManager.RemoveHandler(ConfigCommandName);
 
-        Framework.Update -= OnFrameworkUpdate;
         ChatGui.ChatMessage -= OnChatMessage;
 
         //AddonLifecycle.UnregisterListener(OnPvPIntroPreSetup);
@@ -212,32 +213,24 @@ public sealed class Plugin : IDalamudPlugin {
         //AddonLifecycle.UnregisterListener(OnPvPResults);
 
         MatchManager.Dispose();
-        StorageManager.Dispose();
+        WindowManager.Dispose();
+        Storage.Dispose();
+        DataQueue.Dispose();
     }
 
     private void OnCommand(string command, string args) {
-        MainWindow.IsOpen = true;
+        WindowManager.OpenMainWindow();
     }
 
     private void OnConfigCommand(string command, string args) {
-        DrawConfigUI();
+        WindowManager.OpenMainWindow();
     }
 
 #if DEBUG
     private void OnDebugCommand(string command, string args) {
-        DebugWindow.IsOpen = true;
+        WindowManager.OpenDebugWindow();
     }
 #endif
-
-    private void DrawUI() {
-        WindowSystem.Draw();
-    }
-
-    private void DrawConfigUI() {
-    }
-
-    private void OnFrameworkUpdate(IFramework framework) {
-    }
 
     private void OnChatMessage(XivChatType type, uint senderId, ref SeString sender, ref SeString message, ref bool isHandled) {
     }
@@ -257,7 +250,7 @@ public sealed class Plugin : IDalamudPlugin {
     }
 
     private void OnTerritoryChanged(ushort territoryId) {
-        var dutyId = GetCurrentDutyId();
+        var dutyId = GameState.GetCurrentDutyId();
         var duty = DataManager.GetExcelSheet<ContentFinderCondition>()?.GetRow(dutyId);
         //Log.Verbose($"Territory changed: {territoryId}, Current duty: {GetCurrentDutyId()}");
         //bool isCrystallineConflict = false;
@@ -286,54 +279,19 @@ public sealed class Plugin : IDalamudPlugin {
 
     }
 
-    public string GetCurrentPlayer() {
-        string? currentPlayerName = ClientState.LocalPlayer?.Name?.ToString();
-        string? currentPlayerWorld = ClientState.LocalPlayer?.HomeWorld?.GameData?.Name?.ToString();
-        if (currentPlayerName == null || currentPlayerWorld == null) {
-            //throw exception?
-            throw new InvalidOperationException("Cannot retrieve current player");
-            //return "";
-        }
-
-        return $"{currentPlayerName} {currentPlayerWorld}";
-    }
-
-    internal unsafe ushort GetCurrentDutyId() {
-        return GameMain.Instance()->CurrentContentFinderConditionId;
-    }
-
-    internal Task Refresh() {
-        return Task.Run(async () => {
-            try {
-                await DataLock.WaitAsync();
-                Task mainWindowTask = MainWindow.Refresh();
-                Task.WaitAll([mainWindowTask]);
-            }
-            finally {
-                DataLock.Release();
-            }
-        });
-    }
-
-    internal void AddTask(Task task) {
-        DataTaskQueue.Enqueue(task);
-        RunNextTask();
-    }
-
-    private async void RunNextTask() {
-        try {
-            await DataLock.WaitAsync();
-            if (DataTaskQueue.TryDequeue(out Task nextTask)) {
-                nextTask.Start();
-                await nextTask;
-            }
-            else {
-                Log.Warning($"Unable to dequeue next task. Tasks remaining: {DataTaskQueue.Count}");
-            }
-        } finally {
-            DataLock.Release();
-        }
-    }
+    //internal void Refresh() {
+    //    MainWindow.Refresh();
+    //    //return Task.Run(async () => {
+    //    //    try {
+    //    //        await DataLock.WaitAsync();
+    //    //        Task mainWindowTask = MainWindow.Refresh();
+    //    //        Task.WaitAll([mainWindowTask]);
+    //    //    }
+    //    //    finally {
+    //    //        DataLock.Release();
+    //    //    }
+    //    //});
+    //}
 
     private void testMethod() {
         //TextureProvider.GetTextureFromGame

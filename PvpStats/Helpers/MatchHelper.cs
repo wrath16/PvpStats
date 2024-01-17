@@ -1,4 +1,5 @@
-﻿using PvpStats.Types.Match;
+﻿using Dalamud;
+using PvpStats.Types.Match;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
@@ -105,4 +106,18 @@ public static class MatchHelper {
             return null;
         }
     }
+
+    public static readonly Dictionary<ClientLanguage, Regex> CrystalCreditBeforeRegex = new() {
+            { ClientLanguage.English, new Regex(@"(?<=Crystal Credit\\n)[\d]*", RegexOptions.IgnoreCase) },
+            { ClientLanguage.French, new Regex(@"", RegexOptions.IgnoreCase) },
+            { ClientLanguage.German, new Regex(@"", RegexOptions.IgnoreCase) },
+            { ClientLanguage.Japanese, new Regex(@"", RegexOptions.IgnoreCase) }
+    };
+
+    public static readonly Dictionary<ClientLanguage, Regex> CrystalCreditAfterRegex = new() {
+            { ClientLanguage.English, new Regex(@"\b[\d]*$", RegexOptions.IgnoreCase) },
+            { ClientLanguage.French, new Regex(@"", RegexOptions.IgnoreCase) },
+            { ClientLanguage.German, new Regex(@"", RegexOptions.IgnoreCase) },
+            { ClientLanguage.Japanese, new Regex(@"", RegexOptions.IgnoreCase) }
+    };
 }

@@ -49,24 +49,20 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
     }
 
     public override void RefreshDataModel() {
-        DataModel = _plugin.StorageManager.GetCCMatches().Query().Where(m => !m.IsDeleted).OrderByDescending(m => m.DutyStartTime).ToList();
+        DataModel = _plugin.Storage.GetCCMatches().Query().Where(m => !m.IsDeleted).OrderByDescending(m => m.DutyStartTime).ToList();
     }
 
     public override void OpenItemDetail(CrystallineConflictMatch item) {
-        Task.Run(() => {
+        _plugin.DataQueue.QueueDataOperation(() => {
             _plugin.Log.Debug($"Opening item detail for...{item.DutyStartTime}");
             var itemDetail = new CrystallineConflictMatchDetail(_plugin, item);
             itemDetail.IsOpen = true;
             try {
-                _plugin.WindowSystem.AddWindow(itemDetail);
+                _plugin.WindowManager.AddWindow(itemDetail);
             }
             catch {
                 //attempt to open existing window
-                var window = _plugin.WindowSystem.Windows.Where(w => w.WindowName == $"Match Details: {item.Id}").FirstOrDefault();
-                if (window is not null) {
-                    window.BringToFront();
-                    window.IsOpen = true;
-                }
+                _plugin.WindowManager.OpenMatchDetailsWindow(item.Id);
             }
         });
     }
@@ -75,7 +71,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         var fullEditDetail = new FullEditDetail<CrystallineConflictMatch>(_plugin, item);
         fullEditDetail.IsOpen = true;
         try {
-            _plugin.WindowSystem.AddWindow(fullEditDetail);
+            _plugin.WindowManager.AddWindow(fullEditDetail);
         }
         catch {
             ////attempt to open existing window

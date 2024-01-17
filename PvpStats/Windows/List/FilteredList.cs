@@ -44,19 +44,13 @@ internal abstract class FilteredList<T> {
         Refresh();
     }
 
-    public Task Refresh(int? pageNumber = null) {
-        return Task.Run(async () => {
-            try {
-                await _refreshLock.WaitAsync();
-                RefreshDataModel();
-                //null page number = stay on same page
-                pageNumber ??= PageNumber;
-                PageNumber = (int)pageNumber;
-                CurrentPage = DataModel.Skip(PageNumber * PageSize).Take(PageSize).ToList();
-            }
-            finally {
-                _refreshLock.Release();
-            }
+    public void Refresh(int? pageNumber = null) {
+        _plugin.DataQueue.QueueDataOperation(() => {
+            RefreshDataModel();
+            //null page number = stay on same page
+            pageNumber ??= PageNumber;
+            PageNumber = (int)pageNumber;
+            CurrentPage = DataModel.Skip(PageNumber * PageSize).Take(PageSize).ToList();
         });
     }
 
