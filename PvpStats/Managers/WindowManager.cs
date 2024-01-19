@@ -1,12 +1,8 @@
-﻿using Dalamud.Game.Command;
-using Dalamud.Interface.Windowing;
+﻿using Dalamud.Interface.Windowing;
 using LiteDB;
 using PvpStats.Windows;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PvpStats.Managers;
 internal class WindowManager : IDisposable {
@@ -50,7 +46,7 @@ internal class WindowManager : IDisposable {
     }
 
     internal void RemoveWindow(Window window) {
-
+        WindowSystem.RemoveWindow(window);
     }
 
     internal void OpenMainWindow() {
@@ -70,6 +66,17 @@ internal class WindowManager : IDisposable {
         if (window is not null) {
             window.BringToFront();
             window.IsOpen = true;
+        }
+    }
+
+    internal void OpenFullEditWindow(ObjectId id) {
+        var match = _plugin.Storage.GetCCMatches().Query().Where(x => x.Id == id).FirstOrDefault();
+        if (match is not null) {
+            var window = WindowSystem.Windows.Where(w => w.WindowName == $"Full Edit: {match.GetHashCode()}").FirstOrDefault();
+            if (window is not null) {
+                window.BringToFront();
+                window.IsOpen = true;
+            }
         }
     }
 

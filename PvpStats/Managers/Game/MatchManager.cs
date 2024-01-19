@@ -22,6 +22,14 @@ internal class MatchManager : IDisposable {
     private DateTime _lastHeaderUpdateTime;
     private CrystallineConflictTeamName _lastMoved;
 
+    bool _isOvertimePrev = false;
+    string _timerMinsPrev = "";
+    string _timerSecondsPrev = "";
+    string _leftTeamPrev = "";
+    string _rightTeamPrev = "";
+    string _leftTeamProgressPrev = "";
+    string _rightTeamProgressPrev = "";
+
     public MatchManager(Plugin plugin) {
         _plugin = plugin;
 
@@ -50,23 +58,26 @@ internal class MatchManager : IDisposable {
 
     private void OnTerritoryChanged(ushort territoryId) {
         var dutyId = _plugin.GameState.GetCurrentDutyId();
-        var duty = _plugin.DataManager.GetExcelSheet<ContentFinderCondition>()?.GetRow(dutyId);
+        //var duty = _plugin.DataManager.GetExcelSheet<ContentFinderCondition>()?.GetRow(dutyId);
         _plugin.Log.Debug($"Territory changed: {territoryId}, Current duty: {dutyId}");
-
         if (MatchHelper.IsCrystallineConflictTerritory(territoryId)) {
-            //sometimes client state is unavailable at this time
-            //start or pickup match!
-            _currentMatch = new() {
-                DutyId = dutyId,
-                TerritoryId = territoryId,
-                Arena = MatchHelper.CrystallineConflictMapLookup[territoryId],
-                MatchType = MatchHelper.GetMatchType(dutyId),
-            };
-            _plugin.Storage.AddCCMatch(_currentMatch);
+            _plugin.DataQueue.QueueDataOperation(() => {
+                //sometimes client state is unavailable at this time
+                //start or pickup match!
+                _currentMatch = new() {
+                    DutyId = dutyId,
+                    TerritoryId = territoryId,
+                    Arena = MatchHelper.CrystallineConflictMapLookup[territoryId],
+                    MatchType = MatchHelper.GetMatchType(dutyId),
+                };
+                _plugin.Storage.AddCCMatch(_currentMatch);
+            });
         }
         else {
-            _currentMatch = null;
-            _plugin.WindowManager.Refresh();
+            _plugin.DataQueue.QueueDataOperation(() => {
+                _currentMatch = null;
+                _plugin.WindowManager.Refresh();
+            });
         }
     }
 
@@ -74,60 +85,57 @@ internal class MatchManager : IDisposable {
         if (!IsMatchInProgress()) {
             return;
         }
+        var currentTime = DateTime.Now;
+        _plugin.DataQueue.QueueDataOperation(() => {
+            _plugin.Log.Debug("Match has started.");
+            _currentMatch!.MatchStartTime = currentTime;
 
-        _plugin.Log.Debug("Match has started.");
-        _currentMatch!.MatchStartTime = DateTime.Now;
-
-        if (_currentMatch.NeedsPlayerNameValidation) {
-            _currentMatch.NeedsPlayerNameValidation = !ValidatePlayerAliases() ?? true;
-        }
-        _plugin.Storage.UpdateCCMatch(_currentMatch);
-
-        //foreach (var obj in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
-        //    _plugin.Log.Debug($"player object: {obj.Name}");
-        //    var pc = obj as PlayerCharacter;
-        //    _plugin.Log.Debug($"homeworld: {pc.HomeWorld.GameData.Name.ToString()} job: {pc.ClassJob.GameData.Name.ToString()} partymember?: {pc.StatusFlags & StatusFlags.PartyMember} statusflags: {pc.StatusFlags}");
-        //}
-
-        //foreach (var obj in _plugin.ObjectTable) {
-        //    _plugin.Log.Debug($"object kind: {obj.ObjectKind} name: {obj.Name}");
-        //}
+            if (_currentMatch.NeedsPlayerNameValidation) {
+                _currentMatch.NeedsPlayerNameValidation = !ValidatePlayerAliases() ?? true;
+            }
+            _plugin.Storage.UpdateCCMatch(_currentMatch);
+        });
     }
 
     private void OnDutyCompleted(object? sender, ushort param1) {
         if (!IsMatchInProgress()) {
             return;
         }
-        _currentMatch!.MatchEndTime = DateTime.Now;
-
-        var currentMatchTemp = _currentMatch;
+        var currentTime = DateTime.Now;
+        //var currentMatchTemp = _currentMatch;
 
         //add delay to get last of header updates
         //this could cause issues with players instaleaving
         Task.Delay(100).ContinueWith(t => {
-            _plugin.Log.Debug("Match has ended.");
-            currentMatchTemp!.IsCompleted = true;
+            _plugin.DataQueue.QueueDataOperation(() => {
+                _plugin.Log.Debug("Match has ended.");
+                _currentMatch!.MatchEndTime = currentTime;
+                _currentMatch!.IsCompleted = true;
 
-            //set winner todo: check for draws!
-            if (currentMatchTemp.Teams.ElementAt(0).Value.Progress > currentMatchTemp.Teams.ElementAt(1).Value.Progress) {
-                currentMatchTemp.MatchWinner = currentMatchTemp.Teams.ElementAt(0).Key;
-            }
-            else if (currentMatchTemp.Teams.ElementAt(0).Value.Progress < currentMatchTemp.Teams.ElementAt(1).Value.Progress) {
-                currentMatchTemp.MatchWinner = currentMatchTemp.Teams.ElementAt(1).Key;
-            } else {
-                //overtime winner at same prog
-            }
+                //set winner todo: check for draws!
+                if (_currentMatch.Teams.ElementAt(0).Value.Progress > _currentMatch.Teams.ElementAt(1).Value.Progress) {
+                    _currentMatch.MatchWinner = _currentMatch.Teams.ElementAt(0).Key;
+                }
+                else if (_currentMatch.Teams.ElementAt(0).Value.Progress < _currentMatch.Teams.ElementAt(1).Value.Progress) {
+                    _currentMatch.MatchWinner = _currentMatch.Teams.ElementAt(1).Key;
+                }
+                else {
+                    //overtime winner at same prog
+                    _plugin.Log.Debug("Overtime winner is advantaged team.");
+                    _currentMatch.MatchWinner = _currentMatch.OvertimeAdvantage;
+                }
 
-            var winningTeam = currentMatchTemp.Teams[(CrystallineConflictTeamName)currentMatchTemp.MatchWinner];
-            //correct 99.9% on non-overtime wins
-            _plugin.Log.Debug($"winner prog: {winningTeam.Progress} match seconds: {currentMatchTemp.MatchDuration.Value.TotalSeconds} isovertime : {currentMatchTemp.IsOvertime}");
-            _plugin.Log.Debug($"{winningTeam.Progress > 99f} {winningTeam.Progress < 100f} {currentMatchTemp.MatchDuration.Value.TotalSeconds < 5 * 60} {!currentMatchTemp.IsOvertime}");
-            if (winningTeam.Progress > 99f && winningTeam.Progress < 100f && currentMatchTemp.MatchDuration.Value.TotalSeconds < 5 * 60 && !currentMatchTemp.IsOvertime) {
-                _plugin.Log.Verbose("Correcting 99.9% to 100%...");
-                winningTeam.Progress = 100f;
-            }
+                var winningTeam = _currentMatch.Teams[(CrystallineConflictTeamName)_currentMatch.MatchWinner];
+                //correct 99.9% on non-overtime wins
+                _plugin.Log.Debug($"winner prog: {winningTeam.Progress} match seconds: {_currentMatch.MatchDuration.Value.TotalSeconds} isovertime : {_currentMatch.IsOvertime}");
+                _plugin.Log.Debug($"{winningTeam.Progress > 99f} {winningTeam.Progress < 100f} {_currentMatch.MatchDuration.Value.TotalSeconds < 5 * 60} {!_currentMatch.IsOvertime}");
+                if (winningTeam.Progress > 99f && winningTeam.Progress < 100f && _currentMatch.MatchDuration.Value.TotalSeconds < 5 * 60 && !_currentMatch.IsOvertime) {
+                    _plugin.Log.Verbose("Correcting 99.9% to 100%...");
+                    winningTeam.Progress = 100f;
+                }
 
-            _plugin.Storage.UpdateCCMatch(currentMatchTemp);
+                _plugin.Storage.UpdateCCMatch(_currentMatch);
+            });
         });
     }
 
@@ -198,20 +206,22 @@ internal class MatchManager : IDisposable {
             });
         }
 
-        if (!_currentMatch!.Teams.ContainsKey(team.TeamName)) {
-            _currentMatch!.Teams.Add(team.TeamName, team);
-        }
-        else {
-            _plugin.Log.Warning($"Duplicate team found: {team.TeamName}");
-        }
+        _plugin.DataQueue.QueueDataOperation(() => {
+            if (!_currentMatch!.Teams.ContainsKey(team.TeamName)) {
+                _currentMatch!.Teams.Add(team.TeamName, team);
+            }
+            else {
+                _plugin.Log.Warning($"Duplicate team found: {team.TeamName}");
+            }
 
-        //set local player and data center
-        _currentMatch.LocalPlayer ??= (PlayerAlias)_plugin.GameState.GetCurrentPlayer();
-        _currentMatch.DataCenter ??= _plugin.ClientState.LocalPlayer?.CurrentWorld.GameData?.DataCenter.Value?.Name.ToString();
+            //set local player and data center
+            _currentMatch.LocalPlayer ??= (PlayerAlias)_plugin.GameState.GetCurrentPlayer();
+            _currentMatch.DataCenter ??= _plugin.ClientState.LocalPlayer?.CurrentWorld.GameData?.DataCenter.Value?.Name.ToString();
 
-        _plugin.Storage.UpdateCCMatch(_currentMatch);
+            _plugin.Storage.UpdateCCMatch(_currentMatch);
 
-        _plugin.Log.Debug("");
+            _plugin.Log.Debug("");
+        });
     }
 
     private unsafe void OnPvPHeaderUpdate(AddonEvent type, AddonArgs args) {
@@ -227,37 +237,62 @@ internal class MatchManager : IDisposable {
         var rightProgressNode = addon->GetNodeById(48)->GetAsAtkTextNode();
         var timerMinsNode = addon->GetNodeById(25)->GetAsAtkTextNode();
         var timerSecondsNode = addon->GetNodeById(27)->GetAsAtkTextNode();
+
         bool isOvertime = addon->GetNodeById(23) != null ? addon->GetNodeById(23)->IsVisible : false;
+        string timerMins = timerMinsNode->NodeText.ToString();
+        string timerSeconds = timerSecondsNode->NodeText.ToString();
+        string leftTeam = leftTeamNode->NodeText.ToString();
+        string rightTeam = rightTeamNode->NodeText.ToString();
+        string leftTeamProgress = leftProgressNode->NodeText.ToString();
+        string rightTeamProgress = rightProgressNode->NodeText.ToString();
 
-        //check for parse results? this is causing error!
-        try {
-            _currentMatch!.MatchTimer = new TimeSpan(0, int.Parse(timerMinsNode->NodeText.ToString()), int.Parse(timerSecondsNode->NodeText.ToString()));
-        }
-        catch {
-            //hehe
-        }
+        //limit number of tasks queued by checking for changes
+        if(isOvertime != _isOvertimePrev || timerMins != _timerMinsPrev || timerSeconds != _timerSecondsPrev 
+            || leftTeamProgress != _leftTeamProgressPrev || rightTeamProgress != _rightTeamProgressPrev) {
+            _isOvertimePrev = isOvertime;
+            _timerMinsPrev = timerMins;
+            _timerSecondsPrev = timerSeconds;
+            _leftTeamProgressPrev = leftTeamProgress;
+            _rightTeamProgressPrev = rightTeamProgress;
+            _plugin.DataQueue.QueueDataOperation(() => {
+                //check for parse results? this is causing error!
+                try {
+                    _currentMatch!.MatchTimer = new TimeSpan(0, int.Parse(timerMins), int.Parse(timerSeconds));
+                }
+                catch {
+                    //hehe
+                }
 
-        if (!_currentMatch!.IsOvertime) {
-            _currentMatch.IsOvertime = isOvertime;
-        }
+                if (_currentMatch.Teams.Count == 2) {
+                    var leftTeamName = MatchHelper.GetTeamName(_plugin.Localization.TranslateDataTableEntry<Addon>(leftTeam, "Text", ClientLanguage.English));
+                    var rightTeamName = MatchHelper.GetTeamName(_plugin.Localization.TranslateDataTableEntry<Addon>(rightTeam, "Text", ClientLanguage.English));
+                    _currentMatch.Teams[leftTeamName].Progress = float.Parse(leftTeamProgress.Replace("%", "").Replace(",", "."));
+                    _currentMatch.Teams[rightTeamName].Progress = float.Parse(rightTeamProgress.Replace("%", "").Replace(",", "."));
 
-        if (_currentMatch.Teams.Count == 2) {
-            var leftTeamName = MatchHelper.GetTeamName(_plugin.Localization.TranslateDataTableEntry<Addon>(leftTeamNode->NodeText.ToString(), "Text", ClientLanguage.English));
-            var rightTeamName = MatchHelper.GetTeamName(_plugin.Localization.TranslateDataTableEntry<Addon>(rightTeamNode->NodeText.ToString(), "Text", ClientLanguage.English));
-            _currentMatch.Teams[leftTeamName].Progress = float.Parse(leftProgressNode->NodeText.ToString().Replace("%", "").Replace(",", "."));
-            _currentMatch.Teams[rightTeamName].Progress = float.Parse(rightProgressNode->NodeText.ToString().Replace("%", "").Replace(",", "."));
-        }
+                    if (!_currentMatch!.IsOvertime && isOvertime) {
+                        _currentMatch.IsOvertime = isOvertime;
+                        if (_currentMatch.Teams[leftTeamName].Progress > _currentMatch.Teams[rightTeamName].Progress) {
+                            _currentMatch.OvertimeAdvantage = leftTeamName;
+                        }
+                        else if (_currentMatch.Teams[leftTeamName].Progress < _currentMatch.Teams[rightTeamName].Progress) {
+                            _currentMatch.OvertimeAdvantage = rightTeamName;
+                        }
+                        _plugin.Log.Debug($"Entering overtime...Advantage: {_currentMatch.OvertimeAdvantage}");
+                    }
+                }
 
-        //don't refresh because this gets triggered too often!
-        _plugin.Storage.UpdateCCMatch(_currentMatch, false);
+                //don't refresh because this gets triggered too often!
+                _plugin.Storage.UpdateCCMatch(_currentMatch, false);
 
-        if ((DateTime.Now - _lastHeaderUpdateTime).TotalSeconds > 60) {
-            _lastHeaderUpdateTime = DateTime.Now;
-            _plugin.Log.Debug($"MATCH TIMER: {timerMinsNode->NodeText}:{timerSecondsNode->NodeText}");
-            _plugin.Log.Debug($"OVERTIME: {isOvertime}");
-            _plugin.Log.Debug($"{leftTeamNode->NodeText}: {leftProgressNode->NodeText}");
-            _plugin.Log.Debug($"{rightTeamNode->NodeText}: {rightProgressNode->NodeText}");
-            _plugin.Log.Debug("--------");
+                if ((DateTime.Now - _lastHeaderUpdateTime).TotalSeconds > 60) {
+                    _lastHeaderUpdateTime = DateTime.Now;
+                    _plugin.Log.Debug($"MATCH TIMER: {timerMins}:{timerSeconds}");
+                    _plugin.Log.Debug($"OVERTIME: {isOvertime}");
+                    _plugin.Log.Debug($"{leftTeam}: {leftTeamProgress}");
+                    _plugin.Log.Debug($"{rightTeam}: {rightTeamProgress}");
+                    _plugin.Log.Debug("--------");
+                }
+            });
         }
     }
 
@@ -312,13 +347,54 @@ internal class MatchManager : IDisposable {
         };
 
         var rankChange = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[1536]);
+        var tierBefore = MatchHelper.TierBeforeRegex.Match(rankChange);
+        var riserBefore = MatchHelper.RiserBeforeRegex.Match(rankChange);
+        var starsBefore = MatchHelper.StarBeforeRegex.Match(rankChange);
+        var tierAfter = MatchHelper.TierAfterRegex.Match(rankChange);
+        var riserAfter = MatchHelper.RiserAfterRegex.Match(rankChange);
+        var starsAfter = MatchHelper.StarAfterRegex.Match(rankChange);
 
         _plugin.Log.Debug($"{matchWinner}");
         _plugin.Log.Debug($"match duration: {matchDuration}");
         _plugin.Log.Debug($"rank change: {rankChange}");
+        _plugin.Log.Debug($"BEFORE: TIER:{tierBefore.Value} RISER: {riserBefore.Value} STARS: {starsBefore.Length}");
+        _plugin.Log.Debug($"AFTER: TIER:{tierAfter.Value} RISER: {riserAfter.Value} STARS: {starsAfter.Length}");
         _plugin.Log.Debug(string.Format("{4,-6}: progress: {0,-6} kills: {1,-3} deaths: {2,-3} assists: {3,-3}", leftTeamProgress, leftTeamKills, leftTeamDeaths, leftTeamAssists, leftTeamName));
         _plugin.Log.Debug(string.Format("{4,-6}: progress: {0,-6} kills: {1,-3} deaths: {2,-3} assists: {3,-3}", rightTeamProgress, rightTeamKills, rightTeamDeaths, rightTeamAssists, rightTeamName));
         _plugin.Log.Debug(string.Format("{0,-25} {1,-15} {2,-5} {3,-15} {4,-8} {5,-8} {6,-8} {7,-15} {8,-15} {9,-15} {10,-15}", "NAME", "WORLD", "JOB", "TIER", "KILLS", "DEATHS", "ASSISTS", "DAMAGE DEALT", "DAMAGE TAKEN", "HP RESTORED", "TIME ON CRYSTAL"));
+
+        //set rank change
+        PlayerRank beforeRank = new();
+        PlayerRank afterRank = new();
+
+        if (tierBefore.Success) {
+            beforeRank.Tier = MatchHelper.GetTier(_plugin.Localization.TranslateRankString(tierBefore.Value, ClientLanguage.English));
+        } else {
+            beforeRank.Tier = ArenaTier.None;
+        }
+        if(tierAfter.Success) {
+            afterRank.Tier = MatchHelper.GetTier(_plugin.Localization.TranslateRankString(tierAfter.Value, ClientLanguage.English));
+        } else {
+            afterRank.Tier = ArenaTier.None;
+        }
+        if(riserBefore.Success) {
+            if(int.TryParse(riserBefore.Value, out int parseResult)) {
+                beforeRank.Riser = parseResult;
+            }
+        }
+        if (riserAfter.Success) {
+            if (int.TryParse(riserAfter.Value, out int parseResult)) {
+                afterRank.Riser = parseResult;
+            }
+        }
+        if(starsBefore.Success) {
+            beforeRank.Stars = starsBefore.Length;
+        }
+        if (starsAfter.Success) {
+            afterRank.Stars = starsAfter.Length;
+        }
+        postMatch.RankBefore = beforeRank;
+        postMatch.RankAfter = afterRank;
 
         postMatch.Teams.Add(leftTeam.TeamName, leftTeam);
         postMatch.Teams.Add(rightTeam.TeamName, rightTeam);

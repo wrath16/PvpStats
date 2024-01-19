@@ -4,10 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace PvpStats.Services;
 internal class StorageService {
@@ -62,7 +59,7 @@ internal class StorageService {
         var callingMethod = new StackFrame(2, true).GetMethod();
         var writeMethod = new StackFrame(1, true).GetMethod();
 
-        _plugin.Log.Debug(string.Format("Invoking {0,-25} {2,-30}{3,-30} Caller: {1,-70}",
+        _plugin.Log.Verbose(string.Format("Invoking {0,-25} {2,-30}{3,-30} Caller: {1,-70}",
             writeMethod?.Name, $"{callingMethod?.DeclaringType?.ToString() ?? ""}.{callingMethod?.Name ?? ""}", id != null ? $"ID: {id}" : "", count != 0 ? $"Count: {count}" : ""));
     }
 

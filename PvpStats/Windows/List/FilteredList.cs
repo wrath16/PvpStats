@@ -1,15 +1,10 @@
 ﻿using Dalamud.Interface.Utility;
 using ImGuiNET;
 using LiteDB;
-using Newtonsoft.Json;
-using PvpStats.Windows.Detail;
-using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
 
@@ -21,7 +16,7 @@ public struct ColumnParams {
 
 internal abstract class FilteredList<T> {
 
-    private SemaphoreSlim _refreshLock = new SemaphoreSlim(1, 1);
+    //private SemaphoreSlim _refreshLock = new SemaphoreSlim(1, 1);
     protected Plugin _plugin;
 
     public const int PageSize = 100;
@@ -41,17 +36,26 @@ internal abstract class FilteredList<T> {
 
     public FilteredList(Plugin plugin) {
         _plugin = plugin;
-        Refresh();
+        GoToPage();
     }
 
-    public void Refresh(int? pageNumber = null) {
-        _plugin.DataQueue.QueueDataOperation(() => {
-            RefreshDataModel();
-            //null page number = stay on same page
-            pageNumber ??= PageNumber;
-            PageNumber = (int)pageNumber;
-            CurrentPage = DataModel.Skip(PageNumber * PageSize).Take(PageSize).ToList();
-        });
+    internal void Refresh(List<T> dataModel) {
+        DataModel = dataModel;
+        GoToPage();
+    }
+
+    public void GoToPage(int? pageNumber = null) {
+        //_plugin.DataQueue.QueueDataOperation(() => {
+        //    RefreshDataModel();
+        //    //null page number = stay on same page
+        //    pageNumber ??= PageNumber;
+        //    PageNumber = (int)pageNumber;
+        //    CurrentPage = DataModel.Skip(PageNumber * PageSize).Take(PageSize).ToList();
+        //});
+
+        pageNumber ??= PageNumber;
+        PageNumber = (int)pageNumber;
+        CurrentPage = DataModel.Skip(PageNumber * PageSize).Take(PageSize).ToList();
     }
 
     public void Draw() {
@@ -97,13 +101,19 @@ internal abstract class FilteredList<T> {
 
         if (PageNumber > 0) {
             if (ImGui.Button("Previous 100")) {
-                Refresh(PageNumber--);
+                _plugin.DataQueue.QueueDataOperation(() => {
+                    PageNumber--;
+                    GoToPage();
+                });
             }
         }
 
         if ((PageNumber + 1) * PageSize < DataModel.Count) {
             if (ImGui.Button("Next 100")) {
-                Refresh(PageNumber++);
+                _plugin.DataQueue.QueueDataOperation(() => {
+                    PageNumber++;
+                    GoToPage();
+                });
             }
         }
     }

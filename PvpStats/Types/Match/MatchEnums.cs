@@ -29,11 +29,11 @@ public enum CrystallineConflictMap {
 }
 
 public enum ArenaTier {
-    None,
-    Bronze,
-    Silver,
-    Gold,
-    Platinum,
-    Diamond,
-    Crystal
+    None = 0,
+    Bronze = 1,
+    Silver = 2,
+    Gold = 3,
+    Platinum = 4,
+    Diamond = 5,
+    Crystal = 6
 }

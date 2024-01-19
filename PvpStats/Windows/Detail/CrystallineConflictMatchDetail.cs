@@ -151,12 +151,21 @@ internal class CrystallineConflictMatchDetail : Window {
         ImGui.Text($"{_dataModel.MatchType}");
         ImGui.TableNextColumn();
         bool noWinner = _dataModel.MatchWinner is null;
-        bool isCustom = _dataModel.LocalPlayerTeam is null;
+        bool isSpectated = _dataModel.LocalPlayerTeam is null;
         bool isWin = _dataModel.MatchWinner == _dataModel.LocalPlayerTeam?.TeamName;
-        var color = isWin ? ImGuiColors.HealerGreen : ImGuiColors.DalamudRed;
+        var color = ImGuiColors.DalamudWhite;
         color = noWinner ? ImGuiColors.DalamudGrey : color;
-        string resultText = isWin ? "WIN" : "LOSS";
-        resultText = noWinner ? "UNKNOWN" : resultText;
+        string resultText = "";
+        if (isSpectated && _dataModel.MatchWinner is not null) {
+            color = _dataModel.MatchWinner == CrystallineConflictTeamName.Astra ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
+            resultText = MatchHelper.GetTeamName((CrystallineConflictTeamName)_dataModel.MatchWinner) + " WINS";
+        }
+        else {
+            color = isWin ? ImGuiColors.HealerGreen : ImGuiColors.DalamudRed;
+            color = noWinner ? ImGuiColors.DalamudGrey : color;
+            resultText = isWin ? "WIN" : "LOSS";
+            resultText = noWinner ? "UNKNOWN" : resultText;
+        }
         ImGuiHelpers.CenterCursorForText(resultText);
         ImGui.TextColored(color, resultText);
         ImGui.TableNextColumn();
@@ -211,12 +220,14 @@ internal class CrystallineConflictMatchDetail : Window {
                     ImGui.TableNextColumn();
                     string rank0 = firstTeam.Players[i].Rank?.Tier != ArenaTier.None ? firstTeam.Players[i].Rank!.ToString() : "";
                     ImGuiHelper.RightAlignCursor(rank0);
+                    ImGui.AlignTextToFramePadding();
                     ImGui.Text(rank0);
                     ImGui.TableNextColumn();
                     var playerColor0 = _dataModel.LocalPlayerTeam is not null && firstTeam.TeamName == _dataModel.LocalPlayerTeam.TeamName ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
                     playerColor0 = _dataModel.LocalPlayer.Equals(firstTeam.Players[i]) ? ImGuiColors.DalamudYellow : playerColor0;
                     string playerName0 = firstTeam.Players[i].Alias.Name;
                     ImGuiHelper.RightAlignCursor(playerName0);
+                    ImGui.AlignTextToFramePadding();
                     ImGui.TextColored(playerColor0, playerName0);
                     ImGui.TableNextColumn();
                     //string playerJob0 = firstTeam.Players[i].Job.ToString();
@@ -258,12 +269,18 @@ internal class CrystallineConflictMatchDetail : Window {
             ImGui.Text("Post game statistics unavailable.");
         }
         else {
+#if DEBUG
             foreach (var team in _dataModel.PostMatch.Teams) {
                 ImGui.Text($"{team.Key}: {team.Value.Progress}");
                 ImGui.SameLine();
             }
             ImGui.Text($"winner: {_dataModel.PostMatch.MatchWinner}");
             ImGui.NewLine();
+#endif
+
+            if (_dataModel.MatchType == CrystallineConflictMatchType.Ranked && _dataModel.PostMatch.RankBefore is not null && _dataModel.PostMatch.RankAfter is not null) {
+                ImGui.Text($"Rank Change: {_dataModel.PostMatch.RankBefore.ToString()} → {_dataModel.PostMatch.RankAfter.ToString()}");
+            }
 
             //ImGui.Checkbox("Show team contribution", ref _showPercentages);
             ImGuiComponents.ToggleButton("##showPercentages", ref _showPercentages);
@@ -279,8 +296,8 @@ internal class CrystallineConflictMatchDetail : Window {
 
     private void DrawStatsTable() {
 
-        ImGui.BeginTable($"players##{_dataModel.Id}", 13, ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable);
-        ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, (uint)SortableColumn.Name);
+        ImGui.BeginTable($"players##{_dataModel.Id}", 13, ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.ScrollX);
+        ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthFixed, (uint)SortableColumn.Name);
         ImGui.TableSetupColumn("Job", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 50f, (uint)SortableColumn.Job);
         ImGui.TableSetupColumn("Kills", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 52f, (uint)SortableColumn.Kills);
         ImGui.TableSetupColumn("Deaths", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 52f, (uint)SortableColumn.Deaths);
@@ -293,7 +310,7 @@ internal class CrystallineConflictMatchDetail : Window {
         ImGui.TableSetupColumn("Damage Dealt per Death", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)SortableColumn.DamageDealtPerDeath);
         ImGui.TableSetupColumn("Damage Taken per Death", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)SortableColumn.DamageTakenPerDeath);
         ImGui.TableSetupColumn("HP Restored per Death", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)SortableColumn.HPPerDeath);
-
+        ImGui.TableSetupScrollFreeze(1, 0);
         //ImGui.TableHeadersRow();
         ImGui.TableNextColumn();
         ImGui.TableHeader("");
@@ -357,7 +374,7 @@ internal class CrystallineConflictMatchDetail : Window {
             var textColor = _dataModel.LocalPlayer.Equals(row.Player) ? ImGuiColors.DalamudYellow : ImGuiColors.DalamudWhite;
             ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(rowColor));
             if (isPlayer) {
-                ImGui.TextColored(textColor, $" {row.Player.Name}");
+                ImGui.TextColored(textColor, $" {row.Player.Name} ");
             }
             else {
                 ImGui.TextColored(textColor, $" {MatchHelper.GetTeamName((CrystallineConflictTeamName)row.Team)}");

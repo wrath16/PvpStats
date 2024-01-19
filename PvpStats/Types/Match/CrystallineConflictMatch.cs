@@ -19,6 +19,7 @@ public class CrystallineConflictMatch {
     [BsonIgnore]
     public TimeSpan? MatchDuration => MatchEndTime - MatchStartTime;
     public CrystallineConflictTeamName? MatchWinner { get; set; }
+    public CrystallineConflictTeamName? OvertimeAdvantage { get; set; }
 
     public CrystallineConflictMatchType MatchType { get; set; }
     //should this be id only?
@@ -78,6 +79,10 @@ public class CrystallineConflictMatch {
     public CrystallineConflictMatch() {
         Id = new();
         DutyStartTime = DateTime.Now;
+    }
+
+    public override int GetHashCode() {
+        return Id.GetHashCode();
     }
 
 }

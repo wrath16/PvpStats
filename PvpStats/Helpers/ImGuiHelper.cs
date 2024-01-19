@@ -22,4 +22,13 @@ internal static class ImGuiHelper {
     //    var posY = ImGui.GetCursorPosY() + (ImGui.R - ImGui.CalcTextSize(text).Y) / 2f;
     //    ImGui.SetCursorPosY(posY);
     //}
+
+    internal static void HelpMarker(string text) {
+        ImGui.TextDisabled("(?)");
+        if (ImGui.IsItemHovered()) {
+            ImGui.BeginTooltip();
+            ImGui.Text(text);
+            ImGui.EndTooltip();
+        }
+    }
 }

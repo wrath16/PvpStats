@@ -3,11 +3,9 @@ using Dalamud.Game.Command;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Interface.Internal;
-using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
-using FFXIVClientStructs.FFXIV.Client.Game;
 using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json;
 using PvpStats.Helpers;
@@ -16,13 +14,9 @@ using PvpStats.Managers.Game;
 using PvpStats.Services;
 using PvpStats.Settings;
 using PvpStats.Types.Player;
-using PvpStats.Windows;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace PvpStats;
 

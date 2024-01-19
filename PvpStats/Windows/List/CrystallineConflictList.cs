@@ -4,9 +4,8 @@ using ImGuiNET;
 using PvpStats.Helpers;
 using PvpStats.Types.Match;
 using PvpStats.Windows.Detail;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
 internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> {
@@ -39,17 +38,30 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         ImGui.TableNextColumn();
         bool noWinner = item.MatchWinner is null;
         bool isWin = item.MatchWinner == item.LocalPlayerTeam?.TeamName;
-        var color = isWin ? ImGuiColors.HealerGreen : ImGuiColors.DalamudRed;
-        color = noWinner ? ImGuiColors.DalamudGrey : color;
-        string resultText = isWin ? "WIN" : "LOSS";
-        resultText = noWinner ? "UNKNOWN" : resultText;
+        bool isSpectated = item.LocalPlayerTeam is null;
+        var color = ImGuiColors.DalamudWhite;
+        string resultText = "";
+        if (isSpectated) {
+            color = ImGuiColors.DalamudWhite;
+            resultText = "N/A";
+        } else {
+            color = isWin ? ImGuiColors.HealerGreen : ImGuiColors.DalamudRed;
+            color = noWinner ? ImGuiColors.DalamudGrey : color;
+            resultText = isWin ? "WIN" : "LOSS";
+            resultText = noWinner ? "???" : resultText;
+        }
         ImGui.TextColored(color, resultText);
         //ImGui.TableNextColumn();
         //ImGui.TableNextRow();
     }
 
     public override void RefreshDataModel() {
-        DataModel = _plugin.Storage.GetCCMatches().Query().Where(m => !m.IsDeleted).OrderByDescending(m => m.DutyStartTime).ToList();
+//#if DEBUG
+//        DataModel = _plugin.Storage.GetCCMatches().Query().Where(m => !m.IsDeleted).OrderByDescending(m => m.DutyStartTime).ToList();
+//#else
+//        DataModel = _plugin.Storage.GetCCMatches().Query().Where(m => !m.IsDeleted && m.IsCompleted).OrderByDescending(m => m.DutyStartTime).ToList();
+//#endif
+
     }
 
     public override void OpenItemDetail(CrystallineConflictMatch item) {
@@ -60,7 +72,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
             try {
                 _plugin.WindowManager.AddWindow(itemDetail);
             }
-            catch {
+            catch (ArgumentException) {
                 //attempt to open existing window
                 _plugin.WindowManager.OpenMatchDetailsWindow(item.Id);
             }
@@ -68,18 +80,17 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
     }
 
     public override void OpenFullEditDetail(CrystallineConflictMatch item) {
-        var fullEditDetail = new FullEditDetail<CrystallineConflictMatch>(_plugin, item);
-        fullEditDetail.IsOpen = true;
-        try {
-            _plugin.WindowManager.AddWindow(fullEditDetail);
-        }
-        catch {
-            ////attempt to open existing window
-            //var window = _plugin.WindowSystem.Windows.Where(w => w.WindowName == $"Match Details: {item.Id}").FirstOrDefault();
-            //if (window is not null) {
-            //    window.BringToFront();
-            //    window.IsOpen = true;
-            //}
-        }
+        _plugin.DataQueue.QueueDataOperation(() => {
+            _plugin.Log.Debug($"Opening full edit details for...{item.Id}");
+            var fullEditDetail = new FullEditDetail<CrystallineConflictMatch>(_plugin, item);
+            fullEditDetail.IsOpen = true;
+            try {
+                _plugin.WindowManager.AddWindow(fullEditDetail);
+            }
+            catch (ArgumentException) {
+                //attempt to open existing window
+                _plugin.WindowManager.OpenFullEditWindow(item.Id);
+            }
+        });
     }
 }

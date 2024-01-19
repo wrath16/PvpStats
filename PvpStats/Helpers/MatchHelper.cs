@@ -31,12 +31,15 @@ public static class MatchHelper {
             case 912: //clockwork castletown
             case 967: //red sands
                 return CrystallineConflictMatchType.Casual;
+            case 853: //palaistra
             case 856: //palaistra
             case 857: //volcanic heart
+            case 855: //cloud 9
             case 858: //cloud 9
             case 918: //clockwork castletown
+            case 970: //red sands
             case 972: //red sands
-            case 973:
+            case 973: //red sands
                 return CrystallineConflictMatchType.Ranked;
             case 862: //palaistra
             case 863: //volcanic heart
@@ -107,17 +110,26 @@ public static class MatchHelper {
         }
     }
 
-    public static readonly Dictionary<ClientLanguage, Regex> CrystalCreditBeforeRegex = new() {
-            { ClientLanguage.English, new Regex(@"(?<=Crystal Credit\\n)[\d]*", RegexOptions.IgnoreCase) },
-            { ClientLanguage.French, new Regex(@"", RegexOptions.IgnoreCase) },
-            { ClientLanguage.German, new Regex(@"", RegexOptions.IgnoreCase) },
-            { ClientLanguage.Japanese, new Regex(@"", RegexOptions.IgnoreCase) }
-    };
+    //public static readonly Dictionary<ClientLanguage, Regex> CrystalCreditBeforeRegex = new() {
+    //        { ClientLanguage.English, new Regex(@"(?<=Crystal Credit\\n)[\d]*", RegexOptions.IgnoreCase) },
+    //        { ClientLanguage.French, new Regex(@"", RegexOptions.IgnoreCase) },
+    //        { ClientLanguage.German, new Regex(@"", RegexOptions.IgnoreCase) },
+    //        { ClientLanguage.Japanese, new Regex(@"", RegexOptions.IgnoreCase) }
+    //};
 
-    public static readonly Dictionary<ClientLanguage, Regex> CrystalCreditAfterRegex = new() {
-            { ClientLanguage.English, new Regex(@"\b[\d]*$", RegexOptions.IgnoreCase) },
-            { ClientLanguage.French, new Regex(@"", RegexOptions.IgnoreCase) },
-            { ClientLanguage.German, new Regex(@"", RegexOptions.IgnoreCase) },
-            { ClientLanguage.Japanese, new Regex(@"", RegexOptions.IgnoreCase) }
-    };
+    //public static readonly Dictionary<ClientLanguage, Regex> CrystalCreditAfterRegex = new() {
+    //        { ClientLanguage.English, new Regex(@"\b[\d]*$", RegexOptions.IgnoreCase) },
+    //        { ClientLanguage.French, new Regex(@"", RegexOptions.IgnoreCase) },
+    //        { ClientLanguage.German, new Regex(@"", RegexOptions.IgnoreCase) },
+    //        { ClientLanguage.Japanese, new Regex(@"", RegexOptions.IgnoreCase) }
+    //};
+
+    public static readonly Regex CreditBeforeRegex = new Regex(@"^\d+(?= →)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+    public static readonly Regex StarBeforeRegex = new Regex(@"(?<=^\w*\s*\d*\s*)★*(?=☆*\s*→)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+    public static readonly Regex RiserBeforeRegex = new Regex(@"(?<=^\w*\s?)\d*(?=\s?(★|☆)* →)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+    public static readonly Regex TierBeforeRegex = new Regex(@"^[^\d\s]+(?=\s?\d*\s?(★|☆)*\s?→)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+    public static readonly Regex CreditAfterRegex = new Regex(@"(?<=→ )\d+", RegexOptions.IgnoreCase);
+    public static readonly Regex StarAfterRegex = new Regex(@"★*(?=☆*$)", RegexOptions.IgnoreCase);
+    public static readonly Regex RiserAfterRegex = new Regex(@"\d*(?=\s?(★|☆)*$)", RegexOptions.IgnoreCase);
+    public static readonly Regex TierAfterRegex = new Regex(@"(?<=→\s)[^\d\s]+", RegexOptions.IgnoreCase);
 }

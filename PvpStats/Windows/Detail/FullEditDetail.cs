@@ -8,7 +8,6 @@ using System;
 using System.IO;
 using System.Numerics;
 using System.Reflection;
-using System.Reflection.Emit;
 
 namespace PvpStats.Windows.Detail;
 internal class FullEditDetail<T> : Window {
@@ -17,11 +16,12 @@ internal class FullEditDetail<T> : Window {
     private T _dataModel;
     private string _dataString;
 
-    public FullEditDetail(Plugin plugin, T dataRow) : base("Full Edit") {
+    public FullEditDetail(Plugin plugin, T dataRow) : base($"Full Edit: {dataRow.GetHashCode()}") {
         SizeConstraints = new WindowSizeConstraints {
             MinimumSize = new Vector2(500, 400),
             MaximumSize = new Vector2(800, 800)
         };
+        //Flags |= ImGuiWindowFlags.NoScrollbar;
 
         _plugin = plugin;
         _dataModel = dataRow;
@@ -37,17 +37,21 @@ internal class FullEditDetail<T> : Window {
         _dataString = stringWriter.ToString();
     }
 
+    public override void OnClose() {
+        _plugin.WindowManager.RemoveWindow(this);
+    }
+
     public override void Draw() {
-        if(ImGui.BeginChild("scrolling", new Vector2(0, -(25 + ImGui.GetStyle().ItemSpacing.Y) * ImGuiHelpers.GlobalScale), false, ImGuiWindowFlags.AlwaysAutoResize)) {
-            ImGui.InputTextMultiline("", ref _dataString, 999999, new Vector2(500, 500));
+        if (ImGui.BeginChild("scrolling", new Vector2(0, -(25 + ImGui.GetStyle().ItemSpacing.Y) * ImGuiHelpers.GlobalScale), false, ImGuiWindowFlags.AlwaysAutoResize)) {
+            ImGui.InputTextMultiline("", ref _dataString, 999999, new Vector2(ImGui.GetContentRegionAvail().X, ImGui.GetContentRegionAvail().Y));
             ImGui.EndChild();
         }
-        if(ImGui.Button("Save")) {
-            var returnValue = LiteDB.JsonSerializer.Deserialize(_dataString);
-            var x = BsonMapper.Global.Deserialize<CrystallineConflictMatch>(returnValue);
-            _plugin.Storage.UpdateCCMatch(x);
-
-
+        if (ImGui.Button("Save")) {
+            _plugin.DataQueue.QueueDataOperation(() => {
+                var returnValue = LiteDB.JsonSerializer.Deserialize(_dataString);
+                var x = BsonMapper.Global.Deserialize<CrystallineConflictMatch>(returnValue);
+                _plugin.Storage.UpdateCCMatch(x);
+            });
             //using(var reader = new StreamReader(_dataString)) {
             //    var returnValue = LiteDB.JsonSerializer.Deserialize(_dataString);
             //    var x = BsonMapper.Global.Deserialize<CrystallineConflictMatch>(returnValue);
@@ -66,17 +70,17 @@ internal class FullEditDetail<T> : Window {
 
         //BsonMapper.Global.ToDocument(typeof(T), _dataModel).ToString();
 
-        switch(prop.PropertyType) {
+        switch (prop.PropertyType) {
             case Type when prop.PropertyType == typeof(string):
                 stringData = data as string;
                 ImGui.InputText(prop.Name, ref stringData, 999, ImGuiInputTextFlags.None);
                 break;
-                case Type numType when prop.PropertyType.IsAssignableFrom(typeof(int)):
+            case Type numType when prop.PropertyType.IsAssignableFrom(typeof(int)):
                 //string? s = data as string;
                 stringData = data.ToString();
                 if (ImGui.InputText(prop.Name, ref stringData, 999, ImGuiInputTextFlags.CharsDecimal)) {
                     //tryparse
-                    
+
                 }
                 break;
 
@@ -84,8 +88,7 @@ internal class FullEditDetail<T> : Window {
                 break;
         }
 
-
-        if(prop.PropertyType == typeof(string)) {
+        if (prop.PropertyType == typeof(string)) {
 
         }
     }
