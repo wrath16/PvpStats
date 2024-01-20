@@ -44,7 +44,8 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         if (isSpectated) {
             color = ImGuiColors.DalamudWhite;
             resultText = "N/A";
-        } else {
+        }
+        else {
             color = isWin ? ImGuiColors.HealerGreen : ImGuiColors.DalamudRed;
             color = noWinner ? ImGuiColors.DalamudGrey : color;
             resultText = isWin ? "WIN" : "LOSS";
@@ -56,11 +57,11 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
     }
 
     public override void RefreshDataModel() {
-//#if DEBUG
-//        DataModel = _plugin.Storage.GetCCMatches().Query().Where(m => !m.IsDeleted).OrderByDescending(m => m.DutyStartTime).ToList();
-//#else
-//        DataModel = _plugin.Storage.GetCCMatches().Query().Where(m => !m.IsDeleted && m.IsCompleted).OrderByDescending(m => m.DutyStartTime).ToList();
-//#endif
+        //#if DEBUG
+        //        DataModel = _plugin.Storage.GetCCMatches().Query().Where(m => !m.IsDeleted).OrderByDescending(m => m.DutyStartTime).ToList();
+        //#else
+        //        DataModel = _plugin.Storage.GetCCMatches().Query().Where(m => !m.IsDeleted && m.IsCompleted).OrderByDescending(m => m.DutyStartTime).ToList();
+        //#endif
 
     }
 

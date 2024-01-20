@@ -1,30 +1,19 @@
 using Dalamud.Configuration;
 using System;
+using System.Threading;
 
 namespace PvpStats.Settings;
-
-public enum ProgressTableRate {
-    Total,
-    Previous
-}
-
-public enum ProgressTableCount {
-    All,
-    Last
-}
-
-public enum ClearSequenceCount {
-    All,
-    Last
-}
 
 [Serializable]
 public class Configuration : IPluginConfiguration {
     public static int CurrentVersion = 0;
     public int Version { get; set; } = CurrentVersion;
+    public FilterConfiguration MatchWindowFilters { get; set; } = new();
 
     [NonSerialized]
     private Plugin? _plugin;
+    [NonSerialized]
+    private SemaphoreSlim _fileLock = new SemaphoreSlim(1, 1);
 
     public Configuration() {
     }
@@ -34,6 +23,12 @@ public class Configuration : IPluginConfiguration {
     }
 
     public void Save() {
-        _plugin!.PluginInterface.SavePluginConfig(this);
+        try {
+            _fileLock.Wait();
+            _plugin!.PluginInterface.SavePluginConfig(this);
+        }
+        finally {
+            _fileLock.Release();
+        }
     }
 }

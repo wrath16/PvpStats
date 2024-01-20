@@ -1,5 +1,4 @@
-﻿using Dalamud;
-using PvpStats.Types.Match;
+﻿using PvpStats.Types.Match;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
@@ -33,9 +32,11 @@ public static class MatchHelper {
                 return CrystallineConflictMatchType.Casual;
             case 853: //palaistra
             case 856: //palaistra
+            case 854: //volcanid heart
             case 857: //volcanic heart
             case 855: //cloud 9
             case 858: //cloud 9
+            case 917: //clockwork castletown
             case 918: //clockwork castletown
             case 970: //red sands
             case 972: //red sands

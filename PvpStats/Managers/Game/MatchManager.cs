@@ -247,7 +247,7 @@ internal class MatchManager : IDisposable {
         string rightTeamProgress = rightProgressNode->NodeText.ToString();
 
         //limit number of tasks queued by checking for changes
-        if(isOvertime != _isOvertimePrev || timerMins != _timerMinsPrev || timerSeconds != _timerSecondsPrev 
+        if (isOvertime != _isOvertimePrev || timerMins != _timerMinsPrev || timerSeconds != _timerSecondsPrev
             || leftTeamProgress != _leftTeamProgressPrev || rightTeamProgress != _rightTeamProgressPrev) {
             _isOvertimePrev = isOvertime;
             _timerMinsPrev = timerMins;
@@ -369,16 +369,18 @@ internal class MatchManager : IDisposable {
 
         if (tierBefore.Success) {
             beforeRank.Tier = MatchHelper.GetTier(_plugin.Localization.TranslateRankString(tierBefore.Value, ClientLanguage.English));
-        } else {
+        }
+        else {
             beforeRank.Tier = ArenaTier.None;
         }
-        if(tierAfter.Success) {
+        if (tierAfter.Success) {
             afterRank.Tier = MatchHelper.GetTier(_plugin.Localization.TranslateRankString(tierAfter.Value, ClientLanguage.English));
-        } else {
+        }
+        else {
             afterRank.Tier = ArenaTier.None;
         }
-        if(riserBefore.Success) {
-            if(int.TryParse(riserBefore.Value, out int parseResult)) {
+        if (riserBefore.Success) {
+            if (int.TryParse(riserBefore.Value, out int parseResult)) {
                 beforeRank.Riser = parseResult;
             }
         }
@@ -387,7 +389,7 @@ internal class MatchManager : IDisposable {
                 afterRank.Riser = parseResult;
             }
         }
-        if(starsBefore.Success) {
+        if (starsBefore.Success) {
             beforeRank.Stars = starsBefore.Length;
         }
         if (starsAfter.Success) {

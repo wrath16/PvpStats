@@ -4,7 +4,6 @@ using LiteDB;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using System.Threading;
 
 namespace PvpStats.Windows.List;
 
@@ -98,9 +97,10 @@ internal abstract class FilteredList<T> {
         }
         ImGui.EndTable();
         ImGui.EndChild();
-
+        ImGui.Text("");
         if (PageNumber > 0) {
-            if (ImGui.Button("Previous 100")) {
+            ImGui.SameLine();
+            if (ImGui.Button($"Previous {PageSize}")) {
                 _plugin.DataQueue.QueueDataOperation(() => {
                     PageNumber--;
                     GoToPage();
@@ -109,7 +109,9 @@ internal abstract class FilteredList<T> {
         }
 
         if ((PageNumber + 1) * PageSize < DataModel.Count) {
-            if (ImGui.Button("Next 100")) {
+            ImGui.SameLine();
+            ImGui.SetCursorPosX(ImGui.GetContentRegionMax().X - 65f * ImGuiHelpers.GlobalScale);
+            if (ImGui.Button($"Next {PageSize}")) {
                 _plugin.DataQueue.QueueDataOperation(() => {
                     PageNumber++;
                     GoToPage();

@@ -1,14 +1,16 @@
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
+using Dalamud.Utility;
 using ImGuiNET;
 using PvpStats.Helpers;
+using PvpStats.Types.Match;
+using PvpStats.Types.Player;
 using PvpStats.Windows.Filter;
 using PvpStats.Windows.List;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using System.Reflection;
 using System.Threading;
 
 namespace PvpStats.Windows;
@@ -24,11 +26,16 @@ internal class MainWindow : Window {
         ForceMainWindow = true;
         PositionCondition = ImGuiCond.Always;
         SizeConstraints = new WindowSizeConstraints {
-            MinimumSize = new Vector2(300, 200),
+            MinimumSize = new Vector2(300, 400),
             MaximumSize = new Vector2(750, 1500)
         };
         _plugin = plugin;
-        Filters.Add(new MatchTypeFilter(plugin, Refresh));
+        Filters.Add(new MatchTypeFilter(plugin, Refresh, _plugin.Configuration.MatchWindowFilters.MatchTypeFilter));
+        Filters.Add(new ArenaFilter(plugin, Refresh, _plugin.Configuration.MatchWindowFilters.ArenaFilter));
+        Filters.Add(new TimeFilter(plugin, Refresh, _plugin.Configuration.MatchWindowFilters.TimeFilter));
+        Filters.Add(new LocalPlayerFilter(plugin, Refresh, _plugin.Configuration.MatchWindowFilters.LocalPlayerFilter));
+        Filters.Add(new OtherPlayerFilter(plugin, Refresh));
+        Filters.Add(new MiscFilter(plugin, Refresh, _plugin.Configuration.MatchWindowFilters.MiscFilter));
 
         ccMatches = new(plugin);
         _plugin.DataQueue.QueueDataOperation(Refresh);
@@ -51,18 +58,99 @@ internal class MainWindow : Window {
                     case Type _ when filter.GetType() == typeof(MatchTypeFilter):
                         var matchTypeFilter = (MatchTypeFilter)filter;
                         matches = matches.Where(x => matchTypeFilter.FilterState[x.MatchType]).ToList();
+                        _plugin.Configuration.MatchWindowFilters.MatchTypeFilter = matchTypeFilter;
+                        break;
+                    case Type _ when filter.GetType() == typeof(ArenaFilter):
+                        var arenaFilter = (ArenaFilter)filter;
+                        matches = matches.Where(x => arenaFilter.FilterState[x.Arena]).ToList();
+                        _plugin.Configuration.MatchWindowFilters.ArenaFilter = arenaFilter;
+                        break;
+                    case Type _ when filter.GetType() == typeof(TimeFilter):
+                        var timeFilter = (TimeFilter)filter;
+                        switch (timeFilter.StatRange) {
+                            case TimeRange.PastDay:
+                                matches = matches.Where(x => (DateTime.Now - x.DutyStartTime).TotalHours < 24).ToList();
+                                break;
+                            case TimeRange.PastWeek:
+                                matches = matches.Where(x => (DateTime.Now - x.DutyStartTime).TotalDays < 7).ToList();
+                                break;
+                            case TimeRange.ThisMonth:
+                                matches = matches.Where(x => x.DutyStartTime.Month == DateTime.Now.Month && x.DutyStartTime.Year == DateTime.Now.Year).ToList();
+                                break;
+                            case TimeRange.LastMonth:
+                                var lastMonth = DateTime.Now.AddMonths(-1);
+                                matches = matches.Where(x => x.DutyStartTime.Month == lastMonth.Month && x.DutyStartTime.Year == lastMonth.Year).ToList();
+                                break;
+                            case TimeRange.ThisYear:
+                                matches = matches.Where(x => x.DutyStartTime.Year == DateTime.Now.Year).ToList();
+                                break;
+                            case TimeRange.LastYear:
+                                matches = matches.Where(x => x.DutyStartTime.Year == DateTime.Now.AddYears(-1).Year).ToList();
+                                break;
+                            case TimeRange.Custom:
+                                matches = matches.Where(x => x.DutyStartTime > timeFilter.StartTime && x.DutyStartTime < timeFilter.EndTime).ToList();
+                                break;
+                            case TimeRange.Season:
+                                matches = matches.Where(x => x.DutyStartTime > ArenaSeason.Season[timeFilter.Season].StartDate && x.DutyStartTime < ArenaSeason.Season[timeFilter.Season].EndDate).ToList();
+                                break;
+                            case TimeRange.All:
+                            default:
+                                break;
+                        }
+                        _plugin.Configuration.MatchWindowFilters.TimeFilter = timeFilter;
+                        break;
+                    case Type _ when filter.GetType() == typeof(LocalPlayerFilter):
+                        var localPlayerFilter = (LocalPlayerFilter)filter;
+                        if (localPlayerFilter.CurrentPlayerOnly && _plugin.ClientState.IsLoggedIn) {
+                            matches = matches.Where(x => x.LocalPlayer != null && x.LocalPlayer.Equals((PlayerAlias)_plugin.GameState.GetCurrentPlayer())).ToList();
+                        }
+                        _plugin.Configuration.MatchWindowFilters.LocalPlayerFilter = localPlayerFilter;
+                        break;
+                    case Type _ when filter.GetType() == typeof(OtherPlayerFilter):
+                        var otherPlayerFilter = (OtherPlayerFilter)filter;
+                        if (!otherPlayerFilter.PlayerNamesRaw.IsNullOrEmpty()) {
+                            matches = matches.Where(x => {
+                                foreach (var team in x.Teams) {
+                                    if (otherPlayerFilter.TeamStatus == TeamStatus.Teammate && team.Key != x.LocalPlayerTeam?.TeamName) {
+                                        continue;
+                                    }
+                                    else if (otherPlayerFilter.TeamStatus == TeamStatus.Opponent && team.Key == x.LocalPlayerTeam?.TeamName) {
+                                        continue;
+                                    }
+                                    foreach (var player in team.Value.Players) {
+                                        if (!otherPlayerFilter.AnyJob && player.Job != otherPlayerFilter.PlayerJob) {
+                                            continue;
+                                        }
+                                        else if (player.Alias.FullName.Contains(otherPlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase)) {
+                                            return true;
+                                        }
+                                    }
+                                }
+                                return false;
+                            }).ToList();
+                        }
+                        //_plugin.Configuration.MatchWindowFilters.OtherPlayerFilter = otherPlayerFilter;
+                        break;
+                    case Type _ when filter.GetType() == typeof(MiscFilter):
+                        var miscFilter = (MiscFilter)filter;
+                        if (miscFilter.MustHaveStats) {
+                            matches = matches.Where(x => x.PostMatch is not null).ToList();
+                        }
+                        _plugin.Configuration.MatchWindowFilters.MiscFilter = miscFilter;
                         break;
                 }
             }
             ccMatches.Refresh(matches);
-        } finally {
+            _plugin.Configuration.Save();
+        }
+        finally {
             RefreshLock.Release();
         }
     }
 
     public override void Draw() {
 
-        if(ImGui.BeginChild("FilterChild", new Vector2(ImGui.GetContentRegionAvail().X, float.Max(ImGuiHelpers.GlobalScale * 150, ImGui.GetWindowHeight() / 4f)), true, ImGuiWindowFlags.AlwaysAutoResize)) {
+        if (ImGui.BeginChild("FilterChild", new Vector2(ImGui.GetContentRegionAvail().X, float.Max(ImGuiHelpers.GlobalScale * 150, ImGui.GetWindowHeight() / 4f)), true, ImGuiWindowFlags.AlwaysAutoResize)) {
             if (ImGui.BeginTable("FilterTable", 2, ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.BordersInnerH)) {
                 ImGui.BeginTable("FilterTable", 2, ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.BordersInner);
                 ImGui.TableSetupColumn("filterName", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 110f);

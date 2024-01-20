@@ -28,6 +28,20 @@ internal static class PlayerJobHelper {
         { Job.RDM, "Red Mage" },
     };
 
+    internal static Dictionary<JobRole, string> JobRoleName = new Dictionary<JobRole, string>() {
+        { JobRole.TANK, "Tank" },
+        { JobRole.HEALER, "Healer" },
+        { JobRole.DPS, "DPS" },
+    };
+
+    internal static Dictionary<JobSubRole, string> JobSubRoleName = new Dictionary<JobSubRole, string>() {
+        { JobSubRole.TANK, "Tank" },
+        { JobSubRole.HEALER, "Healer" },
+        { JobSubRole.MELEE, "Melee" },
+        { JobSubRole.RANGED, "Ranged" },
+        { JobSubRole.CASTER, "Caster" },
+    };
+
     internal static Dictionary<Job, uint> JobIcons = new() {
         { Job.PLD, 62119 },
         { Job.WAR, 62121 },

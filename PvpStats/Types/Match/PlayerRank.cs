@@ -27,11 +27,11 @@ public class PlayerRank {
         get {
             int starCount = 0;
             //add from previous tiers
-            for(int i = (int)Tier - 1; i >= 0; i--) {
+            for (int i = (int)Tier - 1; i >= 0; i--) {
                 starCount += RisersPerTier[(ArenaTier)i] * StarsPerRiser;
             }
             //add from previous risers
-            if(Riser is not null) {
+            if (Riser is not null) {
                 starCount += (RisersPerTier[Tier] - (int)Riser) * StarsPerRiser;
             }
             starCount += Stars ?? 0;
@@ -78,20 +78,21 @@ public class PlayerRank {
 
     public override string ToString() {
         string rank = "";
-        if(Tier != ArenaTier.None) {
+        if (Tier != ArenaTier.None) {
             rank += $"{Tier}";
         }
-        if(Riser != null) {
+        if (Riser != null) {
             rank += $" {Riser} ";
         }
         if (Stars != null) {
-            for(int i = 0; i < Stars; i++) {
+            for (int i = 0; i < Stars; i++) {
                 rank += "★";
             }
-            for (int i = 0; i <  3 - Stars; i++) {
+            for (int i = 0; i < 3 - Stars; i++) {
                 rank += "☆";
             }
-        } else if(Credit != null) {
+        }
+        else if (Credit != null) {
             rank += $" {Credit}";
         }
         return rank.Trim();

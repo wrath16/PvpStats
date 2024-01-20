@@ -1,12 +1,8 @@
 ﻿using Dalamud.Interface.Utility;
 using ImGuiNET;
-using PvpStats.Helpers;
 using PvpStats.Types.Match;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Filter;
 public class MatchTypeFilter : DataFilter {
