@@ -64,7 +64,7 @@ public class CrystallineConflictMatch {
         get {
             foreach (var team in Teams) {
                 foreach (var player in team.Value.Players) {
-                    if (player.Equals(LocalPlayer)) {
+                    if (LocalPlayer.Equals(player)) {
                         return player;
                     }
                 }

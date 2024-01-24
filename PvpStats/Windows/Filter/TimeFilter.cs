@@ -15,7 +15,6 @@ public enum TimeRange {
     LastYear,
     All,
     Season,
-    Patch,
     Custom
 }
 
@@ -23,7 +22,7 @@ public class TimeFilter : DataFilter {
     public override string Name => "Time";
 
     public TimeRange StatRange { get; set; } = TimeRange.All;
-    public static string[] Range = { "Past 24 hours", "Past 7 days", "This month", "Last month", "This year", "Last year", "All-time", "By season", "By patch", "Custom" };
+    public static string[] Range = { "Past 24 hours", "Past 7 days", "This month", "Last month", "This year", "Last year", "All-time", "By season", "Custom" };
 
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
@@ -45,7 +44,8 @@ public class TimeFilter : DataFilter {
     internal override void Draw() {
         int statRangeToInt = (int)StatRange;
         int seasonIndex = Season - 1;
-        ImGui.SetNextItemWidth(float.Min(ImGui.GetContentRegionAvail().X / 2f, ImGuiHelpers.GlobalScale * 125f));
+        //ImGui.SetNextItemWidth(float.Min(ImGui.GetContentRegionAvail().X / 2f, ImGuiHelpers.GlobalScale * 125f));
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
         if (ImGui.Combo($"##timeRangeCombo", ref statRangeToInt, Range, Range.Length)) {
             _plugin!.DataQueue.QueueDataOperation(() => {
                 StatRange = (TimeRange)statRangeToInt;

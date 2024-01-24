@@ -66,8 +66,4 @@
 	<PackageReference Include="LiteDB" Version="5.0.16" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Windows\Summary\" />
-  </ItemGroup>
-
 </Project>

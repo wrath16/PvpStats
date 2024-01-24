@@ -34,6 +34,7 @@ public sealed class Plugin : IDalamudPlugin {
     private ICommandManager CommandManager { get; init; }
     internal IDataManager DataManager { get; init; }
     internal IClientState ClientState { get; init; }
+    internal IGameNetwork GameNetwork { get; init; }
     internal ICondition Condition { get; init; }
     internal IDutyState DutyState { get; init; }
     internal IPartyList PartyList { get; init; }
@@ -73,6 +74,7 @@ public sealed class Plugin : IDalamudPlugin {
         [RequiredVersion("1.0")] ICommandManager commandManager,
         [RequiredVersion("1.0")] IDataManager dataManager,
         [RequiredVersion("1.0")] IClientState clientState,
+        [RequiredVersion("1.0")] IGameNetwork gameNetwork,
         [RequiredVersion("1.0")] ICondition condition,
         [RequiredVersion("1.0")] IDutyState dutyState,
         [RequiredVersion("1.0")] IPartyList partyList,
@@ -88,6 +90,7 @@ public sealed class Plugin : IDalamudPlugin {
             CommandManager = commandManager;
             DataManager = dataManager;
             ClientState = clientState;
+            GameNetwork = gameNetwork;
             Condition = condition;
             DutyState = dutyState;
             PartyList = partyList;
@@ -132,6 +135,7 @@ public sealed class Plugin : IDalamudPlugin {
 
             DataQueue = new(this);
             Storage = new(this, $"{PluginInterface.GetPluginConfigDirectory()}\\{DatabaseName}");
+            Functions = new(this);
             GameState = new(this);
             Localization = new(this);
             WindowManager = new(this);
@@ -143,14 +147,12 @@ public sealed class Plugin : IDalamudPlugin {
                 HelpMessage = "Opens stats window."
             });
 
-            //#if DEBUG
-            //            DebugWindow = new DebugWindow(this);
-            //            WindowSystem.AddWindow(DebugWindow);
-            //            CommandManager.AddHandler(DebugCommandName, new CommandInfo(OnDebugCommand) {
-            //                HelpMessage = "Opens debug window."
-            //            });
-            //            DataReadWrite = true;
-            //#endif
+#if DEBUG
+            CommandManager.AddHandler(DebugCommandName, new CommandInfo(OnDebugCommand) {
+                HelpMessage = "Opens debug window."
+            });
+            DataReadWrite = true;
+#endif
 
             CommandManager.AddHandler(ConfigCommandName, new CommandInfo(OnConfigCommand) {
                 HelpMessage = "Open settings window."

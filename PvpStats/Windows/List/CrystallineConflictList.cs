@@ -30,7 +30,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         //    _plugin.Log.Debug($"{item.DutyStartTime.ToString()} selected!");
         //}
         //ImGui.TableNextColumn();
-        ImGui.Text($"{item.DutyStartTime}");
+        ImGui.Text($"{item.DutyStartTime.ToString("MM/dd/yyyy HH:mm")}");
         ImGui.TableNextColumn();
         ImGui.Text($"{MatchHelper.GetArenaName(item.Arena)}");
         ImGui.TableNextColumn();

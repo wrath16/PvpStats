@@ -121,6 +121,37 @@ internal static class PlayerJobHelper {
         }
     }
 
+    internal static JobSubRole? GetSubRoleFromJob(Job job) {
+        switch (job) {
+            case Job.PLD:
+            case Job.WAR:
+            case Job.DRK:
+            case Job.GNB:
+                return JobSubRole.TANK;
+            case Job.WHM:
+            case Job.SCH:
+            case Job.AST:
+            case Job.SGE:
+                return JobSubRole.HEALER;
+            case Job.MNK:
+            case Job.DRG:
+            case Job.NIN:
+            case Job.SAM:
+            case Job.RPR:
+                return JobSubRole.MELEE;
+            case Job.BRD:
+            case Job.MCH:
+            case Job.DNC:
+                return JobSubRole.RANGED;
+            case Job.BLM:
+            case Job.SMN:
+            case Job.RDM:
+                return JobSubRole.CASTER;
+            default:
+                return null;
+        }
+    }
+
     internal static Job? GetJobFromIcon(uint iconId) {
         foreach (var kvp in JobIcons) {
             if (kvp.Value == iconId) {

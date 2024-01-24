@@ -49,6 +49,7 @@ public class ArenaFilter : DataFilter {
     internal override void Draw() {
         int currentIndex = CurrentIndex;
         //bool allSelected = AllSelected;
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2);
         if (ImGui.Combo($"##arenaRangeCombo", ref currentIndex, _range.ToArray(), _range.Count)) {
             _plugin!.DataQueue.QueueDataOperation(() => {
                 CurrentIndex = currentIndex;

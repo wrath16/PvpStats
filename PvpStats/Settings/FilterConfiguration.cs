@@ -7,5 +7,6 @@ public class FilterConfiguration {
     public ArenaFilter? ArenaFilter { get; set; }
     public TimeFilter? TimeFilter { get; set; }
     public LocalPlayerFilter? LocalPlayerFilter { get; set; }
+    public LocalPlayerJobFilter? LocalPlayerJobFilter { get; set; }
     public MiscFilter? MiscFilter { get; set; }
 }
