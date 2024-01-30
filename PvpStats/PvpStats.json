@@ -1,10 +1,10 @@
 {
   "Author": "SaMo",
-  "Name": "The Wolf's Heart",
+  "Name": "PvP Tracker",
   "Punchline": "PvP stats and match history.",
-  "Description": "Record and browse PvP match history and statistics.",
+  "Description": "Record and browse PvP match history and statistics. Currently only supports Crystalline Conflict.",
   "InternalName": "PvpStats",
-  "RepoUrl": "",
+  "RepoUrl": "https://github.com/wrath16/PvpStats",
   "ApplicableVersion": "any",
   "Changelog": "Initial release.",
   "Tags": [
