@@ -1,10 +1,9 @@
 ﻿using ImGuiNET;
+using PvpStats.Helpers;
 using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Filter;
 public class LocalPlayerJobFilter : DataFilter {
@@ -28,7 +27,7 @@ public class LocalPlayerJobFilter : DataFilter {
             _jobCombo.Add(role.ToString());
         }
         foreach (var job in allJobs) {
-            _jobCombo.Add(job.ToString());
+            _jobCombo.Add(PlayerJobHelper.GetNameFromJob(job));
         }
 
         if (filter is not null) {

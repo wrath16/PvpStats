@@ -3,6 +3,7 @@ using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
+using Dalamud.Game.Network;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.GeneratedSheets2;
@@ -10,6 +11,7 @@ using PvpStats.Helpers;
 using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -30,12 +32,15 @@ internal class MatchManager : IDisposable {
     string _leftTeamProgressPrev = "";
     string _rightTeamProgressPrev = "";
 
+    Dictionary<ushort, uint> _opCodeCount = new();
+
     public MatchManager(Plugin plugin) {
         _plugin = plugin;
 
         _plugin.ClientState.TerritoryChanged += OnTerritoryChanged;
         _plugin.DutyState.DutyCompleted += OnDutyCompleted;
         _plugin.DutyState.DutyStarted += OnDutyStarted;
+        _plugin.GameNetwork.NetworkMessage += OnNetworkMessage;
 
         _plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "PvPMKSIntroduction", OnPvPIntro);
         _plugin.AddonLifecycle.RegisterListener(AddonEvent.PostUpdate, "PvPMKSHeader", OnPvPHeaderUpdate);
@@ -50,10 +55,28 @@ internal class MatchManager : IDisposable {
         _plugin.ClientState.TerritoryChanged -= OnTerritoryChanged;
         _plugin.DutyState.DutyCompleted -= OnDutyCompleted;
         _plugin.DutyState.DutyStarted -= OnDutyStarted;
+        _plugin.GameNetwork.NetworkMessage -= OnNetworkMessage;
 
         _plugin.AddonLifecycle.UnregisterListener(OnPvPIntro);
         _plugin.AddonLifecycle.UnregisterListener(OnPvPHeaderUpdate);
         _plugin.AddonLifecycle.UnregisterListener(OnPvPResults);
+    }
+
+    private void OnNetworkMessage(nint dataPtr, ushort opCode, uint sourceActorId, uint targetActorId, NetworkMessageDirection direction) {
+        if (!IsMatchInProgress()) {
+            return;
+        }
+        if (direction != NetworkMessageDirection.ZoneDown) {
+            return;
+        }
+
+        _plugin.Log.Verbose($"OPCODE: {opCode} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
+        if (_opCodeCount.ContainsKey(opCode)) {
+            _opCodeCount[opCode]++;
+        }
+        else {
+            _opCodeCount.Add(opCode, 1);
+        }
     }
 
     private void OnTerritoryChanged(ushort territoryId) {
@@ -74,10 +97,17 @@ internal class MatchManager : IDisposable {
             });
         }
         else {
-            _plugin.DataQueue.QueueDataOperation(() => {
-                _currentMatch = null;
-                _plugin.WindowManager.Refresh();
-            });
+            if (IsMatchInProgress()) {
+                _plugin.DataQueue.QueueDataOperation(() => {
+                    _plugin.Log.Debug("Opcodes:");
+                    foreach (var opcode in _opCodeCount.OrderByDescending(x => x.Value)) {
+                        _plugin.Log.Debug($"opcode {opcode.Key}: {opcode.Value}");
+                    }
+                    _opCodeCount = new();
+                    _currentMatch = null;
+                    _plugin.WindowManager.Refresh();
+                });
+            }
         }
     }
 
@@ -350,9 +380,11 @@ internal class MatchManager : IDisposable {
         var tierBefore = MatchHelper.TierBeforeRegex.Match(rankChange);
         var riserBefore = MatchHelper.RiserBeforeRegex.Match(rankChange);
         var starsBefore = MatchHelper.StarBeforeRegex.Match(rankChange);
+        var creditBefore = MatchHelper.CreditBeforeRegex.Match(rankChange);
         var tierAfter = MatchHelper.TierAfterRegex.Match(rankChange);
         var riserAfter = MatchHelper.RiserAfterRegex.Match(rankChange);
         var starsAfter = MatchHelper.StarAfterRegex.Match(rankChange);
+        var creditAfter = MatchHelper.CreditAfterRegex.Match(rankChange);
 
         _plugin.Log.Debug($"{matchWinner}");
         _plugin.Log.Debug($"match duration: {matchDuration}");
@@ -369,32 +401,42 @@ internal class MatchManager : IDisposable {
 
         if (tierBefore.Success) {
             beforeRank.Tier = MatchHelper.GetTier(_plugin.Localization.TranslateRankString(tierBefore.Value, ClientLanguage.English));
-        }
-        else {
+        } else if(creditBefore.Success) {
+            beforeRank.Tier = ArenaTier.Crystal;
+            if (int.TryParse(creditBefore.Value, out int parseResult)) {
+                beforeRank.Credit = parseResult;
+            }
+        } else {
             beforeRank.Tier = ArenaTier.None;
         }
         if (tierAfter.Success) {
             afterRank.Tier = MatchHelper.GetTier(_plugin.Localization.TranslateRankString(tierAfter.Value, ClientLanguage.English));
         }
-        else {
+        else if (creditAfter.Success) {
+            afterRank.Tier = ArenaTier.Crystal;
+            if (int.TryParse(creditAfter.Value, out int parseResult)) {
+                afterRank.Credit = parseResult;
+            }
+        } else {
             afterRank.Tier = ArenaTier.None;
         }
-        if (riserBefore.Success) {
+        if (riserBefore.Success && beforeRank.Tier != ArenaTier.Crystal) {
             if (int.TryParse(riserBefore.Value, out int parseResult)) {
                 beforeRank.Riser = parseResult;
             }
         }
-        if (riserAfter.Success) {
+        if (riserAfter.Success && afterRank.Tier != ArenaTier.Crystal) {
             if (int.TryParse(riserAfter.Value, out int parseResult)) {
                 afterRank.Riser = parseResult;
             }
         }
-        if (starsBefore.Success) {
+        if (starsBefore.Success && beforeRank.Tier != ArenaTier.Crystal) {
             beforeRank.Stars = starsBefore.Length;
         }
-        if (starsAfter.Success) {
+        if (starsAfter.Success && afterRank.Tier != ArenaTier.Crystal) {
             afterRank.Stars = starsAfter.Length;
         }
+
         postMatch.RankBefore = beforeRank;
         postMatch.RankAfter = afterRank;
 

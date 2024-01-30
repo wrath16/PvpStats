@@ -1,6 +1,5 @@
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
-using Dalamud.Utility;
 using ImGuiNET;
 using PvpStats.Helpers;
 using PvpStats.Types.Match;
@@ -28,7 +27,7 @@ internal class MainWindow : Window {
         ForceMainWindow = true;
         PositionCondition = ImGuiCond.Always;
         SizeConstraints = new WindowSizeConstraints {
-            MinimumSize = new Vector2(300, 400),
+            MinimumSize = new Vector2(400, 400),
             MaximumSize = new Vector2(750, 1500)
         };
         _plugin = plugin;
@@ -105,7 +104,7 @@ internal class MainWindow : Window {
                         break;
                     case Type _ when filter.GetType() == typeof(LocalPlayerFilter):
                         var localPlayerFilter = (LocalPlayerFilter)filter;
-                        if (localPlayerFilter.CurrentPlayerOnly && _plugin.ClientState.IsLoggedIn) {
+                        if (localPlayerFilter.CurrentPlayerOnly && _plugin.ClientState.IsLoggedIn && _plugin.GameState.GetCurrentPlayer() != null) {
                             matches = matches.Where(x => x.LocalPlayer != null && x.LocalPlayer.Equals((PlayerAlias)_plugin.GameState.GetCurrentPlayer())).ToList();
                         }
                         _plugin.Configuration.MatchWindowFilters.LocalPlayerFilter = localPlayerFilter;
@@ -114,9 +113,10 @@ internal class MainWindow : Window {
                         var localPlayerJobFilter = (LocalPlayerJobFilter)filter;
                         //_plugin.Log.Debug($"anyjob: {localPlayerJobFilter.AnyJob} role: {localPlayerJobFilter.JobRole} job: {localPlayerJobFilter.PlayerJob}");
                         if (!localPlayerJobFilter.AnyJob) {
-                            if(localPlayerJobFilter.JobRole != null) {
+                            if (localPlayerJobFilter.JobRole != null) {
                                 matches = matches.Where(x => x.LocalPlayer != null && x.LocalPlayerTeamMember != null && PlayerJobHelper.GetSubRoleFromJob(x.LocalPlayerTeamMember.Job) == localPlayerJobFilter.JobRole).ToList();
-                            } else {
+                            }
+                            else {
                                 matches = matches.Where(x => x.LocalPlayer != null && x.LocalPlayerTeamMember != null && x.LocalPlayerTeamMember.Job == localPlayerJobFilter.PlayerJob).ToList();
                             }
                         }
@@ -212,7 +212,7 @@ internal class MainWindow : Window {
             }
 
             if (ImGui.BeginTabItem("Summary")) {
-                if(ImGui.BeginChild("SummaryChild")) {
+                if (ImGui.BeginChild("SummaryChild")) {
                     ccSummary.Draw();
                     ImGui.EndChild();
                 }

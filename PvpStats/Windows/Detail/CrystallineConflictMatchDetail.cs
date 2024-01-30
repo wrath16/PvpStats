@@ -13,33 +13,33 @@ using System.Threading;
 
 namespace PvpStats.Windows.Detail;
 
-enum SortableColumn {
-    Name,
-    Job,
-    Kills,
-    Deaths,
-    Assists,
-    DamageDealt,
-    DamageTaken,
-    HPRestored,
-    TimeOnCrystal,
-    DamageDealtPerKillAssist,
-    DamageDealtPerDeath,
-    DamageTakenPerDeath,
-    HPPerDeath,
-    HPPerTeamDeath,
-    KDA,
-}
-
-public struct TeamContribution {
-    public double Kills, Deaths, Assists, DamageDealt, DamageTaken, HPRestored, TimeOnCrystal;
-}
-
-public struct AdvancedStats {
-    public double DamageDealtPerKillAssist, DamageDealtPerDeath, DamageTakenPerDeath, HPPerDeath;
-}
-
 internal class CrystallineConflictMatchDetail : Window {
+
+    private enum SortableColumn {
+        Name,
+        Job,
+        Kills,
+        Deaths,
+        Assists,
+        DamageDealt,
+        DamageTaken,
+        HPRestored,
+        TimeOnCrystal,
+        DamageDealtPerKillAssist,
+        DamageDealtPerDeath,
+        DamageTakenPerDeath,
+        HPPerDeath,
+        HPPerTeamDeath,
+        KDA,
+    }
+
+    private struct TeamContribution {
+        public double Kills, Deaths, Assists, DamageDealt, DamageTaken, HPRestored, TimeOnCrystal;
+    }
+
+    private struct AdvancedStats {
+        public double DamageDealtPerKillAssist, DamageDealtPerDeath, DamageTakenPerDeath, HPPerDeath;
+    }
 
     private Plugin _plugin;
     private CrystallineConflictMatch _dataModel;

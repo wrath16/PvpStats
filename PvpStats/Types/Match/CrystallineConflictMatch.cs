@@ -74,6 +74,12 @@ public class CrystallineConflictMatch {
     }
 
     [BsonIgnore]
+    public bool IsWin => LocalPlayerTeam != null && MatchWinner == LocalPlayerTeam.TeamName;
+
+    [BsonIgnore]
+    public bool IsSpectated => LocalPlayerTeam is null;
+
+    [BsonIgnore]
     public bool IsCommenced => MatchStartTime != null;
 
     public CrystallineConflictMatch() {

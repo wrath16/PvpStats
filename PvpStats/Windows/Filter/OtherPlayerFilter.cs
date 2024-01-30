@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using PvpStats.Helpers;
 using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
@@ -30,7 +31,7 @@ public class OtherPlayerFilter : DataFilter {
         var allJobs = Enum.GetValues(typeof(Job)).Cast<Job>();
         _jobCombo.Add("Any Job");
         foreach (var job in allJobs) {
-            _jobCombo.Add(job.ToString());
+            _jobCombo.Add(PlayerJobHelper.GetNameFromJob(job));
         }
 
         if (filter is not null) {

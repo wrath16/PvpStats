@@ -3,6 +3,7 @@
 namespace PvpStats.Services;
 internal class GameStateService {
     private Plugin _plugin;
+    private string _lastCurrentPlayer;
 
     internal GameStateService(Plugin plugin) {
         _plugin = plugin;
@@ -15,11 +16,10 @@ internal class GameStateService {
     public string GetCurrentPlayer() {
         string? currentPlayerName = _plugin.ClientState.LocalPlayer?.Name?.ToString();
         string? currentPlayerWorld = _plugin.ClientState.LocalPlayer?.HomeWorld?.GameData?.Name?.ToString();
-        if (currentPlayerName == null || currentPlayerWorld == null) {
-            //throw exception?
-            //throw new InvalidOperationException("Cannot retrieve current player");
-            return null;
+        if ((currentPlayerName == null || currentPlayerWorld == null) && _lastCurrentPlayer != null) {
+            return _lastCurrentPlayer;
         }
-        return $"{currentPlayerName} {currentPlayerWorld}";
+        _lastCurrentPlayer = $"{currentPlayerName} {currentPlayerWorld}";
+        return _lastCurrentPlayer;
     }
 }

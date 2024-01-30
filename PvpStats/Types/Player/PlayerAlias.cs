@@ -74,4 +74,12 @@ public class PlayerAlias : IEquatable<PlayerAlias>, IEquatable<CrystallineConfli
         }
         return FullName.Equals(other, StringComparison.OrdinalIgnoreCase);
     }
+
+    public override string ToString() {
+        return FullName;
+    }
+
+    public override int GetHashCode() {
+        return 0;
+    }
 }

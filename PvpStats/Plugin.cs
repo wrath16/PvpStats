@@ -25,9 +25,9 @@ public sealed class Plugin : IDalamudPlugin {
 
     internal const string DatabaseName = "data.db";
 
-    private const string CommandName = "/pvpstats";
+    private const string CCStatsCommandName = "/ccstats";
     private const string DebugCommandName = "/pvpstatsdebug";
-    private const string ConfigCommandName = "/pvpstatsconfig";
+    //private const string ConfigCommandName = "/pvpstatsconfig";
 
     //Dalamud services
     internal DalamudPluginInterface PluginInterface { get; init; }
@@ -143,7 +143,7 @@ public sealed class Plugin : IDalamudPlugin {
 
             //            MainWindow = new MainWindow(this);
             //            WindowSystem.AddWindow(MainWindow);
-            CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand) {
+            CommandManager.AddHandler(CCStatsCommandName, new CommandInfo(OnCommand) {
                 HelpMessage = "Opens stats window."
             });
 
@@ -154,9 +154,9 @@ public sealed class Plugin : IDalamudPlugin {
             DataReadWrite = true;
 #endif
 
-            CommandManager.AddHandler(ConfigCommandName, new CommandInfo(OnConfigCommand) {
-                HelpMessage = "Open settings window."
-            });
+            //CommandManager.AddHandler(ConfigCommandName, new CommandInfo(OnConfigCommand) {
+            //    HelpMessage = "Open settings window."
+            //});
 
             ChatGui.ChatMessage += OnChatMessage;
             //ClientState.TerritoryChanged += OnTerritoryChanged;
@@ -199,8 +199,8 @@ public sealed class Plugin : IDalamudPlugin {
 #endif
 
         //WindowSystem.RemoveAllWindows();
-        CommandManager.RemoveHandler(CommandName);
-        CommandManager.RemoveHandler(ConfigCommandName);
+        CommandManager.RemoveHandler(CCStatsCommandName);
+        //CommandManager.RemoveHandler(ConfigCommandName);
 
         ChatGui.ChatMessage -= OnChatMessage;
 

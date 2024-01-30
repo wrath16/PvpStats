@@ -36,23 +36,23 @@ internal class StorageService {
 
     internal void AddCCMatch(CrystallineConflictMatch match, bool toSave = true) {
         LogUpdate(match.Id.ToString());
-        WriteToDatabase(() => GetCCMatches().Insert(match));
+        WriteToDatabase(() => GetCCMatches().Insert(match), toSave);
     }
 
     internal void AddCCMatches(IEnumerable<CrystallineConflictMatch> matches, bool toSave = true) {
         LogUpdate(null, matches.Count());
-        WriteToDatabase(() => GetCCMatches().Insert(matches.Where(m => m.Id != null)));
+        WriteToDatabase(() => GetCCMatches().Insert(matches.Where(m => m.Id != null)), toSave);
 
     }
 
     internal void UpdateCCMatch(CrystallineConflictMatch match, bool toSave = true) {
         LogUpdate(match.Id.ToString());
-        WriteToDatabase(() => GetCCMatches().Update(match));
+        WriteToDatabase(() => GetCCMatches().Update(match), toSave);
     }
 
     internal void UpdateCCMatches(IEnumerable<CrystallineConflictMatch> matches, bool toSave = true) {
         LogUpdate(null, matches.Count());
-        WriteToDatabase(() => GetCCMatches().Update(matches.Where(m => m.Id != null)));
+        WriteToDatabase(() => GetCCMatches().Update(matches.Where(m => m.Id != null)), toSave);
     }
 
     private void LogUpdate(string? id = null, int count = 0) {

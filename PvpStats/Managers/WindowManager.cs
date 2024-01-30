@@ -18,7 +18,7 @@ internal class WindowManager : IDisposable {
 
         //MainWindow = new();
         _plugin.PluginInterface.UiBuilder.Draw += DrawUI;
-        _plugin.PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
+        //_plugin.PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
 
         MainWindow = new(plugin);
         WindowSystem.AddWindow(MainWindow);
@@ -38,7 +38,7 @@ internal class WindowManager : IDisposable {
     public void Dispose() {
         WindowSystem.RemoveAllWindows();
         _plugin.PluginInterface.UiBuilder.Draw -= DrawUI;
-        _plugin.PluginInterface.UiBuilder.OpenConfigUi -= DrawConfigUI;
+        //_plugin.PluginInterface.UiBuilder.OpenConfigUi -= DrawConfigUI;
     }
 
     internal void AddWindow(Window window) {
