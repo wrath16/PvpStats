@@ -91,8 +91,7 @@ public class PlayerRank {
             for (int i = 0; i < 3 - Stars; i++) {
                 rank += "☆";
             }
-        }
-        else if (Credit != null) {
+        } else if (Credit != null) {
             rank += $" {Credit}";
         }
         return rank.Trim();

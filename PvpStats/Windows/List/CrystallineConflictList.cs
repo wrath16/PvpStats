@@ -44,8 +44,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         if (isSpectated) {
             color = ImGuiColors.DalamudWhite;
             resultText = "N/A";
-        }
-        else {
+        } else {
             color = isWin ? ImGuiColors.HealerGreen : ImGuiColors.DalamudRed;
             color = noWinner ? ImGuiColors.DalamudGrey : color;
             resultText = isWin ? "WIN" : "LOSS";
@@ -72,8 +71,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
             itemDetail.IsOpen = true;
             try {
                 _plugin.WindowManager.AddWindow(itemDetail);
-            }
-            catch (ArgumentException) {
+            } catch (ArgumentException) {
                 //attempt to open existing window
                 _plugin.WindowManager.OpenMatchDetailsWindow(item.Id);
             }
@@ -87,8 +85,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
             fullEditDetail.IsOpen = true;
             try {
                 _plugin.WindowManager.AddWindow(fullEditDetail);
-            }
-            catch (ArgumentException) {
+            } catch (ArgumentException) {
                 //attempt to open existing window
                 _plugin.WindowManager.OpenFullEditWindow(item.Id);
             }

@@ -115,8 +115,7 @@ internal class LocalizationService {
 
         if (riser != null) {
             return $"{translatedTier} {riser}";
-        }
-        else {
+        } else {
             return $"{translatedTier}";
         }
     }

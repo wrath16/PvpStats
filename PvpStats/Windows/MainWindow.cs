@@ -115,8 +115,7 @@ internal class MainWindow : Window {
                         if (!localPlayerJobFilter.AnyJob) {
                             if (localPlayerJobFilter.JobRole != null) {
                                 matches = matches.Where(x => x.LocalPlayer != null && x.LocalPlayerTeamMember != null && PlayerJobHelper.GetSubRoleFromJob(x.LocalPlayerTeamMember.Job) == localPlayerJobFilter.JobRole).ToList();
-                            }
-                            else {
+                            } else {
                                 matches = matches.Where(x => x.LocalPlayer != null && x.LocalPlayerTeamMember != null && x.LocalPlayerTeamMember.Job == localPlayerJobFilter.PlayerJob).ToList();
                             }
                         }
@@ -131,15 +130,13 @@ internal class MainWindow : Window {
                             foreach (var team in x.Teams) {
                                 if (otherPlayerFilter.TeamStatus == TeamStatus.Teammate && team.Key != x.LocalPlayerTeam?.TeamName) {
                                     continue;
-                                }
-                                else if (otherPlayerFilter.TeamStatus == TeamStatus.Opponent && team.Key == x.LocalPlayerTeam?.TeamName) {
+                                } else if (otherPlayerFilter.TeamStatus == TeamStatus.Opponent && team.Key == x.LocalPlayerTeam?.TeamName) {
                                     continue;
                                 }
                                 foreach (var player in team.Value.Players) {
                                     if (!otherPlayerFilter.AnyJob && player.Job != otherPlayerFilter.PlayerJob) {
                                         continue;
-                                    }
-                                    else if (player.Alias.FullName.Contains(otherPlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase)) {
+                                    } else if (player.Alias.FullName.Contains(otherPlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase)) {
                                         return true;
                                     }
                                 }
@@ -160,8 +157,7 @@ internal class MainWindow : Window {
             ccMatches.Refresh(matches);
             ccSummary.Refresh(matches);
             _plugin.Configuration.Save();
-        }
-        finally {
+        } finally {
             RefreshLock.Release();
         }
     }

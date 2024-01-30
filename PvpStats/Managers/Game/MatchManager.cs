@@ -73,8 +73,7 @@ internal class MatchManager : IDisposable {
         _plugin.Log.Verbose($"OPCODE: {opCode} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
         if (_opCodeCount.ContainsKey(opCode)) {
             _opCodeCount[opCode]++;
-        }
-        else {
+        } else {
             _opCodeCount.Add(opCode, 1);
         }
     }
@@ -95,8 +94,7 @@ internal class MatchManager : IDisposable {
                 };
                 _plugin.Storage.AddCCMatch(_currentMatch);
             });
-        }
-        else {
+        } else {
             if (IsMatchInProgress()) {
                 _plugin.DataQueue.QueueDataOperation(() => {
                     _plugin.Log.Debug("Opcodes:");
@@ -145,11 +143,9 @@ internal class MatchManager : IDisposable {
                 //set winner todo: check for draws!
                 if (_currentMatch.Teams.ElementAt(0).Value.Progress > _currentMatch.Teams.ElementAt(1).Value.Progress) {
                     _currentMatch.MatchWinner = _currentMatch.Teams.ElementAt(0).Key;
-                }
-                else if (_currentMatch.Teams.ElementAt(0).Value.Progress < _currentMatch.Teams.ElementAt(1).Value.Progress) {
+                } else if (_currentMatch.Teams.ElementAt(0).Value.Progress < _currentMatch.Teams.ElementAt(1).Value.Progress) {
                     _currentMatch.MatchWinner = _currentMatch.Teams.ElementAt(1).Key;
-                }
-                else {
+                } else {
                     //overtime winner at same prog
                     _plugin.Log.Debug("Overtime winner is advantaged team.");
                     _currentMatch.MatchWinner = _currentMatch.OvertimeAdvantage;
@@ -216,8 +212,7 @@ internal class MatchManager : IDisposable {
                 //don't need to translate for Japanese
                 if (_plugin.ClientState.ClientLanguage != ClientLanguage.Japanese) {
                     translatedRank = _plugin.Localization.TranslateRankString(rank, ClientLanguage.English);
-                }
-                else {
+                } else {
                     translatedRank = rank;
                 }
             }
@@ -239,8 +234,7 @@ internal class MatchManager : IDisposable {
         _plugin.DataQueue.QueueDataOperation(() => {
             if (!_currentMatch!.Teams.ContainsKey(team.TeamName)) {
                 _currentMatch!.Teams.Add(team.TeamName, team);
-            }
-            else {
+            } else {
                 _plugin.Log.Warning($"Duplicate team found: {team.TeamName}");
             }
 
@@ -288,8 +282,7 @@ internal class MatchManager : IDisposable {
                 //check for parse results? this is causing error!
                 try {
                     _currentMatch!.MatchTimer = new TimeSpan(0, int.Parse(timerMins), int.Parse(timerSeconds));
-                }
-                catch {
+                } catch {
                     //hehe
                 }
 
@@ -303,8 +296,7 @@ internal class MatchManager : IDisposable {
                         _currentMatch.IsOvertime = isOvertime;
                         if (_currentMatch.Teams[leftTeamName].Progress > _currentMatch.Teams[rightTeamName].Progress) {
                             _currentMatch.OvertimeAdvantage = leftTeamName;
-                        }
-                        else if (_currentMatch.Teams[leftTeamName].Progress < _currentMatch.Teams[rightTeamName].Progress) {
+                        } else if (_currentMatch.Teams[leftTeamName].Progress < _currentMatch.Teams[rightTeamName].Progress) {
                             _currentMatch.OvertimeAdvantage = rightTeamName;
                         }
                         _plugin.Log.Debug($"Entering overtime...Advantage: {_currentMatch.OvertimeAdvantage}");
@@ -401,7 +393,7 @@ internal class MatchManager : IDisposable {
 
         if (tierBefore.Success) {
             beforeRank.Tier = MatchHelper.GetTier(_plugin.Localization.TranslateRankString(tierBefore.Value, ClientLanguage.English));
-        } else if(creditBefore.Success) {
+        } else if (creditBefore.Success) {
             beforeRank.Tier = ArenaTier.Crystal;
             if (int.TryParse(creditBefore.Value, out int parseResult)) {
                 beforeRank.Credit = parseResult;
@@ -411,8 +403,7 @@ internal class MatchManager : IDisposable {
         }
         if (tierAfter.Success) {
             afterRank.Tier = MatchHelper.GetTier(_plugin.Localization.TranslateRankString(tierAfter.Value, ClientLanguage.English));
-        }
-        else if (creditAfter.Success) {
+        } else if (creditAfter.Success) {
             afterRank.Tier = ArenaTier.Crystal;
             if (int.TryParse(creditAfter.Value, out int parseResult)) {
                 afterRank.Credit = parseResult;

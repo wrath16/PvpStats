@@ -168,8 +168,7 @@ public sealed class Plugin : IDalamudPlugin {
             //AddonLifecycle.RegisterListener(AddonEvent.PostSetup, "MKSRecord", OnPvPResults);
             //AddonLifecycle.RegisterListener(AddonEvent.PreSetup, "MKSRecord", OnPvPResults);
             //AddonLifecycle.RegisterListener(AddonEvent.PostSetup, "PvpProfileColosseum", OnPvPIntro);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             //remove handlers and release database if we fail to start
             Dispose();
             //it really shouldn't ever be null

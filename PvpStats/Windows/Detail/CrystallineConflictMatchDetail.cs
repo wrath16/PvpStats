@@ -159,8 +159,7 @@ internal class CrystallineConflictMatchDetail : Window {
         if (isSpectated && _dataModel.MatchWinner is not null) {
             color = _dataModel.MatchWinner == CrystallineConflictTeamName.Astra ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
             resultText = MatchHelper.GetTeamName((CrystallineConflictTeamName)_dataModel.MatchWinner) + " WINS";
-        }
-        else {
+        } else {
             color = isWin ? ImGuiColors.HealerGreen : ImGuiColors.DalamudRed;
             color = noWinner ? ImGuiColors.DalamudGrey : color;
             resultText = isWin ? "WIN" : "LOSS";
@@ -233,8 +232,7 @@ internal class CrystallineConflictMatchDetail : Window {
                     //string playerJob0 = firstTeam.Players[i].Job.ToString();
                     //ImGui.Text(playerJob0);
                     ImGui.Image(_plugin.JobIcons[firstTeam.Players[i].Job].ImGuiHandle, new Vector2(24, 24));
-                }
-                else {
+                } else {
                     ImGui.TableNextColumn();
                     ImGui.TableNextColumn();
                     ImGui.TableNextColumn();
@@ -253,8 +251,7 @@ internal class CrystallineConflictMatchDetail : Window {
                     ImGui.TableNextColumn();
                     string rank1 = secondTeam.Players[i].Rank?.Tier != ArenaTier.None ? secondTeam.Players[i].Rank!.ToString() : "";
                     ImGui.Text(rank1);
-                }
-                else {
+                } else {
                     ImGui.TableNextColumn();
                     ImGui.TableNextColumn();
                     ImGui.TableNextColumn();
@@ -267,8 +264,7 @@ internal class CrystallineConflictMatchDetail : Window {
         ImGui.NewLine();
         if (_dataModel.PostMatch is null) {
             ImGui.Text("Post game statistics unavailable.");
-        }
-        else {
+        } else {
 #if DEBUG
             foreach (var team in _dataModel.PostMatch.Teams) {
                 ImGui.Text($"{team.Key}: {team.Value.Progress}");
@@ -375,8 +371,7 @@ internal class CrystallineConflictMatchDetail : Window {
             ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(rowColor));
             if (isPlayer) {
                 ImGui.TextColored(textColor, $" {row.Player.Name} ");
-            }
-            else {
+            } else {
                 ImGui.TextColored(textColor, $" {MatchHelper.GetTeamName((CrystallineConflictTeamName)row.Team)}");
             }
             ImGui.TableNextColumn();
@@ -423,11 +418,9 @@ internal class CrystallineConflictMatchDetail : Window {
                     }
                     break;
             }
-        }
-        else if (rowProperty.PropertyType.IsEnum) {
+        } else if (rowProperty.PropertyType.IsEnum) {
             comparator = (r) => rowProperty.GetValue(r);
-        }
-        else {
+        } else {
             comparator = (r) => {
                 if (r.Player is not null && _showPercentages) {
                     var percentageField = typeof(TeamContribution).GetField(column.ToString());

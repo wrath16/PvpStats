@@ -42,30 +42,25 @@ internal static class AtkNodeHelper {
             var childNode = node->ChildNode;
             if (childNode != null) {
                 return GetNodeByIDChain(childNode, newList.ToArray());
-            }
-            else if ((int)node->Type >= 1000) {
+            } else if ((int)node->Type >= 1000) {
                 var componentNode = node->GetAsAtkComponentNode();
                 var component = componentNode->Component;
                 var uldManager = component->UldManager;
                 childNode = uldManager.NodeList[0];
                 if (childNode == null) {
                     return null;
-                }
-                else {
+                } else {
                     return GetNodeByIDChain(childNode, newList.ToArray());
                 }
-            }
-            else {
+            } else {
                 return null;
             }
-        }
-        else {
+        } else {
             //check siblings
             var sibNode = node->PrevSiblingNode;
             if (sibNode != null) {
                 return GetNodeByIDChain(sibNode, ids);
-            }
-            else {
+            } else {
                 return null;
             }
         }
@@ -77,8 +72,7 @@ internal static class AtkNodeHelper {
             //Log.Debug($"addon name: {Marshal.PtrToStringUTF8((nint)addonNode->Name)} ptr: {string.Format("0x{0:X8}", new IntPtr(addonNode).ToString())}");
             Log.Debug($"addon name: {Marshal.PtrToStringUTF8((nint)addonNode->Name)} ptr: 0x{new IntPtr(addonNode).ToString("X8")}");
             PrintTextNodes(addonNode->RootNode);
-        }
-        else {
+        } else {
             Log.Debug($"{addon} is null!");
         }
     }

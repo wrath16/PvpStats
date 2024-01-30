@@ -92,8 +92,7 @@ public class TimeFilter : DataFilter {
                 }
                 ImGui.EndTable();
             }
-        }
-        else if (StatRange == TimeRange.Season) {
+        } else if (StatRange == TimeRange.Season) {
             ImGui.SameLine();
             ImGui.SetNextItemWidth(ImGuiHelpers.GlobalScale * 50f);
             if (ImGui.Combo($"##seasonCombo", ref seasonIndex, ArenaSeason.Season.Keys.Select(x => x.ToString()).ToArray(), ArenaSeason.Season.Count)) {

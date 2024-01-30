@@ -46,12 +46,10 @@ public class LocalPlayerJobFilter : DataFilter {
                 if (jobIndex == 0) {
                     AnyJob = true;
                     JobRole = null;
-                }
-                else if (jobIndex <= _roleCount + 1) {
+                } else if (jobIndex <= _roleCount + 1) {
                     AnyJob = false;
                     JobRole = (JobSubRole)jobIndex - 1;
-                }
-                else {
+                } else {
                     AnyJob = false;
                     JobRole = null;
                     PlayerJob = (Job)jobIndex - _roleCount - 1;

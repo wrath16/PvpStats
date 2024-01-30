@@ -84,8 +84,7 @@ internal class StorageService {
             if (toSave) {
                 _plugin.WindowManager.Refresh();
             }
-        }
-        finally {
+        } finally {
             _dbLock.Release();
         }
     }

@@ -70,8 +70,7 @@ public class OtherPlayerFilter : DataFilter {
             _plugin!.DataQueue.QueueDataOperation(() => {
                 if (jobIndex == 0) {
                     AnyJob = true;
-                }
-                else {
+                } else {
                     AnyJob = false;
                     PlayerJob = (Job)jobIndex - 1;
                 }

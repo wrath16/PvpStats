@@ -273,8 +273,7 @@ internal unsafe class GameFunctions {
             ptr = Marshal.AllocHGlobal(size);
             Marshal.StructureToPtr(str, ptr, true);
             Marshal.Copy(ptr, arr, 0, size);
-        }
-        finally {
+        } finally {
             Marshal.FreeHGlobal(ptr);
         }
         return arr;

@@ -86,8 +86,7 @@ internal static class PlayerJobHelper {
     internal static string GetNameFromJob(Job job) {
         if (AbbreviationNameMap.ContainsKey(job)) {
             return AbbreviationNameMap[job];
-        }
-        else {
+        } else {
             return "";
         }
     }

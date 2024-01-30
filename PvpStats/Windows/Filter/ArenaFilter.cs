@@ -57,8 +57,7 @@ public class ArenaFilter : DataFilter {
                     foreach (var item in FilterState) {
                         FilterState[item.Key] = true;
                     }
-                }
-                else {
+                } else {
                     //cast as int
                     CrystallineConflictMap selectedMap = (CrystallineConflictMap)currentIndex - 1;
                     foreach (var item in FilterState) {

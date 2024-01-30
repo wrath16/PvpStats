@@ -7,7 +7,6 @@ using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 
 namespace PvpStats.Windows.Summary;
 internal class CrystallineConflictSummary {
@@ -19,7 +18,7 @@ internal class CrystallineConflictSummary {
     private class PlayerStats {
         internal int Matches, Wins;
         internal Job FavoredJob;
-        internal Dictionary<Job,  JobStats> JobStats = new();
+        internal Dictionary<Job, JobStats> JobStats = new();
     }
 
     private Plugin _plugin;
@@ -66,8 +65,7 @@ internal class CrystallineConflictSummary {
             if (jobStats.ContainsKey(job)) {
                 jobStats[job].Matches++;
                 jobStats[job].Wins += isWin ? 1 : 0;
-            }
-            else {
+            } else {
                 jobStats.Add(job, new() {
                     Matches = 1,
                     Wins = isWin ? 1 : 0
@@ -79,8 +77,7 @@ internal class CrystallineConflictSummary {
                 addJobStat(playerStats[player].JobStats, job, isWin);
                 playerStats[player].Matches++;
                 playerStats[player].Wins += isWin ? 1 : 0;
-            }
-            else {
+            } else {
                 playerStats.Add(player, new() {
                     JobStats = new(),
                     Matches = 1,
@@ -94,8 +91,8 @@ internal class CrystallineConflictSummary {
                 addJobStat(_jobStats, match.LocalPlayerTeamMember.Job, match.IsWin);
                 foreach (var team in match.Teams) {
                     if (team.Key == match.LocalPlayerTeam.TeamName) {
-                        foreach(var player in team.Value.Players) {
-                            if(!player.Alias.Equals(match.LocalPlayer)) {
+                        foreach (var player in team.Value.Players) {
+                            if (!player.Alias.Equals(match.LocalPlayer)) {
                                 addJobStat(_allyJobStats, player.Job, match.IsWin);
                                 addPlayerStat(_teammateStats, player.Alias, player.Job, match.IsWin);
                             }
@@ -112,7 +109,7 @@ internal class CrystallineConflictSummary {
                     var playerStats = playerTeamStats.PlayerStats.Where(x => x.Player.Equals(match.LocalPlayer)).FirstOrDefault();
                     if (playerStats != null) {
                         _statsEligibleMatches++;
-                        if(match.IsWin) {
+                        if (match.IsWin) {
                             _statsEligibleWins++;
                         }
                         totalStatsMatchLength += (TimeSpan)match.MatchDuration;
@@ -137,9 +134,9 @@ internal class CrystallineConflictSummary {
         }
         //set favored job
         var setFavoredJob = ((Dictionary<PlayerAlias, PlayerStats> playerStats, bool byWins) => {
-            foreach(var player in playerStats) {
+            foreach (var player in playerStats) {
                 var list = player.Value.JobStats.OrderByDescending(x => 2 * x.Value.Wins - x.Value.Matches);
-                if(byWins) {
+                if (byWins) {
                     player.Value.FavoredJob = list.FirstOrDefault().Key;
                 } else {
                     player.Value.FavoredJob = list.LastOrDefault().Key;
@@ -155,7 +152,7 @@ internal class CrystallineConflictSummary {
         _enemyStats = _enemyStats.OrderByDescending(x => x.Value.Matches - 2 * x.Value.Wins).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
         //calculate average stats
-        if(_statsEligibleMatches > 0) {
+        if (_statsEligibleMatches > 0) {
             _averageKills = (float)totalStats.Kills / _statsEligibleMatches;
             _averageDeaths = (float)totalStats.Deaths / _statsEligibleMatches;
             _averageAssists = (float)totalStats.Assists / _statsEligibleMatches;
@@ -212,7 +209,7 @@ internal class CrystallineConflictSummary {
             DrawPlayerStatsTable(_enemyStats);
         }
 
-        if(_statsEligibleMatches > 0) {
+        if (_statsEligibleMatches > 0) {
             ImGui.Separator();
             ImGui.TextColored(ImGuiColors.DalamudYellow, "Average Stats:");
             ImGui.SameLine();
@@ -272,7 +269,7 @@ internal class CrystallineConflictSummary {
 
             ImGui.TableHeadersRow();
 
-            foreach(var job in jobStats) {
+            foreach (var job in jobStats) {
                 ImGui.TableNextColumn();
                 ImGui.Text($"{PlayerJobHelper.GetNameFromJob(job.Key)}");
 
@@ -283,7 +280,7 @@ internal class CrystallineConflictSummary {
                 ImGui.Text($"{job.Value.Wins}");
 
                 ImGui.TableNextColumn();
-                if(job.Value.Matches > 0) {
+                if (job.Value.Matches > 0) {
                     ImGui.Text($"{string.Format("{0:P}%", (double)job.Value.Wins / job.Value.Matches)}");
                 }
             }
@@ -302,7 +299,7 @@ internal class CrystallineConflictSummary {
 
             ImGui.TableHeadersRow();
 
-            for(int i = 0; i < playerStats.Count && i < 5; i++) {
+            for (int i = 0; i < playerStats.Count && i < 5; i++) {
                 var player = playerStats.ElementAt(i);
 
                 ImGui.TableNextColumn();
