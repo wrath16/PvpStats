@@ -161,7 +161,7 @@ public sealed class Plugin : IDalamudPlugin {
             ChatGui.ChatMessage += OnChatMessage;
             //ClientState.TerritoryChanged += OnTerritoryChanged;
 
-            Log.Debug("The Wolf's Heart has started.");
+            Log.Debug("PvP Stats has started.");
             //AddonLifecycle.RegisterListener(AddonEvent.PostSetup, "PvPMKSIntroduction", OnPvPIntro);
             //AddonLifecycle.RegisterListener(AddonEvent.PostDraw, "PvPMKSIntroduction", OnPvPIntroUpdate);
             //AddonLifecycle.RegisterListener(AddonEvent.PreSetup, "PvPMKSIntroduction", OnPvPIntroPreSetup);

@@ -217,13 +217,16 @@ internal class CrystallineConflictMatchDetail : Window {
             for (int i = 0; i < maxSize; i++) {
                 if (i < firstTeam.Players.Count) {
                     ImGui.TableNextColumn();
-                    string rank0 = firstTeam.Players[i].Rank?.Tier != ArenaTier.None ? firstTeam.Players[i].Rank!.ToString() : "";
+                    string rank0 = firstTeam.Players[i].Rank != null && firstTeam.Players[i].Rank!.Tier != ArenaTier.None ? firstTeam.Players[i].Rank!.ToString() : "";
                     ImGuiHelper.RightAlignCursor(rank0);
                     ImGui.AlignTextToFramePadding();
                     ImGui.Text(rank0);
                     ImGui.TableNextColumn();
                     var playerColor0 = _dataModel.LocalPlayerTeam is not null && firstTeam.TeamName == _dataModel.LocalPlayerTeam.TeamName ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
                     playerColor0 = _dataModel.LocalPlayer.Equals(firstTeam.Players[i]) ? ImGuiColors.DalamudYellow : playerColor0;
+                    if(isSpectated) {
+                        playerColor0 = firstTeam.TeamName == CrystallineConflictTeamName.Astra ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
+                    }
                     string playerName0 = firstTeam.Players[i].Alias.Name;
                     ImGuiHelper.RightAlignCursor(playerName0);
                     ImGui.AlignTextToFramePadding();
@@ -246,10 +249,13 @@ internal class CrystallineConflictMatchDetail : Window {
                     ImGui.TableNextColumn();
                     var playerColor1 = _dataModel.LocalPlayerTeam is not null && secondTeam.TeamName == _dataModel.LocalPlayerTeam.TeamName ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
                     playerColor1 = _dataModel.LocalPlayer.Equals(secondTeam.Players[i]) ? ImGuiColors.DalamudYellow : playerColor1;
+                    if (isSpectated) {
+                        playerColor1 = secondTeam.TeamName == CrystallineConflictTeamName.Astra ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
+                    }
                     string playerName1 = secondTeam.Players[i].Alias.Name;
                     ImGui.TextColored(playerColor1, $"     {playerName1}");
                     ImGui.TableNextColumn();
-                    string rank1 = secondTeam.Players[i].Rank?.Tier != ArenaTier.None ? secondTeam.Players[i].Rank!.ToString() : "";
+                    string rank1 = secondTeam.Players[i].Rank != null && secondTeam.Players[i].Rank?.Tier != ArenaTier.None ? secondTeam.Players[i].Rank!.ToString() : "";
                     ImGui.Text(rank1);
                 } else {
                     ImGui.TableNextColumn();
@@ -352,6 +358,9 @@ internal class CrystallineConflictMatchDetail : Window {
             ImGui.TableNextColumn();
             bool isPlayer = row.Player != null;
             bool isPlayerTeam = row.Team == _dataModel.LocalPlayerTeam.TeamName;
+            if(_dataModel.IsSpectated) {
+                isPlayerTeam = row.Team == CrystallineConflictTeamName.Astra;
+            }
             var rowColor = new Vector4(0, 0, 0, 0);
             switch ((isPlayer, isPlayerTeam)) {
                 case (true, true):

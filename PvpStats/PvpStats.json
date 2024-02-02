@@ -1,8 +1,8 @@
 {
   "Author": "SaMo",
   "Name": "PvP Tracker",
-  "Punchline": "PvP stats and match history.",
-  "Description": "Record and browse PvP match history and statistics. Currently only supports Crystalline Conflict.",
+  "Punchline": "PvP match history and stats.",
+  "Description": "Record and browse your PvP match history and various statistics. Currently only supports Crystalline Conflict.",
   "InternalName": "PvpStats",
   "RepoUrl": "https://github.com/wrath16/PvpStats",
   "ApplicableVersion": "any",
@@ -11,5 +11,5 @@
     "pvp",
     "statistics"
   ],
-  "IconUrl": ""
+  "IconUrl": "https://raw.githubusercontent.com/wrath16/PvpStats/master/images/icon.png?token=GHSAT0AAAAAACBOS7F3B4H4O3ZKRVKMYSUQZNYUPQA"
 }

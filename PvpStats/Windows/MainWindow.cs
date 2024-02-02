@@ -23,7 +23,7 @@ internal class MainWindow : Window {
     internal List<DataFilter> Filters { get; private set; } = new();
     internal SemaphoreSlim RefreshLock { get; init; } = new SemaphoreSlim(1, 1);
 
-    internal MainWindow(Plugin plugin) : base("Pvp Stats") {
+    internal MainWindow(Plugin plugin) : base("Crystalline Conflict Tracker") {
         ForceMainWindow = true;
         PositionCondition = ImGuiCond.Always;
         SizeConstraints = new WindowSizeConstraints {

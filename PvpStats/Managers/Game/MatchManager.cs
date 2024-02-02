@@ -70,7 +70,7 @@ internal class MatchManager : IDisposable {
             return;
         }
 
-        _plugin.Log.Verbose($"OPCODE: {opCode} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
+        //_plugin.Log.Verbose($"OPCODE: {opCode} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
         if (_opCodeCount.ContainsKey(opCode)) {
             _opCodeCount[opCode]++;
         } else {
@@ -168,15 +168,19 @@ internal class MatchManager : IDisposable {
     //build team data
     private unsafe void OnPvPIntro(AddonEvent type, AddonArgs args) {
         if (!IsMatchInProgress()) {
+            _plugin.Log.Warning("no match in progress on pvp intro!");
             return;
         }
 
-        //Log.Debug("Pvp intro post setup!");
+        _plugin.Log.Debug("Pvp intro post setup!");
         var addon = (AtkUnitBase*)args.Addon;
         CrystallineConflictTeam team = new();
 
-        //PrintAtkValues(addon);
-        //AtkNodeHelper.PrintTextNodes(addon->GetNodeById(1), true, false);
+
+        if (_plugin.ClientState.ClientLanguage != ClientLanguage.English) {
+            AtkNodeHelper.PrintAtkValues(addon);
+            //AtkNodeHelper.PrintTextNodes(addon->GetNodeById(1), true, false);
+        }
 
         //team name
         string teamName = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[4]);
@@ -206,14 +210,16 @@ internal class MatchManager : IDisposable {
             }
             if (rankNode != null && rankNode->Type == NodeType.Text) {
                 rank = rankNode->GetAsAtkTextNode()->NodeText.ToString();
-                //set ranked as fallback
-                //_currentMatch!.MatchType = CrystallineConflictMatchType.Ranked;
+                if(!rank.IsNullOrEmpty()) {
+                    //set ranked as fallback
+                    //_currentMatch!.MatchType = CrystallineConflictMatchType.Ranked;
 
-                //don't need to translate for Japanese
-                if (_plugin.ClientState.ClientLanguage != ClientLanguage.Japanese) {
-                    translatedRank = _plugin.Localization.TranslateRankString(rank, ClientLanguage.English);
-                } else {
-                    translatedRank = rank;
+                    //don't need to translate for Japanese
+                    if (_plugin.ClientState.ClientLanguage != ClientLanguage.Japanese) {
+                        translatedRank = _plugin.Localization.TranslateRankString(rank, ClientLanguage.English);
+                    } else {
+                        translatedRank = rank;
+                    }
                 }
             }
 
@@ -330,7 +336,7 @@ internal class MatchManager : IDisposable {
         //AtkNodeHelper.PrintAtkValues(addon);
 
         var matchWinner = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[3]);
-        postMatch.MatchWinner = MatchHelper.GetTeamName(Regex.Match(matchWinner, @"^\w*").Value);
+        postMatch.MatchWinner = MatchHelper.GetTeamName(Regex.Match(matchWinner, @"(Astra|Umbra)", RegexOptions.IgnoreCase).Value);
 
         var matchDuration = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[22]);
         postMatch.MatchDuration = TimeSpan.Parse("00:" + matchDuration);

@@ -34,6 +34,13 @@ public class MiscFilter : DataFilter {
                 Refresh();
             });
         }
+        //bool showDeleted = ShowDeleted;
+        //if (ImGui.Checkbox("Show deleted/incomplete", ref showDeleted)) {
+        //    _plugin!.DataQueue.QueueDataOperation(() => {
+        //        ShowDeleted = showDeleted;
+        //        Refresh();
+        //    });
+        //}
         ImGui.EndTable();
     }
 }
