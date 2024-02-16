@@ -37,6 +37,7 @@ internal class MainWindow : Window {
         Filters.Add(new LocalPlayerFilter(plugin, Refresh, _plugin.Configuration.MatchWindowFilters.LocalPlayerFilter));
         Filters.Add(new LocalPlayerJobFilter(plugin, Refresh, _plugin.Configuration.MatchWindowFilters.LocalPlayerJobFilter));
         Filters.Add(new OtherPlayerFilter(plugin, Refresh));
+        Filters.Add(new ResultFilter(plugin, Refresh));
         Filters.Add(new MiscFilter(plugin, Refresh, _plugin.Configuration.MatchWindowFilters.MiscFilter));
 
         ccMatches = new(plugin);
@@ -144,6 +145,16 @@ internal class MainWindow : Window {
                             return false;
                         }).ToList();
                         //_plugin.Configuration.MatchWindowFilters.OtherPlayerFilter = otherPlayerFilter;
+                        break;
+                    case Type _ when filter.GetType() == typeof(ResultFilter):
+                        var resultFilter = (ResultFilter)filter;
+                        if(resultFilter.Result == MatchResult.Win) {
+                            matches = matches.Where(x => x.IsWin).ToList();
+                        } else if(resultFilter.Result == MatchResult.Loss) {
+                            matches = matches.Where(x => !x.IsWin && x.MatchWinner != null && !x.IsSpectated).ToList();
+                        } else if(resultFilter.Result == MatchResult.Other) {
+                            matches = matches.Where(x => x.IsSpectated || x.MatchWinner == null).ToList();
+                        }
                         break;
                     case Type _ when filter.GetType() == typeof(MiscFilter):
                         var miscFilter = (MiscFilter)filter;

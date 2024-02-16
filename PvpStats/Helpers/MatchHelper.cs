@@ -7,10 +7,15 @@ public static class MatchHelper {
 
     public static readonly Dictionary<uint, CrystallineConflictMap> CrystallineConflictMapLookup = new() {
         { 1032, CrystallineConflictMap.Palaistra },
+        { 1058, CrystallineConflictMap.Palaistra }, //custom match
         { 1033, CrystallineConflictMap.VolcanicHeart },
+        { 1059, CrystallineConflictMap.VolcanicHeart }, //custom match
         { 1034, CrystallineConflictMap.CloudNine },
+        { 1060, CrystallineConflictMap.CloudNine }, //custom match
         { 1116, CrystallineConflictMap.ClockworkCastleTown },
-        { 1138, CrystallineConflictMap.RedSands }
+        { 1117, CrystallineConflictMap.ClockworkCastleTown }, //custom match
+        { 1138, CrystallineConflictMap.RedSands },
+        { 1139, CrystallineConflictMap.RedSands } //custom match
     };
 
     public static readonly Dictionary<ArenaTier, string> ArenaRankLookup = new() {

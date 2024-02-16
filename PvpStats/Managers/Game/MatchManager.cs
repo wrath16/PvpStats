@@ -1,18 +1,23 @@
 ﻿using Dalamud;
+using Dalamud.Game;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.Network;
 using Dalamud.Utility;
+using FFXIVClientStructs.FFXIV.Client.Game.InstanceContent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+//using Lumina.Excel.GeneratedSheets;
 using Lumina.Excel.GeneratedSheets2;
 using PvpStats.Helpers;
+using PvpStats.Types.ClientStruct;
 using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -32,7 +37,8 @@ internal class MatchManager : IDisposable {
     string _leftTeamProgressPrev = "";
     string _rightTeamProgressPrev = "";
 
-    Dictionary<ushort, uint> _opCodeCount = new();
+    internal Dictionary<ushort, uint> _opCodeCount = new();
+    internal int _opcodeMatchCount = 0;
 
     public MatchManager(Plugin plugin) {
         _plugin = plugin;
@@ -45,6 +51,8 @@ internal class MatchManager : IDisposable {
         _plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "PvPMKSIntroduction", OnPvPIntro);
         _plugin.AddonLifecycle.RegisterListener(AddonEvent.PostUpdate, "PvPMKSHeader", OnPvPHeaderUpdate);
         _plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "PvPMKSHeader", OnPvPHeaderUpdate);
+        _plugin.AddonLifecycle.RegisterListener(AddonEvent.PostUpdate, "PvPMKSHeaderSpec", OnPvPHeaderUpdate);
+        _plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "PvPMKSHeaderSpec", OnPvPHeaderUpdate);
         _plugin.AddonLifecycle.RegisterListener(AddonEvent.PreSetup, "MKSRecord", OnPvPResults);
     }
 
@@ -62,7 +70,7 @@ internal class MatchManager : IDisposable {
         _plugin.AddonLifecycle.UnregisterListener(OnPvPResults);
     }
 
-    private void OnNetworkMessage(nint dataPtr, ushort opCode, uint sourceActorId, uint targetActorId, NetworkMessageDirection direction) {
+    private unsafe void OnNetworkMessage(nint dataPtr, ushort opCode, uint sourceActorId, uint targetActorId, NetworkMessageDirection direction) {
         if (!IsMatchInProgress()) {
             return;
         }
@@ -70,11 +78,84 @@ internal class MatchManager : IDisposable {
             return;
         }
 
-        //_plugin.Log.Verbose($"OPCODE: {opCode} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
         if (_opCodeCount.ContainsKey(opCode)) {
             _opCodeCount[opCode]++;
         } else {
             _opCodeCount.Add(opCode, 1);
+        }
+
+        if (opCode != 845 && opCode != 813 && opCode != 649 && opCode != 717 && opCode != 920 && opCode != 898 && opCode != 316 && opCode != 769 && opCode != 810 
+            && opCode != 507 && opCode != 973 && opCode != 234 && opCode != 702 && opCode != 421 && opCode != 244 && opCode != 116 && opCode != 297 && opCode != 493
+            && opCode != 857 && opCode != 444 && opCode != 550) {
+            _plugin.Log.Verbose($"OPCODE: {opCode} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
+        }
+        //start duty
+        //if (opCode == 593) {
+        //    _plugin.Log.Debug("duty...started?");
+        //}
+
+            //end duty
+        if (opCode == 939) {
+            //_plugin.Functions.FindValue<int>(0, dataPtr + 0x10, 0x310, 0, true);
+            //_plugin.Functions.FindValue<short>(0, dataPtr + 0x10, 0x310, 0, true);
+            //_plugin.Functions.FindValue<long>(0, dataPtr, 0x310, 0, true);
+            //_plugin.Functions.FindValue<byte>(0, dataPtr + 0x10, 0x310, 0, true);
+            //_plugin.Functions.FindValue<float>(0, dataPtr, 0x300, 0, true);
+            //_plugin.Functions.FindValue<double>(0, dataPtr, 0x300, 0, true);
+            //_plugin.Functions.FindValue<string>("", dataPtr, 0x310, 0, true);
+            //_plugin.Functions.ReadBytes(dataPtr, typeof(byte), 0x2000);
+            //_plugin.Functions.ReadBytes(dataPtr, typeof(short), 0x2000);
+            //_plugin.Functions.ReadBytes(dataPtr, typeof(int), 0x2000);
+
+            var clientStruct = (CrystallineConflictResultsPacket*)(dataPtr + 0x10);
+            string result = "";
+            switch(clientStruct->Result) {
+                case 1:
+                    result = "victory";
+                    break;
+                case 2:
+                    result = "defeat";
+                    break;
+                default:
+                    result = "unknown";
+                    break;
+            }
+            _plugin.Log.Debug($"RESULT: {result}");
+            _plugin.Log.Debug($"MATCH DURATION (s): {clientStruct->MatchLength}");
+            _plugin.Log.Debug($"ASTRA PROGRESS: {clientStruct->AstraProgress} UMBRA PROGRESS: {clientStruct->UmbraProgress}");
+            _plugin.Log.Debug(string.Format("{0,-25} {1,-15} {2,-6} {3,-5} {4,-15} {5,-8} {6,-8} {7,-8} {8,-15} {9,-15} {10,-15} {11,-15}", "NAME", "WORLD", "TEAM", "JOB", "TIER", "KILLS", "DEATHS", "ASSISTS", "DAMAGE DEALT", "DAMAGE TAKEN", "HP RESTORED", "TIME ON CRYSTAL"));
+
+            for (int i = 0; i < 10; i++) {
+                //var player = (CrystallineConflictResultsPacket.CrystallineConflictPlayer*)clientStruct->Player[i];
+                var player = clientStruct->PlayerSpan[i];
+
+                //missing player
+                if(player.ClassJobId == 0) {
+                    continue;
+                }
+
+                //_plugin.Log.Debug($"{AtkNodeHelper.ReadString(player.PlayerName, 32)}");
+                //_plugin.Log.Debug($"WORLD: {player.WorldId}");
+                //_plugin.Log.Debug($"TEAM: {player.Team}");
+                //_plugin.Log.Debug($"JOB: {player.ClassJobId}");
+                //_plugin.Log.Debug($"KILLS: {player.Kills}");
+                //_plugin.Log.Debug($"DEATHS: {player.Deaths}");
+                //_plugin.Log.Debug($"ASSISTS: {player.Assists}");
+                //_plugin.Log.Debug($"DAMAGE DEALT: {player.DamageDealt}");
+                //_plugin.Log.Debug($"DAMAGE TAKEN: {player.DamageTaken}");
+                //_plugin.Log.Debug($"HP RESTORED: {player.HPRestored}");
+                //_plugin.Log.Debug($"TIME ON CRYSTAL: {player.TimeOnCrystal}");
+
+                _plugin.Log.Debug(string.Format("{0,-25} {1,-15} {2,-6} {3,-5} {4,-15} {5,-8} {6,-8} {7,-8} {8,-15} {9,-15} {10,-15} {11,-15}",
+                    AtkNodeHelper.ReadString(player.PlayerName, 32), _plugin.DataManager.GetExcelSheet<World>().GetRow(player.WorldId).Name, player.Team == 0 ? "ASTRA" : "UMBRA",
+                    _plugin.DataManager.GetExcelSheet<ClassJob>().GetRow(player.ClassJobId).Abbreviation,
+                    _plugin.DataManager.GetExcelSheet<ColosseumMatchRank>().GetRow(player.ColosseumMatchRankId).Unknown0, player.Kills, player.Deaths, player.Assists, player.DamageDealt, player.DamageTaken, player.HPRestored, player.TimeOnCrystal));
+
+
+
+                //_plugin.Log.Debug($"PLAYER: {AtkNodeHelper.ReadString(player->PlayerName, 32)} JOB:{_plugin.DataManager.GetExcelSheet<ClassJob>().GetRow(player->ClassJobId).Abbreviation} " +
+                //    $"TEAM: {(player->Team == 0 ? "ASTRA" : "UMBRA")}");
+            }
         }
     }
 
@@ -101,7 +182,9 @@ internal class MatchManager : IDisposable {
                     foreach (var opcode in _opCodeCount.OrderByDescending(x => x.Value)) {
                         _plugin.Log.Debug($"opcode {opcode.Key}: {opcode.Value}");
                     }
-                    _opCodeCount = new();
+                    //_opCodeCount = new();
+                    _opCodeCount = _opCodeCount.OrderBy(x => x.Value).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+                    _opcodeMatchCount++;
                     _currentMatch = null;
                     _plugin.WindowManager.Refresh();
                 });
@@ -129,14 +212,14 @@ internal class MatchManager : IDisposable {
         if (!IsMatchInProgress()) {
             return;
         }
+        _plugin.Log.Debug("Match has ended.");
         var currentTime = DateTime.Now;
         //var currentMatchTemp = _currentMatch;
-
         //add delay to get last of header updates
         //this could cause issues with players instaleaving
         Task.Delay(100).ContinueWith(t => {
             _plugin.DataQueue.QueueDataOperation(() => {
-                _plugin.Log.Debug("Match has ended.");
+
                 _currentMatch!.MatchEndTime = currentTime;
                 _currentMatch!.IsCompleted = true;
 
@@ -156,7 +239,7 @@ internal class MatchManager : IDisposable {
                 _plugin.Log.Debug($"winner prog: {winningTeam.Progress} match seconds: {_currentMatch.MatchDuration.Value.TotalSeconds} isovertime : {_currentMatch.IsOvertime}");
                 _plugin.Log.Debug($"{winningTeam.Progress > 99f} {winningTeam.Progress < 100f} {_currentMatch.MatchDuration.Value.TotalSeconds < 5 * 60} {!_currentMatch.IsOvertime}");
                 if (winningTeam.Progress > 99f && winningTeam.Progress < 100f && _currentMatch.MatchDuration.Value.TotalSeconds < 5 * 60 && !_currentMatch.IsOvertime) {
-                    _plugin.Log.Verbose("Correcting 99.9% to 100%...");
+                    _plugin.Log.Debug("Correcting 99.9% to 100%...");
                     winningTeam.Progress = 100f;
                 }
 
@@ -198,7 +281,9 @@ internal class MatchManager : IDisposable {
             string player = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[offset]);
             string world = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[offset + 6]);
             string job = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[offset + 5]);
-            string translatedJob = _plugin.Localization.TranslateDataTableEntry<ClassJob>(job, "Name", ClientLanguage.English);
+            //JP uses English names...
+            string translatedJob = _plugin.Localization.TranslateDataTableEntry<ClassJob>(job, "Name", ClientLanguage.English, 
+                _plugin.ClientState.ClientLanguage == ClientLanguage.Japanese ? ClientLanguage.English : _plugin.ClientState.ClientLanguage);
             string rank = "";
             string? translatedRank = null;
 
@@ -336,6 +421,7 @@ internal class MatchManager : IDisposable {
         //AtkNodeHelper.PrintAtkValues(addon);
 
         var matchWinner = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[3]);
+        //need to fix this for JP
         postMatch.MatchWinner = MatchHelper.GetTeamName(Regex.Match(matchWinner, @"(Astra|Umbra)", RegexOptions.IgnoreCase).Value);
 
         var matchDuration = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[22]);
@@ -347,11 +433,12 @@ internal class MatchManager : IDisposable {
         var leftTeamDeaths = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[1544]);
         var leftTeamAssists = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[1546]);
 
+        var leftTeamNameTranslated = _plugin.Localization.TranslateDataTableEntry<Addon>(leftTeamName, "Text", ClientLanguage.English);
         CrystallineConflictPostMatchTeam leftTeam = new() {
-            TeamName = MatchHelper.GetTeamName(leftTeamName),
+            TeamName = MatchHelper.GetTeamName(leftTeamNameTranslated),
             Progress = (float)MatchHelper.ConvertProgressStringToFloat(leftTeamProgress),
             TeamStats = new() {
-                Team = MatchHelper.GetTeamName(leftTeamName),
+                Team = MatchHelper.GetTeamName(leftTeamNameTranslated),
                 Kills = int.Parse(Regex.Match(leftTeamKills, @"\d*$").Value),
                 Deaths = int.Parse(Regex.Match(leftTeamDeaths, @"\d*$").Value),
                 Assists = int.Parse(Regex.Match(leftTeamAssists, @"\d*$").Value),
@@ -364,10 +451,12 @@ internal class MatchManager : IDisposable {
         var rightTeamDeaths = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[1545]);
         var rightTeamAssists = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[1547]);
 
+        var rightTeamNameTranslated = _plugin.Localization.TranslateDataTableEntry<Addon>(rightTeamName, "Text", ClientLanguage.English);
         CrystallineConflictPostMatchTeam rightTeam = new() {
-            TeamName = MatchHelper.GetTeamName(rightTeamName),
+            TeamName = MatchHelper.GetTeamName(rightTeamNameTranslated),
             Progress = (float)MatchHelper.ConvertProgressStringToFloat(rightTeamProgress),
             TeamStats = new() {
+                Team = MatchHelper.GetTeamName(rightTeamNameTranslated),
                 Kills = int.Parse(Regex.Match(rightTeamKills, @"\d*$").Value),
                 Deaths = int.Parse(Regex.Match(rightTeamDeaths, @"\d*$").Value),
                 Assists = int.Parse(Regex.Match(rightTeamAssists, @"\d*$").Value),
@@ -387,8 +476,8 @@ internal class MatchManager : IDisposable {
         _plugin.Log.Debug($"{matchWinner}");
         _plugin.Log.Debug($"match duration: {matchDuration}");
         _plugin.Log.Debug($"rank change: {rankChange}");
-        _plugin.Log.Debug($"BEFORE: TIER:{tierBefore.Value} RISER: {riserBefore.Value} STARS: {starsBefore.Length}");
-        _plugin.Log.Debug($"AFTER: TIER:{tierAfter.Value} RISER: {riserAfter.Value} STARS: {starsAfter.Length}");
+        _plugin.Log.Debug($"BEFORE: TIER:{tierBefore.Value} RISER: {riserBefore.Value} STARS: {starsBefore.Length} CREDIT: {creditBefore.Value}");
+        _plugin.Log.Debug($"AFTER: TIER:{tierAfter.Value} RISER: {riserAfter.Value} STARS: {starsAfter.Length} CREDIT: {creditAfter.Value}");
         _plugin.Log.Debug(string.Format("{4,-6}: progress: {0,-6} kills: {1,-3} deaths: {2,-3} assists: {3,-3}", leftTeamProgress, leftTeamKills, leftTeamDeaths, leftTeamAssists, leftTeamName));
         _plugin.Log.Debug(string.Format("{4,-6}: progress: {0,-6} kills: {1,-3} deaths: {2,-3} assists: {3,-3}", rightTeamProgress, rightTeamKills, rightTeamDeaths, rightTeamAssists, rightTeamName));
         _plugin.Log.Debug(string.Format("{0,-25} {1,-15} {2,-5} {3,-15} {4,-8} {5,-8} {6,-8} {7,-15} {8,-15} {9,-15} {10,-15}", "NAME", "WORLD", "JOB", "TIER", "KILLS", "DEATHS", "ASSISTS", "DAMAGE DEALT", "DAMAGE TAKEN", "HP RESTORED", "TIME ON CRYSTAL"));
@@ -396,46 +485,49 @@ internal class MatchManager : IDisposable {
         //set rank change
         PlayerRank beforeRank = new();
         PlayerRank afterRank = new();
+        try {
+            if (tierBefore.Success) {
+                beforeRank.Tier = MatchHelper.GetTier(_plugin.Localization.TranslateRankString(tierBefore.Value, ClientLanguage.English));
+            } else if (creditBefore.Success) {
+                beforeRank.Tier = ArenaTier.Crystal;
+                if (int.TryParse(creditBefore.Value, out int parseResult)) {
+                    beforeRank.Credit = parseResult;
+                }
+            } else {
+                beforeRank.Tier = ArenaTier.None;
+            }
+            if (tierAfter.Success) {
+                afterRank.Tier = MatchHelper.GetTier(_plugin.Localization.TranslateRankString(tierAfter.Value, ClientLanguage.English));
+            } else if (creditAfter.Success) {
+                afterRank.Tier = ArenaTier.Crystal;
+                if (int.TryParse(creditAfter.Value, out int parseResult)) {
+                    afterRank.Credit = parseResult;
+                }
+            } else {
+                afterRank.Tier = ArenaTier.None;
+            }
+            if (riserBefore.Success && beforeRank.Tier != ArenaTier.Crystal) {
+                if (int.TryParse(riserBefore.Value, out int parseResult)) {
+                    beforeRank.Riser = parseResult;
+                }
+            }
+            if (riserAfter.Success && afterRank.Tier != ArenaTier.Crystal) {
+                if (int.TryParse(riserAfter.Value, out int parseResult)) {
+                    afterRank.Riser = parseResult;
+                }
+            }
+            if (starsBefore.Success && beforeRank.Tier != ArenaTier.Crystal) {
+                beforeRank.Stars = starsBefore.Length;
+            }
+            if (starsAfter.Success && afterRank.Tier != ArenaTier.Crystal) {
+                afterRank.Stars = starsAfter.Length;
+            }
 
-        if (tierBefore.Success) {
-            beforeRank.Tier = MatchHelper.GetTier(_plugin.Localization.TranslateRankString(tierBefore.Value, ClientLanguage.English));
-        } else if (creditBefore.Success) {
-            beforeRank.Tier = ArenaTier.Crystal;
-            if (int.TryParse(creditBefore.Value, out int parseResult)) {
-                beforeRank.Credit = parseResult;
-            }
-        } else {
-            beforeRank.Tier = ArenaTier.None;
+            postMatch.RankBefore = beforeRank;
+            postMatch.RankAfter = afterRank;
+        } catch(ArgumentException e) {
+            _plugin.Log.Error($"Unable to add rank:{e.Message}\n{e.StackTrace}");
         }
-        if (tierAfter.Success) {
-            afterRank.Tier = MatchHelper.GetTier(_plugin.Localization.TranslateRankString(tierAfter.Value, ClientLanguage.English));
-        } else if (creditAfter.Success) {
-            afterRank.Tier = ArenaTier.Crystal;
-            if (int.TryParse(creditAfter.Value, out int parseResult)) {
-                afterRank.Credit = parseResult;
-            }
-        } else {
-            afterRank.Tier = ArenaTier.None;
-        }
-        if (riserBefore.Success && beforeRank.Tier != ArenaTier.Crystal) {
-            if (int.TryParse(riserBefore.Value, out int parseResult)) {
-                beforeRank.Riser = parseResult;
-            }
-        }
-        if (riserAfter.Success && afterRank.Tier != ArenaTier.Crystal) {
-            if (int.TryParse(riserAfter.Value, out int parseResult)) {
-                afterRank.Riser = parseResult;
-            }
-        }
-        if (starsBefore.Success && beforeRank.Tier != ArenaTier.Crystal) {
-            beforeRank.Stars = starsBefore.Length;
-        }
-        if (starsAfter.Success && afterRank.Tier != ArenaTier.Crystal) {
-            afterRank.Stars = starsAfter.Length;
-        }
-
-        postMatch.RankBefore = beforeRank;
-        postMatch.RankAfter = afterRank;
 
         postMatch.Teams.Add(leftTeam.TeamName, leftTeam);
         postMatch.Teams.Add(rightTeam.TeamName, rightTeam);

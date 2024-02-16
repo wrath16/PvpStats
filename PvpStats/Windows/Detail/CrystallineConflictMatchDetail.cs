@@ -357,7 +357,7 @@ internal class CrystallineConflictMatchDetail : Window {
         foreach (var row in _postMatchRows) {
             ImGui.TableNextColumn();
             bool isPlayer = row.Player != null;
-            bool isPlayerTeam = row.Team == _dataModel.LocalPlayerTeam.TeamName;
+            bool isPlayerTeam = row.Team == _dataModel.LocalPlayerTeam?.TeamName;
             if(_dataModel.IsSpectated) {
                 isPlayerTeam = row.Team == CrystallineConflictTeamName.Astra;
             }

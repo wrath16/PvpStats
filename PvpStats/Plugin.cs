@@ -1,4 +1,5 @@
 using Dalamud.Configuration;
+using Dalamud.Game;
 using Dalamud.Game.Command;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
@@ -45,6 +46,8 @@ public sealed class Plugin : IDalamudPlugin {
     internal IAddonLifecycle AddonLifecycle { get; init; }
     internal IObjectTable ObjectTable { get; init; }
     internal ITextureProvider TextureProvider { get; init; }
+    internal IGameInteropProvider InteropProvider { get; init; }
+    internal ISigScanner SigScanner { get; init; }
 
     internal MatchManager MatchManager { get; init; }
     internal WindowManager WindowManager { get; init; }
@@ -84,7 +87,9 @@ public sealed class Plugin : IDalamudPlugin {
         [RequiredVersion("1.0")] IPluginLog log,
         [RequiredVersion("1.0")] IAddonLifecycle addonLifecycle,
         [RequiredVersion("1.0")] IObjectTable objectTable,
-        [RequiredVersion("1.0")] ITextureProvider textureProvider) {
+        [RequiredVersion("1.0")] ITextureProvider textureProvider,
+        [RequiredVersion("1.0")] IGameInteropProvider interopProvider,
+        [RequiredVersion("1.0")] ISigScanner sigScanner) {
         try {
             PluginInterface = pluginInterface;
             CommandManager = commandManager;
@@ -101,6 +106,8 @@ public sealed class Plugin : IDalamudPlugin {
             AddonLifecycle = addonLifecycle;
             ObjectTable = objectTable;
             TextureProvider = textureProvider;
+            InteropProvider = interopProvider;
+            SigScanner = sigScanner;
 
             AtkNodeHelper.Log = Log;
 
@@ -170,9 +177,8 @@ public sealed class Plugin : IDalamudPlugin {
             //AddonLifecycle.RegisterListener(AddonEvent.PostSetup, "PvpProfileColosseum", OnPvPIntro);
         } catch (Exception e) {
             //remove handlers and release database if we fail to start
-            Dispose();
-            //it really shouldn't ever be null
             Log!.Error($"Failed to initialize plugin constructor: {e.Message}");
+            Dispose();
             //re-throw to prevent constructor from initializing
             throw;
         }
@@ -207,10 +213,18 @@ public sealed class Plugin : IDalamudPlugin {
         //AddonLifecycle.UnregisterListener(OnPvPIntroUpdate);
         //AddonLifecycle.UnregisterListener(OnPvPResults);
 
-        MatchManager.Dispose();
-        WindowManager.Dispose();
-        Storage.Dispose();
-        DataQueue.Dispose();
+        if(MatchManager != null) {
+            MatchManager.Dispose();
+        }
+        if(WindowManager != null) {
+            WindowManager.Dispose();
+        }
+        if (Storage != null) {
+            Storage.Dispose();
+        }
+        if(DataQueue != null) {
+            DataQueue.Dispose();
+        }
     }
 
     private void OnCommand(string command, string args) {

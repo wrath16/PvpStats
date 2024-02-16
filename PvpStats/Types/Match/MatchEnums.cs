@@ -37,3 +37,10 @@ public enum ArenaTier {
     Diamond = 5,
     Crystal = 6
 }
+
+//public enum MatchResult {
+//    Win,
+//    Loss,
+//    Draw,
+//    Unknown,
+//}

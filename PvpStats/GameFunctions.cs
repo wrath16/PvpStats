@@ -1,15 +1,29 @@
+using Dalamud;
+using Dalamud.Game;
+using Dalamud.Hooking;
+using Dalamud.Plugin.Services;
+using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Game.InstanceContent;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+using FFXIVClientStructs.Interop.Attributes;
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace PvpStats;
 
 internal unsafe class GameFunctions {
+    [Signature("48 8D 05 ?? ?? ?? ?? 48 89 06 48 8D 9E ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 86 ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 86 ?? ?? ?? ?? 8D 7D ?? 48 8D 05", ScanType = ScanType.StaticAddress)]
+    //[Signature("48 8D 0D ?? ?? ?? ?? BD ?? ?? ?? ?? E8 ?? ?? ?? ?? 84 C0 75", ScanType = ScanType.StaticAddress)]
+    private readonly IntPtr _ccDirector;
+
+
     //[Signature("BA ?? ?? ?? ?? E8 ?? ?? ?? ?? 41 8B 4D 08", Offset = 1)]
     //private uint _agentId;
 
@@ -27,21 +41,66 @@ internal unsafe class GameFunctions {
 
     //private static AtkUnitBase* AddonToDoList => GetUnitBase<AtkUnitBase>("_ToDoList");
 
+    [Signature("E8 ?? ?? ?? ?? 48 8B D8 E8 ?? ?? ?? ?? 48 8B F8")]
+    private readonly delegate* unmanaged<EventFramework*, nint> _getInstanceContentCCDirector;
+
+    //[Signature("E8 ?? ?? ?? ?? 84 C0 74 ?? 33 C0 38 87")]
+    //private readonly delegate* unmanaged<>
+
+    //p1 = data ref?
+    //p2 = targetId
+    //p3 = opcode (0x3ab as of patch 6.57)
+    //p4 = dataPtr + 0x10 offset
+    //p5 = data size (0x310)
+    private delegate ulong ProcessPvPResultsFunc00Delegate(IntPtr p1, uint p2, ushort p3, IntPtr p4, long p5);
+
+    //ProcessZonePacketDown
+    //40 53 56 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 44 24 ?? 8B F2
+
+
+    //sig scan1
+    //E8 ?? ?? ?? ?? 84 C0 74 ?? 33 C0 38 87 ??
+    //sig scan2
+    //E8 ?? ?? ?? ?? 48 83 C4 ?? C3 41 81 FA 
+    //me
+    //40 53 41 54 41 55 41 57 48 83 EC ?? 44 8B EA 4D 8B F9 0F B6 91 1A ?? ?? ?? 45 0F B7 E0
+
+    [Signature("40 53 41 54 41 55 41 57 48 83 EC ?? 44 8B EA 4D 8B F9 0F B6 91 ?? ?? ?? ?? 45 0F B7 E0", DetourName = nameof(Func00Detour))]
+    private readonly Hook<ProcessPvPResultsFunc00Delegate> _func00Hook;
+
+    //p1 = data ref?
+    //p2 = targetId
+    //p3 = dataPtr + 0x10 offset
+    private delegate void ProcessPvPResultsFunc0Delegate(IntPtr p1, uint p2, IntPtr p3);
+    [Signature("48 83 EC ?? 4D 8B C8 48 C7 44 24 20 ?? ?? ?? ?? 41 B8 ?? ?? ?? ?? E8 E5 0C 00 00", DetourName = nameof(Func0Detour))]
+    private readonly Hook<ProcessPvPResultsFunc0Delegate> _func0Hook;
+
+    //p1 = dataPtr + 0x10 offset
+    //private delegate void ProcessPvPResultsFunc1Delegate(IntPtr p1);
+    //[Signature("", DetourName = nameof(Func1Detour))]
+    //private readonly Hook<ProcessPvPResultsFunc0Delegate> _func1Hook;
+
     private Plugin _plugin;
 
     internal GameFunctions(Plugin plugin) {
         _plugin = plugin;
+        _plugin.InteropProvider.InitializeFromAttributes(this);
+        _plugin.Log.Debug($"func00 address: 0x{_func00Hook.Address.ToString("X2")}");
+        _plugin.Log.Debug($"func0 address: 0x{_func0Hook.Address.ToString("X2")}");
+        //_plugin.Log.Debug($"func00 enabled? {_func00Hook.IsEnabled}");
+        //_func00Hook.Enable();
+        _func0Hook.Enable();
     }
 
-    internal void OpenMap(uint mapId) {
-        //AgentMap* agent = AgentMap.Instance();
-        //AgentMap.MemberFunctionPointers.OpenMapByMapId(agent, mapId);
-        AgentMap.Instance()->OpenMapByMapId(mapId);
+    private unsafe ulong Func00Detour(IntPtr p1, uint p2, ushort p3, IntPtr p4, long p5) {
+        //_plugin.Log.Information($"Func 00 detour occurred! opcode: {p3}");
+        _func00Hook.Original(p1, p2, p3, p4, p5);
+        return 0;
     }
 
-    internal void SetFlagMarkers(uint territoryId, uint mapId, float mapX, float mapY) {
-        //AgentMap.MemberFunctionPointers.SetFlagMapMarker(AgentMap.Instance(), territoryId, mapId, mapX, mapY, 60561u);
-        AgentMap.Instance()->SetFlagMapMarker(territoryId, mapId, mapX, mapY);
+    private unsafe void Func0Detour(IntPtr p1, uint p2, IntPtr p3) {
+        _plugin.Log.Information("Func 0 detour occurred!");
+        _func0Hook.Original(p1, p2, p3);
     }
 
     internal int GetCurrentDutyId() {
@@ -54,6 +113,22 @@ internal unsafe class GameFunctions {
         var z = y->ContentDirector.VTable;
 
     }
+
+    internal IntPtr GetInstanceContentCrystallineConflictDirector() {
+        //if (EventFramework.Instance() != null) {
+        //    try {
+        //        return SigScanner.Scan((IntPtr)EventFramework.Instance(), sizeof(EventFramework), "E8 ?? ?? ?? ?? 0F B6 98");
+        //    } catch (KeyNotFoundException) {
+        //        return 0;
+        //    }
+
+        //} else {
+        //    return 0;
+        //}
+        return _getInstanceContentCCDirector(EventFramework.Instance());
+    }
+
+
 
     internal InstanceContentType GetContentType() {
         var x = EventFramework.Instance()->GetInstanceContentDirector();
@@ -77,149 +152,247 @@ internal unsafe class GameFunctions {
         ReadBytes((nint)director, typeof(ushort), 0x1CB0, 0);
     }
 
-    internal void FindValueInContentDirector(int value) {
-        var director = EventFramework.Instance()->GetContentDirector();
-
-        for (int i = 0; i < sizeof(short); i++) {
-            var int16 = FindInt16((short)value, (nint)director, 0x999999, i);
-            if (int16 != null) {
-                _plugin.Log.Debug($"{value} found at 0x{((int)int16).ToString("X2")} type: INT16");
-            }
+    internal void CreateByteDump(nint ptr, int length) {
+        using(FileStream fs = File.Create($"{_plugin.PluginInterface.GetPluginConfigDirectory()}\\{DateTime.Now}_dump")) {
+            char s;
         }
+    }
 
-        for (int i = 0; i < sizeof(int); i++) {
-            var int32 = FindInt32(value, (nint)director, 0x999999, i);
-            if (int32 != null) {
-                _plugin.Log.Debug($"{value} found at 0x{((int)int32).ToString("X2")} type: INT32");
+    internal void FindValueInContentDirector(string value) {
+        var director = EventFramework.Instance()->GetInstanceContentDirector();
+        _plugin.Log.Debug($"cc director: 0x{_ccDirector.ToString("X2")}");
+        _plugin.Log.Debug($"instance content director: 0x{((nint)director).ToString("X2")}");
+        Type[] types = { typeof(byte), typeof(ushort), typeof(uint), typeof(ulong), typeof(sbyte), typeof(short), typeof(int), typeof(long), typeof(float), typeof(double), typeof(string) };
+        foreach(var type in types) {
+            object convertedValue;
+            if (type != typeof(string)) {
+                try {
+                    convertedValue = TypeDescriptor.GetConverter(type).ConvertFromString(value);
+                } catch (ArgumentException) {
+                    //not a convertible type
+                    //_plugin.Log.Debug($"{value} not convertible to {type.Name}");
+                    continue;
+                }
+            } else {
+                convertedValue = value;
             }
-        }
 
-        for (int i = 0; i < sizeof(long); i++) {
-            var int64 = FindInt64(value, (nint)director, 0x999999, i);
-            if (int64 != null) {
-                _plugin.Log.Debug($"{value} found at 0x{((int)int64).ToString("X2")} type: INT64");
-            }
-        }
+            for (int i = 0; type == typeof(string) && i == 0 || type != typeof(string) && i < Marshal.SizeOf(type); i++) {
 
-        for (int i = 0; i < sizeof(ushort); i++) {
-            var uint16 = FindUInt16((ushort)value, (nint)director, 0x999999, i);
-            if (uint16 != null) {
-                _plugin.Log.Debug($"{value} found at 0x{((int)uint16).ToString("X2")} type: UINT16");
-            }
-        }
+                //var a = typeof(GameFunctions).GetMethod("FindValue");
+                //_plugin.Log.Debug($"method found: {a != null}");
 
-        for (int i = 0; i < sizeof(uint); i++) {
-            var uint32 = FindUInt32((uint)value, (nint)director, 0x999999);
-            if (uint32 != null) {
-                _plugin.Log.Debug($"{value} found at 0x{((int)uint32).ToString("X2")} type: UINT32");
-            }
-        }
-
-        for (int i = 0; i < sizeof(ulong); i++) {
-            var uint64 = FindUInt64((ulong)value, (nint)director, 0x999999);
-            if (uint64 != null) {
-                _plugin.Log.Debug($"{value} found at 0x{((int)uint64).ToString("X2")} type: UINT64");
+                //10 MB
+                var matchedOffsets = (int[])typeof(GameFunctions).GetMethod("FindValue").MakeGenericMethod(type).Invoke(this, new object[] { convertedValue, (nint)director, 0xFFFFF, i });
+                foreach(var offset in matchedOffsets) {
+                    _plugin.Log.Debug($"{value} found at 0x{offset.ToString("X2")} for type: {type.Name} and byte offset: {i}");
+                }
             }
         }
     }
 
-    int? FindInt16(short toFind, nint ptr, int length, int offset = 0) {
+    public int[] FindValue<T>(T toFind, nint ptr, int length, int offset = 0, bool printOnly = false) {
+        if(toFind is not null) {
+            _plugin.Log.Debug($"checking for value...{toFind.GetType().Name} offset: {offset}");
+        }
+
         using (UnmanagedMemoryStream memoryStream = new((byte*)IntPtr.Add(ptr, offset), length)) {
             using (var reader = new BinaryReader(memoryStream)) {
+                List<int> matchingCursors = new();
                 int cursor = 0;
-                while (cursor < length) {
-                    var output = reader.ReadInt16();
-                    if (output == toFind) {
-                        return cursor;
+
+                //Func<T> readMethod;
+
+                try {
+                    switch (typeof(T)) {
+                        case Type _ when typeof(T) == typeof(string):
+
+
+                            while (cursor < length) {
+                                char output = '\u0000';
+                                try {
+                                    //output = reader.ReadChar();
+                                    output = (char)reader.PeekChar();
+                                } catch(ArgumentException e) {
+                                    //_plugin.Log.Error($"{e.Message}\nCursor: 0x{cursor.ToString("X2")}\n");
+                                    //return matchingCursors.ToArray();
+                                    
+                                    //skip the byte
+                                    //reader.ReadByte();
+                                    //cursor++;
+                                }
+
+                                if(!printOnly) {
+                                    string match = "";
+                                    int index = 0;
+                                    string stringInput = (string)Convert.ChangeType(toFind, typeof(string));
+                                    if (output == stringInput[index]) {
+                                        match += output;
+                                        index++;
+                                        var byteCount = Encoding.UTF8.GetByteCount((new char[] { output }));
+                                        reader.ReadBytes(byteCount);
+                                        if (match.Equals(toFind)) {
+                                            matchingCursors.Add(cursor - Encoding.UTF8.GetByteCount(match.Remove(match.Length - 1)));
+                                            match = "";
+                                            index = 0;
+                                        }
+                                        cursor += byteCount;
+                                    } else {
+                                        match = "";
+                                        index = 0;
+                                        reader.ReadByte();
+                                        cursor++;
+                                    }
+                                } else {
+                                    _plugin.Log.Debug($"offset: 0x{(cursor + offset).ToString("X2")} Char {output}");
+                                    reader.ReadByte();
+                                    cursor++;
+                                }
+                            }
+                            break;
+                        case Type _ when typeof(T) == typeof(byte):
+                            while (cursor < length) {
+                                var output = reader.ReadByte();
+                                if(!printOnly) {
+                                    if (output == Convert.ToByte(toFind)) {
+                                        matchingCursors.Add(cursor);
+                                    }
+                                } else {
+                                    _plugin.Log.Debug($"offset: 0x{(cursor + offset).ToString("X2")} Byte {output}");
+                                }
+                                cursor += sizeof(byte);
+                            }
+                            break;
+                        case Type _ when typeof(T) == typeof(ushort):
+                            while (cursor < length) {
+                                var output = reader.ReadUInt16();
+                                if(!printOnly) {
+                                    if (output == Convert.ToUInt16(toFind)) {
+                                        matchingCursors.Add(cursor);
+                                    }
+                                } else {
+                                    _plugin.Log.Debug($"offset: 0x{(cursor + offset).ToString("X2")} UShort {output}");
+                                }
+                                cursor += sizeof(ushort);
+                            }
+                            break;
+                        case Type _ when typeof(T) == typeof(uint):
+                            while (cursor < length) {
+                                var output = reader.ReadUInt32();
+                                if (!printOnly) {
+                                    if (output == Convert.ToUInt32(toFind)) {
+                                        matchingCursors.Add(cursor);
+                                    }
+                                } else {
+                                    _plugin.Log.Debug($"offset: 0x{(cursor + offset).ToString("X2")} UInt {output}");
+                                }
+                                cursor += sizeof(uint);
+                            }
+                            break;
+                        case Type _ when typeof(T) == typeof(ulong):
+                            while (cursor < length) {
+                                var output = reader.ReadUInt64();
+                                if(!printOnly) {
+                                    if (output == Convert.ToUInt64(toFind)) {
+                                        matchingCursors.Add(cursor);
+                                    }
+                                } else {
+                                    _plugin.Log.Debug($"offset: 0x{(cursor + offset).ToString("X2")} ULong {output}");
+                                }
+                                cursor += sizeof(ulong);
+                            }
+                            break;
+                        case Type _ when typeof(T) == typeof(sbyte):
+                            while (cursor < length) {
+                                var output = reader.ReadSByte();
+                                if(!printOnly) {
+                                    if (output == Convert.ToSByte(toFind)) {
+                                        matchingCursors.Add(cursor);
+                                    }
+                                } else {
+                                    _plugin.Log.Debug($"offset: 0x{(cursor + offset).ToString("X2")} SByte {output}");
+                                }
+                                cursor += sizeof(sbyte);
+                            }
+                            break;
+                        case Type _ when typeof(T) == typeof(short):
+                            while (cursor < length) {
+                                var output = reader.ReadInt16();
+                                if(!printOnly) {
+                                    if (output == Convert.ToInt16(toFind)) {
+                                        matchingCursors.Add(cursor);
+                                    }
+                                } else {
+                                    _plugin.Log.Debug($"offset: 0x{(cursor + offset).ToString("X2")} Short {output}");
+                                }
+                                cursor += sizeof(short);
+                            }
+                            break;
+                        case Type _ when typeof(T) == typeof(int):
+                            while (cursor < length) {
+                                var output = reader.ReadInt32();
+                                if (!printOnly) {
+                                    if (output == Convert.ToInt32(toFind)) {
+                                        matchingCursors.Add(cursor);
+                                    }
+                                } else {
+                                    _plugin.Log.Debug($"offset: 0x{(cursor + offset).ToString("X2")} Int {output}");
+                                }
+                                cursor += sizeof(int);
+                            }
+                            break;
+                        case Type _ when typeof(T) == typeof(long):
+                            while (cursor < length) {
+                                var output = reader.ReadInt64();
+                                if(!printOnly) {
+                                    if (output == Convert.ToInt64(toFind)) {
+                                        matchingCursors.Add(cursor);
+                                    }
+                                } else {
+                                    _plugin.Log.Debug($"offset: 0x{(cursor + offset).ToString("X2")} Long {output}");
+                                }
+                                cursor += sizeof(long);
+                            }
+                            break;
+                        case Type _ when typeof(T) == typeof(float):
+                            while (cursor < length) {
+                                var output = reader.ReadSingle();
+                                if(!printOnly) {
+                                    if (output == Convert.ToSingle(toFind)) {
+                                        matchingCursors.Add(cursor);
+                                    }
+                                } else {
+                                    _plugin.Log.Debug($"offset: 0x{(cursor + offset).ToString("X2")} Float {output}");
+                                }
+                                cursor += sizeof(float);
+                            }
+                            break;
+                        case Type _ when typeof(T) == typeof(double):
+                            while (cursor < length) {
+                                var output = reader.ReadDouble();
+                                if(!printOnly) {
+                                    if (output == Convert.ToDouble(toFind)) {
+                                        matchingCursors.Add(cursor);
+                                    }
+                                } else {
+                                    _plugin.Log.Debug($"offset: 0x{(cursor + offset).ToString("X2")} Double {output}");
+                                }
+                                cursor += sizeof(double);
+                            }
+                            break;
+                        default:
+                            throw new ArgumentException("Invalid type argument");
                     }
-                    cursor += sizeof(short);
+                } catch(AccessViolationException) {
+                    _plugin.Log.Error($"Can't read memory at 0x{cursor.ToString("X2")}");
                 }
-                return null;
+
+                return matchingCursors.ToArray();
             }
         }
     }
 
-    int? FindInt32(int toFind, nint ptr, int length, int offset = 0) {
-        using (UnmanagedMemoryStream memoryStream = new((byte*)IntPtr.Add(ptr, offset), length)) {
-            using (var reader = new BinaryReader(memoryStream)) {
-                int cursor = 0;
-                while (cursor < length) {
-                    var output = reader.ReadInt32();
-                    if (output == toFind) {
-                        return cursor;
-                    }
-                    cursor += sizeof(int);
-                }
-                return null;
-            }
-        }
-    }
-
-    int? FindInt64(long toFind, nint ptr, int length, int offset = 0) {
-        using (UnmanagedMemoryStream memoryStream = new((byte*)IntPtr.Add(ptr, offset), length)) {
-            using (var reader = new BinaryReader(memoryStream)) {
-                int cursor = 0;
-                while (cursor < length) {
-                    var output = reader.ReadInt64();
-                    if (output == toFind) {
-                        return cursor;
-                    }
-                    cursor += sizeof(long);
-                }
-                return null;
-            }
-        }
-    }
-
-    int? FindUInt16(ushort toFind, nint ptr, int length, int offset = 0) {
-        using (UnmanagedMemoryStream memoryStream = new((byte*)IntPtr.Add(ptr, offset), length)) {
-            using (var reader = new BinaryReader(memoryStream)) {
-                int cursor = 0;
-                while (cursor < length) {
-                    var output = reader.ReadUInt16();
-                    if (output == toFind) {
-                        return cursor;
-                    }
-                    cursor += sizeof(ushort);
-                }
-                return null;
-            }
-        }
-    }
-
-    int? FindUInt32(uint toFind, nint ptr, int length, int offset = 0) {
-        using (UnmanagedMemoryStream memoryStream = new((byte*)IntPtr.Add(ptr, offset), length)) {
-            using (var reader = new BinaryReader(memoryStream)) {
-                int cursor = 0;
-                while (cursor < length) {
-                    var output = reader.ReadUInt32();
-                    if (output == toFind) {
-                        return cursor;
-                    }
-                    cursor += sizeof(uint);
-                }
-                return null;
-            }
-        }
-    }
-
-    int? FindUInt64(ulong toFind, nint ptr, int length, int offset = 0) {
-        using (UnmanagedMemoryStream memoryStream = new((byte*)IntPtr.Add(ptr, offset), length)) {
-            using (var reader = new BinaryReader(memoryStream)) {
-                int cursor = 0;
-                while (cursor < length) {
-                    var output = reader.ReadUInt64();
-                    if (output == toFind) {
-                        return cursor;
-                    }
-                    cursor += sizeof(ulong);
-                }
-                return null;
-            }
-        }
-    }
-
-    private void ReadBytes(nint ptr, Type type, int length, int offset = 0) {
+    internal void ReadBytes(nint ptr, Type type, int length, int offset = 0) {
         //start low length
         using (UnmanagedMemoryStream memoryStream = new((byte*)IntPtr.Add(ptr, offset), length)) {
             using (var reader = new BinaryReader(memoryStream)) {
@@ -239,6 +412,11 @@ internal unsafe class GameFunctions {
                         case Type _ when type == typeof(long):
                             long outputLong = reader.ReadInt64();
                             _plugin.Log.Debug($"offset: 0x{cursor.ToString("X2")} Int64 {outputLong}");
+                            cursor += sizeof(long);
+                            break;
+                        case Type _ when type == typeof(byte):
+                            var outputByte = reader.ReadByte();
+                            _plugin.Log.Debug($"offset: 0x{cursor.ToString("X2")} Int64 {outputByte}");
                             cursor += sizeof(long);
                             break;
                         case Type _ when type == typeof(ushort):
@@ -264,7 +442,7 @@ internal unsafe class GameFunctions {
         //using(var reader = new BinaryReader(ptr))
     }
 
-    static byte[] GetBytes(object str) {
+    public static byte[] GetBytes(object str) {
         int size = Marshal.SizeOf(str);
         byte[] arr = new byte[size];
 
