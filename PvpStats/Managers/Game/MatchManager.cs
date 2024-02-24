@@ -427,7 +427,7 @@ internal class MatchManager : IDisposable {
             bool isFound = false;
             foreach(var team in _currentMatch.Teams) {
                 foreach(var player in team.Value.Players) {
-                    if(player.Alias == introPlayer.Value.Alias) {
+                    if(player.Alias.Equals(introPlayer.Value.Alias)) {
                         isFound = true;
                         break;
                     }
@@ -438,6 +438,7 @@ internal class MatchManager : IDisposable {
             }
             if(!isFound) {
                 try {
+                    _plugin.Log.Information($"Adding missing player {introPlayer.Value.Alias} to team list...");
                     _currentMatch.Teams[(CrystallineConflictTeamName)introPlayer.Value.Team].Players.Add(introPlayer.Value);
                 } catch(Exception e) {
                     if(e is NullReferenceException || e is KeyNotFoundException) {

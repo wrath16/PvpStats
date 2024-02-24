@@ -41,8 +41,13 @@ internal static class ImGuiHelper {
                 wrappedString += $"\n{word}";
                 currentLine = word;
             } else {
-                wrappedString += $" {word}";
-                currentLine += $" {word}";
+                if(currentLine == "") {
+                    wrappedString += $"{word}";
+                    currentLine += $"{word}";
+                } else {
+                    wrappedString += $" {word}";
+                    currentLine += $" {word}";
+                }
             }
         }
 
