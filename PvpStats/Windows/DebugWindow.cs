@@ -3,7 +3,7 @@ using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Interface.Windowing;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using ImGuiNET;
-using PvpStats.Helpers;
+using PvpStats.Services;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -61,19 +61,19 @@ internal unsafe class DebugWindow : Window {
                 }
 
                 if(ImGui.Button("Print Text Nodes")) {
-                    AtkNodeHelper.PrintTextNodes(_addon);
+                    _plugin.AtkNodeService.PrintTextNodes(_addon);
                 }
 
                 if(ImGui.Button("GetNodeByIDChain")) {
                     unsafe {
-                        var x = AtkNodeHelper.GetNodeByIDChain(_addon, _idParams);
+                        var x = AtkNodeService.GetNodeByIDChain(_addon, _idParams);
                         _plugin.Log.Debug($"0x{new IntPtr(x).ToString("X8")}");
                     }
 
                 }
 
                 if(ImGui.Button("Print ATKStage String data")) {
-                    AtkNodeHelper.PrintAtkStringArray();
+                    _plugin.AtkNodeService.PrintAtkStringArray();
                 }
                 ImGui.EndTabItem();
             }

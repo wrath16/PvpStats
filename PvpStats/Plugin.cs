@@ -3,7 +3,6 @@ using Dalamud.Game.Command;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
-using PvpStats.Helpers;
 using PvpStats.Managers;
 using PvpStats.Managers.Game;
 using PvpStats.Services;
@@ -47,6 +46,7 @@ public sealed class Plugin : IDalamudPlugin {
     internal LocalizationService Localization { get; init; }
     internal StorageService Storage { get; init; }
     internal GameStateService GameState { get; init; }
+    internal AtkNodeService AtkNodeService { get; init; }
 
     public Configuration Configuration { get; init; }
     internal GameFunctions Functions { get; init; }
@@ -90,8 +90,6 @@ public sealed class Plugin : IDalamudPlugin {
             InteropProvider = interopProvider;
             SigScanner = sigScanner;
 
-            AtkNodeHelper.Log = Log;
-
             Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             Configuration.Initialize(this);
 
@@ -99,6 +97,7 @@ public sealed class Plugin : IDalamudPlugin {
             Storage = new(this, $"{PluginInterface.GetPluginConfigDirectory()}\\{DatabaseName}");
             Functions = new(this);
             GameState = new(this);
+            AtkNodeService = new(this);
             Localization = new(this);
             WindowManager = new(this);
             MatchManager = new(this);

@@ -1,15 +1,17 @@
-﻿using Dalamud.Plugin.Services;
-using Dalamud.Utility;
+﻿using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace PvpStats.Helpers;
-internal static class AtkNodeHelper {
+namespace PvpStats.Services;
+internal class AtkNodeService {
 
-    internal static IPluginLog? Log;
+    private Plugin _plugin;
+
+    internal AtkNodeService(Plugin plugin) {
+        _plugin = plugin;
+    }
 
     internal static unsafe AtkResNode* GetNodeByIDChain(string addon, params uint[] ids) {
         AtkUnitBase* addonNode = AtkStage.GetSingleton()->RaptureAtkUnitManager->GetAddonByName(addon);
@@ -66,22 +68,22 @@ internal static class AtkNodeHelper {
         }
     }
 
-    internal static unsafe void PrintTextNodes(string addon) {
+    internal unsafe void PrintTextNodes(string addon) {
         AtkUnitBase* addonNode = AtkStage.GetSingleton()->RaptureAtkUnitManager->GetAddonByName(addon);
         if(addonNode != null) {
             //Log.Debug($"addon name: {Marshal.PtrToStringUTF8((nint)addonNode->Name)} ptr: {string.Format("0x{0:X8}", new IntPtr(addonNode).ToString())}");
-            Log.Debug($"addon name: {Marshal.PtrToStringUTF8((nint)addonNode->Name)} ptr: 0x{new IntPtr(addonNode).ToString("X8")}");
+            _plugin.Log.Debug($"addon name: {Marshal.PtrToStringUTF8((nint)addonNode->Name)} ptr: 0x{new nint(addonNode).ToString("X8")}");
             PrintTextNodes(addonNode->RootNode);
         } else {
-            Log.Debug($"{addon} is null!");
+            _plugin.Log.Debug($"{addon} is null!");
         }
     }
 
-    internal static unsafe void PrintTextNodes(AtkUnitBase* addon) {
+    internal unsafe void PrintTextNodes(AtkUnitBase* addon) {
         PrintTextNodes(addon->RootNode);
     }
 
-    internal static unsafe void PrintTextNodes(AtkResNode* node, bool checkSiblings = true, bool onlyVisible = true) {
+    internal unsafe void PrintTextNodes(AtkResNode* node, bool checkSiblings = true, bool onlyVisible = true) {
         if(node == null) {
             return;
         }
@@ -110,8 +112,8 @@ internal static class AtkNodeHelper {
             if(tNode != null) {
                 string nodeText = tNode->NodeText.ToString();
                 if(!nodeText.IsNullOrEmpty() && (node->IsVisible || !onlyVisible)) {
-                    Log.Debug(string.Format("Visible: {5,-6} ID: {0,-8} type: {1,-6} childCount: {2,-4} parentID: {3,-25} parentType: {4}", node->NodeID, type, childCount, parentNodeIDString, parentNodeTypeString, node->IsVisible));
-                    Log.Debug($"Text: {tNode->NodeText}");
+                    _plugin.Log.Debug(string.Format("Visible: {5,-6} ID: {0,-8} type: {1,-6} childCount: {2,-4} parentID: {3,-25} parentType: {4}", node->NodeID, type, childCount, parentNodeIDString, parentNodeTypeString, node->IsVisible));
+                    _plugin.Log.Debug($"Text: {tNode->NodeText}");
                 }
             }
         }
@@ -137,7 +139,7 @@ internal static class AtkNodeHelper {
 
         //check child nodes
         var child = node->ChildNode;
-        if(child != null || (!node->IsVisible && onlyVisible)) {
+        if(child != null || !node->IsVisible && onlyVisible) {
             PrintTextNodes(child, checkSiblings);
         }
 
@@ -148,11 +150,11 @@ internal static class AtkNodeHelper {
         }
     }
 
-    internal static unsafe void PrintAtkValues(AtkUnitBase* node) {
+    internal unsafe void PrintAtkValues(AtkUnitBase* node) {
         if(node->AtkValues != null) {
             for(int i = 0; i < node->AtkValuesCount; i++) {
                 string data = ConvertAtkValueToString(node->AtkValues[i]);
-                Log.Debug(string.Format("index: {0,-5} type: {1,-15} data: {2}", i, node->AtkValues[i].Type, data));
+                _plugin.Log.Debug(string.Format("index: {0,-5} type: {1,-15} data: {2}", i, node->AtkValues[i].Type, data));
             }
         }
     }
@@ -181,7 +183,7 @@ internal static class AtkNodeHelper {
         return "";
     }
 
-    internal static unsafe void PrintAtkStringArray() {
+    internal unsafe void PrintAtkStringArray() {
         //int index = 0;
         //var stringArray = AtkStage.GetSingleton()->GetStringArrayData()[index];
 
@@ -203,18 +205,18 @@ internal static class AtkNodeHelper {
                 //    secondInternalArray = internalArray[secondInternalCount];
                 //}
 
-                Log.Debug($"{count} {internalCount}\t{ReadString(internalArray)}");
+                _plugin.Log.Debug($"{count} {internalCount}\t{ReadString(internalArray)}");
 
                 internalCount++;
                 internalArray = stringArray->StringArray[internalCount];
             }
-            Log.Debug($"{count} Total strings: {internalCount}");
+            _plugin.Log.Debug($"{count} Total strings: {internalCount}");
 
             count++;
             stringArray = AtkStage.GetSingleton()->GetStringArrayData()[count];
         }
 
-        Log.Debug($"Total AtkStageStringArrays: {count}");
+        _plugin.Log.Debug($"Total AtkStageStringArrays: {count}");
 
         //for(int i = 0; i < string)
 

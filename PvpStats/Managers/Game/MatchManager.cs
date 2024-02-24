@@ -10,6 +10,7 @@ using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.GeneratedSheets2;
 using PvpStats.Helpers;
+using PvpStats.Services;
 using PvpStats.Types.ClientStruct;
 using PvpStats.Types.Match;
 using PvpStats.Types.Player;
@@ -237,7 +238,7 @@ internal class MatchManager : IDisposable {
         CrystallineConflictTeam team = new();
 
         //team name
-        string teamName = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[4]);
+        string teamName = AtkNodeService.ConvertAtkValueToString(addon->AtkValues[4]);
         string translatedTeamName = _plugin.Localization.TranslateDataTableEntry<Addon>(teamName, "Text", ClientLanguage.English);
         team.TeamName = MatchHelper.GetTeamName(translatedTeamName);
 
@@ -249,9 +250,9 @@ internal class MatchManager : IDisposable {
                 break;
             }
             //TODO account for abbreviated name settings...
-            string player = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[offset]);
-            string world = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[offset + 6]);
-            string job = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[offset + 5]);
+            string player = AtkNodeService.ConvertAtkValueToString(addon->AtkValues[offset]);
+            string world = AtkNodeService.ConvertAtkValueToString(addon->AtkValues[offset + 6]);
+            string job = AtkNodeService.ConvertAtkValueToString(addon->AtkValues[offset + 5]);
             //JP uses English names...
             string translatedJob = _plugin.Localization.TranslateDataTableEntry<ClassJob>(job, "Name", ClientLanguage.English,
                 _plugin.ClientState.ClientLanguage == ClientLanguage.Japanese ? ClientLanguage.English : _plugin.ClientState.ClientLanguage);
@@ -259,10 +260,10 @@ internal class MatchManager : IDisposable {
             string? translatedRank = null;
 
             //have to read rank from nodes -_-
-            var rankNode = AtkNodeHelper.GetNodeByIDChain(addon, rankIdChain);
+            var rankNode = AtkNodeService.GetNodeByIDChain(addon, rankIdChain);
             if(rankNode == null || rankNode->Type != NodeType.Text || rankNode->GetAsAtkTextNode()->NodeText.ToString().IsNullOrEmpty()) {
                 rankIdChain[3] = 10; //non-crystal
-                rankNode = AtkNodeHelper.GetNodeByIDChain(addon, rankIdChain);
+                rankNode = AtkNodeService.GetNodeByIDChain(addon, rankIdChain);
             }
             if(rankNode != null && rankNode->Type == NodeType.Text) {
                 rank = rankNode->GetAsAtkTextNode()->NodeText.ToString();
@@ -381,7 +382,7 @@ internal class MatchManager : IDisposable {
             }
 
             CrystallineConflictPostMatchRow playerStats = new() {
-                Player = (PlayerAlias)$"{AtkNodeHelper.ReadString(player.PlayerName, 32)} {_plugin.DataManager.GetExcelSheet<World>()?.GetRow(player.WorldId)?.Name}",
+                Player = (PlayerAlias)$"{AtkNodeService.ReadString(player.PlayerName, 32)} {_plugin.DataManager.GetExcelSheet<World>()?.GetRow(player.WorldId)?.Name}",
                 Team = player.Team == 0 ? CrystallineConflictTeamName.Astra : CrystallineConflictTeamName.Umbra,
                 Job = PlayerJobHelper.GetJobFromName(_plugin.DataManager.GetExcelSheet<ClassJob>()?.GetRow(player.ClassJobId)?.NameEnglish ?? ""),
                 PlayerRank = new PlayerRank() {
