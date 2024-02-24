@@ -226,7 +226,7 @@ internal class CrystallineConflictSummary {
             _assistContribution = assistContribution;
             _damageDealtContribution = damageDealtContribution;
             _damageTakenContribution = damageTakenContribution;
-            _damageTakenContribution = hpRestoredContribution;
+            _hpRestoredContribution = hpRestoredContribution;
             _timeOnCrystalContribution = timeOnCrystalContribution;
         } finally {
             _refreshLock.Release();
