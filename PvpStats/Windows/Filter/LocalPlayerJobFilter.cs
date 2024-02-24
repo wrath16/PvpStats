@@ -23,14 +23,14 @@ public class LocalPlayerJobFilter : DataFilter {
         var allRoles = Enum.GetValues(typeof(JobSubRole)).Cast<JobSubRole>();
         _roleCount = allRoles.Count();
         _jobCombo.Add("All Jobs");
-        foreach (var role in allRoles) {
+        foreach(var role in allRoles) {
             _jobCombo.Add(role.ToString());
         }
-        foreach (var job in allJobs) {
+        foreach(var job in allJobs) {
             _jobCombo.Add(PlayerJobHelper.GetNameFromJob(job));
         }
 
-        if (filter is not null) {
+        if(filter is not null) {
             AnyJob = filter.AnyJob;
             PlayerJob = filter.PlayerJob;
             JobRole = filter.JobRole;
@@ -41,12 +41,12 @@ public class LocalPlayerJobFilter : DataFilter {
         int jobIndex = AnyJob ? 0 : JobRole != null ? (int)JobRole + 1 : (int)PlayerJob + _roleCount + 1;
 
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
-        if (ImGui.Combo("###LocalPlayerJobCombo", ref jobIndex, _jobCombo.ToArray(), _jobCombo.Count)) {
+        if(ImGui.Combo("###LocalPlayerJobCombo", ref jobIndex, _jobCombo.ToArray(), _jobCombo.Count)) {
             _plugin!.DataQueue.QueueDataOperation(() => {
-                if (jobIndex == 0) {
+                if(jobIndex == 0) {
                     AnyJob = true;
                     JobRole = null;
-                } else if (jobIndex <= _roleCount + 1) {
+                } else if(jobIndex <= _roleCount + 1) {
                     AnyJob = false;
                     JobRole = (JobSubRole)jobIndex - 1;
                 } else {

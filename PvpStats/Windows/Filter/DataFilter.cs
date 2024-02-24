@@ -21,7 +21,7 @@ public abstract class DataFilter {
 
     internal void Refresh() {
         //_plugin.DataQueue.QueueDataOperation(() => RefreshData());
-        if (RefreshData is null) {
+        if(RefreshData is null) {
             throw new InvalidOperationException("No refresh action initialized!");
         }
         RefreshData();

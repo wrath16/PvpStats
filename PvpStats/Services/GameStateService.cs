@@ -16,7 +16,7 @@ internal class GameStateService {
     public string GetCurrentPlayer() {
         string? currentPlayerName = _plugin.ClientState.LocalPlayer?.Name?.ToString();
         string? currentPlayerWorld = _plugin.ClientState.LocalPlayer?.HomeWorld?.GameData?.Name?.ToString();
-        if ((currentPlayerName == null || currentPlayerWorld == null) && _lastCurrentPlayer != null) {
+        if((currentPlayerName == null || currentPlayerWorld == null) && _lastCurrentPlayer != null) {
             return _lastCurrentPlayer;
         }
         _lastCurrentPlayer = $"{currentPlayerName} {currentPlayerWorld}";

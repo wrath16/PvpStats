@@ -24,14 +24,14 @@ public class ArenaFilter : DataFilter {
             "All",
         };
         var allMaps = Enum.GetValues(typeof(CrystallineConflictMap)).Cast<CrystallineConflictMap>();
-        foreach (var map in allMaps) {
+        foreach(var map in allMaps) {
             FilterState.Add(map, true);
             _range.Add(MatchHelper.GetArenaName(map));
         }
         CurrentIndex = 0;
 
-        if (filter is not null) {
-            foreach (var category in filter.FilterState) {
+        if(filter is not null) {
+            foreach(var category in filter.FilterState) {
                 FilterState[category.Key] = category.Value;
             }
             CurrentIndex = filter.CurrentIndex;
@@ -41,7 +41,7 @@ public class ArenaFilter : DataFilter {
 
     private void UpdateAllSelected() {
         AllSelected = true;
-        foreach (var category in FilterState) {
+        foreach(var category in FilterState) {
             AllSelected = AllSelected && category.Value;
         }
     }
@@ -50,17 +50,17 @@ public class ArenaFilter : DataFilter {
         int currentIndex = CurrentIndex;
         //bool allSelected = AllSelected;
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2);
-        if (ImGui.Combo($"##arenaRangeCombo", ref currentIndex, _range.ToArray(), _range.Count)) {
+        if(ImGui.Combo($"##arenaRangeCombo", ref currentIndex, _range.ToArray(), _range.Count)) {
             _plugin!.DataQueue.QueueDataOperation(() => {
                 CurrentIndex = currentIndex;
-                if (currentIndex == 0) {
-                    foreach (var item in FilterState) {
+                if(currentIndex == 0) {
+                    foreach(var item in FilterState) {
                         FilterState[item.Key] = true;
                     }
                 } else {
                     //cast as int
                     CrystallineConflictMap selectedMap = (CrystallineConflictMap)currentIndex - 1;
-                    foreach (var item in FilterState) {
+                    foreach(var item in FilterState) {
                         FilterState[item.Key] = false;
                     }
                     FilterState[selectedMap] = true;

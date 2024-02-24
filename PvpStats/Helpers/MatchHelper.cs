@@ -28,7 +28,7 @@ public static class MatchHelper {
     };
 
     public static CrystallineConflictMatchType GetMatchType(uint dutyId) {
-        switch (dutyId) {
+        switch(dutyId) {
             case 835: //palaistra
             case 836: //volcanic heart
             case 837: //cloud 9
@@ -80,16 +80,16 @@ public static class MatchHelper {
 
     public static CrystallineConflictTeamName GetTeamName(string name) {
         name = name.ToLower().Trim();
-        if (Regex.IsMatch(name, @"\bastra\b", RegexOptions.IgnoreCase)) {
+        if(Regex.IsMatch(name, @"\bastra\b", RegexOptions.IgnoreCase)) {
             return CrystallineConflictTeamName.Astra;
-        } else if (Regex.IsMatch(name, @"\bumbra\b", RegexOptions.IgnoreCase)) {
+        } else if(Regex.IsMatch(name, @"\bumbra\b", RegexOptions.IgnoreCase)) {
             return CrystallineConflictTeamName.Umbra;
         }
         return CrystallineConflictTeamName.Unknown;
     }
 
     public static string GetTeamName(CrystallineConflictTeamName team) {
-        switch (team) {
+        switch(team) {
             case CrystallineConflictTeamName.Astra: return "Astra";
             case CrystallineConflictTeamName.Umbra: return "Umbra";
             default: return "Unknown";
@@ -98,8 +98,8 @@ public static class MatchHelper {
 
     public static ArenaTier GetTier(string name) {
         name = name.ToLower().Trim();
-        foreach (var kvp in ArenaRankLookup) {
-            if (kvp.Value == name) {
+        foreach(var kvp in ArenaRankLookup) {
+            if(kvp.Value == name) {
                 return kvp.Key;
             }
         }
@@ -107,7 +107,7 @@ public static class MatchHelper {
     }
 
     public static float? ConvertProgressStringToFloat(string progress) {
-        if (float.TryParse(progress.Replace("%", "").Replace(",", "."), out float parseResult)) {
+        if(float.TryParse(progress.Replace("%", "").Replace(",", "."), out float parseResult)) {
             return parseResult;
         } else {
             return null;

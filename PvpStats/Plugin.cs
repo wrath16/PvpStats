@@ -111,7 +111,7 @@ public sealed class Plugin : IDalamudPlugin {
 
             AtkNodeHelper.Log = Log;
 
-            foreach (var icon in PlayerJobHelper.JobIcons) {
+            foreach(var icon in PlayerJobHelper.JobIcons) {
                 JobIcons.Add(icon.Key, TextureProvider.GetIcon(icon.Value));
             }
 
@@ -175,7 +175,7 @@ public sealed class Plugin : IDalamudPlugin {
             //AddonLifecycle.RegisterListener(AddonEvent.PostSetup, "MKSRecord", OnPvPResults);
             //AddonLifecycle.RegisterListener(AddonEvent.PreSetup, "MKSRecord", OnPvPResults);
             //AddonLifecycle.RegisterListener(AddonEvent.PostSetup, "PvpProfileColosseum", OnPvPIntro);
-        } catch (Exception e) {
+        } catch(Exception e) {
             //remove handlers and release database if we fail to start
             Log!.Error($"Failed to initialize plugin constructor: {e.Message}");
             Dispose();
@@ -189,7 +189,7 @@ public sealed class Plugin : IDalamudPlugin {
     public IPluginConfiguration? GetPluginConfig() {
         //string pluginName = PluginInterface.InternalName;
         FileInfo configFile = PluginInterface.ConfigFile;
-        if (!configFile.Exists) {
+        if(!configFile.Exists) {
             return null;
         }
         return JsonConvert.DeserializeObject<IPluginConfiguration>(File.ReadAllText(configFile.FullName), new JsonSerializerSettings {
@@ -219,7 +219,7 @@ public sealed class Plugin : IDalamudPlugin {
         if(WindowManager != null) {
             WindowManager.Dispose();
         }
-        if (Storage != null) {
+        if(Storage != null) {
             Storage.Dispose();
         }
         if(DataQueue != null) {
@@ -245,14 +245,14 @@ public sealed class Plugin : IDalamudPlugin {
     }
 
     private void OnDutyStarted(object? sender, ushort param1) {
-        if (_matchInProgress) {
+        if(_matchInProgress) {
             Log.Debug("Match has started.");
         }
 
     }
 
     private void OnDutyCompleted(object? sender, ushort param1) {
-        if (_matchInProgress) {
+        if(_matchInProgress) {
             _matchInProgress = false;
             Log.Debug("Match ended.");
         }
@@ -264,7 +264,7 @@ public sealed class Plugin : IDalamudPlugin {
         //Log.Verbose($"Territory changed: {territoryId}, Current duty: {GetCurrentDutyId()}");
         //bool isCrystallineConflict = false;
 
-        switch (dutyId) {
+        switch(dutyId) {
             case 835:
             case 836:
             case 837:

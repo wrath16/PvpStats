@@ -62,7 +62,7 @@ internal class CrystallineConflictSummary {
         double killContribTotal = 0, deathContribTotal = 0, assistContribTotal = 0, ddContribTotal = 0, dtContribTotal = 0, hpContribTotal = 0, timeContribTotal = 0;
         TimeSpan totalStatsMatchLength = new();
         var addJobStat = ((Dictionary<Job, JobStats> jobStats, Job job, bool isWin) => {
-            if (jobStats.ContainsKey(job)) {
+            if(jobStats.ContainsKey(job)) {
                 jobStats[job].Matches++;
                 jobStats[job].Wins += isWin ? 1 : 0;
             } else {
@@ -73,7 +73,7 @@ internal class CrystallineConflictSummary {
             }
         });
         var addPlayerStat = ((Dictionary<PlayerAlias, PlayerStats> playerStats, PlayerAlias player, Job job, bool isWin) => {
-            if (playerStats.ContainsKey(player)) {
+            if(playerStats.ContainsKey(player)) {
                 addJobStat(playerStats[player].JobStats, job, isWin);
                 playerStats[player].Matches++;
                 playerStats[player].Wins += isWin ? 1 : 0;
@@ -86,30 +86,30 @@ internal class CrystallineConflictSummary {
                 addJobStat(playerStats[player].JobStats, job, isWin);
             }
         });
-        foreach (var match in matches) {
-            if (match.LocalPlayerTeamMember != null) {
+        foreach(var match in matches) {
+            if(match.LocalPlayerTeamMember != null) {
                 addJobStat(_jobStats, match.LocalPlayerTeamMember.Job, match.IsWin);
-                foreach (var team in match.Teams) {
-                    if (team.Key == match.LocalPlayerTeam.TeamName) {
-                        foreach (var player in team.Value.Players) {
-                            if (!player.Alias.Equals(match.LocalPlayer)) {
+                foreach(var team in match.Teams) {
+                    if(team.Key == match.LocalPlayerTeam.TeamName) {
+                        foreach(var player in team.Value.Players) {
+                            if(!player.Alias.Equals(match.LocalPlayer)) {
                                 addJobStat(_allyJobStats, player.Job, match.IsWin);
                                 addPlayerStat(_teammateStats, player.Alias, player.Job, match.IsWin);
                             }
                         }
                     } else {
-                        foreach (var player in team.Value.Players) {
+                        foreach(var player in team.Value.Players) {
                             addJobStat(_enemyJobStats, player.Job, match.IsWin);
                             addPlayerStat(_enemyStats, player.Alias, player.Job, match.IsWin);
                         }
                     }
                 }
-                if (match.PostMatch != null && match.MatchDuration != null) {
+                if(match.PostMatch != null && match.MatchDuration != null) {
                     var playerTeamStats = match.PostMatch.Teams.Where(x => x.Key == match.LocalPlayerTeam!.TeamName).FirstOrDefault().Value;
                     var playerStats = playerTeamStats.PlayerStats.Where(x => x.Player.Equals(match.LocalPlayer)).FirstOrDefault();
-                    if (playerStats != null) {
+                    if(playerStats != null) {
                         _statsEligibleMatches++;
-                        if (match.IsWin) {
+                        if(match.IsWin) {
                             _statsEligibleWins++;
                         }
                         totalStatsMatchLength += (TimeSpan)match.MatchDuration;
@@ -134,9 +134,9 @@ internal class CrystallineConflictSummary {
         }
         //set favored job
         var setFavoredJob = ((Dictionary<PlayerAlias, PlayerStats> playerStats, bool byWins) => {
-            foreach (var player in playerStats) {
+            foreach(var player in playerStats) {
                 var list = player.Value.JobStats.OrderByDescending(x => 2 * x.Value.Wins - x.Value.Matches);
-                if (byWins) {
+                if(byWins) {
                     player.Value.FavoredJob = list.FirstOrDefault().Key;
                 } else {
                     player.Value.FavoredJob = list.LastOrDefault().Key;
@@ -152,7 +152,7 @@ internal class CrystallineConflictSummary {
         _enemyStats = _enemyStats.OrderByDescending(x => x.Value.Matches - 2 * x.Value.Wins).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
         //calculate average stats
-        if (_statsEligibleMatches > 0) {
+        if(_statsEligibleMatches > 0) {
             _averageKills = (float)totalStats.Kills / _statsEligibleMatches;
             _averageDeaths = (float)totalStats.Deaths / _statsEligibleMatches;
             _averageAssists = (float)totalStats.Assists / _statsEligibleMatches;
@@ -181,11 +181,11 @@ internal class CrystallineConflictSummary {
     }
 
     public void Draw() {
-        if (_totalMatches > 0) {
+        if(_totalMatches > 0) {
             DrawResultTable();
         }
 
-        if (_jobStats.Count > 0) {
+        if(_jobStats.Count > 0) {
             ImGui.Separator();
             ImGui.TextColored(ImGuiColors.DalamudYellow, "Jobs Played:");
             DrawJobTable(_jobStats);
@@ -197,19 +197,19 @@ internal class CrystallineConflictSummary {
             DrawJobTable(_enemyJobStats);
         }
 
-        if (_teammateStats.Count > 0) {
+        if(_teammateStats.Count > 0) {
             ImGui.Separator();
             ImGui.TextColored(ImGuiColors.DalamudYellow, "Top Teammates:");
             DrawPlayerStatsTable(_teammateStats);
         }
 
-        if (_enemyStats.Count > 0) {
+        if(_enemyStats.Count > 0) {
             ImGui.Separator();
             ImGui.TextColored(ImGuiColors.DalamudYellow, "Top Opponents:");
             DrawPlayerStatsTable(_enemyStats);
         }
 
-        if (_statsEligibleMatches > 0) {
+        if(_statsEligibleMatches > 0) {
             ImGui.Separator();
             ImGui.TextColored(ImGuiColors.DalamudYellow, "Average Stats:");
             ImGui.SameLine();
@@ -223,7 +223,7 @@ internal class CrystallineConflictSummary {
     }
 
     private void DrawResultTable() {
-        if (ImGui.BeginTable($"StatsSummary", 3, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
+        if(ImGui.BeginTable($"StatsSummary", 3, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
             ImGui.TableSetupColumn("description", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 158f);
             ImGui.TableSetupColumn($"value", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 45f);
             ImGui.TableSetupColumn($"rate", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 45f);
@@ -234,7 +234,7 @@ internal class CrystallineConflictSummary {
             ImGui.Text($"{_totalMatches.ToString("N0")}");
             ImGui.TableNextColumn();
 
-            if (_totalMatches > 0) {
+            if(_totalMatches > 0) {
                 ImGui.TableNextColumn();
                 ImGui.Text("Wins: ");
                 ImGui.TableNextColumn();
@@ -248,7 +248,7 @@ internal class CrystallineConflictSummary {
                 ImGui.Text($"{_totalLosses.ToString("N0")}");
                 ImGui.TableNextColumn();
 
-                if (_totalOther > 0) {
+                if(_totalOther > 0) {
                     ImGui.TableNextColumn();
                     ImGui.Text("Other: ");
                     ImGui.TableNextColumn();
@@ -261,7 +261,7 @@ internal class CrystallineConflictSummary {
     }
 
     private void DrawJobTable(Dictionary<Job, JobStats> jobStats) {
-        if (ImGui.BeginTable($"JobTable", 4, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
+        if(ImGui.BeginTable($"JobTable", 4, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
             ImGui.TableSetupColumn("Job");
             ImGui.TableSetupColumn($"Matches");
             ImGui.TableSetupColumn($"Wins");
@@ -269,7 +269,7 @@ internal class CrystallineConflictSummary {
 
             ImGui.TableHeadersRow();
 
-            foreach (var job in jobStats) {
+            foreach(var job in jobStats) {
                 ImGui.TableNextColumn();
                 ImGui.Text($"{PlayerJobHelper.GetNameFromJob(job.Key)}");
 
@@ -280,7 +280,7 @@ internal class CrystallineConflictSummary {
                 ImGui.Text($"{job.Value.Wins}");
 
                 ImGui.TableNextColumn();
-                if (job.Value.Matches > 0) {
+                if(job.Value.Matches > 0) {
                     ImGui.Text($"{string.Format("{0:P}%", (double)job.Value.Wins / job.Value.Matches)}");
                 }
             }
@@ -289,7 +289,7 @@ internal class CrystallineConflictSummary {
     }
 
     private void DrawPlayerStatsTable(Dictionary<PlayerAlias, PlayerStats> playerStats) {
-        if (ImGui.BeginTable($"JobTable", 4, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
+        if(ImGui.BeginTable($"JobTable", 4, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
             ImGui.TableSetupColumn("Player");
             //ImGui.TableSetupColumn($"Home World");
             ImGui.TableSetupColumn($"Favored\nJob", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 45f);
@@ -299,7 +299,7 @@ internal class CrystallineConflictSummary {
 
             ImGui.TableHeadersRow();
 
-            for (int i = 0; i < playerStats.Count && i < 5; i++) {
+            for(int i = 0; i < playerStats.Count && i < 5; i++) {
                 var player = playerStats.ElementAt(i);
 
                 ImGui.TableNextColumn();
@@ -327,7 +327,7 @@ internal class CrystallineConflictSummary {
     }
 
     private void DrawMatchStatsTable() {
-        if (ImGui.BeginTable($"MatchStatsTable", 7, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
+        if(ImGui.BeginTable($"MatchStatsTable", 7, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
             ImGui.TableSetupColumn("Kills");
             ImGui.TableSetupColumn($"Deaths");
             ImGui.TableSetupColumn($"Assists");

@@ -1,11 +1,7 @@
 ﻿using ImGuiNET;
-using PvpStats.Helpers;
-using PvpStats.Types.Match;
-using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json.Serialization;
 
 namespace PvpStats.Windows.Filter;
 
@@ -25,11 +21,11 @@ public class ResultFilter : DataFilter {
 
     internal ResultFilter(Plugin plugin, Action action, ResultFilter? filter = null) : base(plugin, action) {
         Result = MatchResult.Any;
-        if (filter is not null) {
+        if(filter is not null) {
             Result = filter.Result;
         }
         var results = Enum.GetValues(typeof(MatchResult)).Cast<MatchResult>();
-        foreach (var result in results) {
+        foreach(var result in results) {
             _resultCombo.Add(result.ToString());
         }
     }
@@ -38,7 +34,7 @@ public class ResultFilter : DataFilter {
         int currentIndex = (int)Result;
         //bool allSelected = AllSelected;
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2);
-        if (ImGui.Combo($"##matchResultCombo", ref currentIndex, _resultCombo.ToArray(), _resultCombo.Count)) {
+        if(ImGui.Combo($"##matchResultCombo", ref currentIndex, _resultCombo.ToArray(), _resultCombo.Count)) {
             _plugin!.DataQueue.QueueDataOperation(() => {
                 Result = (MatchResult)currentIndex;
                 Refresh();

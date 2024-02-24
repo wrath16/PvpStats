@@ -57,8 +57,8 @@ internal class MainWindow : Window {
         try {
             RefreshLock.Wait();
             var matches = _plugin.Storage.GetCCMatches().Query().Where(m => !m.IsDeleted && m.IsCompleted).OrderByDescending(m => m.DutyStartTime).ToList();
-            foreach (var filter in Filters) {
-                switch (filter.GetType()) {
+            foreach(var filter in Filters) {
+                switch(filter.GetType()) {
                     case Type _ when filter.GetType() == typeof(MatchTypeFilter):
                         var matchTypeFilter = (MatchTypeFilter)filter;
                         matches = matches.Where(x => matchTypeFilter.FilterState[x.MatchType]).ToList();
@@ -71,7 +71,7 @@ internal class MainWindow : Window {
                         break;
                     case Type _ when filter.GetType() == typeof(TimeFilter):
                         var timeFilter = (TimeFilter)filter;
-                        switch (timeFilter.StatRange) {
+                        switch(timeFilter.StatRange) {
                             case TimeRange.PastDay:
                                 matches = matches.Where(x => (DateTime.Now - x.DutyStartTime).TotalHours < 24).ToList();
                                 break;
@@ -105,7 +105,7 @@ internal class MainWindow : Window {
                         break;
                     case Type _ when filter.GetType() == typeof(LocalPlayerFilter):
                         var localPlayerFilter = (LocalPlayerFilter)filter;
-                        if (localPlayerFilter.CurrentPlayerOnly && _plugin.ClientState.IsLoggedIn && _plugin.GameState.GetCurrentPlayer() != null) {
+                        if(localPlayerFilter.CurrentPlayerOnly && _plugin.ClientState.IsLoggedIn && _plugin.GameState.GetCurrentPlayer() != null) {
                             matches = matches.Where(x => x.LocalPlayer != null && x.LocalPlayer.Equals((PlayerAlias)_plugin.GameState.GetCurrentPlayer())).ToList();
                         }
                         _plugin.Configuration.MatchWindowFilters.LocalPlayerFilter = localPlayerFilter;
@@ -113,8 +113,8 @@ internal class MainWindow : Window {
                     case Type _ when filter.GetType() == typeof(LocalPlayerJobFilter):
                         var localPlayerJobFilter = (LocalPlayerJobFilter)filter;
                         //_plugin.Log.Debug($"anyjob: {localPlayerJobFilter.AnyJob} role: {localPlayerJobFilter.JobRole} job: {localPlayerJobFilter.PlayerJob}");
-                        if (!localPlayerJobFilter.AnyJob) {
-                            if (localPlayerJobFilter.JobRole != null) {
+                        if(!localPlayerJobFilter.AnyJob) {
+                            if(localPlayerJobFilter.JobRole != null) {
                                 matches = matches.Where(x => x.LocalPlayer != null && x.LocalPlayerTeamMember != null && PlayerJobHelper.GetSubRoleFromJob(x.LocalPlayerTeamMember.Job) == localPlayerJobFilter.JobRole).ToList();
                             } else {
                                 matches = matches.Where(x => x.LocalPlayer != null && x.LocalPlayerTeamMember != null && x.LocalPlayerTeamMember.Job == localPlayerJobFilter.PlayerJob).ToList();
@@ -128,16 +128,16 @@ internal class MainWindow : Window {
 
                         //}
                         matches = matches.Where(x => {
-                            foreach (var team in x.Teams) {
-                                if (otherPlayerFilter.TeamStatus == TeamStatus.Teammate && team.Key != x.LocalPlayerTeam?.TeamName) {
+                            foreach(var team in x.Teams) {
+                                if(otherPlayerFilter.TeamStatus == TeamStatus.Teammate && team.Key != x.LocalPlayerTeam?.TeamName) {
                                     continue;
-                                } else if (otherPlayerFilter.TeamStatus == TeamStatus.Opponent && team.Key == x.LocalPlayerTeam?.TeamName) {
+                                } else if(otherPlayerFilter.TeamStatus == TeamStatus.Opponent && team.Key == x.LocalPlayerTeam?.TeamName) {
                                     continue;
                                 }
-                                foreach (var player in team.Value.Players) {
-                                    if (!otherPlayerFilter.AnyJob && player.Job != otherPlayerFilter.PlayerJob) {
+                                foreach(var player in team.Value.Players) {
+                                    if(!otherPlayerFilter.AnyJob && player.Job != otherPlayerFilter.PlayerJob) {
                                         continue;
-                                    } else if (player.Alias.FullName.Contains(otherPlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase)) {
+                                    } else if(player.Alias.FullName.Contains(otherPlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase)) {
                                         return true;
                                     }
                                 }
@@ -158,7 +158,7 @@ internal class MainWindow : Window {
                         break;
                     case Type _ when filter.GetType() == typeof(MiscFilter):
                         var miscFilter = (MiscFilter)filter;
-                        if (miscFilter.MustHaveStats) {
+                        if(miscFilter.MustHaveStats) {
                             matches = matches.Where(x => x.PostMatch is not null).ToList();
                         }
                         _plugin.Configuration.MatchWindowFilters.MiscFilter = miscFilter;
@@ -175,18 +175,18 @@ internal class MainWindow : Window {
 
     public override void Draw() {
 
-        if (ImGui.BeginChild("FilterChild", new Vector2(ImGui.GetContentRegionAvail().X, float.Max(ImGuiHelpers.GlobalScale * 150, ImGui.GetWindowHeight() / 4f)), true, ImGuiWindowFlags.AlwaysAutoResize)) {
-            if (ImGui.BeginTable("FilterTable", 2, ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.BordersInnerH)) {
+        if(ImGui.BeginChild("FilterChild", new Vector2(ImGui.GetContentRegionAvail().X, float.Max(ImGuiHelpers.GlobalScale * 150, ImGui.GetWindowHeight() / 4f)), true, ImGuiWindowFlags.AlwaysAutoResize)) {
+            if(ImGui.BeginTable("FilterTable", 2, ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.BordersInnerH)) {
                 ImGui.BeginTable("FilterTable", 2, ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.BordersInner);
                 ImGui.TableSetupColumn("filterName", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 110f);
                 ImGui.TableSetupColumn($"filters", ImGuiTableColumnFlags.WidthStretch);
                 //ImGui.TableNextRow();
 
-                foreach (var filter in Filters) {
+                foreach(var filter in Filters) {
                     //ImGui.PushStyleVar(ImGuiStyleVar.CellPadding, 4);
                     ImGui.TableNextColumn();
 
-                    if (filter.HelpMessage != null) {
+                    if(filter.HelpMessage != null) {
                         ImGui.AlignTextToFramePadding();
                         ImGuiHelper.HelpMarker(filter.HelpMessage);
                         ImGui.SameLine();
@@ -210,16 +210,16 @@ internal class MainWindow : Window {
             ImGui.EndChild();
         }
 
-        if (ImGui.BeginTabBar("TabBar", ImGuiTabBarFlags.None)) {
-            if (ImGui.BeginTabItem("Matches")) {
+        if(ImGui.BeginTabBar("TabBar", ImGuiTabBarFlags.None)) {
+            if(ImGui.BeginTabItem("Matches")) {
 
                 ccMatches.Draw();
 
                 ImGui.EndTabItem();
             }
 
-            if (ImGui.BeginTabItem("Summary")) {
-                if (ImGui.BeginChild("SummaryChild")) {
+            if(ImGui.BeginTabItem("Summary")) {
+                if(ImGui.BeginChild("SummaryChild")) {
                     ccSummary.Draw();
                     ImGui.EndChild();
                 }

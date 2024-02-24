@@ -22,8 +22,8 @@ public class MatchTypeFilter : DataFilter {
                 {CrystallineConflictMatchType.Unknown, true },
             };
 
-        if (filter is not null) {
-            foreach (var category in filter.FilterState) {
+        if(filter is not null) {
+            foreach(var category in filter.FilterState) {
                 FilterState[category.Key] = category.Value;
             }
         }
@@ -32,16 +32,16 @@ public class MatchTypeFilter : DataFilter {
 
     private void UpdateAllSelected() {
         AllSelected = true;
-        foreach (var category in FilterState) {
+        foreach(var category in FilterState) {
             AllSelected = AllSelected && category.Value;
         }
     }
 
     internal override void Draw() {
         bool allSelected = AllSelected;
-        if (ImGui.Checkbox($"Select All##{GetHashCode()}", ref allSelected)) {
+        if(ImGui.Checkbox($"Select All##{GetHashCode()}", ref allSelected)) {
             _plugin!.DataQueue.QueueDataOperation(() => {
-                foreach (var category in FilterState) {
+                foreach(var category in FilterState) {
                     FilterState[category.Key] = allSelected;
                 }
                 AllSelected = allSelected;
@@ -54,10 +54,10 @@ public class MatchTypeFilter : DataFilter {
         ImGui.TableSetupColumn($"c2", ImGuiTableColumnFlags.WidthFixed, float.Min(ImGui.GetContentRegionAvail().X / 2, ImGuiHelpers.GlobalScale * 400f));
         ImGui.TableNextRow();
 
-        foreach (var category in FilterState) {
+        foreach(var category in FilterState) {
             ImGui.TableNextColumn();
             bool filterState = category.Value;
-            if (ImGui.Checkbox($"{category.Key}##{GetHashCode()}", ref filterState)) {
+            if(ImGui.Checkbox($"{category.Key}##{GetHashCode()}", ref filterState)) {
                 _plugin!.DataQueue.QueueDataOperation(() => {
                     FilterState[category.Key] = filterState;
                     UpdateAllSelected();

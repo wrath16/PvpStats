@@ -63,18 +63,18 @@ internal abstract class FilteredList<T> {
         ImGui.BeginChild("scrolling", new Vector2(0, -(25 + ImGui.GetStyle().ItemSpacing.Y) * ImGuiHelpers.GlobalScale), true);
         ImGui.BeginTable($"##{GetHashCode()}-Table", Columns.Count, TableFlags);
         //setup columns
-        foreach (var column in Columns) {
+        foreach(var column in Columns) {
             ImGui.TableSetupColumn(column.Name, column.Flags, column.Width);
         }
         ImGui.TableNextRow();
-        foreach (var item in CurrentPage) {
+        foreach(var item in CurrentPage) {
             ImGui.TableNextColumn();
-            if (ImGui.Selectable($"##{item!.GetHashCode()}-selectable", false, ImGuiSelectableFlags.SpanAllColumns)) {
+            if(ImGui.Selectable($"##{item!.GetHashCode()}-selectable", false, ImGuiSelectableFlags.SpanAllColumns)) {
                 OpenItemDetail(item);
             }
 #if DEBUG
-            if (ImGui.BeginPopupContextItem($"##{item!.GetHashCode()}--ContextMenu", ImGuiPopupFlags.MouseButtonRight)) {
-                if (ImGui.MenuItem($"Edit document##{item!.GetHashCode()}--FullEditContext")) {
+            if(ImGui.BeginPopupContextItem($"##{item!.GetHashCode()}--ContextMenu", ImGuiPopupFlags.MouseButtonRight)) {
+                if(ImGui.MenuItem($"Edit document##{item!.GetHashCode()}--FullEditContext")) {
                     //_plugin.Log.Debug($"{BsonMapper.Global.Serialize(typeof(T), item).ToString()}");
                     //var x = BsonMapper.Global.Serialize(typeof(T), item).ToString();
                     //var stringReader = new StringReader(x);
@@ -98,9 +98,9 @@ internal abstract class FilteredList<T> {
         ImGui.EndTable();
         ImGui.EndChild();
         ImGui.Text("");
-        if (PageNumber > 0) {
+        if(PageNumber > 0) {
             ImGui.SameLine();
-            if (ImGui.Button($"Previous {PageSize}")) {
+            if(ImGui.Button($"Previous {PageSize}")) {
                 _plugin.DataQueue.QueueDataOperation(() => {
                     PageNumber--;
                     GoToPage();
@@ -108,10 +108,10 @@ internal abstract class FilteredList<T> {
             }
         }
 
-        if ((PageNumber + 1) * PageSize < DataModel.Count) {
+        if((PageNumber + 1) * PageSize < DataModel.Count) {
             ImGui.SameLine();
             ImGui.SetCursorPosX(ImGui.GetContentRegionMax().X - 65f * ImGuiHelpers.GlobalScale);
-            if (ImGui.Button($"Next {PageSize}")) {
+            if(ImGui.Button($"Next {PageSize}")) {
                 _plugin.DataQueue.QueueDataOperation(() => {
                     PageNumber++;
                     GoToPage();

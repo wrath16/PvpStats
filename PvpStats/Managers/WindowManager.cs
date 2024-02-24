@@ -55,7 +55,7 @@ internal class WindowManager : IDisposable {
 
 #if DEBUG
     internal void OpenDebugWindow() {
-        if (DebugWindow is not null) {
+        if(DebugWindow is not null) {
             DebugWindow.IsOpen = true;
         }
     }
@@ -63,7 +63,7 @@ internal class WindowManager : IDisposable {
 
     internal void OpenMatchDetailsWindow(ObjectId id) {
         var window = WindowSystem.Windows.Where(w => w.WindowName == $"Match Details: {id}").FirstOrDefault();
-        if (window is not null) {
+        if(window is not null) {
             window.BringToFront();
             window.IsOpen = true;
         }
@@ -71,9 +71,9 @@ internal class WindowManager : IDisposable {
 
     internal void OpenFullEditWindow(ObjectId id) {
         var match = _plugin.Storage.GetCCMatches().Query().Where(x => x.Id == id).FirstOrDefault();
-        if (match is not null) {
+        if(match is not null) {
             var window = WindowSystem.Windows.Where(w => w.WindowName == $"Full Edit: {match.GetHashCode()}").FirstOrDefault();
-            if (window is not null) {
+            if(window is not null) {
                 window.BringToFront();
                 window.IsOpen = true;
             }

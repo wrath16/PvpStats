@@ -33,7 +33,7 @@ public class TimeFilter : DataFilter {
     public TimeFilter() { }
 
     internal TimeFilter(Plugin plugin, Action action, TimeFilter? filter = null) : base(plugin, action) {
-        if (filter is not null) {
+        if(filter is not null) {
             StatRange = filter.StatRange;
             StartTime = filter.StartTime;
             EndTime = filter.EndTime;
@@ -46,14 +46,14 @@ public class TimeFilter : DataFilter {
         int seasonIndex = Season - 1;
         //ImGui.SetNextItemWidth(float.Min(ImGui.GetContentRegionAvail().X / 2f, ImGuiHelpers.GlobalScale * 125f));
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
-        if (ImGui.Combo($"##timeRangeCombo", ref statRangeToInt, Range, Range.Length)) {
+        if(ImGui.Combo($"##timeRangeCombo", ref statRangeToInt, Range, Range.Length)) {
             _plugin!.DataQueue.QueueDataOperation(() => {
                 StatRange = (TimeRange)statRangeToInt;
                 Refresh();
             });
         }
-        if (StatRange == TimeRange.Custom) {
-            if (ImGui.BeginTable("timeFilterTable", 2)) {
+        if(StatRange == TimeRange.Custom) {
+            if(ImGui.BeginTable("timeFilterTable", 2)) {
                 ImGui.TableSetupColumn($"c1", ImGuiTableColumnFlags.WidthStretch);
                 ImGui.TableSetupColumn($"c2", ImGuiTableColumnFlags.WidthStretch);
                 ImGui.TableNextRow();
@@ -63,10 +63,10 @@ public class TimeFilter : DataFilter {
                 ImGui.SameLine();
                 ImGui.SetNextItemWidth(ImGui.GetColumnWidth());
                 var startTime = StartTime.ToString();
-                if (ImGui.InputText($"##startTime", ref startTime, 50, ImGuiInputTextFlags.None)) {
-                    if (startTime != _lastStartTime) {
+                if(ImGui.InputText($"##startTime", ref startTime, 50, ImGuiInputTextFlags.None)) {
+                    if(startTime != _lastStartTime) {
                         _lastStartTime = startTime;
-                        if (DateTime.TryParse(startTime, out DateTime newStartTime)) {
+                        if(DateTime.TryParse(startTime, out DateTime newStartTime)) {
                             _plugin!.DataQueue.QueueDataOperation(() => {
                                 StartTime = newStartTime;
                                 Refresh();
@@ -79,10 +79,10 @@ public class TimeFilter : DataFilter {
                 ImGui.SameLine();
                 ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
                 var endTime = EndTime.ToString();
-                if (ImGui.InputText($"##endTime", ref endTime, 50, ImGuiInputTextFlags.None)) {
-                    if (endTime != _lastEndTime) {
+                if(ImGui.InputText($"##endTime", ref endTime, 50, ImGuiInputTextFlags.None)) {
+                    if(endTime != _lastEndTime) {
                         _lastEndTime = endTime;
-                        if (DateTime.TryParse(endTime, out DateTime newEndTime)) {
+                        if(DateTime.TryParse(endTime, out DateTime newEndTime)) {
                             _plugin!.DataQueue.QueueDataOperation(() => {
                                 EndTime = newEndTime;
                                 Refresh();
@@ -92,10 +92,10 @@ public class TimeFilter : DataFilter {
                 }
                 ImGui.EndTable();
             }
-        } else if (StatRange == TimeRange.Season) {
+        } else if(StatRange == TimeRange.Season) {
             ImGui.SameLine();
             ImGui.SetNextItemWidth(ImGuiHelpers.GlobalScale * 50f);
-            if (ImGui.Combo($"##seasonCombo", ref seasonIndex, ArenaSeason.Season.Keys.Select(x => x.ToString()).ToArray(), ArenaSeason.Season.Count)) {
+            if(ImGui.Combo($"##seasonCombo", ref seasonIndex, ArenaSeason.Season.Keys.Select(x => x.ToString()).ToArray(), ArenaSeason.Season.Count)) {
                 _plugin!.DataQueue.QueueDataOperation(() => {
                     Season = seasonIndex + 1;
                     Refresh();

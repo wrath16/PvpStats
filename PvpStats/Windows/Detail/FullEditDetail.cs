@@ -42,11 +42,11 @@ internal class FullEditDetail<T> : Window {
     }
 
     public override void Draw() {
-        if (ImGui.BeginChild("scrolling", new Vector2(0, -(25 + ImGui.GetStyle().ItemSpacing.Y) * ImGuiHelpers.GlobalScale), false, ImGuiWindowFlags.AlwaysAutoResize)) {
+        if(ImGui.BeginChild("scrolling", new Vector2(0, -(25 + ImGui.GetStyle().ItemSpacing.Y) * ImGuiHelpers.GlobalScale), false, ImGuiWindowFlags.AlwaysAutoResize)) {
             ImGui.InputTextMultiline("", ref _dataString, 999999, new Vector2(ImGui.GetContentRegionAvail().X, ImGui.GetContentRegionAvail().Y));
             ImGui.EndChild();
         }
-        if (ImGui.Button("Save")) {
+        if(ImGui.Button("Save")) {
             _plugin.DataQueue.QueueDataOperation(() => {
                 var returnValue = LiteDB.JsonSerializer.Deserialize(_dataString);
                 var x = BsonMapper.Global.Deserialize<CrystallineConflictMatch>(returnValue);
@@ -70,7 +70,7 @@ internal class FullEditDetail<T> : Window {
 
         //BsonMapper.Global.ToDocument(typeof(T), _dataModel).ToString();
 
-        switch (prop.PropertyType) {
+        switch(prop.PropertyType) {
             case Type when prop.PropertyType == typeof(string):
                 stringData = data as string;
                 ImGui.InputText(prop.Name, ref stringData, 999, ImGuiInputTextFlags.None);
@@ -78,7 +78,7 @@ internal class FullEditDetail<T> : Window {
             case Type numType when prop.PropertyType.IsAssignableFrom(typeof(int)):
                 //string? s = data as string;
                 stringData = data.ToString();
-                if (ImGui.InputText(prop.Name, ref stringData, 999, ImGuiInputTextFlags.CharsDecimal)) {
+                if(ImGui.InputText(prop.Name, ref stringData, 999, ImGuiInputTextFlags.CharsDecimal)) {
                     //tryparse
 
                 }
@@ -88,7 +88,7 @@ internal class FullEditDetail<T> : Window {
                 break;
         }
 
-        if (prop.PropertyType == typeof(string)) {
+        if(prop.PropertyType == typeof(string)) {
 
         }
     }

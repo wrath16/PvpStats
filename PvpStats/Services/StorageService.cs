@@ -81,7 +81,7 @@ internal class StorageService {
         try {
             _dbLock.Wait();
             action.Invoke();
-            if (toSave) {
+            if(toSave) {
                 _plugin.WindowManager.Refresh();
             }
         } finally {

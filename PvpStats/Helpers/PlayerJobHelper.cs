@@ -75,8 +75,8 @@ internal static class PlayerJobHelper {
 
     internal static Job? GetJobFromName(string jobName) {
         jobName = jobName.ToLower();
-        foreach (var kvp in AbbreviationNameMap) {
-            if (kvp.Value.Equals(jobName, StringComparison.OrdinalIgnoreCase)) {
+        foreach(var kvp in AbbreviationNameMap) {
+            if(kvp.Value.Equals(jobName, StringComparison.OrdinalIgnoreCase)) {
                 return kvp.Key;
             }
         }
@@ -84,7 +84,7 @@ internal static class PlayerJobHelper {
     }
 
     internal static string GetNameFromJob(Job job) {
-        if (AbbreviationNameMap.ContainsKey(job)) {
+        if(AbbreviationNameMap.ContainsKey(job)) {
             return AbbreviationNameMap[job];
         } else {
             return "";
@@ -92,7 +92,7 @@ internal static class PlayerJobHelper {
     }
 
     internal static JobRole? GetRoleFromJob(Job job) {
-        switch (job) {
+        switch(job) {
             case Job.PLD:
             case Job.WAR:
             case Job.DRK:
@@ -121,7 +121,7 @@ internal static class PlayerJobHelper {
     }
 
     internal static JobSubRole? GetSubRoleFromJob(Job job) {
-        switch (job) {
+        switch(job) {
             case Job.PLD:
             case Job.WAR:
             case Job.DRK:
@@ -152,8 +152,8 @@ internal static class PlayerJobHelper {
     }
 
     internal static Job? GetJobFromIcon(uint iconId) {
-        foreach (var kvp in JobIcons) {
-            if (kvp.Value == iconId) {
+        foreach(var kvp in JobIcons) {
+            if(kvp.Value == iconId) {
                 return kvp.Key;
             }
         }

@@ -8,14 +8,14 @@ public class LocalPlayerFilter : DataFilter {
     public LocalPlayerFilter() { }
 
     internal LocalPlayerFilter(Plugin plugin, Action action, LocalPlayerFilter? filter = null) : base(plugin, action) {
-        if (filter is not null) {
+        if(filter is not null) {
             CurrentPlayerOnly = filter.CurrentPlayerOnly;
         }
     }
 
     internal override void Draw() {
         bool currentPlayerOnly = CurrentPlayerOnly;
-        if (ImGui.Checkbox("Current player only", ref currentPlayerOnly)) {
+        if(ImGui.Checkbox("Current player only", ref currentPlayerOnly)) {
             _plugin!.DataQueue.QueueDataOperation(() => {
                 CurrentPlayerOnly = currentPlayerOnly;
                 Refresh();

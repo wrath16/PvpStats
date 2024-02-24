@@ -1,23 +1,14 @@
-using Dalamud;
-using Dalamud.Game;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
-using Dalamud.Hooking;
-using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Game.InstanceContent;
-using FFXIVClientStructs.FFXIV.Client.System.Input;
-using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using FFXIVClientStructs.Interop.Attributes;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -27,7 +18,6 @@ internal unsafe class GameFunctions {
     [Signature("48 8D 05 ?? ?? ?? ?? 48 89 06 48 8D 9E ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 86 ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 86 ?? ?? ?? ?? 8D 7D ?? 48 8D 05", ScanType = ScanType.StaticAddress)]
     //[Signature("48 8D 0D ?? ?? ?? ?? BD ?? ?? ?? ?? E8 ?? ?? ?? ?? 84 C0 75", ScanType = ScanType.StaticAddress)]
     private readonly IntPtr _ccDirector;
-
 
     //[Signature("BA ?? ?? ?? ?? E8 ?? ?? ?? ?? 41 8B 4D 08", Offset = 1)]
     //private uint _agentId;
@@ -61,7 +51,6 @@ internal unsafe class GameFunctions {
 
     //ProcessZonePacketDown
     //40 53 56 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 44 24 ?? 8B F2
-
 
     //sig scan1
     //E8 ?? ?? ?? ?? 84 C0 74 ?? 33 C0 38 87 ??
@@ -126,8 +115,6 @@ internal unsafe class GameFunctions {
         return _getInstanceContentCCDirector(EventFramework.Instance());
     }
 
-
-
     internal InstanceContentType GetContentType() {
         var x = EventFramework.Instance()->GetInstanceContentDirector();
         return x->InstanceContentType;
@@ -153,7 +140,7 @@ internal unsafe class GameFunctions {
     internal void CreateByteDump(nint ptr, int length, string name) {
         var bytes = new ReadOnlySpan<byte>((void*)ptr, length);
         var timeStamp = DateTime.Now;
-        using (FileStream fs = File.Create($"{_plugin.PluginInterface.GetPluginConfigDirectory()}\\{name}_{timeStamp.Year}{timeStamp.Month}{timeStamp.Day}{timeStamp.Hour}{timeStamp.Minute}{timeStamp.Second}_dump.bin")) {
+        using(FileStream fs = File.Create($"{_plugin.PluginInterface.GetPluginConfigDirectory()}\\{name}_{timeStamp.Year}{timeStamp.Month}{timeStamp.Day}{timeStamp.Hour}{timeStamp.Minute}{timeStamp.Second}_dump.bin")) {
             fs.Write(bytes);
         }
     }
@@ -165,10 +152,10 @@ internal unsafe class GameFunctions {
         Type[] types = { typeof(byte), typeof(ushort), typeof(uint), typeof(ulong), typeof(sbyte), typeof(short), typeof(int), typeof(long), typeof(float), typeof(double), typeof(string) };
         foreach(var type in types) {
             object convertedValue;
-            if (type != typeof(string)) {
+            if(type != typeof(string)) {
                 try {
                     convertedValue = TypeDescriptor.GetConverter(type).ConvertFromString(value);
-                } catch (ArgumentException) {
+                } catch(ArgumentException) {
                     //not a convertible type
                     //_plugin.Log.Debug($"{value} not convertible to {type.Name}");
                     continue;
@@ -177,7 +164,7 @@ internal unsafe class GameFunctions {
                 convertedValue = value;
             }
 
-            for (int i = 0; type == typeof(string) && i == 0 || type != typeof(string) && i < Marshal.SizeOf(type); i++) {
+            for(int i = 0; type == typeof(string) && i == 0 || type != typeof(string) && i < Marshal.SizeOf(type); i++) {
 
                 //var a = typeof(GameFunctions).GetMethod("FindValue");
                 //_plugin.Log.Debug($"method found: {a != null}");
@@ -192,8 +179,8 @@ internal unsafe class GameFunctions {
     }
 
     public void PrintAllStrings(IntPtr ptr, int length) {
-        using (UnmanagedMemoryStream memoryStream = new((byte*)ptr, length)) {
-            using (var reader = new BinaryReader(memoryStream)) {
+        using(UnmanagedMemoryStream memoryStream = new((byte*)ptr, length)) {
+            using(var reader = new BinaryReader(memoryStream)) {
                 try {
                     while(true) {
                         string result = reader.ReadString();
@@ -201,7 +188,7 @@ internal unsafe class GameFunctions {
                             _plugin.Log.Verbose($"{result}");
                         }
                     }
-                } catch (EndOfStreamException) {
+                } catch(EndOfStreamException) {
                     return;
                 }
             }
@@ -213,32 +200,32 @@ internal unsafe class GameFunctions {
     }
 
     void PrintAllChars(byte[] ptr, int minLength = 1) {
-        using (MemoryStream memoryStream = new(ptr)) {
-            using (var reader = new BinaryReader(memoryStream, Encoding.ASCII)) {
+        using(MemoryStream memoryStream = new(ptr)) {
+            using(var reader = new BinaryReader(memoryStream, Encoding.ASCII)) {
                 string curString = "";
-                while (true) {
+                while(true) {
                     try {
                         char output = '\u0000';
                         try {
                             //output = reader.ReadChar();
                             output = (char)reader.PeekChar();
-                            if (output != 0) {
+                            if(output != 0) {
                                 curString += output;
-                            } else if (curString.Length > 0) {
-                                if (curString.Length >= minLength) {
+                            } else if(curString.Length > 0) {
+                                if(curString.Length >= minLength) {
                                     _plugin.Log.Debug(curString);
                                 }
                                 curString = "";
                             }
                             reader.ReadChar();
-                        } catch (ArgumentException) {
-                            if (curString.Length >= minLength) {
+                        } catch(ArgumentException) {
+                            if(curString.Length >= minLength) {
                                 _plugin.Log.Debug(curString);
                             }
                             curString = "";
                             reader.ReadByte();
                         }
-                    } catch (EndOfStreamException) {
+                    } catch(EndOfStreamException) {
                         _plugin.Log.Debug(curString);
                         return;
                     }
@@ -248,7 +235,7 @@ internal unsafe class GameFunctions {
     }
 
     public void PrintAllPlayerObjects() {
-        foreach (PlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
+        foreach(PlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
             _plugin.Log.Debug($"0x{pc.ObjectId.ToString("X2")} {pc.Name}");
             //_plugin.Log.Debug($"team null? {isPlayerTeam is null} player team? {isPlayerTeam} is p member? {pc.StatusFlags.HasFlag(StatusFlags.PartyMember)} isSelf? {isSelf}");
         }
@@ -259,17 +246,17 @@ internal unsafe class GameFunctions {
             _plugin.Log.Debug($"checking for value...{toFind.GetType().Name} offset: {offset}");
         }
 
-        using (UnmanagedMemoryStream memoryStream = new((byte*)IntPtr.Add(ptr, offset), length)) {
-            using (var reader = new BinaryReader(memoryStream)) {
+        using(UnmanagedMemoryStream memoryStream = new((byte*)IntPtr.Add(ptr, offset), length)) {
+            using(var reader = new BinaryReader(memoryStream)) {
                 List<int> matchingCursors = new();
                 int cursor = 0;
 
                 //Func<T> readMethod;
 
                 try {
-                    switch (typeof(T)) {
+                    switch(typeof(T)) {
                         case Type _ when typeof(T) == typeof(string):
-                            while (cursor < length) {
+                            while(cursor < length) {
                                 char output = '\u0000';
                                 try {
                                     //output = reader.ReadChar();
@@ -277,7 +264,7 @@ internal unsafe class GameFunctions {
                                 } catch(ArgumentException e) {
                                     //_plugin.Log.Error($"{e.Message}\nCursor: 0x{cursor.ToString("X2")}\n");
                                     //return matchingCursors.ToArray();
-                                    
+
                                     //skip the byte
                                     //reader.ReadByte();
                                     //cursor++;
@@ -287,12 +274,12 @@ internal unsafe class GameFunctions {
                                     string match = "";
                                     int index = 0;
                                     string stringInput = (string)Convert.ChangeType(toFind, typeof(string));
-                                    if (output == stringInput[index]) {
+                                    if(output == stringInput[index]) {
                                         match += output;
                                         index++;
                                         var byteCount = Encoding.UTF8.GetByteCount((new char[] { output }));
                                         reader.ReadBytes(byteCount);
-                                        if (match.Equals(toFind)) {
+                                        if(match.Equals(toFind)) {
                                             matchingCursors.Add(cursor - Encoding.UTF8.GetByteCount(match.Remove(match.Length - 1)));
                                             match = "";
                                             index = 0;
@@ -312,10 +299,10 @@ internal unsafe class GameFunctions {
                             }
                             break;
                         case Type _ when typeof(T) == typeof(byte):
-                            while (cursor < length) {
+                            while(cursor < length) {
                                 var output = reader.ReadByte();
                                 if(!printOnly) {
-                                    if (output == Convert.ToByte(toFind)) {
+                                    if(output == Convert.ToByte(toFind)) {
                                         matchingCursors.Add(cursor);
                                     }
                                 } else {
@@ -325,10 +312,10 @@ internal unsafe class GameFunctions {
                             }
                             break;
                         case Type _ when typeof(T) == typeof(ushort):
-                            while (cursor < length) {
+                            while(cursor < length) {
                                 var output = reader.ReadUInt16();
                                 if(!printOnly) {
-                                    if (output == Convert.ToUInt16(toFind)) {
+                                    if(output == Convert.ToUInt16(toFind)) {
                                         matchingCursors.Add(cursor);
                                     }
                                 } else {
@@ -338,10 +325,10 @@ internal unsafe class GameFunctions {
                             }
                             break;
                         case Type _ when typeof(T) == typeof(uint):
-                            while (cursor < length) {
+                            while(cursor < length) {
                                 var output = reader.ReadUInt32();
-                                if (!printOnly) {
-                                    if (output == Convert.ToUInt32(toFind)) {
+                                if(!printOnly) {
+                                    if(output == Convert.ToUInt32(toFind)) {
                                         matchingCursors.Add(cursor);
                                     }
                                 } else {
@@ -351,10 +338,10 @@ internal unsafe class GameFunctions {
                             }
                             break;
                         case Type _ when typeof(T) == typeof(ulong):
-                            while (cursor < length) {
+                            while(cursor < length) {
                                 var output = reader.ReadUInt64();
                                 if(!printOnly) {
-                                    if (output == Convert.ToUInt64(toFind)) {
+                                    if(output == Convert.ToUInt64(toFind)) {
                                         matchingCursors.Add(cursor);
                                     }
                                 } else {
@@ -364,10 +351,10 @@ internal unsafe class GameFunctions {
                             }
                             break;
                         case Type _ when typeof(T) == typeof(sbyte):
-                            while (cursor < length) {
+                            while(cursor < length) {
                                 var output = reader.ReadSByte();
                                 if(!printOnly) {
-                                    if (output == Convert.ToSByte(toFind)) {
+                                    if(output == Convert.ToSByte(toFind)) {
                                         matchingCursors.Add(cursor);
                                     }
                                 } else {
@@ -377,10 +364,10 @@ internal unsafe class GameFunctions {
                             }
                             break;
                         case Type _ when typeof(T) == typeof(short):
-                            while (cursor < length) {
+                            while(cursor < length) {
                                 var output = reader.ReadInt16();
                                 if(!printOnly) {
-                                    if (output == Convert.ToInt16(toFind)) {
+                                    if(output == Convert.ToInt16(toFind)) {
                                         matchingCursors.Add(cursor);
                                     }
                                 } else {
@@ -390,10 +377,10 @@ internal unsafe class GameFunctions {
                             }
                             break;
                         case Type _ when typeof(T) == typeof(int):
-                            while (cursor < length) {
+                            while(cursor < length) {
                                 var output = reader.ReadInt32();
-                                if (!printOnly) {
-                                    if (output == Convert.ToInt32(toFind)) {
+                                if(!printOnly) {
+                                    if(output == Convert.ToInt32(toFind)) {
                                         matchingCursors.Add(cursor);
                                     }
                                 } else {
@@ -403,10 +390,10 @@ internal unsafe class GameFunctions {
                             }
                             break;
                         case Type _ when typeof(T) == typeof(long):
-                            while (cursor < length) {
+                            while(cursor < length) {
                                 var output = reader.ReadInt64();
                                 if(!printOnly) {
-                                    if (output == Convert.ToInt64(toFind)) {
+                                    if(output == Convert.ToInt64(toFind)) {
                                         matchingCursors.Add(cursor);
                                     }
                                 } else {
@@ -416,10 +403,10 @@ internal unsafe class GameFunctions {
                             }
                             break;
                         case Type _ when typeof(T) == typeof(float):
-                            while (cursor < length) {
+                            while(cursor < length) {
                                 var output = reader.ReadSingle();
                                 if(!printOnly) {
-                                    if (output == Convert.ToSingle(toFind)) {
+                                    if(output == Convert.ToSingle(toFind)) {
                                         matchingCursors.Add(cursor);
                                     }
                                 } else {
@@ -429,10 +416,10 @@ internal unsafe class GameFunctions {
                             }
                             break;
                         case Type _ when typeof(T) == typeof(double):
-                            while (cursor < length) {
+                            while(cursor < length) {
                                 var output = reader.ReadDouble();
                                 if(!printOnly) {
-                                    if (output == Convert.ToDouble(toFind)) {
+                                    if(output == Convert.ToDouble(toFind)) {
                                         matchingCursors.Add(cursor);
                                     }
                                 } else {
@@ -459,11 +446,11 @@ internal unsafe class GameFunctions {
 
     internal void ReadBytes(nint ptr, Type type, int length, int offset = 0) {
         //start low length
-        using (UnmanagedMemoryStream memoryStream = new((byte*)IntPtr.Add(ptr, offset), length)) {
-            using (var reader = new BinaryReader(memoryStream)) {
+        using(UnmanagedMemoryStream memoryStream = new((byte*)IntPtr.Add(ptr, offset), length)) {
+            using(var reader = new BinaryReader(memoryStream)) {
                 int cursor = 0;
-                while (cursor < length) {
-                    switch (type) {
+                while(cursor < length) {
+                    switch(type) {
                         case Type _ when type == typeof(short):
                             short outputShort = reader.ReadInt16();
                             _plugin.Log.Debug($"offset: 0x{cursor.ToString("X2")} Int16 {outputShort}");
@@ -523,10 +510,10 @@ internal unsafe class GameFunctions {
     }
 
     static string ReadString(byte* b, int maxLength = 0, bool nullIsEmpty = true) {
-        if (b == null) return nullIsEmpty ? string.Empty : null;
-        if (maxLength > 0) return Encoding.UTF8.GetString(b, maxLength).Split('\0')[0];
+        if(b == null) return nullIsEmpty ? string.Empty : null;
+        if(maxLength > 0) return Encoding.UTF8.GetString(b, maxLength).Split('\0')[0];
         var l = 0;
-        while (b[l] != 0) l++;
+        while(b[l] != 0) l++;
         return Encoding.UTF8.GetString(b, l);
     }
 }

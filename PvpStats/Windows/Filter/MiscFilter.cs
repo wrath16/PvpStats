@@ -14,7 +14,7 @@ public class MiscFilter : DataFilter {
     public MiscFilter() { }
 
     internal MiscFilter(Plugin plugin, Action action, MiscFilter? filter = null) : base(plugin, action) {
-        if (filter is not null) {
+        if(filter is not null) {
             MustHaveStats = filter.MustHaveStats;
             ShowDeleted = filter.ShowDeleted;
         }
@@ -28,7 +28,7 @@ public class MiscFilter : DataFilter {
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
         bool mustHaveStats = MustHaveStats;
-        if (ImGui.Checkbox("Must have post-game stats", ref mustHaveStats)) {
+        if(ImGui.Checkbox("Must have post-game stats", ref mustHaveStats)) {
             _plugin!.DataQueue.QueueDataOperation(() => {
                 MustHaveStats = mustHaveStats;
                 Refresh();

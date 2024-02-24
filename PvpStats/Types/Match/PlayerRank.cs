@@ -27,11 +27,11 @@ public class PlayerRank {
         get {
             int starCount = 0;
             //add from previous tiers
-            for (int i = (int)Tier - 1; i >= 0; i--) {
+            for(int i = (int)Tier - 1; i >= 0; i--) {
                 starCount += RisersPerTier[(ArenaTier)i] * StarsPerRiser;
             }
             //add from previous risers
-            if (Riser is not null) {
+            if(Riser is not null) {
                 starCount += (RisersPerTier[Tier] - (int)Riser) * StarsPerRiser;
             }
             starCount += Stars ?? 0;
@@ -41,14 +41,14 @@ public class PlayerRank {
 
     public static explicit operator PlayerRank(string s) {
         var splitString = s.Trim().Split(" ");
-        if (splitString is null || splitString.Length <= 0 || splitString.Length > 2) {
+        if(splitString is null || splitString.Length <= 0 || splitString.Length > 2) {
             throw new ArgumentException("Cannot convert string to player rank!");
         }
 
         ArenaTier tier = MatchHelper.GetTier(splitString[0]);
         int? riser = null;
-        if (splitString.Length == 2) {
-            if (!int.TryParse(splitString[1], out int riserParsed)) {
+        if(splitString.Length == 2) {
+            if(!int.TryParse(splitString[1], out int riserParsed)) {
                 throw new ArgumentException("Cannot convert riser to integer");
             }
             riser = riserParsed;
@@ -78,23 +78,23 @@ public class PlayerRank {
 
     public override string ToString() {
         string rank = "";
-        if (Tier != ArenaTier.None) {
+        if(Tier != ArenaTier.None) {
             rank += $"{Tier}";
         }
 
         if(Tier == ArenaTier.Crystal) {
-            if (Credit != null) {
+            if(Credit != null) {
                 rank += $" {Credit}";
             }
         } else {
-            if (Riser != null) {
+            if(Riser != null) {
                 rank += $" {Riser} ";
             }
-            if (Stars != null) {
-                for (int i = 0; i < Stars; i++) {
+            if(Stars != null) {
+                for(int i = 0; i < Stars; i++) {
                     rank += "★";
                 }
-                for (int i = 0; i < 3 - Stars; i++) {
+                for(int i = 0; i < 3 - Stars; i++) {
                     rank += "☆";
                 }
             }

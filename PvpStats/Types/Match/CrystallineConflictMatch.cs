@@ -48,9 +48,9 @@ public class CrystallineConflictMatch {
     [BsonIgnore]
     public CrystallineConflictTeam? LocalPlayerTeam {
         get {
-            foreach (var team in Teams) {
-                foreach (var player in team.Value.Players) {
-                    if (LocalPlayer.Equals(player)) {
+            foreach(var team in Teams) {
+                foreach(var player in team.Value.Players) {
+                    if(LocalPlayer.Equals(player)) {
                         return team.Value;
                     }
                 }
@@ -62,9 +62,9 @@ public class CrystallineConflictMatch {
     [BsonIgnore]
     public CrystallineConflictPlayer? LocalPlayerTeamMember {
         get {
-            foreach (var team in Teams) {
-                foreach (var player in team.Value.Players) {
-                    if (LocalPlayer.Equals(player)) {
+            foreach(var team in Teams) {
+                foreach(var player in team.Value.Players) {
+                    if(LocalPlayer.Equals(player)) {
                         return player;
                     }
                 }

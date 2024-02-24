@@ -13,7 +13,7 @@ public class PlayerAlias : IEquatable<PlayerAlias>, IEquatable<CrystallineConfli
     public static explicit operator PlayerAlias(string s) {
         s = s.Trim();
         var splitString = s.Split(" ");
-        if (splitString is null || splitString.Length != 3) {
+        if(splitString is null || splitString.Length != 3) {
             throw new ArgumentException("Cannot convert string to player alias!");
         }
         return new PlayerAlias(splitString[0] + " " + splitString[1], splitString[2]);
@@ -24,11 +24,11 @@ public class PlayerAlias : IEquatable<PlayerAlias>, IEquatable<CrystallineConfli
     [BsonIgnore]
     public string FirstName {
         get {
-            if (Name.IsNullOrEmpty()) {
+            if(Name.IsNullOrEmpty()) {
                 return "";
             }
             string[] split = Name.Split(" ");
-            if (split.Length > 0) {
+            if(split.Length > 0) {
                 return split[0];
             }
             return "";
@@ -38,11 +38,11 @@ public class PlayerAlias : IEquatable<PlayerAlias>, IEquatable<CrystallineConfli
     [BsonIgnore]
     public string LastName {
         get {
-            if (Name.IsNullOrEmpty()) {
+            if(Name.IsNullOrEmpty()) {
                 return "";
             }
             string[] split = Name.Split(" ");
-            if (split.Length > 1) {
+            if(split.Length > 1) {
                 return split[1];
             }
             return "";
@@ -55,21 +55,21 @@ public class PlayerAlias : IEquatable<PlayerAlias>, IEquatable<CrystallineConfli
     }
 
     public bool Equals(PlayerAlias? other) {
-        if (other is null) {
+        if(other is null) {
             return false;
         }
         return FullName.Equals(other.FullName, StringComparison.OrdinalIgnoreCase);
     }
 
     public bool Equals(CrystallineConflictPlayer? other) {
-        if (other is null) {
+        if(other is null) {
             return false;
         }
         return FullName.Equals(other.Alias.FullName, StringComparison.OrdinalIgnoreCase);
     }
 
     public bool Equals(string? other) {
-        if (other is null) {
+        if(other is null) {
             return false;
         }
         return FullName.Equals(other, StringComparison.OrdinalIgnoreCase);

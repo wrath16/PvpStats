@@ -13,26 +13,26 @@ internal static class AtkNodeHelper {
 
     internal static unsafe AtkResNode* GetNodeByIDChain(string addon, params uint[] ids) {
         AtkUnitBase* addonNode = AtkStage.GetSingleton()->RaptureAtkUnitManager->GetAddonByName(addon);
-        if (addonNode == null || ids.Length <= 0) {
+        if(addonNode == null || ids.Length <= 0) {
             return null;
         }
         return GetNodeByIDChain(addonNode->RootNode, ids);
     }
 
     internal static unsafe AtkResNode* GetNodeByIDChain(AtkUnitBase* addon, params uint[] ids) {
-        if (addon == null) {
+        if(addon == null) {
             return null;
         }
         return GetNodeByIDChain(addon->RootNode, ids);
     }
 
     internal static unsafe AtkResNode* GetNodeByIDChain(AtkResNode* node, params uint[] ids) {
-        if (node == null || ids.Length <= 0) {
+        if(node == null || ids.Length <= 0) {
             return null;
         }
 
-        if (node->NodeID == ids[0]) {
-            if (ids.Length == 1) {
+        if(node->NodeID == ids[0]) {
+            if(ids.Length == 1) {
                 return node;
             }
 
@@ -40,14 +40,14 @@ internal static class AtkNodeHelper {
             newList.RemoveAt(0);
 
             var childNode = node->ChildNode;
-            if (childNode != null) {
+            if(childNode != null) {
                 return GetNodeByIDChain(childNode, newList.ToArray());
-            } else if ((int)node->Type >= 1000) {
+            } else if((int)node->Type >= 1000) {
                 var componentNode = node->GetAsAtkComponentNode();
                 var component = componentNode->Component;
                 var uldManager = component->UldManager;
                 childNode = uldManager.NodeList[0];
-                if (childNode == null) {
+                if(childNode == null) {
                     return null;
                 } else {
                     return GetNodeByIDChain(childNode, newList.ToArray());
@@ -58,7 +58,7 @@ internal static class AtkNodeHelper {
         } else {
             //check siblings
             var sibNode = node->PrevSiblingNode;
-            if (sibNode != null) {
+            if(sibNode != null) {
                 return GetNodeByIDChain(sibNode, ids);
             } else {
                 return null;
@@ -68,7 +68,7 @@ internal static class AtkNodeHelper {
 
     internal static unsafe void PrintTextNodes(string addon) {
         AtkUnitBase* addonNode = AtkStage.GetSingleton()->RaptureAtkUnitManager->GetAddonByName(addon);
-        if (addonNode != null) {
+        if(addonNode != null) {
             //Log.Debug($"addon name: {Marshal.PtrToStringUTF8((nint)addonNode->Name)} ptr: {string.Format("0x{0:X8}", new IntPtr(addonNode).ToString())}");
             Log.Debug($"addon name: {Marshal.PtrToStringUTF8((nint)addonNode->Name)} ptr: 0x{new IntPtr(addonNode).ToString("X8")}");
             PrintTextNodes(addonNode->RootNode);
@@ -82,7 +82,7 @@ internal static class AtkNodeHelper {
     }
 
     internal static unsafe void PrintTextNodes(AtkResNode* node, bool checkSiblings = true, bool onlyVisible = true) {
-        if (node == null) {
+        if(node == null) {
             return;
         }
         int type = (int)node->Type;
@@ -92,24 +92,24 @@ internal static class AtkNodeHelper {
 
         string parentNodeIDString = "";
         string parentNodeTypeString = "";
-        while (parentNode != null) {
+        while(parentNode != null) {
             parentNodeIDString += parentNode->NodeID;
             parentNodeTypeString += parentNode->Type;
             parentNode = parentNode->ParentNode;
-            if (parentNode != null) {
+            if(parentNode != null) {
                 parentNodeIDString += "<-";
                 parentNodeTypeString += "<-";
             }
         }
-        if (type >= 1000) {
+        if(type >= 1000) {
             childCount = node->GetAsAtkComponentNode()->Component->UldManager.NodeListCount;
         }
 
-        if (node->Type == NodeType.Text) {
+        if(node->Type == NodeType.Text) {
             var tNode = node->GetAsAtkTextNode();
-            if (tNode != null) {
+            if(tNode != null) {
                 string nodeText = tNode->NodeText.ToString();
-                if (!nodeText.IsNullOrEmpty() && (node->IsVisible || !onlyVisible)) {
+                if(!nodeText.IsNullOrEmpty() && (node->IsVisible || !onlyVisible)) {
                     Log.Debug(string.Format("Visible: {5,-6} ID: {0,-8} type: {1,-6} childCount: {2,-4} parentID: {3,-25} parentType: {4}", node->NodeID, type, childCount, parentNodeIDString, parentNodeTypeString, node->IsVisible));
                     Log.Debug($"Text: {tNode->NodeText}");
                 }
@@ -122,13 +122,13 @@ internal static class AtkNodeHelper {
         //List: 1019
         //RadioButton: 1021
         //RadioButton: 1013
-        if (type >= 1000) {
+        if(type >= 1000) {
             var componentNode = node->GetAsAtkComponentNode();
             var component = componentNode->Component;
             var uldManager = component->UldManager;
 
-            if (node->IsVisible || !onlyVisible) {
-                for (int i = 0; i < uldManager.NodeListCount; i++) {
+            if(node->IsVisible || !onlyVisible) {
+                for(int i = 0; i < uldManager.NodeListCount; i++) {
                     var childNode = uldManager.NodeList[i];
                     PrintTextNodes(childNode, false);
                 }
@@ -137,20 +137,20 @@ internal static class AtkNodeHelper {
 
         //check child nodes
         var child = node->ChildNode;
-        if (child != null || (!node->IsVisible && onlyVisible)) {
+        if(child != null || (!node->IsVisible && onlyVisible)) {
             PrintTextNodes(child, checkSiblings);
         }
 
         //check sibling nodes
         var sibNode = node->PrevSiblingNode;
-        if (sibNode != null && checkSiblings) {
+        if(sibNode != null && checkSiblings) {
             PrintTextNodes(sibNode, checkSiblings);
         }
     }
 
     internal static unsafe void PrintAtkValues(AtkUnitBase* node) {
-        if (node->AtkValues != null) {
-            for (int i = 0; i < node->AtkValuesCount; i++) {
+        if(node->AtkValues != null) {
+            for(int i = 0; i < node->AtkValuesCount; i++) {
                 string data = ConvertAtkValueToString(node->AtkValues[i]);
                 Log.Debug(string.Format("index: {0,-5} type: {1,-15} data: {2}", i, node->AtkValues[i].Type, data));
             }
@@ -165,7 +165,7 @@ internal static class AtkNodeHelper {
     //}
 
     internal static unsafe string ConvertAtkValueToString(AtkValue value) {
-        switch (value.Type) {
+        switch(value.Type) {
             case FFXIVClientStructs.FFXIV.Component.GUI.ValueType.Int:
             case FFXIVClientStructs.FFXIV.Component.GUI.ValueType.UInt:
                 return value.Int.ToString();
@@ -187,11 +187,11 @@ internal static class AtkNodeHelper {
 
         int count = 0;
         var stringArray = AtkStage.GetSingleton()->GetStringArrayData()[0];
-        while (stringArray != null) {
+        while(stringArray != null) {
 
             int internalCount = 0;
             var internalArray = stringArray->StringArray[0];
-            while (internalArray != null) {
+            while(internalArray != null) {
                 ////internalArray = stringArray[internalCount];
                 //int secondInternalCount = 0;
                 //var secondInternalArray = internalArray[0];
@@ -224,10 +224,10 @@ internal static class AtkNodeHelper {
     }
 
     public static unsafe string ReadString(byte* b, int maxLength = 0, bool nullIsEmpty = true) {
-        if (b == null) return nullIsEmpty ? string.Empty : null;
-        if (maxLength > 0) return Encoding.UTF8.GetString(b, maxLength).Split('\0')[0];
+        if(b == null) return nullIsEmpty ? string.Empty : null;
+        if(maxLength > 0) return Encoding.UTF8.GetString(b, maxLength).Split('\0')[0];
         var l = 0;
-        while (b[l] != 0) l++;
+        while(b[l] != 0) l++;
         return Encoding.UTF8.GetString(b, l);
     }
 }

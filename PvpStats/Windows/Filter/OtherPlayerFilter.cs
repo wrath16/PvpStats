@@ -30,11 +30,11 @@ public class OtherPlayerFilter : DataFilter {
     internal OtherPlayerFilter(Plugin plugin, Action action, OtherPlayerFilter? filter = null) : base(plugin, action) {
         var allJobs = Enum.GetValues(typeof(Job)).Cast<Job>();
         _jobCombo.Add("Any Job");
-        foreach (var job in allJobs) {
+        foreach(var job in allJobs) {
             _jobCombo.Add(PlayerJobHelper.GetNameFromJob(job));
         }
 
-        if (filter is not null) {
+        if(filter is not null) {
             PlayerNamesRaw = filter.PlayerNamesRaw;
             AnyJob = filter.AnyJob;
             PlayerJob = filter.PlayerJob;
@@ -48,8 +48,8 @@ public class OtherPlayerFilter : DataFilter {
         int teamIndex = (int)TeamStatus;
 
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
-        if (ImGui.InputTextWithHint("###PlayerNameInput", "Enter player name and world", ref playerName, 50)) {
-            if (playerName != _lastTextValue) {
+        if(ImGui.InputTextWithHint("###PlayerNameInput", "Enter player name and world", ref playerName, 50)) {
+            if(playerName != _lastTextValue) {
                 _lastTextValue = playerName;
                 _plugin!.DataQueue.QueueDataOperation(() => {
                     PlayerNamesRaw = playerName;
@@ -58,7 +58,7 @@ public class OtherPlayerFilter : DataFilter {
             }
         }
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2);
-        if (ImGui.Combo("###TeamStatusCombo", ref teamIndex, _teamStatusCombo, _teamStatusCombo.Length)) {
+        if(ImGui.Combo("###TeamStatusCombo", ref teamIndex, _teamStatusCombo, _teamStatusCombo.Length)) {
             _plugin!.DataQueue.QueueDataOperation(() => {
                 TeamStatus = (TeamStatus)teamIndex;
                 Refresh();
@@ -66,9 +66,9 @@ public class OtherPlayerFilter : DataFilter {
         }
         ImGui.SameLine();
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
-        if (ImGui.Combo("###JobCombo", ref jobIndex, _jobCombo.ToArray(), _jobCombo.Count)) {
+        if(ImGui.Combo("###JobCombo", ref jobIndex, _jobCombo.ToArray(), _jobCombo.Count)) {
             _plugin!.DataQueue.QueueDataOperation(() => {
-                if (jobIndex == 0) {
+                if(jobIndex == 0) {
                     AnyJob = true;
                 } else {
                     AnyJob = false;

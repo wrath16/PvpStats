@@ -1,7 +1,7 @@
 ﻿using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
-using Dalamud;
 using Dalamud.Interface.Windowing;
+using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using ImGuiNET;
 using PvpStats.Helpers;
 using System;
@@ -9,8 +9,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
-using static Lumina.Data.Parsing.Layer.LayerCommon;
-using FFXIVClientStructs.FFXIV.Client.Game.Event;
 
 namespace PvpStats.Windows;
 internal unsafe class DebugWindow : Window {
@@ -46,27 +44,27 @@ internal unsafe class DebugWindow : Window {
 
         if(ImGui.BeginTabBar("debugTabs")) {
             if(ImGui.BeginTabItem("Addon")) {
-                if (ImGui.InputText($"Addon", ref _addon, 80)) {
+                if(ImGui.InputText($"Addon", ref _addon, 80)) {
 
                 }
 
-                if (ImGui.InputText($"ID Chain", ref _idChain, 80)) {
+                if(ImGui.InputText($"ID Chain", ref _idChain, 80)) {
                     List<uint> results = new();
                     string[] splitString = _idChain.Split(",");
-                    foreach (string s in splitString) {
+                    foreach(string s in splitString) {
                         uint result;
-                        if (uint.TryParse(s, out result)) {
+                        if(uint.TryParse(s, out result)) {
                             results.Add(result);
                         }
                     }
                     _idParams = results.ToArray();
                 }
 
-                if (ImGui.Button("Print Text Nodes")) {
+                if(ImGui.Button("Print Text Nodes")) {
                     AtkNodeHelper.PrintTextNodes(_addon);
                 }
 
-                if (ImGui.Button("GetNodeByIDChain")) {
+                if(ImGui.Button("GetNodeByIDChain")) {
                     unsafe {
                         var x = AtkNodeHelper.GetNodeByIDChain(_addon, _idParams);
                         _plugin.Log.Debug($"0x{new IntPtr(x).ToString("X8")}");
@@ -74,7 +72,7 @@ internal unsafe class DebugWindow : Window {
 
                 }
 
-                if (ImGui.Button("Print ATKStage String data")) {
+                if(ImGui.Button("Print ATKStage String data")) {
                     AtkNodeHelper.PrintAtkStringArray();
                 }
                 ImGui.EndTabItem();
@@ -106,23 +104,20 @@ internal unsafe class DebugWindow : Window {
                     ImGui.EndTable();
                 }
 
-
                 //ImGui.Text($"Current Content Type: {(instanceDirector != null ? instanceDirector->InstanceContentType : "" )}");
                 //ImGui.Text($"instance content director pointer address: 0x{new IntPtr(directorAddress)}");
                 //ImGui.Text($"instance content director pointer: 0x{new IntPtr(instanceDirector)}");
-
-
 
                 //if (ImGui.Button("Get Content Type")) {
                 //    var x = _plugin.Functions.GetContentType();
                 //    _plugin.Log.Debug($"Content type: {x}");
                 //}
 
-                if (ImGui.Button("Print ICD Bytes")) {
+                if(ImGui.Button("Print ICD Bytes")) {
                     var x = _plugin.Functions.GetRawInstanceContentDirector();
                     _plugin.Log.Debug($"object size: {x.Length.ToString("X2")} bytes");
                     int offset = 0x0;
-                    foreach (var b in x) {
+                    foreach(var b in x) {
                         string inHex = b.ToString("X2");
                         _plugin.Log.Debug($"offset: {offset.ToString("X2")} value: {inHex}");
                         offset++;
@@ -160,13 +155,12 @@ internal unsafe class DebugWindow : Window {
                 //    _plugin.Functions.AttemptToReadContentDirector();
                 //}
 
-                if (ImGui.Button("Create ICD Byte Dump")) {
+                if(ImGui.Button("Create ICD Byte Dump")) {
                     _plugin.Functions.CreateByteDump((nint)instanceDirector, 0x2030, "ICD");
                 }
 
-
-                if (ImGui.Button("Print Object Table")) {
-                    foreach (PlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
+                if(ImGui.Button("Print Object Table")) {
+                    foreach(PlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
                         _plugin.Log.Debug($"0x{pc.ObjectId.ToString("X2")} {pc.Name}");
                         //_plugin.Log.Debug($"team null? {isPlayerTeam is null} player team? {isPlayerTeam} is p member? {pc.StatusFlags.HasFlag(StatusFlags.PartyMember)} isSelf? {isSelf}");
                     }
@@ -174,14 +168,12 @@ internal unsafe class DebugWindow : Window {
 
                 ImGui.Separator();
 
-                if (ImGui.InputText($"Value To Find##findvalue", ref _toFind, 80)) {
+                if(ImGui.InputText($"Value To Find##findvalue", ref _toFind, 80)) {
 
                 }
 
-                if (ImGui.Button("Find")) {
+                if(ImGui.Button("Find")) {
                     _plugin.DataQueue.QueueDataOperation(() => _plugin.Functions.FindValueInContentDirector(_toFind));
-
-
 
                     //if (int.TryParse(_toFind, out int result)) {
                     //    _plugin.Functions.FindValueInContentDirector(result);
@@ -216,7 +208,7 @@ internal unsafe class DebugWindow : Window {
                     ImGui.TableNextColumn();
                     ImGui.Text("Count");
 
-                    foreach (var opcode in _plugin.MatchManager._opCodeCount) {
+                    foreach(var opcode in _plugin.MatchManager._opCodeCount) {
 
                         ImGui.TableNextColumn();
                         ImGui.Text($"{opcode.Key}");
@@ -243,8 +235,6 @@ internal unsafe class DebugWindow : Window {
         //if (ImGui.InputText($"player name", ref _pname, 80)) {
 
         //}
-
-
 
     }
 

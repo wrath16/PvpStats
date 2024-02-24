@@ -27,33 +27,33 @@ internal class LocalizationService {
         Type type = typeof(T);
         bool isPlural = column.Equals("Plural", StringComparison.OrdinalIgnoreCase);
 
-        if (originLanguage == destinationLanguage) {
+        if(originLanguage == destinationLanguage) {
             return data;
         }
 
-        if (!IsLanguageSupported(destinationLanguage) || !IsLanguageSupported(originLanguage)) {
+        if(!IsLanguageSupported(destinationLanguage) || !IsLanguageSupported(originLanguage)) {
             throw new ArgumentException("Cannot translate to/from an unsupported client language.");
         }
 
         //check to make sure column is string
         var columnProperty = type.GetProperty(column) ?? throw new InvalidOperationException($"No property of name: {column} on type {type.FullName}");
-        if (!columnProperty.PropertyType.IsAssignableTo(typeof(Lumina.Text.SeString))) {
+        if(!columnProperty.PropertyType.IsAssignableTo(typeof(Lumina.Text.SeString))) {
             throw new ArgumentException($"property {column} of type {columnProperty.PropertyType.FullName} on type {type.FullName} is not assignable to a SeString!");
         }
 
         //iterate over table to find rowId
-        foreach (var row in _plugin.DataManager.GetExcelSheet<T>((ClientLanguage)originLanguage)!) {
+        foreach(var row in _plugin.DataManager.GetExcelSheet<T>((ClientLanguage)originLanguage)!) {
             var rowData = columnProperty!.GetValue(row)?.ToString();
 
             //German declension placeholder replacement
-            if (originLanguage == ClientLanguage.German && rowData != null) {
+            if(originLanguage == ClientLanguage.German && rowData != null) {
                 var pronounProperty = type.GetProperty("Pronoun");
-                if (pronounProperty != null) {
+                if(pronounProperty != null) {
                     int pronoun = Convert.ToInt32(pronounProperty.GetValue(row))!;
                     rowData = ReplaceGermanDeclensionPlaceholders(rowData, pronoun, isPlural);
                 }
             }
-            if (data.Equals(rowData, StringComparison.OrdinalIgnoreCase)) {
+            if(data.Equals(rowData, StringComparison.OrdinalIgnoreCase)) {
                 rowId = row.RowId; break;
             }
         }
@@ -65,9 +65,9 @@ internal class LocalizationService {
         string? translatedString = columnProperty!.GetValue(translatedRow)?.ToString() ?? throw new InvalidOperationException($"row id {rowId} not found in table {type.Name} for language: {destinationLanguage}");
 
         //add German declensions. Assume nominative case
-        if (destinationLanguage == ClientLanguage.German) {
+        if(destinationLanguage == ClientLanguage.German) {
             var pronounProperty = type.GetProperty("Pronoun");
-            if (pronounProperty != null) {
+            if(pronounProperty != null) {
                 int pronoun = Convert.ToInt32(pronounProperty.GetValue(translatedRow))!;
                 translatedString = ReplaceGermanDeclensionPlaceholders(translatedString, pronoun, isPlural);
             }
@@ -77,7 +77,7 @@ internal class LocalizationService {
     }
 
     public string TranslateRankString(string rank, ClientLanguage destinationLanguage, ClientLanguage? originLanguage = null) {
-        if (!IsLanguageSupported(destinationLanguage) || !IsLanguageSupported(originLanguage)) {
+        if(!IsLanguageSupported(destinationLanguage) || !IsLanguageSupported(originLanguage)) {
             throw new ArgumentException("Cannot translate to/from an unsupported client language.");
         }
 
@@ -85,7 +85,7 @@ internal class LocalizationService {
         //Regex.Split(tierName, @"\s", RegexOptions.IgnoreCase);
         string[] splitString;
 
-        switch (originLanguage) {
+        switch(originLanguage) {
             default:
             case ClientLanguage.German:
             case ClientLanguage.French:
@@ -98,14 +98,14 @@ internal class LocalizationService {
                 break;
         }
 
-        if (splitString.Length <= 0 || splitString.Length > 2) {
+        if(splitString.Length <= 0 || splitString.Length > 2) {
             throw new ArgumentException("Invalid rank string");
         }
 
         string tier = splitString[0];
         string? riser = null;
-        if (splitString.Length == 2) {
-            if (!int.TryParse(splitString[1], out int riserParsed)) {
+        if(splitString.Length == 2) {
+            if(!int.TryParse(splitString[1], out int riserParsed)) {
                 throw new ArgumentException("Cannot convert riser to integer");
             }
             riser = splitString[1];
@@ -113,7 +113,7 @@ internal class LocalizationService {
 
         var translatedTier = TranslateDataTableEntry<ColosseumMatchRank>(tier, "Unknown0", ClientLanguage.English);
 
-        if (riser != null) {
+        if(riser != null) {
             return $"{translatedTier} {riser}";
         } else {
             return $"{translatedTier}";
@@ -123,10 +123,10 @@ internal class LocalizationService {
     //assumes nominative case
     //male = 0, female = 1, neuter = 2
     private static string ReplaceGermanDeclensionPlaceholders(string input, int gender, bool isPlural) {
-        if (isPlural) {
+        if(isPlural) {
             input = input.Replace("[a]", "e");
         }
-        switch (gender) {
+        switch(gender) {
             default:
             case 0: //male
                 input = input.Replace("[a]", "er").Replace("[t]", "der");

@@ -41,7 +41,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         bool isSpectated = item.LocalPlayerTeam is null;
         var color = ImGuiColors.DalamudWhite;
         string resultText = "";
-        if (isSpectated) {
+        if(isSpectated) {
             color = ImGuiColors.DalamudWhite;
             resultText = "N/A";
         } else {
@@ -71,7 +71,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
             itemDetail.IsOpen = true;
             try {
                 _plugin.WindowManager.AddWindow(itemDetail);
-            } catch (ArgumentException) {
+            } catch(ArgumentException) {
                 //attempt to open existing window
                 _plugin.WindowManager.OpenMatchDetailsWindow(item.Id);
             }
@@ -85,7 +85,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
             fullEditDetail.IsOpen = true;
             try {
                 _plugin.WindowManager.AddWindow(fullEditDetail);
-            } catch (ArgumentException) {
+            } catch(ArgumentException) {
                 //attempt to open existing window
                 _plugin.WindowManager.OpenFullEditWindow(item.Id);
             }
