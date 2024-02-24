@@ -13,5 +13,6 @@ Final Fantasy XIV Dalamud plugin for recording PvP match history. Currently only
 
 ## Feature Roadmap
 * Lodestone player verification.
+* Player stats list and details.
 * Frontline support.
 * Rival Wings support.
