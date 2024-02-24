@@ -54,7 +54,7 @@ internal class MainWindow : Window {
     }
 
     public void Refresh() {
-        var matches = _plugin.Storage.GetCCMatches().Query().Where(m => !m.IsDeleted && m.IsCompleted).OrderByDescending(m => m.DutyStartTime).ToList();
+        var matches = _plugin.Storage.GetCCMatches().Query().Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
         foreach(var filter in Filters) {
             switch(filter.GetType()) {
                 case Type _ when filter.GetType() == typeof(MatchTypeFilter):

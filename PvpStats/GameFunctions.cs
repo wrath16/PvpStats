@@ -213,14 +213,14 @@ internal unsafe class GameFunctions {
                                 curString += output;
                             } else if(curString.Length > 0) {
                                 if(curString.Length >= minLength) {
-                                    _plugin.Log.Debug(curString);
+                                    _plugin.Log.Verbose(curString);
                                 }
                                 curString = "";
                             }
                             reader.ReadChar();
                         } catch(ArgumentException) {
                             if(curString.Length >= minLength) {
-                                _plugin.Log.Debug(curString);
+                                _plugin.Log.Verbose(curString);
                             }
                             curString = "";
                             reader.ReadByte();

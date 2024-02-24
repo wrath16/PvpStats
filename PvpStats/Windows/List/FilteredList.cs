@@ -75,18 +75,6 @@ internal abstract class FilteredList<T> {
 #if DEBUG
             if(ImGui.BeginPopupContextItem($"##{item!.GetHashCode()}--ContextMenu", ImGuiPopupFlags.MouseButtonRight)) {
                 if(ImGui.MenuItem($"Edit document##{item!.GetHashCode()}--FullEditContext")) {
-                    //_plugin.Log.Debug($"{BsonMapper.Global.Serialize(typeof(T), item).ToString()}");
-                    //var x = BsonMapper.Global.Serialize(typeof(T), item).ToString();
-                    //var stringReader = new StringReader(x);
-                    //var stringWriter = new StringWriter();
-                    //var jsonReader = new JsonTextReader(stringReader);
-                    //var jsonWriter = new JsonTextWriter(stringWriter) {
-                    //    Formatting = Formatting.Indented
-                    //};
-                    //jsonWriter.WriteToken(jsonReader);
-                    //_plugin.Log.Debug($"{stringWriter.ToString()}");
-
-                    //_plugin.Log.Debug($"{BsonMapper.Global.ToDocument(typeof(T), item).ToString()}");
                     OpenFullEditDetail(item);
                 }
                 ImGui.EndPopup();

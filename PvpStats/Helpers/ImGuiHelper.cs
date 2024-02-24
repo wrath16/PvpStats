@@ -24,10 +24,34 @@ internal static class ImGuiHelper {
     //}
 
     internal static void HelpMarker(string text) {
+        ImGui.SameLine();
         ImGui.TextDisabled("(?)");
+        WrappedTooltip(text, 500f);
+        //if(ImGui.IsItemHovered()) {
+        //    ImGui.BeginTooltip();
+        //    ImGui.Text(text);
+        //    ImGui.EndTooltip();
+        //}
+    }
+
+    internal static void WrappedTooltip(string text, float width = 400f) {
+        string[] splitStrings = text.Split(" ");
+        string wrappedString = "";
+        string currentLine = "";
+
+        foreach(var word in splitStrings) {
+            if(ImGui.CalcTextSize($"{currentLine} {word}").X > width) {
+                wrappedString += $"\n{word}";
+                currentLine = word;
+            } else {
+                wrappedString += $" {word}";
+                currentLine += $" {word}";
+            }
+        }
+
         if(ImGui.IsItemHovered()) {
             ImGui.BeginTooltip();
-            ImGui.Text(text);
+            ImGui.Text(wrappedString);
             ImGui.EndTooltip();
         }
     }

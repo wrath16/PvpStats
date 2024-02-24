@@ -231,6 +231,12 @@ internal class CrystallineConflictMatchDetail : Window {
                     ImGuiHelper.RightAlignCursor(playerName0);
                     ImGui.AlignTextToFramePadding();
                     ImGui.TextColored(playerColor0, playerName0);
+                    //if(ImGui.IsItemHovered()) {
+                    //    ImGui.BeginTooltip();
+                    //    ImGui.TextWrapped(firstTeam.Players[i].Alias.HomeWorld);
+                    //    ImGui.EndTooltip();
+                    //}
+                    ImGuiHelper.WrappedTooltip(firstTeam.Players[i].Alias.HomeWorld);
                     ImGui.TableNextColumn();
                     //string playerJob0 = firstTeam.Players[i].Job.ToString();
                     //ImGui.Text(playerJob0);
@@ -254,6 +260,7 @@ internal class CrystallineConflictMatchDetail : Window {
                     }
                     string playerName1 = secondTeam.Players[i].Alias.Name;
                     ImGui.TextColored(playerColor1, $"     {playerName1}");
+                    ImGuiHelper.WrappedTooltip(secondTeam.Players[i].Alias.HomeWorld);
                     ImGui.TableNextColumn();
                     string rank1 = secondTeam.Players[i].Rank != null && secondTeam.Players[i].Rank?.Tier != ArenaTier.None ? secondTeam.Players[i].Rank!.ToString() : "";
                     ImGui.Text(rank1);
@@ -271,29 +278,24 @@ internal class CrystallineConflictMatchDetail : Window {
         if(_dataModel.PostMatch is null) {
             ImGui.Text("Post game statistics unavailable.");
         } else {
-#if DEBUG
-            foreach(var team in _dataModel.PostMatch.Teams) {
-                ImGui.Text($"{team.Key}: {team.Value.Progress}");
-                ImGui.SameLine();
-            }
-            ImGui.Text($"winner: {_dataModel.PostMatch.MatchWinner}");
-            ImGui.SameLine();
-            ImGui.Text($"duration: {_dataModel.PostMatch.MatchDuration.TotalSeconds}");
-            //ImGui.NewLine();
-#endif
+//#if DEBUG
+//            foreach(var team in _dataModel.PostMatch.Teams) {
+//                ImGui.Text($"{team.Key}: {team.Value.Progress}");
+//                ImGui.SameLine();
+//            }
+//            ImGui.Text($"winner: {_dataModel.PostMatch.MatchWinner}");
+//            ImGui.SameLine();
+//            ImGui.Text($"duration: {_dataModel.PostMatch.MatchDuration.TotalSeconds}");
+//            //ImGui.NewLine();
+//#endif
 
             if(_dataModel.MatchType == CrystallineConflictMatchType.Ranked && _dataModel.PostMatch.RankBefore is not null && _dataModel.PostMatch.RankAfter is not null) {
                 ImGui.Text($"Rank Change: {_dataModel.PostMatch.RankBefore.ToString()} → {_dataModel.PostMatch.RankAfter.ToString()}");
             }
-
-            //ImGui.Checkbox("Show team contribution", ref _showPercentages);
             ImGuiComponents.ToggleButton("##showPercentages", ref _showPercentages);
             ImGui.SameLine();
             ImGui.Text("Show team contributions");
-            ImGuiComponents.HelpMarker("Right-click table header to show and hide columns");
-            //ImGui.SameLine();
-            //ImGui.Checkbox("Show advanced stats", ref _showAdvancedStats);
-
+            ImGuiHelper.HelpMarker("Right-click table header to show and hide columns.");
             DrawStatsTable();
         }
     }
@@ -311,9 +313,9 @@ internal class CrystallineConflictMatchDetail : Window {
         ImGui.TableSetupColumn("HP Restored", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 65f, (uint)SortableColumn.HPRestored);
         ImGui.TableSetupColumn("Time on Crystal", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 60f, (uint)SortableColumn.TimeOnCrystal);
         ImGui.TableSetupColumn("Damage Dealt per Kill/Assist", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)SortableColumn.DamageDealtPerKillAssist);
-        ImGui.TableSetupColumn("Damage Dealt per Death", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)SortableColumn.DamageDealtPerDeath);
-        ImGui.TableSetupColumn("Damage Taken per Death", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)SortableColumn.DamageTakenPerDeath);
-        ImGui.TableSetupColumn("HP Restored per Death", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)SortableColumn.HPPerDeath);
+        ImGui.TableSetupColumn("Damage Dealt per Life", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)SortableColumn.DamageDealtPerDeath);
+        ImGui.TableSetupColumn("Damage Taken per Life", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)SortableColumn.DamageTakenPerDeath);
+        ImGui.TableSetupColumn("HP Restored per Life", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)SortableColumn.HPPerDeath);
         ImGui.TableSetupScrollFreeze(1, 0);
         //ImGui.TableHeadersRow();
         ImGui.TableNextColumn();

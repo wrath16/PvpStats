@@ -163,8 +163,8 @@ internal class CrystallineConflictSummary {
         jobStats = jobStats.OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         allyJobStats = allyJobStats.OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         enemyJobStats = enemyJobStats.OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-        teammateStats = teammateStats.OrderByDescending(x => 2 * x.Value.Wins - x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-        enemyStats = enemyStats.OrderByDescending(x => x.Value.Matches - 2 * x.Value.Wins).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        teammateStats = teammateStats.OrderBy(x => x.Value.Matches).OrderByDescending(x => 2 * x.Value.Wins - x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        enemyStats = enemyStats.OrderBy(x => x.Value.Matches).OrderByDescending(x => x.Value.Matches - 2 * x.Value.Wins).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
         //calculate average stats
         if(statsEligibleMatches > 0) {
@@ -221,7 +221,7 @@ internal class CrystallineConflictSummary {
             _assistsPerMin = assistsPerMin;
             _damageDealtPerMin = damageDealtPerMin;
             _damageTakenPerMin = damageTakenPerMin;
-            _damageTakenPerMin = hpRestoredPerMin;
+            _hpRestoredPerMin = hpRestoredPerMin; 
             _timeOnCrystalPerMin = timeOnCrystalPerMin;
             _killContribution = killContribution;
             _deathContribution = deathContribution;
@@ -271,11 +271,11 @@ internal class CrystallineConflictSummary {
             if(_statsEligibleMatches > 0) {
                 ImGui.Separator();
                 ImGui.TextColored(ImGuiColors.DalamudYellow, "Average Stats:");
-                ImGui.SameLine();
-                ImGui.Text($"Eligible matches: {_statsEligibleMatches}");
-                ImGui.SameLine();
-                ImGui.Text($"Eligible wins: {_statsEligibleWins}");
-                ImGui.SameLine();
+                //ImGui.SameLine();
+                //ImGui.Text($"Eligible matches: {_statsEligibleMatches}");
+                //ImGui.SameLine();
+                //ImGui.Text($"Eligible wins: {_statsEligibleWins}");
+                //ImGui.SameLine();
                 ImGuiHelper.HelpMarker("1st row: average per match.\n2nd row: average per minute.\n3rd row: average team contribution per match.");
                 DrawMatchStatsTable();
             }

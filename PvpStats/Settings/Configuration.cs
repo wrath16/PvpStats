@@ -24,7 +24,7 @@ public class Configuration : IPluginConfiguration {
 
     public void Save() {
         try {
-            _fileLock.Wait();
+            _fileLock.WaitAsync();
             _plugin!.PluginInterface.SavePluginConfig(this);
         } finally {
             _fileLock.Release();

@@ -1,8 +1,8 @@
 {
   "Author": "SaMo",
   "Name": "PvP Tracker",
-  "Punchline": "PvP match history and stats.",
-  "Description": "Record and browse your PvP match history and various statistics. Currently only supports Crystalline Conflict.",
+  "Punchline": "Crystalline Conflict match history and statistics.",
+  "Description": "Record and browse your PvP match history and view various statistics. Frontline and Rival Wings support coming soon.",
   "InternalName": "PvpStats",
   "RepoUrl": "https://github.com/wrath16/PvpStats",
   "ApplicableVersion": "any",

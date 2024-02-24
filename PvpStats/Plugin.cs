@@ -68,7 +68,7 @@ public sealed class Plugin : IDalamudPlugin {
     private bool _matchInProgress;
     private DateTime _lastHeaderUpdateTime;
 
-    internal bool DataReadWrite { get; set; }
+    internal bool DebugMode { get; set; }
 
     internal readonly Dictionary<Job, IDalamudTextureWrap> JobIcons = new();
 
@@ -151,14 +151,14 @@ public sealed class Plugin : IDalamudPlugin {
             //            MainWindow = new MainWindow(this);
             //            WindowSystem.AddWindow(MainWindow);
             CommandManager.AddHandler(CCStatsCommandName, new CommandInfo(OnCommand) {
-                HelpMessage = "Opens stats window."
+                HelpMessage = "Opens Crystalline Conflict tracker."
             });
 
 #if DEBUG
             CommandManager.AddHandler(DebugCommandName, new CommandInfo(OnDebugCommand) {
                 HelpMessage = "Opens debug window."
             });
-            DataReadWrite = true;
+            DebugMode = true;
 #endif
 
             //CommandManager.AddHandler(ConfigCommandName, new CommandInfo(OnConfigCommand) {
