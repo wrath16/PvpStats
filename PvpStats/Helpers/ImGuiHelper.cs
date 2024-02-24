@@ -1,4 +1,5 @@
-﻿using ImGuiNET;
+﻿using Dalamud.Interface.Utility;
+using ImGuiNET;
 
 namespace PvpStats.Helpers;
 internal static class ImGuiHelper {
@@ -30,6 +31,7 @@ internal static class ImGuiHelper {
     }
 
     internal static void WrappedTooltip(string text, float width = 400f) {
+        width *= ImGuiHelpers.GlobalScale;
         string[] splitStrings = text.Split(" ");
         string wrappedString = "";
         string currentLine = "";
