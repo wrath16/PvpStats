@@ -9,7 +9,8 @@ public class CrystallineConflictPlayer {
     public ulong? LodestoneId { get; set; }
 
     public CrystallineConflictPlayer() {
-
+        //should never persist
+        Alias = (PlayerAlias)"Sarah Montcroix Siren";
     }
 
     public CrystallineConflictPlayer(PlayerAlias alias, Job job, PlayerRank? rank = null) {
