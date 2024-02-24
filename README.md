@@ -1,6 +1,6 @@
 # PvP Tracker
 
-[![image](https://github.com/wrath16/PvpStats/blob/master/images/example.PNG)
+![image](https://github.com/wrath16/PvpStats/blob/master/images/example.PNG)
 
 
 Final Fantasy XIV Dalamud plugin for recording PvP match history. Currently only supports Crystalline Conflict, with future plans for Frontline and Rival Wings support.
