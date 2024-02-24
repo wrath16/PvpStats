@@ -1,18 +1,23 @@
 using Dalamud;
 using Dalamud.Game;
+using Dalamud.Game.ClientState.Objects.Enums;
+using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Game.InstanceContent;
+using FFXIVClientStructs.FFXIV.Client.System.Input;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.Interop.Attributes;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -65,15 +70,15 @@ internal unsafe class GameFunctions {
     //me
     //40 53 41 54 41 55 41 57 48 83 EC ?? 44 8B EA 4D 8B F9 0F B6 91 1A ?? ?? ?? 45 0F B7 E0
 
-    [Signature("40 53 41 54 41 55 41 57 48 83 EC ?? 44 8B EA 4D 8B F9 0F B6 91 ?? ?? ?? ?? 45 0F B7 E0", DetourName = nameof(Func00Detour))]
-    private readonly Hook<ProcessPvPResultsFunc00Delegate> _func00Hook;
+    //[Signature("40 53 41 54 41 55 41 57 48 83 EC ?? 44 8B EA 4D 8B F9 0F B6 91 ?? ?? ?? ?? 45 0F B7 E0", DetourName = nameof(Func00Detour))]
+    //private readonly Hook<ProcessPvPResultsFunc00Delegate> _func00Hook;
 
-    //p1 = data ref?
-    //p2 = targetId
-    //p3 = dataPtr + 0x10 offset
-    private delegate void ProcessPvPResultsFunc0Delegate(IntPtr p1, uint p2, IntPtr p3);
-    [Signature("48 83 EC ?? 4D 8B C8 48 C7 44 24 20 ?? ?? ?? ?? 41 B8 ?? ?? ?? ?? E8 E5 0C 00 00", DetourName = nameof(Func0Detour))]
-    private readonly Hook<ProcessPvPResultsFunc0Delegate> _func0Hook;
+    ////p1 = data ref?
+    ////p2 = targetId
+    ////p3 = dataPtr + 0x10 offset
+    //private delegate void ProcessPvPResultsFunc0Delegate(IntPtr p1, uint p2, IntPtr p3);
+    //[Signature("48 83 EC ?? 4D 8B C8 48 C7 44 24 20 ?? ?? ?? ?? 41 B8 ?? ?? ?? ?? E8 E5 0C 00 00", DetourName = nameof(Func0Detour))]
+    //private readonly Hook<ProcessPvPResultsFunc0Delegate> _func0Hook;
 
     //p1 = dataPtr + 0x10 offset
     //private delegate void ProcessPvPResultsFunc1Delegate(IntPtr p1);
@@ -85,33 +90,26 @@ internal unsafe class GameFunctions {
     internal GameFunctions(Plugin plugin) {
         _plugin = plugin;
         _plugin.InteropProvider.InitializeFromAttributes(this);
-        _plugin.Log.Debug($"func00 address: 0x{_func00Hook.Address.ToString("X2")}");
-        _plugin.Log.Debug($"func0 address: 0x{_func0Hook.Address.ToString("X2")}");
+        //_plugin.Log.Debug($"func00 address: 0x{_func00Hook.Address.ToString("X2")}");
+        //_plugin.Log.Debug($"func0 address: 0x{_func0Hook.Address.ToString("X2")}");
         //_plugin.Log.Debug($"func00 enabled? {_func00Hook.IsEnabled}");
         //_func00Hook.Enable();
-        _func0Hook.Enable();
+        //_func0Hook.Enable();
     }
 
-    private unsafe ulong Func00Detour(IntPtr p1, uint p2, ushort p3, IntPtr p4, long p5) {
-        //_plugin.Log.Information($"Func 00 detour occurred! opcode: {p3}");
-        _func00Hook.Original(p1, p2, p3, p4, p5);
-        return 0;
-    }
+    //private unsafe ulong Func00Detour(IntPtr p1, uint p2, ushort p3, IntPtr p4, long p5) {
+    //    //_plugin.Log.Information($"Func 00 detour occurred! opcode: {p3}");
+    //    _func00Hook.Original(p1, p2, p3, p4, p5);
+    //    return 0;
+    //}
 
-    private unsafe void Func0Detour(IntPtr p1, uint p2, IntPtr p3) {
-        _plugin.Log.Information("Func 0 detour occurred!");
-        _func0Hook.Original(p1, p2, p3);
-    }
+    //private unsafe void Func0Detour(IntPtr p1, uint p2, IntPtr p3) {
+    //    _plugin.Log.Information("Func 0 detour occurred!");
+    //    _func0Hook.Original(p1, p2, p3);
+    //}
 
     internal int GetCurrentDutyId() {
         return GameMain.Instance()->CurrentContentFinderConditionId;
-    }
-
-    internal void Test() {
-        var x = EventFramework.Instance()->GetContentDirector();
-        var y = (InstanceContentDirector*)x;
-        var z = y->ContentDirector.VTable;
-
     }
 
     internal IntPtr GetInstanceContentCrystallineConflictDirector() {
@@ -152,9 +150,11 @@ internal unsafe class GameFunctions {
         ReadBytes((nint)director, typeof(ushort), 0x1CB0, 0);
     }
 
-    internal void CreateByteDump(nint ptr, int length) {
-        using(FileStream fs = File.Create($"{_plugin.PluginInterface.GetPluginConfigDirectory()}\\{DateTime.Now}_dump")) {
-            char s;
+    internal void CreateByteDump(nint ptr, int length, string name) {
+        var bytes = new ReadOnlySpan<byte>((void*)ptr, length);
+        var timeStamp = DateTime.Now;
+        using (FileStream fs = File.Create($"{_plugin.PluginInterface.GetPluginConfigDirectory()}\\{name}_{timeStamp.Year}{timeStamp.Month}{timeStamp.Day}{timeStamp.Hour}{timeStamp.Minute}{timeStamp.Second}_dump.bin")) {
+            fs.Write(bytes);
         }
     }
 
@@ -191,6 +191,69 @@ internal unsafe class GameFunctions {
         }
     }
 
+    public void PrintAllStrings(IntPtr ptr, int length) {
+        using (UnmanagedMemoryStream memoryStream = new((byte*)ptr, length)) {
+            using (var reader = new BinaryReader(memoryStream)) {
+                try {
+                    while(true) {
+                        string result = reader.ReadString();
+                        if(result.Length > 0) {
+                            _plugin.Log.Verbose($"{result}");
+                        }
+                    }
+                } catch (EndOfStreamException) {
+                    return;
+                }
+            }
+        }
+    }
+    public void PrintAllChars(IntPtr ptr, int length) {
+        var bytes = new ReadOnlySpan<byte>((void*)ptr, length);
+        PrintAllChars(bytes.ToArray(), 8);
+    }
+
+    void PrintAllChars(byte[] ptr, int minLength = 1) {
+        using (MemoryStream memoryStream = new(ptr)) {
+            using (var reader = new BinaryReader(memoryStream, Encoding.ASCII)) {
+                string curString = "";
+                while (true) {
+                    try {
+                        char output = '\u0000';
+                        try {
+                            //output = reader.ReadChar();
+                            output = (char)reader.PeekChar();
+                            if (output != 0) {
+                                curString += output;
+                            } else if (curString.Length > 0) {
+                                if (curString.Length >= minLength) {
+                                    _plugin.Log.Debug(curString);
+                                }
+                                curString = "";
+                            }
+                            reader.ReadChar();
+                        } catch (ArgumentException) {
+                            if (curString.Length >= minLength) {
+                                _plugin.Log.Debug(curString);
+                            }
+                            curString = "";
+                            reader.ReadByte();
+                        }
+                    } catch (EndOfStreamException) {
+                        _plugin.Log.Debug(curString);
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    public void PrintAllPlayerObjects() {
+        foreach (PlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
+            _plugin.Log.Debug($"0x{pc.ObjectId.ToString("X2")} {pc.Name}");
+            //_plugin.Log.Debug($"team null? {isPlayerTeam is null} player team? {isPlayerTeam} is p member? {pc.StatusFlags.HasFlag(StatusFlags.PartyMember)} isSelf? {isSelf}");
+        }
+    }
+
     public int[] FindValue<T>(T toFind, nint ptr, int length, int offset = 0, bool printOnly = false) {
         if(toFind is not null) {
             _plugin.Log.Debug($"checking for value...{toFind.GetType().Name} offset: {offset}");
@@ -206,8 +269,6 @@ internal unsafe class GameFunctions {
                 try {
                     switch (typeof(T)) {
                         case Type _ when typeof(T) == typeof(string):
-
-
                             while (cursor < length) {
                                 char output = '\u0000';
                                 try {
@@ -390,6 +451,10 @@ internal unsafe class GameFunctions {
                 return matchingCursors.ToArray();
             }
         }
+    }
+
+    private void FindValue<T>(T toFind, byte[] bytes, int offset = 0) {
+
     }
 
     internal void ReadBytes(nint ptr, Type type, int length, int offset = 0) {

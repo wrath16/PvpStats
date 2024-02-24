@@ -7,7 +7,6 @@ public class CrystallineConflictPostMatch {
     public CrystallineConflictTeamName MatchWinner { get; set; }
     public TimeSpan MatchDuration { get; set; }
     public Dictionary<CrystallineConflictTeamName, CrystallineConflictPostMatchTeam> Teams { get; set; } = new();
-
     public PlayerRank? RankBefore { get; set; }
     public PlayerRank? RankAfter { get; set; }
 }

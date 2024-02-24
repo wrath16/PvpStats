@@ -277,7 +277,9 @@ internal class CrystallineConflictMatchDetail : Window {
                 ImGui.SameLine();
             }
             ImGui.Text($"winner: {_dataModel.PostMatch.MatchWinner}");
-            ImGui.NewLine();
+            ImGui.SameLine();
+            ImGui.Text($"duration: {_dataModel.PostMatch.MatchDuration.TotalSeconds}");
+            //ImGui.NewLine();
 #endif
 
             if (_dataModel.MatchType == CrystallineConflictMatchType.Ranked && _dataModel.PostMatch.RankBefore is not null && _dataModel.PostMatch.RankAfter is not null) {

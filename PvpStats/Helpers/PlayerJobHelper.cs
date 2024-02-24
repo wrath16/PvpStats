@@ -159,4 +159,6 @@ internal static class PlayerJobHelper {
         }
         return null;
     }
+
+    internal static Dictionary<uint, string> WorldNameMap = new();
 }

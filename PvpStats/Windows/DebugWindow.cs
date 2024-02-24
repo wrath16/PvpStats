@@ -129,12 +129,16 @@ internal unsafe class DebugWindow : Window {
                     }
                 }
 
-                if (ImGui.Button("Print CC Director Bytes+")) {
-                    _plugin.Functions.FindValue(0, crystallineConflictDirector, 0x310, 0, true);
-                    _plugin.Functions.FindValue<short>(0, crystallineConflictDirector, 0x310, 0, true);
-                    //_plugin.Functions.FindValue<long>(0, dataPtr, 0x310, 0, true);
-                    _plugin.Functions.FindValue<byte>(0, crystallineConflictDirector, 0x310, 0, true);
-                }
+                //if (ImGui.Button("Print ICD Chars")) {
+                //    _plugin.Functions.FindValue<string>("", (nint)instanceDirector, 0x2090, 0, true);
+                //}
+
+                //if (ImGui.Button("Print CC Director Bytes+")) {
+                //    _plugin.Functions.FindValue(0, crystallineConflictDirector, 0x310, 0, true);
+                //    _plugin.Functions.FindValue<short>(0, crystallineConflictDirector, 0x310, 0, true);
+                //    //_plugin.Functions.FindValue<long>(0, dataPtr, 0x310, 0, true);
+                //    _plugin.Functions.FindValue<byte>(0, crystallineConflictDirector, 0x310, 0, true);
+                //}
 
                 //if (ImGui.Button("Get DD Content Director Bytes")) {
                 //    var x = _plugin.Functions.GetRawDeepDungeonInstanceContentDirector();
@@ -155,6 +159,11 @@ internal unsafe class DebugWindow : Window {
                 //if (ImGui.Button("Read Int32 from Content Director")) {
                 //    _plugin.Functions.AttemptToReadContentDirector();
                 //}
+
+                if (ImGui.Button("Create ICD Byte Dump")) {
+                    _plugin.Functions.CreateByteDump((nint)instanceDirector, 0x2030, "ICD");
+                }
+
 
                 if (ImGui.Button("Print Object Table")) {
                     foreach (PlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {

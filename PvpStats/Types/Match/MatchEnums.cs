@@ -28,6 +28,7 @@ public enum CrystallineConflictMap {
     RedSands
 }
 
+//this matches the data sheet row IDs for ColosseumMatchRank
 public enum ArenaTier {
     None = 0,
     Bronze = 1,

@@ -81,18 +81,23 @@ public class PlayerRank {
         if (Tier != ArenaTier.None) {
             rank += $"{Tier}";
         }
-        if (Riser != null) {
-            rank += $" {Riser} ";
-        }
-        if (Stars != null) {
-            for (int i = 0; i < Stars; i++) {
-                rank += "★";
+
+        if(Tier == ArenaTier.Crystal) {
+            if (Credit != null) {
+                rank += $" {Credit}";
             }
-            for (int i = 0; i < 3 - Stars; i++) {
-                rank += "☆";
+        } else {
+            if (Riser != null) {
+                rank += $" {Riser} ";
             }
-        } else if (Credit != null) {
-            rank += $" {Credit}";
+            if (Stars != null) {
+                for (int i = 0; i < Stars; i++) {
+                    rank += "★";
+                }
+                for (int i = 0; i < 3 - Stars; i++) {
+                    rank += "☆";
+                }
+            }
         }
         return rank.Trim();
     }
