@@ -47,8 +47,6 @@ public class CrystallineConflictMatch {
     //stats results...
     public CrystallineConflictPostMatch? PostMatch { get; set; }
 
-
-
     //this might have performance impact if accessed frequently
     [BsonIgnore]
     public CrystallineConflictTeam? LocalPlayerTeam {

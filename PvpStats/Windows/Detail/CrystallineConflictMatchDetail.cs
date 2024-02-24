@@ -240,7 +240,7 @@ internal class CrystallineConflictMatchDetail : Window {
                     ImGui.TableNextColumn();
                     //string playerJob0 = firstTeam.Players[i].Job.ToString();
                     //ImGui.Text(playerJob0);
-                    ImGui.Image(_plugin.JobIcons[firstTeam.Players[i].Job].ImGuiHandle, new Vector2(24, 24));
+                    ImGui.Image(_plugin.WindowManager.JobIcons[firstTeam.Players[i].Job].ImGuiHandle, new Vector2(24, 24));
                 } else {
                     ImGui.TableNextColumn();
                     ImGui.TableNextColumn();
@@ -251,7 +251,7 @@ internal class CrystallineConflictMatchDetail : Window {
                     ImGui.TableNextColumn();
                     //string playerJob1 = secondTeam.Players[i].Job.ToString();
                     //ImGui.Text(playerJob1);
-                    ImGui.Image(_plugin.JobIcons[secondTeam.Players[i].Job].ImGuiHandle, new Vector2(24, 24));
+                    ImGui.Image(_plugin.WindowManager.JobIcons[secondTeam.Players[i].Job].ImGuiHandle, new Vector2(24, 24));
                     ImGui.TableNextColumn();
                     var playerColor1 = _dataModel.LocalPlayerTeam is not null && secondTeam.TeamName == _dataModel.LocalPlayerTeam.TeamName ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
                     playerColor1 = _dataModel.LocalPlayer.Equals(secondTeam.Players[i]) ? ImGuiColors.DalamudYellow : playerColor1;
@@ -278,16 +278,16 @@ internal class CrystallineConflictMatchDetail : Window {
         if(_dataModel.PostMatch is null) {
             ImGui.Text("Post game statistics unavailable.");
         } else {
-//#if DEBUG
-//            foreach(var team in _dataModel.PostMatch.Teams) {
-//                ImGui.Text($"{team.Key}: {team.Value.Progress}");
-//                ImGui.SameLine();
-//            }
-//            ImGui.Text($"winner: {_dataModel.PostMatch.MatchWinner}");
-//            ImGui.SameLine();
-//            ImGui.Text($"duration: {_dataModel.PostMatch.MatchDuration.TotalSeconds}");
-//            //ImGui.NewLine();
-//#endif
+            //#if DEBUG
+            //            foreach(var team in _dataModel.PostMatch.Teams) {
+            //                ImGui.Text($"{team.Key}: {team.Value.Progress}");
+            //                ImGui.SameLine();
+            //            }
+            //            ImGui.Text($"winner: {_dataModel.PostMatch.MatchWinner}");
+            //            ImGui.SameLine();
+            //            ImGui.Text($"duration: {_dataModel.PostMatch.MatchDuration.TotalSeconds}");
+            //            //ImGui.NewLine();
+            //#endif
 
             if(_dataModel.MatchType == CrystallineConflictMatchType.Ranked && _dataModel.PostMatch.RankBefore is not null && _dataModel.PostMatch.RankAfter is not null) {
                 ImGui.Text($"Rank Change: {_dataModel.PostMatch.RankBefore.ToString()} → {_dataModel.PostMatch.RankAfter.ToString()}");

@@ -16,8 +16,6 @@ using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace PvpStats.Managers.Game;
 internal class MatchManager : IDisposable {
@@ -83,7 +81,6 @@ internal class MatchManager : IDisposable {
         } else {
             _opCodeCount.Add(opCode, 1);
         }
-
 
         if(opCode != 845 && opCode != 813 && opCode != 649 && opCode != 717 && opCode != 920 && opCode != 898 && opCode != 316 && opCode != 769 && opCode != 810
             && opCode != 507 && opCode != 973 && opCode != 234 && opCode != 702 && opCode != 421 && opCode != 244 && opCode != 116 && opCode != 297 && opCode != 493
@@ -210,7 +207,6 @@ internal class MatchManager : IDisposable {
                     _plugin.Storage.AddCCMatch(_currentMatch);
                 }
 
-
             });
         } else {
             if(IsMatchInProgress()) {
@@ -291,7 +287,7 @@ internal class MatchManager : IDisposable {
                     string translatedJobName = _plugin.Localization.TranslateDataTableEntry<ClassJob>(pc.ClassJob.GameData.Name.ToString(), "Name", ClientLanguage.English);
                     bool jobMatch = pc.ClassJob.GameData.NameEnglish == translatedJob;
                     bool isSelf = _plugin.ClientState.LocalPlayer.ObjectId == pc.ObjectId;
-                    if(homeWorldMatch && jobMatch &&  PlayerJobHelper.IsAbbreviatedAliasMatch(player, pc.Name.ToString())) {
+                    if(homeWorldMatch && jobMatch && PlayerJobHelper.IsAbbreviatedAliasMatch(player, pc.Name.ToString())) {
                         _plugin.Log.Debug($"validated player: {player} is {pc.Name.ToString()}");
                         player = pc.Name.ToString();
                         break;

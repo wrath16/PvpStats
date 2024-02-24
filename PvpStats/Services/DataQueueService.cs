@@ -12,7 +12,7 @@ internal class DataQueueService {
     private SemaphoreSlim DataLock { get; init; } = new SemaphoreSlim(1, 1);
     private Plugin _plugin;
 
-    internal DateTime LastTaskTime {  get; set; }
+    internal DateTime LastTaskTime { get; set; }
 
     internal DataQueueService(Plugin plugin) {
         _plugin = plugin;

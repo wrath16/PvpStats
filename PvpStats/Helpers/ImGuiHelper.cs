@@ -27,11 +27,6 @@ internal static class ImGuiHelper {
         ImGui.SameLine();
         ImGui.TextDisabled("(?)");
         WrappedTooltip(text, 500f);
-        //if(ImGui.IsItemHovered()) {
-        //    ImGui.BeginTooltip();
-        //    ImGui.Text(text);
-        //    ImGui.EndTooltip();
-        //}
     }
 
     internal static void WrappedTooltip(string text, float width = 400f) {

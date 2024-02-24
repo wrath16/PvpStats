@@ -57,7 +57,6 @@ internal class CrystallineConflictSummary {
         double killContribution = 0, deathContribution = 0, assistContribution = 0, damageDealtContribution = 0, damageTakenContribution = 0, hpRestoredContribution = 0, timeOnCrystalContribution = 0;
         TimeSpan averageTimeOnCrystal = TimeSpan.FromSeconds(0), averageMatchLengthStats = TimeSpan.FromSeconds(0), timeOnCrystalPerMin = TimeSpan.FromSeconds(0);
 
-
         totalMatches = matches.Count;
         totalWins = matches.Where(x => x.LocalPlayerTeam != null && x.MatchWinner != null && x.MatchWinner == x.LocalPlayerTeam.TeamName).Count();
         totalLosses = matches.Where(x => x.LocalPlayerTeam != null && x.MatchWinner != null && x.MatchWinner != x.LocalPlayerTeam.TeamName).Count();
@@ -194,7 +193,6 @@ internal class CrystallineConflictSummary {
             timeOnCrystalContribution = timeContribTotal / statsEligibleMatches;
         }
 
-
         try {
             _refreshLock.WaitAsync();
 
@@ -221,7 +219,7 @@ internal class CrystallineConflictSummary {
             _assistsPerMin = assistsPerMin;
             _damageDealtPerMin = damageDealtPerMin;
             _damageTakenPerMin = damageTakenPerMin;
-            _hpRestoredPerMin = hpRestoredPerMin; 
+            _hpRestoredPerMin = hpRestoredPerMin;
             _timeOnCrystalPerMin = timeOnCrystalPerMin;
             _killContribution = killContribution;
             _deathContribution = deathContribution;

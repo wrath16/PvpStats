@@ -1,16 +1,22 @@
-﻿using Dalamud.Interface.Windowing;
+﻿using Dalamud.Interface.Internal;
+using Dalamud.Interface.Windowing;
 using LiteDB;
+using PvpStats.Helpers;
+using PvpStats.Types.Player;
 using PvpStats.Windows;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace PvpStats.Managers;
 internal class WindowManager : IDisposable {
 
-    internal WindowSystem WindowSystem;
+    private WindowSystem WindowSystem;
     private Plugin _plugin;
     private MainWindow MainWindow;
     private DebugWindow? DebugWindow;
+
+    internal readonly Dictionary<Job, IDalamudTextureWrap> JobIcons = new();
 
     internal WindowManager(Plugin plugin) {
         _plugin = plugin;
@@ -19,6 +25,10 @@ internal class WindowManager : IDisposable {
         //MainWindow = new();
         _plugin.PluginInterface.UiBuilder.Draw += DrawUI;
         //_plugin.PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
+
+        foreach(var icon in PlayerJobHelper.JobIcons) {
+            JobIcons.Add(icon.Key, _plugin.TextureProvider.GetIcon(icon.Value));
+        }
 
         MainWindow = new(plugin);
         WindowSystem.AddWindow(MainWindow);
