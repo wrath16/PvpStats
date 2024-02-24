@@ -60,7 +60,7 @@ internal class CrystallineConflictMatchDetail : Window {
         Position = new Vector2(0, 0);
         Collapsed = false;
         SizeConstraints = new WindowSizeConstraints {
-            MinimumSize = new Vector2(500, 400),
+            MinimumSize = new Vector2(600, 400),
             MaximumSize = new Vector2(1200, 1500)
         };
         _plugin = plugin;
@@ -302,8 +302,8 @@ internal class CrystallineConflictMatchDetail : Window {
 
     private void DrawStatsTable() {
 
-        ImGui.BeginTable($"players##{_dataModel.Id}", 13, ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.ScrollX);
-        ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthFixed, (uint)SortableColumn.Name);
+        ImGui.BeginTable($"players##{_dataModel.Id}", 13, ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.ScrollX | ImGuiTableFlags.SizingStretchProp);
+        ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.None, (uint)SortableColumn.Name);
         ImGui.TableSetupColumn("Job", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 50f, (uint)SortableColumn.Job);
         ImGui.TableSetupColumn("Kills", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 52f, (uint)SortableColumn.Kills);
         ImGui.TableSetupColumn("Deaths", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 52f, (uint)SortableColumn.Deaths);

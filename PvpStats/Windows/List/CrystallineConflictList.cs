@@ -10,14 +10,20 @@ using System.Collections.Generic;
 namespace PvpStats.Windows.List;
 internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> {
 
-    private CrystallineConflictMatchDetail _detail;
-
+    //protected override List<ColumnParams> Columns { get; set; } = new() {
+    //    new ColumnParams{Name = "time", Flags = ImGuiTableColumnFlags.WidthStretch, Width = ImGuiHelpers.GlobalScale * 100f },
+    //    new ColumnParams{Name = "map", Flags = ImGuiTableColumnFlags.WidthStretch, Width = ImGuiHelpers.GlobalScale * 100f },
+    //    new ColumnParams{Name = "queue", Flags = ImGuiTableColumnFlags.WidthFixed, Width = ImGuiHelpers.GlobalScale * 60f },
+    //    new ColumnParams{Name = "result", Flags = ImGuiTableColumnFlags.WidthFixed, Width = ImGuiHelpers.GlobalScale * 40f },
+    //};
     protected override List<ColumnParams> Columns { get; set; } = new() {
-        new ColumnParams{Name = "time", Flags = ImGuiTableColumnFlags.WidthStretch, Width = ImGuiHelpers.GlobalScale * 100f },
-        new ColumnParams{Name = "map", Flags = ImGuiTableColumnFlags.WidthStretch, Width = ImGuiHelpers.GlobalScale * 100f },
-        new ColumnParams{Name = "queue", Flags = ImGuiTableColumnFlags.WidthFixed, Width = ImGuiHelpers.GlobalScale * 60f },
-        new ColumnParams{Name = "result", Flags = ImGuiTableColumnFlags.WidthFixed, Width = ImGuiHelpers.GlobalScale * 40f },
+        new ColumnParams{Name = "time" },
+        new ColumnParams{Name = "map" },
+        new ColumnParams{Name = "queue" },
+        new ColumnParams{Name = "result" },
     };
+
+    protected override ImGuiTableFlags TableFlags { get; set; } = ImGuiTableFlags.SizingStretchProp;
 
     public CrystallineConflictList(Plugin plugin) : base(plugin) {
     }

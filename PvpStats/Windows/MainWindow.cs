@@ -30,6 +30,7 @@ internal class MainWindow : Window {
             MinimumSize = new Vector2(400, 400),
             MaximumSize = new Vector2(750, 1500)
         };
+        Flags = Flags | ImGuiWindowFlags.NoScrollbar;
         _plugin = plugin;
         Filters.Add(new MatchTypeFilter(plugin, Refresh, _plugin.Configuration.MatchWindowFilters.MatchTypeFilter));
         Filters.Add(new ArenaFilter(plugin, Refresh, _plugin.Configuration.MatchWindowFilters.ArenaFilter));
