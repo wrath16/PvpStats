@@ -3,7 +3,7 @@
 namespace PvpStats.Services;
 internal class GameStateService {
     private Plugin _plugin;
-    private string _lastCurrentPlayer;
+    private string _lastCurrentPlayer = "";
 
     internal GameStateService(Plugin plugin) {
         _plugin = plugin;

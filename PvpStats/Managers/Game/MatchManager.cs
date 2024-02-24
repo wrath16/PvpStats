@@ -8,7 +8,6 @@ using Dalamud.Hooking;
 using Dalamud.Utility;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-//using Lumina.Excel.GeneratedSheets;
 using Lumina.Excel.GeneratedSheets2;
 using PvpStats.Helpers;
 using PvpStats.Types.ClientStruct;
@@ -49,91 +48,25 @@ internal class MatchManager : IDisposable {
     [Signature("48 83 EC ?? 4D 8B C8 48 C7 44 24 20 ?? ?? ?? ?? 41 B8 ?? ?? ?? ?? E8 E5 0C 00 00", DetourName = nameof(CCMatchEndDetour))]
     private readonly Hook<CCMatchEndDelegate> _ccMatchEndHook;
 
-    private delegate IntPtr CCDirectorCtorDelegate(IntPtr p1, IntPtr p2, IntPtr p3);
-    [Signature("48 89 5C 24 08 48 89 6C 24 10 48 89 74 24 18 57 48 83 EC ?? 48 8B F1 E8 84 50 FF FF", DetourName = nameof(CCDirectorCtorDetour))]
-    private readonly Hook<CCDirectorCtorDelegate> _ccDirectorCtorHook;
-
-    private delegate void CCDirectorVf6Delegate(IntPtr p1, IntPtr p2, byte p3, IntPtr p4, byte p5);
-    [Signature("48 89 5C 24 10 48 89 6C 24 18 56 57 41 54 41 56 41 57 48 81 EC ?? ?? ?? ?? 48 8B 05 C0 07 D2 00", DetourName = nameof(CCDirectorVf6Detour))]
-    private readonly Hook<CCDirectorVf6Delegate> _ccDirectorVf6Hook;
-
-    private delegate void CCDirectorVf308Delegate(IntPtr p1);
-    [Signature("48 89 5C 24 08 57 48 83 EC ?? E8 61 58 01 00", DetourName = nameof(CCDirectorVf308Detour))]
-    private readonly Hook<CCDirectorVf308Delegate> _ccDirectorVf308Hook;
-
-    //p10 = 16 byte array
-    //this is probably le bad!
-    private delegate void CCDirectorVf357Delegate(IntPtr p1, IntPtr p2, uint p3, IntPtr p4, IntPtr p5, uint p6, IntPtr p7, IntPtr p8, IntPtr p9, byte[] p10, uint p11, IntPtr p12, uint p13);
-    [Signature("48 89 5C 24 08 57 48 83 EC ?? E8 61 58 01 00", DetourName = nameof(CCDirectorVf357Detour))]
-    private readonly Hook<CCDirectorVf357Delegate> _ccDirectorVf357Hook;
-
-    private delegate void CCDirectorVf286Delegate(IntPtr p1, IntPtr p2, IntPtr p3);
-    [Signature("48 89 6C 24 10 48 89 74 24 18 57 48 83 EC ?? 41 0F B6 F8 0F B6 F2 48 8B E9 80 FA ?? 74 54", DetourName = nameof(CCDirectorVf286Detour))]
-    private readonly Hook<CCDirectorVf286Delegate> _ccDirectorVf286Hook;
-
-    private delegate void CCDirectorVf305Delegate(IntPtr p1);
-    [Signature("40 53 48 83 EC 20 48 8B 05 DB D9 D3 00", DetourName = nameof(CCDirectorVf305Detour))]
-    private readonly Hook<CCDirectorVf305Delegate> _ccDirectorVf305Hook;
-
-    private delegate byte CCDirectorVf271Delegate(IntPtr p1);
-    [Signature("48 83 EC ?? F6 81 ?? ?? ?? ?? ?? 74 10 E8 6E AD 3C FF", DetourName = nameof(CCDirectorVf271Detour))]
-    private readonly Hook<CCDirectorVf271Delegate> _ccDirectorVf271Hook;
-
-    private delegate byte CCDirectorVf353Delegate(IntPtr p1);
-    [Signature("48 83 EC ?? F6 81 ?? ?? ?? ?? ?? 74 10 E8 3E AD 3C FF", DetourName = nameof(CCDirectorVf353Detour))]
-    private readonly Hook<CCDirectorVf353Delegate> _ccDirectorVf353Hook;
-
-    private delegate byte CCDirectorVf371Delegate(IntPtr p1);
-    [Signature("40 53 48 83 EC ?? 48 8B D9 E8 12 AD 3C FF", DetourName = nameof(CCDirectorVf371Detour))]
-    private readonly Hook<CCDirectorVf371Delegate> _ccDirectorVf371Hook;
-
-    private delegate void CCDirectorVf245Delegate(IntPtr p1, IntPtr p2, ushort p3, ushort p4, IntPtr p5);
-    [Signature("48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 57 48 83 EC ?? 48 8B 02", DetourName = nameof(CCDirectorVf245Detour))]
-    private readonly Hook<CCDirectorVf245Delegate> _ccDirectorVf245Hook;
-
-    private delegate void CCDirectorVf378Delegate(IntPtr p1, byte p2);
-    [Signature("40 53 48 83 EC ?? 88 15 A8 41 D9 00", DetourName = nameof(CCDirectorVf378Detour))]
-    private readonly Hook<CCDirectorVf378Delegate> _ccDirectorVf378Hook;
-
-    private delegate byte CCDirectorVf304Delegate(IntPtr p1);
-    [Signature("48 83 EC ?? 44 0F B6 81 ?? ?? ?? ?? BA ?? ?? ?? ??", DetourName = nameof(CCDirectorVf304Detour))]
-    private readonly Hook<CCDirectorVf304Delegate> _ccDirectorVf304Hook;
-
-    private delegate IntPtr DDConstructorDelegate(IntPtr p1, IntPtr p2, IntPtr p3);
-    [Signature("48 89 5C 24 08 48 89 6C 24 10 48 89 74 24 18 57 48 83 EC ?? 48 8B F9 E8 84 86 FE FF", DetourName = nameof(DDDirectorDetour))]
-    private readonly Hook<DDConstructorDelegate> _ddDirectorHook;
-
     public MatchManager(Plugin plugin) {
         _plugin = plugin;
 
         _plugin.ClientState.TerritoryChanged += OnTerritoryChanged;
-        _plugin.DutyState.DutyCompleted += OnDutyCompleted;
-        _plugin.DutyState.DutyStarted += OnDutyStarted;
+        //_plugin.DutyState.DutyCompleted += OnDutyCompleted;
+        //_plugin.DutyState.DutyStarted += OnDutyStarted;
         _plugin.GameNetwork.NetworkMessage += OnNetworkMessage;
 
         _plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "PvPMKSIntroduction", OnPvPIntro);
-        _plugin.AddonLifecycle.RegisterListener(AddonEvent.PostUpdate, "PvPMKSHeader", OnPvPHeaderUpdate);
-        _plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "PvPMKSHeader", OnPvPHeaderUpdate);
-        _plugin.AddonLifecycle.RegisterListener(AddonEvent.PostUpdate, "PvPMKSHeaderSpec", OnPvPHeaderUpdate);
-        _plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "PvPMKSHeaderSpec", OnPvPHeaderUpdate);
+
+        //_plugin.AddonLifecycle.RegisterListener(AddonEvent.PostUpdate, "PvPMKSHeader", OnPvPHeaderUpdate);
+        //_plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "PvPMKSHeader", OnPvPHeaderUpdate);
+        //_plugin.AddonLifecycle.RegisterListener(AddonEvent.PostUpdate, "PvPMKSHeaderSpec", OnPvPHeaderUpdate);
+        //_plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "PvPMKSHeaderSpec", OnPvPHeaderUpdate);
         //_plugin.AddonLifecycle.RegisterListener(AddonEvent.PreSetup, "MKSRecord", OnPvPResults);
 
         _plugin.InteropProvider.InitializeFromAttributes(this);
         _plugin.Log.Debug($"match end address: 0x{_ccMatchEndHook!.Address.ToString("X2")}");
         _ccMatchEndHook.Enable();
-        _ccDirectorCtorHook.Enable();
-        _ccDirectorVf6Hook.Enable();
-        _ccDirectorVf308Hook.Enable();
-        //_ccDirectorVf357Hook.Enable();
-        _ccDirectorVf286Hook.Enable();
-        _ccDirectorVf305Hook.Enable();
-        _ccDirectorVf271Hook.Enable();
-        _ccDirectorVf353Hook.Enable();
-        //_ccDirectorVf371Hook.Enable();
-        _ccDirectorVf245Hook.Enable();
-        _ccDirectorVf378Hook.Enable();
-        _ccDirectorVf304Hook.Enable();
-        //_ddDirectorHook.Enable();
     }
 
     public void Dispose() {
@@ -141,153 +74,20 @@ internal class MatchManager : IDisposable {
         //_plugin.Framework.Update -= OnFrameworkUpdate;
         //_plugin.ChatGui.ChatMessage -= OnChatMessage;
         _plugin.ClientState.TerritoryChanged -= OnTerritoryChanged;
-        _plugin.DutyState.DutyCompleted -= OnDutyCompleted;
-        _plugin.DutyState.DutyStarted -= OnDutyStarted;
+        //_plugin.DutyState.DutyCompleted -= OnDutyCompleted;
+        //_plugin.DutyState.DutyStarted -= OnDutyStarted;
         _plugin.GameNetwork.NetworkMessage -= OnNetworkMessage;
 
         _plugin.AddonLifecycle.UnregisterListener(OnPvPIntro);
-        _plugin.AddonLifecycle.UnregisterListener(OnPvPHeaderUpdate);
+        //_plugin.AddonLifecycle.UnregisterListener(OnPvPHeaderUpdate);
         //_plugin.AddonLifecycle.UnregisterListener(OnPvPResults);
 
         _ccMatchEndHook.Dispose();
-        _ccDirectorCtorHook.Dispose();
-        _ccDirectorVf6Hook.Dispose();
-        _ccDirectorVf308Hook.Dispose();
-        //_ccDirectorVf357Hook.Dispose();
-        _ccDirectorVf286Hook.Dispose();
-        _ccDirectorVf305Hook.Dispose();
-        _ccDirectorVf271Hook.Dispose();
-        _ccDirectorVf353Hook.Dispose();
-        //_ccDirectorVf371Hook.Dispose();
-        _ccDirectorVf245Hook.Dispose();
-        _ccDirectorVf378Hook.Dispose();
-        _ccDirectorVf304Hook.Dispose();
-        //_ddDirectorHook.Dispose();
-    }
-
-    private unsafe IntPtr DDDirectorDetour(IntPtr p1, IntPtr p2, IntPtr p3) {
-        _plugin.Log.Debug("DD Director .ctor occurred!");
-        return _ddDirectorHook.Original(p1, p2, p3);
-    }
-
-    private unsafe IntPtr CCDirectorCtorDetour(IntPtr p1, IntPtr p2, IntPtr p3) {
-        _plugin.Log.Debug("CC Director .ctor occurred!");
-        //_plugin.Functions.PrintAllChars(p1, 0x2000);
-        //_plugin.Functions.PrintAllChars(p2, 0x2000);
-        //_plugin.Functions.PrintAllChars(p3, 0x2000);
-        //_plugin.Functions.FindValue<string>("", p1, 0x500, 0, true);
-        //_plugin.Functions.FindValue<string>("", p2, 0x500, 0, true);
-        //_plugin.Functions.FindValue<string>("", p3, 0x500, 0, true);
-        return _ccDirectorCtorHook.Original(p1, p2, p3);
-    }
-
-    //this triggers on leave instance
-    private unsafe void CCDirectorVf6Detour(IntPtr p1, IntPtr p2, byte p3, IntPtr p4, byte p5) {
-        _plugin.Log.Debug("CC Director vf6 occurred!");
-        _ccDirectorVf6Hook.Original(p1, p2, p3, p4, p5);
-    }
-
-    //this gets triggered twice at beginning
-    private unsafe void CCDirectorVf308Detour(IntPtr p1) {
-        _plugin.Log.Debug("CC Director vf308 occurred!");
-        _ccDirectorVf308Hook.Original(p1);
-    }
-
-    private unsafe void CCDirectorVf357Detour(IntPtr p1, IntPtr p2, uint p3, IntPtr p4, IntPtr p5, uint p6, IntPtr p7, IntPtr p8, IntPtr p9, byte[] p10, uint p11, IntPtr p12, uint p13) {
-        _plugin.Log.Debug("CC Director vf357 occurred!");
-        _ccDirectorVf357Hook.Original(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13);
-    }
-
-    //this gets triggered regularly
-    private unsafe void CCDirectorVf286Detour(IntPtr p1, IntPtr p2, IntPtr p3) {
-        _plugin.Log.Debug("CC Director vf286 occurred!");
-        _ccDirectorVf286Hook.Original(p1, p2, p3);
-    }
-
-    //this gets triggered repeatedly
-    private unsafe void CCDirectorVf305Detour(IntPtr p1) {
-        //_plugin.Log.Debug("CC Director vf305 occurred!");
-        _ccDirectorVf305Hook.Original(p1);
-    }
-
-    //unknown trigger
-    private unsafe byte CCDirectorVf271Detour(IntPtr p1) {
-        _plugin.Log.Debug("CC Director vf271 occurred!");
-        return _ccDirectorVf271Hook.Original(p1);
-    }
-
-    //unknown trigger
-    private unsafe byte CCDirectorVf353Detour(IntPtr p1) {
-        _plugin.Log.Debug("CC Director vf353 occurred!");
-        return _ccDirectorVf353Hook.Original(p1);
-    }
-
-    //unknown trigger - something about being dead lol
-    private unsafe byte CCDirectorVf371Detour(IntPtr p1) {
-        _plugin.Log.Debug("CC Director vf371 occurred!");
-        return _ccDirectorVf371Hook.Original(p1);
-    }
-
-    //gets triggered regularly
-    private unsafe void CCDirectorVf245Detour(IntPtr p1, IntPtr p2, ushort p3, ushort p4, IntPtr p5) {
-        _plugin.Log.Debug("CC Director vf245 occurred!");
-        _ccDirectorVf245Hook.Original(p1, p2, p3, p4, p5);
-    }
-
-    //called once at beginning
-    private unsafe void CCDirectorVf378Detour(IntPtr p1, byte p2) {
-        _plugin.Log.Debug("CC Director vf378 occurred!");
-        //_plugin.Functions.FindValue<string>("", p1, 0x500, 0, true);
-        _ccDirectorVf378Hook.Original(p1, p2);
-    }
-
-    //called once at beginning
-    private unsafe byte CCDirectorVf304Detour(IntPtr p1) {
-        _plugin.Log.Debug("CC Director vf304 occurred!");
-        //_plugin.Functions.FindValue<string>("", p1, 0x500, 0, true);
-        return _ccDirectorVf304Hook.Original(p1);
     }
 
     private unsafe void CCMatchEndDetour(IntPtr p1, uint p2, IntPtr p3) {
         _plugin.Log.Information("Match end detour occurred.");
-
-        //_plugin.Functions.FindValue<int>(0, p3 + 0x10, 0x310, 0, true);
-        //_plugin.Functions.FindValue<short>(0, p3 + 0x10, 0x310, 0, true);
-        //_plugin.Functions.FindValue<byte>(0, p3 + 0x10, 0x310, 0, true);
-
         var resultsPacket = *(CrystallineConflictResultsPacket*)(p3 + 0x10);
-
-        //string result = "";
-        //switch (resultsPacket.Result) {
-        //    case 1:
-        //        result = "victory";
-        //        break;
-        //    case 2:
-        //        result = "defeat";
-        //        break;
-        //    default:
-        //        result = "unknown";
-        //        break;
-        //}
-        //_plugin.Log.Debug($"RESULT: {result}");
-        //_plugin.Log.Debug($"MATCH DURATION (s): {resultsPacket.MatchLength}");
-        //_plugin.Log.Debug($"ASTRA PROGRESS: {resultsPacket.AstraProgress} UMBRA PROGRESS: {resultsPacket.UmbraProgress}");
-        //_plugin.Log.Debug(string.Format("{0,-25} {1,-15} {2,-6} {3,-5} {4,-15} {5,-8} {6,-8} {7,-8} {8,-15} {9,-15} {10,-15} {11,-15}", "NAME", "WORLD", "TEAM", "JOB", "TIER", "KILLS", "DEATHS", "ASSISTS", "DAMAGE DEALT", "DAMAGE TAKEN", "HP RESTORED", "TIME ON CRYSTAL"));
-
-        //for (int i = 0; i < 10; i++) {
-        //    //var player = (CrystallineConflictResultsPacket.CrystallineConflictPlayer*)clientStruct->Player[i];
-        //    var player = resultsPacket.PlayerSpan[i];
-
-        //    //missing player
-        //    if (player.ClassJobId == 0) {
-        //        continue;
-        //    }
-        //    _plugin.Log.Debug(string.Format("{0,-25} {1,-15} {2,-6} {3,-5} {4,-15} {5,-8} {6,-8} {7,-8} {8,-15} {9,-15} {10,-15} {11,-15}",
-        //        AtkNodeHelper.ReadString(player.PlayerName, 32), _plugin.DataManager.GetExcelSheet<World>().GetRow(player.WorldId).Name, player.Team == 0 ? "ASTRA" : "UMBRA",
-        //        _plugin.DataManager.GetExcelSheet<ClassJob>().GetRow(player.ClassJobId).Abbreviation,
-        //        _plugin.DataManager.GetExcelSheet<ColosseumMatchRank>().GetRow(player.ColosseumMatchRankId).Unknown0, player.Kills, player.Deaths, player.Assists, player.DamageDealt, player.DamageTaken, player.HPRestored, player.TimeOnCrystal));
-        //}
-
         _plugin.DataQueue.QueueDataOperation(() => {
             ProcessMatchResults(resultsPacket);
         });
@@ -319,14 +119,14 @@ internal class MatchManager : IDisposable {
             //_plugin.Functions.PrintAllStrings(dataPtr, 0x500);
 
             if(qPopped) {
-                _plugin.Functions.CreateByteDump(dataPtr, 0x1000, opCode.ToString());
-                _plugin.Functions.PrintAllPlayerObjects();
-                _plugin.Functions.PrintAllChars(dataPtr, 0x2000);
-                foreach(var player in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
-                    for(int i = 0; i < sizeof(uint); i++) {
-                        _plugin.Functions.FindValue<uint>(player.ObjectId, dataPtr, 0x2000, i);
-                    }
-                }
+                //_plugin.Functions.CreateByteDump(dataPtr, 0x1000, opCode.ToString());
+                //_plugin.Functions.PrintAllPlayerObjects();
+                //_plugin.Functions.PrintAllChars(dataPtr, 0x2000);
+                //foreach(var player in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
+                //    for(int i = 0; i < sizeof(uint); i++) {
+                //        _plugin.Functions.FindValue<uint>(player.ObjectId, dataPtr, 0x2000, i);
+                //    }
+                //}
             }
 
             //IntPtr myName = dataPtr + 0x4C;
@@ -424,15 +224,24 @@ internal class MatchManager : IDisposable {
         _plugin.Log.Debug($"Territory changed: {territoryId}, Current duty: {dutyId}");
         if(MatchHelper.IsCrystallineConflictTerritory(territoryId)) {
             _plugin.DataQueue.QueueDataOperation(() => {
-                //sometimes client state is unavailable at this time
-                //start or pickup match!
-                _currentMatch = new() {
-                    DutyId = dutyId,
-                    TerritoryId = territoryId,
-                    Arena = MatchHelper.CrystallineConflictMapLookup[territoryId],
-                    MatchType = MatchHelper.GetMatchType(dutyId),
-                };
-                _plugin.Storage.AddCCMatch(_currentMatch);
+                //pickup last match
+                var lastMatch = _plugin.Storage.GetCCMatches().Query().ToList().LastOrDefault();
+                if(lastMatch != null && !lastMatch.IsCompleted && (DateTime.Now - lastMatch.DutyStartTime).TotalMinutes <= 10) {
+                    _plugin.Log.Information($"restoring last match...");
+                    _currentMatch = lastMatch;
+                } else {
+                    //sometimes client state is unavailable at this time
+                    _currentMatch = new() {
+                        DutyId = dutyId,
+                        TerritoryId = territoryId,
+                        Arena = MatchHelper.CrystallineConflictMapLookup[territoryId],
+                        MatchType = MatchHelper.GetMatchType(dutyId),
+                    };
+                    _plugin.Log.Information($"starting new match on {_currentMatch.Arena}");
+                    _plugin.Storage.AddCCMatch(_currentMatch);
+                }
+
+
             });
         } else {
             if(IsMatchInProgress()) {
@@ -518,10 +327,10 @@ internal class MatchManager : IDisposable {
         var addon = (AtkUnitBase*)args.Addon;
         CrystallineConflictTeam team = new();
 
-        if(_plugin.ClientState.ClientLanguage != ClientLanguage.English) {
-            AtkNodeHelper.PrintAtkValues(addon);
-            //AtkNodeHelper.PrintTextNodes(addon->GetNodeById(1), true, false);
-        }
+        //if(_plugin.ClientState.ClientLanguage != ClientLanguage.English) {
+        //    AtkNodeHelper.PrintAtkValues(addon);
+        //    //AtkNodeHelper.PrintTextNodes(addon->GetNodeById(1), true, false);
+        //}
 
         //team name
         string teamName = AtkNodeHelper.ConvertAtkValueToString(addon->AtkValues[4]);
@@ -566,35 +375,55 @@ internal class MatchManager : IDisposable {
                 }
             }
 
-            _plugin.Log.Debug(string.Format("player: {0,-25} {1,-15} job: {2,-15} rank: {3,-10}", player, world, job, rank));
-
             //abbreviated names
             if(player.Contains(".")) {
                 _currentMatch!.NeedsPlayerNameValidation = true;
+                foreach(PlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
+                    bool homeWorldMatch = world.Equals(pc.HomeWorld.GameData.Name.ToString());
+                    string translatedJobName = _plugin.Localization.TranslateDataTableEntry<ClassJob>(pc.ClassJob.GameData.Name.ToString(), "Name", ClientLanguage.English);
+                    bool jobMatch = pc.ClassJob.GameData.NameEnglish == translatedJob;
+                    bool isSelf = _plugin.ClientState.LocalPlayer.ObjectId == pc.ObjectId;
+                    if(homeWorldMatch && jobMatch &&  PlayerJobHelper.IsAbbreviatedAliasMatch(player, pc.Name.ToString())) {
+                        _plugin.Log.Debug($"validated player: {player} is {pc.Name.ToString()}");
+                        player = pc.Name.ToString();
+                        break;
+                    }
+                }
             }
+
+            _plugin.Log.Debug(string.Format("player: {0,-25} {1,-15} job: {2,-15} rank: {3,-10}", player, world, job, rank));
 
             team.Players.Add(new() {
                 Alias = (PlayerAlias)$"{player} {world}",
                 Job = (Job)PlayerJobHelper.GetJobFromName(translatedJob)!,
-                Rank = translatedRank != null ? (PlayerRank)translatedRank : null
+                Rank = translatedRank != null ? (PlayerRank)translatedRank : null,
+                Team = team.TeamName
             });
         }
 
         _plugin.DataQueue.QueueDataOperation(() => {
-            if(!_currentMatch!.Teams.ContainsKey(team.TeamName)) {
-                _currentMatch!.Teams.Add(team.TeamName, team);
-            } else {
-                _plugin.Log.Warning($"Duplicate team found: {team.TeamName}");
-            }
+            //if(!_currentMatch!.Teams.ContainsKey(team.TeamName)) {
+            //    _currentMatch!.Teams.Add(team.TeamName, team);
+            //} else {
+            //    _plugin.Log.Warning($"Duplicate team found: {team.TeamName}");
+            //}
 
-            //set local player and data center
-            _currentMatch.LocalPlayer ??= (PlayerAlias)_plugin.GameState.GetCurrentPlayer();
-            _currentMatch.DataCenter ??= _plugin.ClientState.LocalPlayer?.CurrentWorld.GameData?.DataCenter.Value?.Name.ToString();
+            ////set local player and data center
+            //_currentMatch.LocalPlayer ??= (PlayerAlias)_plugin.GameState.GetCurrentPlayer();
+            //_currentMatch.DataCenter ??= _plugin.ClientState.LocalPlayer?.CurrentWorld.GameData?.DataCenter.Value?.Name.ToString();
+
+            foreach(var player in team.Players) {
+                _currentMatch.IntroPlayerInfo.Add(player.Alias, player);
+            }
 
             _plugin.Storage.UpdateCCMatch(_currentMatch);
 
             _plugin.Log.Debug("");
         });
+    }
+
+    private unsafe void ExtractRiserFromIntro(AddonEvent type, AddonArgs args) {
+
     }
 
     private unsafe void OnPvPHeaderUpdate(AddonEvent type, AddonArgs args) {
@@ -900,34 +729,38 @@ internal class MatchManager : IDisposable {
             _plugin.Log.Warning("trying to process match results on no match!");
             return;
         }
+        CrystallineConflictPostMatch postMatch = new();
+        _currentMatch!.LocalPlayer ??= (PlayerAlias)_plugin.GameState.GetCurrentPlayer();
+        _currentMatch.DataCenter ??= _plugin.ClientState.LocalPlayer?.CurrentWorld.GameData?.DataCenter.Value?.Name.ToString();
 
         //set teams
-        CrystallineConflictPostMatch postMatch = new();
-        CrystallineConflictPostMatchTeam teamAstra = new() {
+        CrystallineConflictTeam teamAstra = new() {
+            TeamName = CrystallineConflictTeamName.Astra,
+            Progress = resultsPacket.AstraProgress / 10f,
+        };
+        CrystallineConflictPostMatchTeam teamAstraPost = new() {
             TeamName = CrystallineConflictTeamName.Astra,
             TeamStats = new(),
             Progress = resultsPacket.AstraProgress / 10f
         };
-        CrystallineConflictPostMatchTeam teamUmbra = new() {
+        CrystallineConflictPostMatchTeam teamUmbraPost = new() {
             TeamName = CrystallineConflictTeamName.Umbra,
             TeamStats = new(),
             Progress = resultsPacket.UmbraProgress / 10f
         };
-        postMatch.Teams.Add(teamAstra.TeamName, teamAstra);
-        postMatch.Teams.Add(teamUmbra.TeamName, teamUmbra);
-
-        //set result
-        if(resultsPacket.Result != 1 && resultsPacket.Result != 2) {
-            postMatch.MatchWinner = CrystallineConflictTeamName.Unknown;
-        }
-        if(_currentMatch!.IsSpectated) {
-            postMatch.MatchWinner = resultsPacket.Result == 1 ? CrystallineConflictTeamName.Astra : CrystallineConflictTeamName.Umbra;
-        } else {
-            postMatch.MatchWinner = resultsPacket.Result == 1 ? _currentMatch.LocalPlayerTeam!.TeamName : _currentMatch.Teams.First(x => x.Value.TeamName != _currentMatch.LocalPlayerTeam!.TeamName).Value.TeamName;
-        }
+        CrystallineConflictTeam teamUmbra = new() {
+            TeamName = CrystallineConflictTeamName.Umbra,
+            Progress = resultsPacket.UmbraProgress / 10f,
+        };
+        _currentMatch.Teams.Add(teamAstra.TeamName, teamAstra);
+        _currentMatch.Teams.Add(teamUmbra.TeamName, teamUmbra);
+        postMatch.Teams.Add(teamAstraPost.TeamName, teamAstraPost);
+        postMatch.Teams.Add(teamUmbraPost.TeamName, teamUmbraPost);
 
         //set duration
         postMatch.MatchDuration = TimeSpan.FromSeconds(resultsPacket.MatchLength);
+        _currentMatch.MatchEndTime = DateTime.Now;
+        _currentMatch.MatchStartTime = _currentMatch.MatchEndTime - postMatch.MatchDuration;
 
         //set rank change
         postMatch.RankBefore = new() {
@@ -969,17 +802,42 @@ internal class MatchManager : IDisposable {
 
             //add to team
             var playerTeam = playerStats.Team == CrystallineConflictTeamName.Astra ? teamAstra : teamUmbra;
-            playerTeam.PlayerStats.Add(playerStats);
-            playerTeam.TeamStats.Kills += playerStats.Kills;
-            playerTeam.TeamStats.Deaths += playerStats.Deaths;
-            playerTeam.TeamStats.Assists += playerStats.Assists;
-            playerTeam.TeamStats.DamageDealt += playerStats.DamageDealt;
-            playerTeam.TeamStats.DamageTaken += playerStats.DamageTaken;
-            playerTeam.TeamStats.HPRestored += playerStats.HPRestored;
-            playerTeam.TeamStats.TimeOnCrystal += playerStats.TimeOnCrystal;
+            var newPlayer = new CrystallineConflictPlayer() {
+                Alias = playerStats.Player,
+                Job = (Job)playerStats.Job!,
+                Rank = playerStats.PlayerRank
+            };
+            //set player riser from intro
+            if(_currentMatch.IntroPlayerInfo.ContainsKey(newPlayer.Alias)) {
+                newPlayer.Rank.Riser = _currentMatch.IntroPlayerInfo[newPlayer.Alias].Rank?.Riser;
+            }
+            playerTeam.Players.Add(newPlayer);
+
+            //add to team stats
+            var playerTeamPost = playerStats.Team == CrystallineConflictTeamName.Astra ? teamAstraPost : teamUmbraPost;
+            playerTeamPost.PlayerStats.Add(playerStats);
+            playerTeamPost.TeamStats.Kills += playerStats.Kills;
+            playerTeamPost.TeamStats.Deaths += playerStats.Deaths;
+            playerTeamPost.TeamStats.Assists += playerStats.Assists;
+            playerTeamPost.TeamStats.DamageDealt += playerStats.DamageDealt;
+            playerTeamPost.TeamStats.DamageTaken += playerStats.DamageTaken;
+            playerTeamPost.TeamStats.HPRestored += playerStats.HPRestored;
+            playerTeamPost.TeamStats.TimeOnCrystal += playerStats.TimeOnCrystal;
         }
 
+        //set result
+        if(resultsPacket.Result != 1 && resultsPacket.Result != 2) {
+            postMatch.MatchWinner = CrystallineConflictTeamName.Unknown;
+        }
+        if(_currentMatch.IsSpectated) {
+            postMatch.MatchWinner = resultsPacket.Result == 1 ? CrystallineConflictTeamName.Astra : CrystallineConflictTeamName.Umbra;
+        } else {
+            postMatch.MatchWinner = resultsPacket.Result == 1 ? _currentMatch.LocalPlayerTeam!.TeamName : _currentMatch.Teams.First(x => x.Value.TeamName != _currentMatch.LocalPlayerTeam!.TeamName).Value.TeamName;
+        }
+        _currentMatch.MatchWinner = postMatch.MatchWinner;
+
         _currentMatch.PostMatch = postMatch;
+        _currentMatch!.IsCompleted = true;
         _plugin.Storage.UpdateCCMatch(_currentMatch);
     }
 }

@@ -8,9 +8,11 @@ namespace PvpStats.Services;
 internal class DataQueueService {
 
     //coordinates all data sequence-sensitive operations
-    private ConcurrentQueue<Task> DataTaskQueue { get; init; } = new();
+    private ConcurrentQueue<(Task, DateTime)> DataTaskQueue { get; init; } = new();
     private SemaphoreSlim DataLock { get; init; } = new SemaphoreSlim(1, 1);
     private Plugin _plugin;
+
+    internal DateTime LastTaskTime {  get; set; }
 
     internal DataQueueService(Plugin plugin) {
         _plugin = plugin;
@@ -39,7 +41,7 @@ internal class DataQueueService {
     }
 
     private Task AddToTaskQueue(Task task) {
-        DataTaskQueue.Enqueue(task);
+        DataTaskQueue.Enqueue((task, DateTime.Now));
         RunNextTask();
         return task;
     }
@@ -48,9 +50,10 @@ internal class DataQueueService {
         return Task.Run(async () => {
             try {
                 await DataLock.WaitAsync();
-                if(DataTaskQueue.TryDequeue(out Task? nextTask)) {
-                    nextTask.Start();
-                    await nextTask;
+                if(DataTaskQueue.TryDequeue(out (Task task, DateTime timestamp) nextTask)) {
+                    LastTaskTime = nextTask.timestamp;
+                    nextTask.task.Start();
+                    await nextTask.task;
                 } else {
                     throw new Exception("Unable to dequeue task!");
                     //Log.Warning($"Unable to dequeue next task. Tasks remaining: {DataTaskQueue.Count}");

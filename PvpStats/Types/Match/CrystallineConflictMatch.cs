@@ -39,10 +39,15 @@ public class CrystallineConflictMatch {
     public TimeSpan MatchTimer { get; set; }
     public bool IsOvertime { get; set; }
 
+    //if this is PlayerAlias will not deserialize-_-
+    public Dictionary<string, CrystallineConflictPlayer> IntroPlayerInfo { get; set; } = new();
+
     public List<ChatMessage> ChatLog { get; set; } = new();
 
     //stats results...
     public CrystallineConflictPostMatch? PostMatch { get; set; }
+
+
 
     //this might have performance impact if accessed frequently
     [BsonIgnore]

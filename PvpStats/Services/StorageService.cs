@@ -1,5 +1,6 @@
 ﻿using LiteDB;
 using PvpStats.Types.Match;
+using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

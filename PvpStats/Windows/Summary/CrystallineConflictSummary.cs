@@ -7,6 +7,7 @@ using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace PvpStats.Windows.Summary;
 internal class CrystallineConflictSummary {
@@ -22,9 +23,9 @@ internal class CrystallineConflictSummary {
     }
 
     private Plugin _plugin;
+    private SemaphoreSlim _refreshLock = new SemaphoreSlim(1);
 
     private int _totalMatches, _totalWins, _totalLosses, _totalOther;
-    private TimeSpan _averageMatchLength;
     private Dictionary<Job, JobStats> _jobStats = new();
     private Dictionary<Job, JobStats> _allyJobStats = new();
     private Dictionary<Job, JobStats> _enemyJobStats = new();
@@ -36,28 +37,42 @@ internal class CrystallineConflictSummary {
     private double _killsPerMin, _deathsPerMin, _assistsPerMin, _damageDealtPerMin, _damageTakenPerMin, _hpRestoredPerMin;
     private double _killContribution, _deathContribution, _assistContribution, _damageDealtContribution, _damageTakenContribution, _hpRestoredContribution, _timeOnCrystalContribution;
     private TimeSpan _averageTimeOnCrystal, _averageMatchLengthStats, _timeOnCrystalPerMin;
-    //private CrystallineConflictPostMatchRow _averageStats = new();
+    private CrystallineConflictPostMatchRow _averageStats = new();
 
     public CrystallineConflictSummary(Plugin plugin) {
         _plugin = plugin;
     }
 
     public void Refresh(List<CrystallineConflictMatch> matches) {
-        _totalMatches = matches.Count;
-        _totalWins = matches.Where(x => x.LocalPlayerTeam != null && x.MatchWinner != null && x.MatchWinner == x.LocalPlayerTeam.TeamName).Count();
-        _totalLosses = matches.Where(x => x.LocalPlayerTeam != null && x.MatchWinner != null && x.MatchWinner != x.LocalPlayerTeam.TeamName).Count();
-        _totalOther = _totalMatches - _totalWins - _totalLosses;
+        int totalMatches, totalWins, totalLosses, totalOther;
+        Dictionary<Job, JobStats> jobStats = new();
+        Dictionary<Job, JobStats> allyJobStats = new();
+        Dictionary<Job, JobStats> enemyJobStats = new();
+        Dictionary<PlayerAlias, PlayerStats> teammateStats = new();
+        Dictionary<PlayerAlias, PlayerStats> enemyStats = new();
+        int statsEligibleMatches;
+        int statsEligibleWins;
+        double averageKills = 0, averageDeaths = 0, averageAssists = 0, averageDamageDealt = 0, averageDamageTaken = 0, averageHPRestored = 0;
+        double killsPerMin = 0, deathsPerMin = 0, assistsPerMin = 0, damageDealtPerMin = 0, damageTakenPerMin = 0, hpRestoredPerMin = 0;
+        double killContribution = 0, deathContribution = 0, assistContribution = 0, damageDealtContribution = 0, damageTakenContribution = 0, hpRestoredContribution = 0, timeOnCrystalContribution = 0;
+        TimeSpan averageTimeOnCrystal = TimeSpan.FromSeconds(0), averageMatchLengthStats = TimeSpan.FromSeconds(0), timeOnCrystalPerMin = TimeSpan.FromSeconds(0);
+
+
+        totalMatches = matches.Count;
+        totalWins = matches.Where(x => x.LocalPlayerTeam != null && x.MatchWinner != null && x.MatchWinner == x.LocalPlayerTeam.TeamName).Count();
+        totalLosses = matches.Where(x => x.LocalPlayerTeam != null && x.MatchWinner != null && x.MatchWinner != x.LocalPlayerTeam.TeamName).Count();
+        totalOther = totalMatches - totalWins - totalLosses;
 
         //_statsEligibleMatches = matches.Where(x => x.LocalPlayerTeam != null && x.PostMatch != null).Count();
         //_statsEligibleWins = matches.Where(x => x.LocalPlayerTeam != null && x.PostMatch != null && x.IsWin).Count();
-        _statsEligibleMatches = 0;
-        _statsEligibleWins = 0;
+        statsEligibleMatches = 0;
+        statsEligibleWins = 0;
 
-        _jobStats = new();
-        _allyJobStats = new();
-        _enemyJobStats = new();
-        _teammateStats = new();
-        _enemyStats = new();
+        jobStats = new();
+        allyJobStats = new();
+        enemyJobStats = new();
+        teammateStats = new();
+        enemyStats = new();
         CrystallineConflictPostMatchRow totalStats = new();
         double killContribTotal = 0, deathContribTotal = 0, assistContribTotal = 0, ddContribTotal = 0, dtContribTotal = 0, hpContribTotal = 0, timeContribTotal = 0;
         TimeSpan totalStatsMatchLength = new();
@@ -88,19 +103,19 @@ internal class CrystallineConflictSummary {
         });
         foreach(var match in matches) {
             if(match.LocalPlayerTeamMember != null) {
-                addJobStat(_jobStats, match.LocalPlayerTeamMember.Job, match.IsWin);
+                addJobStat(jobStats, match.LocalPlayerTeamMember.Job, match.IsWin);
                 foreach(var team in match.Teams) {
                     if(team.Key == match.LocalPlayerTeam.TeamName) {
                         foreach(var player in team.Value.Players) {
                             if(!player.Alias.Equals(match.LocalPlayer)) {
-                                addJobStat(_allyJobStats, player.Job, match.IsWin);
-                                addPlayerStat(_teammateStats, player.Alias, player.Job, match.IsWin);
+                                addJobStat(allyJobStats, player.Job, match.IsWin);
+                                addPlayerStat(teammateStats, player.Alias, player.Job, match.IsWin);
                             }
                         }
                     } else {
                         foreach(var player in team.Value.Players) {
-                            addJobStat(_enemyJobStats, player.Job, match.IsWin);
-                            addPlayerStat(_enemyStats, player.Alias, player.Job, match.IsWin);
+                            addJobStat(enemyJobStats, player.Job, match.IsWin);
+                            addPlayerStat(enemyStats, player.Alias, player.Job, match.IsWin);
                         }
                     }
                 }
@@ -108,9 +123,9 @@ internal class CrystallineConflictSummary {
                     var playerTeamStats = match.PostMatch.Teams.Where(x => x.Key == match.LocalPlayerTeam!.TeamName).FirstOrDefault().Value;
                     var playerStats = playerTeamStats.PlayerStats.Where(x => x.Player.Equals(match.LocalPlayer)).FirstOrDefault();
                     if(playerStats != null) {
-                        _statsEligibleMatches++;
+                        statsEligibleMatches++;
                         if(match.IsWin) {
-                            _statsEligibleWins++;
+                            statsEligibleWins++;
                         }
                         totalStatsMatchLength += (TimeSpan)match.MatchDuration;
                         totalStats.Kills += playerStats.Kills;
@@ -143,82 +158,129 @@ internal class CrystallineConflictSummary {
                 }
             }
         });
-        setFavoredJob(_teammateStats, true);
-        setFavoredJob(_enemyStats, false);
-        _jobStats = _jobStats.OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-        _allyJobStats = _allyJobStats.OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-        _enemyJobStats = _enemyJobStats.OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-        _teammateStats = _teammateStats.OrderByDescending(x => 2 * x.Value.Wins - x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-        _enemyStats = _enemyStats.OrderByDescending(x => x.Value.Matches - 2 * x.Value.Wins).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        setFavoredJob(teammateStats, true);
+        setFavoredJob(enemyStats, false);
+        jobStats = jobStats.OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        allyJobStats = allyJobStats.OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        enemyJobStats = enemyJobStats.OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        teammateStats = teammateStats.OrderByDescending(x => 2 * x.Value.Wins - x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        enemyStats = enemyStats.OrderByDescending(x => x.Value.Matches - 2 * x.Value.Wins).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
         //calculate average stats
-        if(_statsEligibleMatches > 0) {
-            _averageKills = (float)totalStats.Kills / _statsEligibleMatches;
-            _averageDeaths = (float)totalStats.Deaths / _statsEligibleMatches;
-            _averageAssists = (float)totalStats.Assists / _statsEligibleMatches;
-            _averageDamageDealt = (float)totalStats.DamageDealt / _statsEligibleMatches;
-            _averageDamageTaken = (float)totalStats.DamageTaken / _statsEligibleMatches;
-            _averageHPRestored = (float)totalStats.HPRestored / _statsEligibleMatches;
-            _averageTimeOnCrystal = totalStats.TimeOnCrystal / _statsEligibleMatches;
-            _averageMatchLengthStats = totalStatsMatchLength / _statsEligibleMatches;
+        if(statsEligibleMatches > 0) {
+            averageKills = (float)totalStats.Kills / statsEligibleMatches;
+            averageDeaths = (float)totalStats.Deaths / statsEligibleMatches;
+            averageAssists = (float)totalStats.Assists / statsEligibleMatches;
+            averageDamageDealt = (float)totalStats.DamageDealt / statsEligibleMatches;
+            averageDamageTaken = (float)totalStats.DamageTaken / statsEligibleMatches;
+            averageHPRestored = (float)totalStats.HPRestored / statsEligibleMatches;
+            averageTimeOnCrystal = totalStats.TimeOnCrystal / statsEligibleMatches;
+            averageMatchLengthStats = totalStatsMatchLength / statsEligibleMatches;
 
-            _killsPerMin = _averageKills / _averageMatchLengthStats.TotalMinutes;
-            _deathsPerMin = _averageDeaths / _averageMatchLengthStats.TotalMinutes;
-            _assistsPerMin = _averageAssists / _averageMatchLengthStats.TotalMinutes;
-            _damageDealtPerMin = _averageDamageDealt / _averageMatchLengthStats.TotalMinutes;
-            _damageTakenPerMin = _averageDamageTaken / _averageMatchLengthStats.TotalMinutes;
-            _hpRestoredPerMin = _averageHPRestored / _averageMatchLengthStats.TotalMinutes;
-            _timeOnCrystalPerMin = _averageTimeOnCrystal / _averageMatchLengthStats.TotalMinutes;
+            killsPerMin = averageKills / averageMatchLengthStats.TotalMinutes;
+            deathsPerMin = averageDeaths / averageMatchLengthStats.TotalMinutes;
+            assistsPerMin = averageAssists / averageMatchLengthStats.TotalMinutes;
+            damageDealtPerMin = averageDamageDealt / averageMatchLengthStats.TotalMinutes;
+            damageTakenPerMin = averageDamageTaken / averageMatchLengthStats.TotalMinutes;
+            hpRestoredPerMin = averageHPRestored / averageMatchLengthStats.TotalMinutes;
+            timeOnCrystalPerMin = averageTimeOnCrystal / averageMatchLengthStats.TotalMinutes;
 
-            _killContribution = killContribTotal / _statsEligibleMatches;
-            _deathContribution = deathContribTotal / _statsEligibleMatches;
-            _assistContribution = assistContribTotal / _statsEligibleMatches;
-            _damageDealtContribution = ddContribTotal / _statsEligibleMatches;
-            _damageTakenContribution = dtContribTotal / _statsEligibleMatches;
-            _hpRestoredContribution = hpContribTotal / _statsEligibleMatches;
-            _timeOnCrystalContribution = timeContribTotal / _statsEligibleMatches;
+            killContribution = killContribTotal / statsEligibleMatches;
+            deathContribution = deathContribTotal / statsEligibleMatches;
+            assistContribution = assistContribTotal / statsEligibleMatches;
+            damageDealtContribution = ddContribTotal / statsEligibleMatches;
+            damageTakenContribution = dtContribTotal / statsEligibleMatches;
+            hpRestoredContribution = hpContribTotal / statsEligibleMatches;
+            timeOnCrystalContribution = timeContribTotal / statsEligibleMatches;
+        }
+
+
+        try {
+            _refreshLock.WaitAsync();
+
+            _totalMatches = totalMatches;
+            _totalWins = totalWins;
+            _totalLosses = totalLosses;
+            _totalOther = totalOther;
+            _jobStats = jobStats;
+            _allyJobStats = allyJobStats;
+            _enemyJobStats = enemyJobStats;
+            _teammateStats = teammateStats;
+            _enemyStats = enemyStats;
+            _statsEligibleMatches = statsEligibleMatches;
+            _statsEligibleWins = statsEligibleWins;
+            _averageKills = averageKills;
+            _averageDeaths = averageDeaths;
+            _averageAssists = averageAssists;
+            _averageDamageDealt = averageDamageDealt;
+            _averageDamageTaken = averageDamageTaken;
+            _averageHPRestored = averageHPRestored;
+            _averageTimeOnCrystal = averageTimeOnCrystal;
+            _killsPerMin = killsPerMin;
+            _deathsPerMin = deathsPerMin;
+            _assistsPerMin = assistsPerMin;
+            _damageDealtPerMin = damageDealtPerMin;
+            _damageTakenPerMin = damageTakenPerMin;
+            _damageTakenPerMin = hpRestoredPerMin;
+            _timeOnCrystalPerMin = timeOnCrystalPerMin;
+            _killContribution = killContribution;
+            _deathContribution = deathContribution;
+            _assistContribution = assistContribution;
+            _damageDealtContribution = damageDealtContribution;
+            _damageTakenContribution = damageTakenContribution;
+            _damageTakenContribution = hpRestoredContribution;
+            _timeOnCrystalContribution = timeOnCrystalContribution;
+        } finally {
+            _refreshLock.Release();
         }
     }
 
     public void Draw() {
-        if(_totalMatches > 0) {
-            DrawResultTable();
+        if(!_refreshLock.Wait(0)) {
+            return;
         }
+        try {
+            if(_totalMatches > 0) {
+                DrawResultTable();
+            }
 
-        if(_jobStats.Count > 0) {
-            ImGui.Separator();
-            ImGui.TextColored(ImGuiColors.DalamudYellow, "Jobs Played:");
-            DrawJobTable(_jobStats);
-            ImGui.Separator();
-            ImGui.TextColored(ImGuiColors.DalamudYellow, "Teammates' Jobs Played:");
-            DrawJobTable(_allyJobStats);
-            ImGui.Separator();
-            ImGui.TextColored(ImGuiColors.DalamudYellow, "Opponents' Jobs Played:");
-            DrawJobTable(_enemyJobStats);
-        }
+            if(_jobStats.Count > 0) {
+                ImGui.Separator();
+                ImGui.TextColored(ImGuiColors.DalamudYellow, "Jobs Played:");
+                DrawJobTable(_jobStats);
+                ImGui.Separator();
+                ImGui.TextColored(ImGuiColors.DalamudYellow, "Teammates' Jobs Played:");
+                DrawJobTable(_allyJobStats);
+                ImGui.Separator();
+                ImGui.TextColored(ImGuiColors.DalamudYellow, "Opponents' Jobs Played:");
+                DrawJobTable(_enemyJobStats);
+            }
 
-        if(_teammateStats.Count > 0) {
-            ImGui.Separator();
-            ImGui.TextColored(ImGuiColors.DalamudYellow, "Top Teammates:");
-            DrawPlayerStatsTable(_teammateStats);
-        }
+            if(_teammateStats.Count > 0) {
+                ImGui.Separator();
+                ImGui.TextColored(ImGuiColors.DalamudYellow, "Top Teammates:");
+                DrawPlayerStatsTable(_teammateStats);
+            }
 
-        if(_enemyStats.Count > 0) {
-            ImGui.Separator();
-            ImGui.TextColored(ImGuiColors.DalamudYellow, "Top Opponents:");
-            DrawPlayerStatsTable(_enemyStats);
-        }
+            if(_enemyStats.Count > 0) {
+                ImGui.Separator();
+                ImGui.TextColored(ImGuiColors.DalamudYellow, "Top Opponents:");
+                DrawPlayerStatsTable(_enemyStats);
+            }
 
-        if(_statsEligibleMatches > 0) {
-            ImGui.Separator();
-            ImGui.TextColored(ImGuiColors.DalamudYellow, "Average Stats:");
-            ImGui.SameLine();
-            ImGui.Text($"Eligible matches: {_statsEligibleMatches}");
-            ImGui.SameLine();
-            ImGui.Text($"Eligible wins: {_statsEligibleWins}");
-            ImGui.SameLine();
-            ImGuiHelper.HelpMarker("1st row: average per match.\n2nd row: average per minute.\n3rd row: average team contribution per match.");
-            DrawMatchStatsTable();
+            if(_statsEligibleMatches > 0) {
+                ImGui.Separator();
+                ImGui.TextColored(ImGuiColors.DalamudYellow, "Average Stats:");
+                ImGui.SameLine();
+                ImGui.Text($"Eligible matches: {_statsEligibleMatches}");
+                ImGui.SameLine();
+                ImGui.Text($"Eligible wins: {_statsEligibleWins}");
+                ImGui.SameLine();
+                ImGuiHelper.HelpMarker("1st row: average per match.\n2nd row: average per minute.\n3rd row: average team contribution per match.");
+                DrawMatchStatsTable();
+            }
+        } finally {
+            _refreshLock.Release();
         }
     }
 
