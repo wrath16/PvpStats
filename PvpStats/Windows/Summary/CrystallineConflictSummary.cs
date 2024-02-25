@@ -74,6 +74,7 @@ internal class CrystallineConflictSummary {
         enemyStats = new();
         CrystallineConflictPostMatchRow totalStats = new();
         double killContribTotal = 0, deathContribTotal = 0, assistContribTotal = 0, ddContribTotal = 0, dtContribTotal = 0, hpContribTotal = 0, timeContribTotal = 0;
+        List<double> killContribList = new(), deathContribList = new(), assistContribList = new(), ddContribList = new(), dtContribList = new(), hpContribList = new(), timeContribList = new();
         TimeSpan totalStatsMatchLength = new();
         var addJobStat = ((Dictionary<Job, JobStats> jobStats, Job job, bool isWin) => {
             if(jobStats.ContainsKey(job)) {
@@ -135,13 +136,21 @@ internal class CrystallineConflictSummary {
                         totalStats.HPRestored += playerStats.HPRestored;
                         totalStats.TimeOnCrystal += playerStats.TimeOnCrystal;
 
-                        killContribTotal += playerTeamStats.TeamStats.Kills != 0 ? (float)playerStats.Kills / playerTeamStats.TeamStats.Kills : 0;
-                        deathContribTotal += playerTeamStats.TeamStats.Deaths != 0 ? (float)playerStats.Deaths / playerTeamStats.TeamStats.Deaths : 0;
-                        assistContribTotal += playerTeamStats.TeamStats.Assists != 0 ? (float)playerStats.Assists / playerTeamStats.TeamStats.Assists : 0;
-                        ddContribTotal += playerTeamStats.TeamStats.DamageDealt != 0 ? (float)playerStats.DamageDealt / playerTeamStats.TeamStats.DamageDealt : 0;
-                        dtContribTotal += playerTeamStats.TeamStats.DamageTaken != 0 ? (float)playerStats.DamageTaken / playerTeamStats.TeamStats.DamageTaken : 0;
-                        hpContribTotal += playerTeamStats.TeamStats.HPRestored != 0 ? (float)playerStats.HPRestored / playerTeamStats.TeamStats.HPRestored : 0;
-                        timeContribTotal += playerTeamStats.TeamStats.TimeOnCrystal.Ticks != 0 ? playerStats.TimeOnCrystal / playerTeamStats.TeamStats.TimeOnCrystal : 0;
+                        //killContribTotal += playerTeamStats.TeamStats.Kills != 0 ? (float)playerStats.Kills / playerTeamStats.TeamStats.Kills : 0;
+                        //deathContribTotal += playerTeamStats.TeamStats.Deaths != 0 ? (float)playerStats.Deaths / playerTeamStats.TeamStats.Deaths : 0;
+                        //assistContribTotal += playerTeamStats.TeamStats.Assists != 0 ? (float)playerStats.Assists / playerTeamStats.TeamStats.Assists : 0;
+                        //ddContribTotal += playerTeamStats.TeamStats.DamageDealt != 0 ? (float)playerStats.DamageDealt / playerTeamStats.TeamStats.DamageDealt : 0;
+                        //dtContribTotal += playerTeamStats.TeamStats.DamageTaken != 0 ? (float)playerStats.DamageTaken / playerTeamStats.TeamStats.DamageTaken : 0;
+                        //hpContribTotal += playerTeamStats.TeamStats.HPRestored != 0 ? (float)playerStats.HPRestored / playerTeamStats.TeamStats.HPRestored : 0;
+                        //timeContribTotal += playerTeamStats.TeamStats.TimeOnCrystal.Ticks != 0 ? playerStats.TimeOnCrystal / playerTeamStats.TeamStats.TimeOnCrystal : 0;
+
+                        killContribList.Add(playerTeamStats.TeamStats.Kills != 0 ? (double)playerStats.Kills / playerTeamStats.TeamStats.Kills : 0);
+                        deathContribList.Add(playerTeamStats.TeamStats.Deaths != 0 ? (double)playerStats.Deaths / playerTeamStats.TeamStats.Deaths : 0);
+                        assistContribList.Add(playerTeamStats.TeamStats.Assists != 0 ? (double)playerStats.Assists / playerTeamStats.TeamStats.Assists : 0);
+                        ddContribList.Add(playerTeamStats.TeamStats.DamageDealt != 0 ? (double)playerStats.DamageDealt / playerTeamStats.TeamStats.DamageDealt : 0);
+                        dtContribList.Add(playerTeamStats.TeamStats.DamageTaken != 0 ? (double)playerStats.DamageTaken / playerTeamStats.TeamStats.DamageTaken : 0);
+                        hpContribList.Add(playerTeamStats.TeamStats.HPRestored != 0 ? (double)playerStats.HPRestored / playerTeamStats.TeamStats.HPRestored : 0);
+                        timeContribList.Add(playerTeamStats.TeamStats.TimeOnCrystal.Ticks != 0 ? playerStats.TimeOnCrystal / playerTeamStats.TeamStats.TimeOnCrystal : 0);
                     }
                 }
             }
@@ -184,13 +193,21 @@ internal class CrystallineConflictSummary {
             hpRestoredPerMin = averageHPRestored / averageMatchLengthStats.TotalMinutes;
             timeOnCrystalPerMin = averageTimeOnCrystal / averageMatchLengthStats.TotalMinutes;
 
-            killContribution = killContribTotal / statsEligibleMatches;
-            deathContribution = deathContribTotal / statsEligibleMatches;
-            assistContribution = assistContribTotal / statsEligibleMatches;
-            damageDealtContribution = ddContribTotal / statsEligibleMatches;
-            damageTakenContribution = dtContribTotal / statsEligibleMatches;
-            hpRestoredContribution = hpContribTotal / statsEligibleMatches;
-            timeOnCrystalContribution = timeContribTotal / statsEligibleMatches;
+            //killContribution = killContribTotal / statsEligibleMatches;
+            //deathContribution = deathContribTotal / statsEligibleMatches;
+            //assistContribution = assistContribTotal / statsEligibleMatches;
+            //damageDealtContribution = ddContribTotal / statsEligibleMatches;
+            //damageTakenContribution = dtContribTotal / statsEligibleMatches;
+            //hpRestoredContribution = hpContribTotal / statsEligibleMatches;
+            //timeOnCrystalContribution = timeContribTotal / statsEligibleMatches;
+
+            killContribution = killContribList.OrderBy(x => x).ElementAt(statsEligibleMatches / 2);
+            deathContribution = deathContribList.OrderBy(x => x).ElementAt(statsEligibleMatches / 2); ;
+            assistContribution = assistContribList.OrderBy(x => x).ElementAt(statsEligibleMatches / 2); ;
+            damageDealtContribution = ddContribList.OrderBy(x => x).ElementAt(statsEligibleMatches / 2); ;
+            damageTakenContribution = dtContribList.OrderBy(x => x).ElementAt(statsEligibleMatches / 2); ;
+            hpRestoredContribution = hpContribList.OrderBy(x => x).ElementAt(statsEligibleMatches / 2); ;
+            timeOnCrystalContribution = timeContribList.OrderBy(x => x).ElementAt(statsEligibleMatches / 2); ;
         }
 
         try {
@@ -274,7 +291,7 @@ internal class CrystallineConflictSummary {
                 //ImGui.SameLine();
                 //ImGui.Text($"Eligible wins: {_statsEligibleWins}");
                 //ImGui.SameLine();
-                ImGuiHelper.HelpMarker("1st row: average per match.\n2nd row: average per minute.\n3rd row: average team contribution per match.");
+                ImGuiHelper.HelpMarker("1st row: average per match.\n2nd row: average per minute.\n3rd row: median team contribution per match.");
                 DrawMatchStatsTable();
             }
         } finally {
