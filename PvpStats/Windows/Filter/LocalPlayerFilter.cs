@@ -4,6 +4,8 @@ using System;
 namespace PvpStats.Windows.Filter;
 public class LocalPlayerFilter : DataFilter {
     public override string Name => "Local Player";
+
+    public override string HelpMessage => "Will only include matches using the currently logged-in character. Useful if you use multiple characters and want to view results separately.";
     public bool CurrentPlayerOnly { get; set; }
     public LocalPlayerFilter() { }
 

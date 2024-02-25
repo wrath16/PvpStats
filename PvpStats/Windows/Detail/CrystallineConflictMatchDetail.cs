@@ -61,6 +61,7 @@ internal class CrystallineConflictMatchDetail : Window {
             MinimumSize = new Vector2(600, 400),
             MaximumSize = new Vector2(1200, 1500)
         };
+        Flags = Flags | ImGuiWindowFlags.AlwaysAutoResize;
         _plugin = plugin;
         _dataModel = match;
 
@@ -290,12 +291,16 @@ internal class CrystallineConflictMatchDetail : Window {
             ImGui.SameLine();
             ImGui.Text("Show team contributions");
             ImGuiHelper.HelpMarker("Right-click table header to show and hide columns.");
+            //if(ImGui.BeginChild("statsTableChild")) {
             DrawStatsTable();
+            //    ImGui.EndChild();
+            //}
+            //ImGui.NewLine();
         }
     }
 
     private void DrawStatsTable() {
-        if(ImGui.BeginTable($"postmatchplayers##{_dataModel.Id}", 13, ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.ScrollX)) {
+        if(ImGui.BeginTable($"postmatchplayers##{_dataModel.Id}", 13, ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable)) {
 
             ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthFixed, (uint)SortableColumn.Name);
             ImGui.TableSetupColumn("Job", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 50f, (uint)SortableColumn.Job);
@@ -337,11 +342,11 @@ internal class CrystallineConflictMatchDetail : Window {
             ImGui.TableNextColumn();
             ImGui.TableHeader("Damage Dealt\nper Kill/Assist");
             ImGui.TableNextColumn();
-            ImGui.TableHeader("Damage Dealt\nper Death");
+            ImGui.TableHeader("Damage Dealt\nper Life");
             ImGui.TableNextColumn();
-            ImGui.TableHeader("Damage Taken\nper Death");
+            ImGui.TableHeader("Damage Taken\nper Life");
             ImGui.TableNextColumn();
-            ImGui.TableHeader("HP Restored\nper Death");
+            ImGui.TableHeader("HP Restored\nper Life");
 
             //column sorting
             ImGuiTableSortSpecsPtr sortSpecs = ImGui.TableGetSortSpecs();

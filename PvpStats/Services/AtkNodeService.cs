@@ -2,7 +2,6 @@
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace PvpStats.Services;
 internal class AtkNodeService {
@@ -168,15 +167,15 @@ internal class AtkNodeService {
 
     internal static unsafe string ConvertAtkValueToString(AtkValue value) {
         switch(value.Type) {
-            case FFXIVClientStructs.FFXIV.Component.GUI.ValueType.Int:
-            case FFXIVClientStructs.FFXIV.Component.GUI.ValueType.UInt:
+            case ValueType.Int:
+            case ValueType.UInt:
                 return value.Int.ToString();
-            case FFXIVClientStructs.FFXIV.Component.GUI.ValueType.Bool:
+            case ValueType.Bool:
                 return (value.Int != 0).ToString();
-            case FFXIVClientStructs.FFXIV.Component.GUI.ValueType.String:
-            case FFXIVClientStructs.FFXIV.Component.GUI.ValueType.AllocatedString:
-            case FFXIVClientStructs.FFXIV.Component.GUI.ValueType.String8:
-                return Marshal.PtrToStringUTF8((nint)value.String);
+            case ValueType.String:
+            case ValueType.AllocatedString:
+            case ValueType.String8:
+                return Marshal.PtrToStringUTF8((nint)value.String) ?? "";
             default:
                 break;
         }
@@ -205,7 +204,7 @@ internal class AtkNodeService {
                 //    secondInternalArray = internalArray[secondInternalCount];
                 //}
 
-                _plugin.Log.Debug($"{count} {internalCount}\t{ReadString(internalArray)}");
+                _plugin.Log.Debug($"{count} {internalCount}\t{MemoryService.ReadString(internalArray)}");
 
                 internalCount++;
                 internalArray = stringArray->StringArray[internalCount];
@@ -223,13 +222,5 @@ internal class AtkNodeService {
         //while(stringArray != null) {
         //    //stringArray->StringArray;
         //}
-    }
-
-    public static unsafe string? ReadString(byte* b, int maxLength = 0, bool nullIsEmpty = true) {
-        if(b == null) return nullIsEmpty ? string.Empty : null;
-        if(maxLength > 0) return Encoding.UTF8.GetString(b, maxLength).Split('\0')[0];
-        var l = 0;
-        while(b[l] != 0) l++;
-        return Encoding.UTF8.GetString(b, l);
     }
 }

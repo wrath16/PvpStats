@@ -88,7 +88,7 @@ internal class MatchManager : IDisposable {
             && opCode != 857 && opCode != 444 && opCode != 550 && opCode != 658 && opCode != 636 && opCode != 132 && opCode != 230 && opCode != 660
             && opCode != 565 && opCode != 258 && opCode != 390 && opCode != 221 && opCode != 167 && opCode != 849) {
             _plugin.Log.Verbose($"OPCODE: {opCode} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
-            _plugin.Functions.PrintAllChars(dataPtr, 0x2000);
+            _plugin.Functions.PrintAllChars(dataPtr, 0x2000, 8);
             //_plugin.Functions.PrintAllStrings(dataPtr, 0x500);
 
             if(qPopped) {
@@ -242,6 +242,8 @@ internal class MatchManager : IDisposable {
         string translatedTeamName = _plugin.Localization.TranslateDataTableEntry<Addon>(teamName, "Text", ClientLanguage.English);
         team.TeamName = MatchHelper.GetTeamName(translatedTeamName);
 
+        //_plugin.GameState.PrintAllPlayerObjects();
+
         _plugin.Log.Debug(teamName);
         for(int i = 0; i < 5; i++) {
             int offset = i * 16 + 6;
@@ -284,11 +286,12 @@ internal class MatchManager : IDisposable {
             if(player.Contains(".")) {
                 _currentMatch!.NeedsPlayerNameValidation = true;
                 foreach(PlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
-                    bool homeWorldMatch = world.Equals(pc.HomeWorld.GameData.Name.ToString());
-                    string translatedJobName = _plugin.Localization.TranslateDataTableEntry<ClassJob>(pc.ClassJob.GameData.Name.ToString(), "Name", ClientLanguage.English);
-                    bool jobMatch = pc.ClassJob.GameData.NameEnglish == translatedJob;
-                    bool isSelf = _plugin.ClientState.LocalPlayer.ObjectId == pc.ObjectId;
-                    if(homeWorldMatch && jobMatch && PlayerJobHelper.IsAbbreviatedAliasMatch(player, pc.Name.ToString())) {
+                    //_plugin.Log.Debug($"name: {pc.Name} homeworld {pc.HomeWorld.GameData.Name.ToString()} job: {pc.ClassJob.GameData.NameEnglish}");
+                    bool homeWorldMatch = world.Equals(pc.HomeWorld.GameData.Name.ToString(), StringComparison.OrdinalIgnoreCase);
+                    bool jobMatch = pc.ClassJob.GameData.NameEnglish.ToString().Equals(translatedJob, StringComparison.OrdinalIgnoreCase);
+                    bool nameMatch = PlayerJobHelper.IsAbbreviatedAliasMatch(player, pc.Name.ToString());
+                    //_plugin.Log.Debug($"homeworld match:{homeWorldMatch} jobMatch:{jobMatch} nameMatch: {nameMatch}");
+                    if(homeWorldMatch && jobMatch && nameMatch) {
                         _plugin.Log.Debug($"validated player: {player} is {pc.Name.ToString()}");
                         player = pc.Name.ToString();
                         break;
@@ -315,6 +318,48 @@ internal class MatchManager : IDisposable {
 
             _plugin.Log.Debug("");
         });
+    }
+
+    //returns true if all names successfully validated
+    private bool? ValidatePlayerAliases() {
+        if(!IsMatchInProgress()) {
+            return null;
+        }
+        bool allValidated = true;
+
+        foreach(var team in _currentMatch!.Teams) {
+            //if can't find player's team ignore team condition
+            bool? isPlayerTeam = _currentMatch!.LocalPlayerTeam?.TeamName is null ? null : team.Key == _currentMatch!.LocalPlayerTeam?.TeamName;
+            foreach(var player in team.Value.Players) {
+                //abbreviated name found
+                if(player.Alias.Name.Contains(".")) {
+                    //_plugin.Log.Debug($"Checking... {player.Alias.Name}");
+                    allValidated = allValidated && ValidatePlayerAgainstObjectTable(player, isPlayerTeam, true);
+                }
+            }
+        }
+        return allValidated;
+    }
+
+    //returns true if match found
+    private bool ValidatePlayerAgainstObjectTable(CrystallineConflictPlayer player, bool? isPartyMember = null, bool updateAlias = false) {
+        foreach(PlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
+            bool homeWorldMatch = player.Alias.HomeWorld.Equals(pc.HomeWorld.GameData.Name.ToString());
+            string translatedJobName = _plugin.Localization.TranslateDataTableEntry<ClassJob>(pc.ClassJob.GameData.Name.ToString(), "Name", ClientLanguage.English);
+            bool jobMatch = player.Job.Equals(PlayerJobHelper.GetJobFromName(translatedJobName));
+            bool isSelf = _plugin.ClientState.LocalPlayer.ObjectId == pc.ObjectId;
+            bool teamMatch = isPartyMember is null || (bool)isPartyMember && pc.StatusFlags.HasFlag(StatusFlags.PartyMember) || !(bool)isPartyMember && !pc.StatusFlags.HasFlag(StatusFlags.PartyMember);
+            //_plugin.Log.Debug($"Checking against... {pc.Name.ToString()} worldmatch: {homeWorldMatch} jobmatch: {jobMatch} teamMatch:{teamMatch}");
+            //_plugin.Log.Debug($"team null? {isPlayerTeam is null} player team? {isPlayerTeam} is p member? {pc.StatusFlags.HasFlag(StatusFlags.PartyMember)} isSelf? {isSelf}");
+            if(homeWorldMatch && jobMatch && (isSelf || teamMatch) && PlayerJobHelper.IsAbbreviatedAliasMatch(player.Alias, pc.Name.ToString())) {
+                _plugin.Log.Debug($"validated player: {player.Alias.Name} is {pc.Name.ToString()}");
+                if(updateAlias) {
+                    player.Alias.Name = pc.Name.ToString();
+                }
+                return true;
+            }
+        }
+        return false;
     }
 
     public bool IsMatchInProgress() {
@@ -387,7 +432,7 @@ internal class MatchManager : IDisposable {
             }
 
             CrystallineConflictPostMatchRow playerStats = new() {
-                Player = (PlayerAlias)$"{AtkNodeService.ReadString(player.PlayerName, 32)} {_plugin.DataManager.GetExcelSheet<World>()?.GetRow(player.WorldId)?.Name}",
+                Player = (PlayerAlias)$"{MemoryService.ReadString(player.PlayerName, 32)} {_plugin.DataManager.GetExcelSheet<World>()?.GetRow(player.WorldId)?.Name}",
                 Team = player.Team == 0 ? CrystallineConflictTeamName.Astra : CrystallineConflictTeamName.Umbra,
                 Job = PlayerJobHelper.GetJobFromName(_plugin.DataManager.GetExcelSheet<ClassJob>()?.GetRow(player.ClassJobId)?.NameEnglish ?? ""),
                 PlayerRank = new PlayerRank() {
@@ -427,8 +472,8 @@ internal class MatchManager : IDisposable {
             playerTeamPost.TeamStats.TimeOnCrystal += playerStats.TimeOnCrystal;
         }
 
-        //add players who left match
-        foreach(var introPlayer in _currentMatch.IntroPlayerInfo) {
+        //add players who left match. omit ones with incomplete name as a failsafe
+        foreach(var introPlayer in _currentMatch.IntroPlayerInfo.Where(x => !x.Value.Alias.FullName.Contains("."))) {
             bool isFound = false;
             foreach(var team in _currentMatch.Teams) {
                 foreach(var player in team.Value.Players) {

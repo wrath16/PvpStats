@@ -24,8 +24,10 @@ internal static class ImGuiHelper {
     //    ImGui.SetCursorPosY(posY);
     //}
 
-    internal static void HelpMarker(string text) {
-        ImGui.SameLine();
+    internal static void HelpMarker(string text, bool sameLine = true) {
+        if(sameLine) {
+            ImGui.SameLine();
+        }
         ImGui.TextDisabled("(?)");
         WrappedTooltip(text, 500f);
     }

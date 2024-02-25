@@ -49,7 +49,7 @@ public sealed class Plugin : IDalamudPlugin {
     internal AtkNodeService AtkNodeService { get; init; }
 
     public Configuration Configuration { get; init; }
-    internal GameFunctions Functions { get; init; }
+    internal MemoryService Functions { get; init; }
 
     internal bool DebugMode { get; set; }
 

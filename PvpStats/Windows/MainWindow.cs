@@ -188,7 +188,7 @@ internal class MainWindow : Window {
 
                     if(filter.HelpMessage != null) {
                         ImGui.AlignTextToFramePadding();
-                        ImGuiHelper.HelpMarker(filter.HelpMessage);
+                        ImGuiHelper.HelpMarker(filter.HelpMessage, false);
                         ImGui.SameLine();
                     }
                     //ImGui.GetStyle().FramePadding.X = ImGui.GetStyle().FramePadding.X - 2f;

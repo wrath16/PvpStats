@@ -84,7 +84,7 @@ internal unsafe class DebugWindow : Window {
                 var instanceDirector = EventFramework.Instance()->GetInstanceContentDirector();
                 var directorAddress = &instanceDirector;
 
-                var crystallineConflictDirector = _plugin.Functions.GetInstanceContentCrystallineConflictDirector();
+                //var crystallineConflictDirector = _plugin.Functions.GetInstanceContentCrystallineConflictDirector();
 
                 if(ImGui.BeginTable("memoryStringTable", 2)) {
                     ImGui.TableNextColumn();
@@ -99,10 +99,10 @@ internal unsafe class DebugWindow : Window {
                     ImGui.Text($"ICD pointer:");
                     ImGui.TableNextColumn();
                     ImGui.Text($"0x{new IntPtr(instanceDirector).ToString("X2")}");
-                    ImGui.TableNextColumn();
-                    ImGui.Text($"CC director pointer:");
-                    ImGui.TableNextColumn();
-                    ImGui.Text($"0x{new IntPtr(crystallineConflictDirector).ToString("X2")}");
+                    //ImGui.TableNextColumn();
+                    //ImGui.Text($"CC director pointer:");
+                    //ImGui.TableNextColumn();
+                    //ImGui.Text($"0x{new IntPtr(crystallineConflictDirector).ToString("X2")}");
                     ImGui.EndTable();
                 }
 
@@ -116,14 +116,15 @@ internal unsafe class DebugWindow : Window {
                 //}
 
                 if(ImGui.Button("Print ICD Bytes")) {
-                    var x = _plugin.Functions.GetRawInstanceContentDirector();
-                    _plugin.Log.Debug($"object size: {x.Length.ToString("X2")} bytes");
-                    int offset = 0x0;
-                    foreach(var b in x) {
-                        string inHex = b.ToString("X2");
-                        _plugin.Log.Debug($"offset: {offset.ToString("X2")} value: {inHex}");
-                        offset++;
-                    }
+                    _plugin.Functions.FindValue<byte>(0, (nint)instanceDirector, 0x2000, 0, true);
+                    //var x = _plugin.Functions.GetRawInstanceContentDirector();
+                    //_plugin.Log.Debug($"object size: {x.Length.ToString("X2")} bytes");
+                    //int offset = 0x0;
+                    //foreach(var b in x) {
+                    //    string inHex = b.ToString("X2");
+                    //    _plugin.Log.Debug($"offset: {offset.ToString("X2")} value: {inHex}");
+                    //    offset++;
+                    //}
                 }
 
                 //if (ImGui.Button("Print ICD Chars")) {
@@ -170,18 +171,18 @@ internal unsafe class DebugWindow : Window {
 
                 ImGui.Separator();
 
-                if(ImGui.InputText($"Value To Find##findvalue", ref _toFind, 80)) {
+                //if(ImGui.InputText($"Value To Find##findvalue", ref _toFind, 80)) {
 
-                }
+                //}
 
-                if(ImGui.Button("Find")) {
-                    _plugin.DataQueue.QueueDataOperation(() => _plugin.Functions.FindValueInContentDirector(_toFind));
+                //if(ImGui.Button("Find")) {
+                //    _plugin.DataQueue.QueueDataOperation(() => _plugin.Functions.FindValueInContentDirector(_toFind));
 
-                    //if (int.TryParse(_toFind, out int result)) {
-                    //    _plugin.Functions.FindValueInContentDirector(result);
-                    //}
+                //    //if (int.TryParse(_toFind, out int result)) {
+                //    //    _plugin.Functions.FindValueInContentDirector(result);
+                //    //}
 
-                }
+                //}
 
                 ImGui.Separator();
 

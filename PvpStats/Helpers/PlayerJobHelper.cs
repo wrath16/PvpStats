@@ -64,13 +64,13 @@ internal static class PlayerJobHelper {
         { Job.RDM, 62135 },
     };
 
-    public static bool IsAbbreviatedAliasMatch(PlayerAlias player, string name) {
-        string pattern = "^" + player.FirstName.Replace(".", @"[\w'-]*") + " " + player.LastName.Replace(".", "");
-        return Regex.IsMatch(name, pattern);
+    public static bool IsAbbreviatedAliasMatch(PlayerAlias abbreviatedPlayer, string fullName) {
+        string pattern = "^" + abbreviatedPlayer.FirstName.Replace(".", @"[\w'-]*") + " " + abbreviatedPlayer.LastName.Replace(".", "");
+        return Regex.IsMatch(fullName, pattern);
     }
 
-    public static bool IsAbbreviatedAliasMatch(string player, string name) {
-        return IsAbbreviatedAliasMatch((PlayerAlias)$"{player} whocares", name);
+    public static bool IsAbbreviatedAliasMatch(string abbreviatedPlayer, string fullName) {
+        return IsAbbreviatedAliasMatch((PlayerAlias)$"{abbreviatedPlayer} whocares", fullName);
     }
 
     internal static Job? GetJobFromName(string jobName) {
