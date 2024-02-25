@@ -37,7 +37,6 @@ internal class CrystallineConflictSummary {
     private double _killsPerMin, _deathsPerMin, _assistsPerMin, _damageDealtPerMin, _damageTakenPerMin, _hpRestoredPerMin;
     private double _killContribution, _deathContribution, _assistContribution, _damageDealtContribution, _damageTakenContribution, _hpRestoredContribution, _timeOnCrystalContribution;
     private TimeSpan _averageTimeOnCrystal, _averageMatchLengthStats, _timeOnCrystalPerMin;
-    private CrystallineConflictPostMatchRow _averageStats = new();
 
     public CrystallineConflictSummary(Plugin plugin) {
         _plugin = plugin;
@@ -73,7 +72,7 @@ internal class CrystallineConflictSummary {
         teammateStats = new();
         enemyStats = new();
         CrystallineConflictPostMatchRow totalStats = new();
-        double killContribTotal = 0, deathContribTotal = 0, assistContribTotal = 0, ddContribTotal = 0, dtContribTotal = 0, hpContribTotal = 0, timeContribTotal = 0;
+        //double killContribTotal = 0, deathContribTotal = 0, assistContribTotal = 0, ddContribTotal = 0, dtContribTotal = 0, hpContribTotal = 0, timeContribTotal = 0;
         List<double> killContribList = new(), deathContribList = new(), assistContribList = new(), ddContribList = new(), dtContribList = new(), hpContribList = new(), timeContribList = new();
         TimeSpan totalStatsMatchLength = new();
         var addJobStat = ((Dictionary<Job, JobStats> jobStats, Job job, bool isWin) => {
@@ -105,7 +104,7 @@ internal class CrystallineConflictSummary {
             if(match.LocalPlayerTeamMember != null) {
                 addJobStat(jobStats, match.LocalPlayerTeamMember.Job, match.IsWin);
                 foreach(var team in match.Teams) {
-                    if(team.Key == match.LocalPlayerTeam.TeamName) {
+                    if(team.Key == match.LocalPlayerTeam?.TeamName) {
                         foreach(var player in team.Value.Players) {
                             if(!player.Alias.Equals(match.LocalPlayer)) {
                                 addJobStat(allyJobStats, player.Job, match.IsWin);
@@ -121,7 +120,7 @@ internal class CrystallineConflictSummary {
                 }
                 if(match.PostMatch != null && match.MatchDuration != null) {
                     var playerTeamStats = match.PostMatch.Teams.Where(x => x.Key == match.LocalPlayerTeam!.TeamName).FirstOrDefault().Value;
-                    var playerStats = playerTeamStats.PlayerStats.Where(x => x.Player.Equals(match.LocalPlayer)).FirstOrDefault();
+                    var playerStats = playerTeamStats.PlayerStats.Where(x => x.Player?.Equals(match.LocalPlayer) ?? false).FirstOrDefault();
                     if(playerStats != null) {
                         statsEligibleMatches++;
                         if(match.IsWin) {
@@ -415,7 +414,7 @@ internal class CrystallineConflictSummary {
 
             ImGui.TableHeadersRow();
 
-            //nominal
+            //per match
             ImGui.TableNextColumn();
             ImGui.Text($"{_averageKills.ToString("0.##")}");
             ImGui.TableNextColumn();

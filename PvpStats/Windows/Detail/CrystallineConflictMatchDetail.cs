@@ -43,13 +43,11 @@ internal class CrystallineConflictMatchDetail : Window {
 
     private Plugin _plugin;
     private CrystallineConflictMatch _dataModel;
-    private List<CrystallineConflictPostMatchRow> _postMatchRows;
-    private ImGuiTableSortSpecsPtr _currentSortSpecs;
-    private Dictionary<CrystallineConflictPostMatchRow, TeamContribution> _teamContributionStats;
-    private Dictionary<CrystallineConflictPostMatchRow, AdvancedStats> _advancedStats;
+    private List<CrystallineConflictPostMatchRow> _postMatchRows = new();
+    private Dictionary<CrystallineConflictPostMatchRow, TeamContribution> _teamContributionStats = new();
+    private Dictionary<CrystallineConflictPostMatchRow, AdvancedStats> _advancedStats = new();
 
     bool _showPercentages;
-    bool _showAdvancedStats;
 
     private SemaphoreSlim _refreshLock = new SemaphoreSlim(1, 1);
 
@@ -73,9 +71,6 @@ internal class CrystallineConflictMatchDetail : Window {
 
         //setup post match data
         if(_dataModel.PostMatch is not null) {
-            _postMatchRows = new();
-            _teamContributionStats = new();
-            _advancedStats = new();
             foreach(var team in _dataModel.PostMatch.Teams) {
                 var teamStats = team.Value.TeamStats;
                 if(teamStats.Team is null) {
@@ -112,7 +107,6 @@ internal class CrystallineConflictMatchDetail : Window {
                 }
             }
         }
-        _currentSortSpecs = new();
     }
 
     public void Open(CrystallineConflictMatch match) {
@@ -223,7 +217,7 @@ internal class CrystallineConflictMatchDetail : Window {
                     ImGui.Text(rank0);
                     ImGui.TableNextColumn();
                     var playerColor0 = _dataModel.LocalPlayerTeam is not null && firstTeam.TeamName == _dataModel.LocalPlayerTeam.TeamName ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
-                    playerColor0 = _dataModel.LocalPlayer.Equals(firstTeam.Players[i]) ? ImGuiColors.DalamudYellow : playerColor0;
+                    playerColor0 = _dataModel.LocalPlayer is not null && _dataModel.LocalPlayer.Equals(firstTeam.Players[i]) ? ImGuiColors.DalamudYellow : playerColor0;
                     if(isSpectated) {
                         playerColor0 = firstTeam.TeamName == CrystallineConflictTeamName.Astra ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
                     }
@@ -254,7 +248,7 @@ internal class CrystallineConflictMatchDetail : Window {
                     ImGui.Image(_plugin.WindowManager.JobIcons[secondTeam.Players[i].Job].ImGuiHandle, new Vector2(24, 24));
                     ImGui.TableNextColumn();
                     var playerColor1 = _dataModel.LocalPlayerTeam is not null && secondTeam.TeamName == _dataModel.LocalPlayerTeam.TeamName ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
-                    playerColor1 = _dataModel.LocalPlayer.Equals(secondTeam.Players[i]) ? ImGuiColors.DalamudYellow : playerColor1;
+                    playerColor1 = _dataModel.LocalPlayer is not null && _dataModel.LocalPlayer.Equals(secondTeam.Players[i]) ? ImGuiColors.DalamudYellow : playerColor1;
                     if(isSpectated) {
                         playerColor1 = secondTeam.TeamName == CrystallineConflictTeamName.Astra ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
                     }
@@ -380,12 +374,12 @@ internal class CrystallineConflictMatchDetail : Window {
                         rowColor = ImGuiColors.DPSRed - new Vector4(0f, 0f, 0f, 0.3f);
                         break;
                 }
-                var textColor = _dataModel.LocalPlayer.Equals(row.Player) ? ImGuiColors.DalamudYellow : ImGuiColors.DalamudWhite;
+                var textColor = _dataModel.LocalPlayer is not null && _dataModel.LocalPlayer.Equals(row.Player) ? ImGuiColors.DalamudYellow : ImGuiColors.DalamudWhite;
                 ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(rowColor));
                 if(isPlayer) {
-                    ImGui.TextColored(textColor, $" {row.Player.Name} ");
+                    ImGui.TextColored(textColor, $" {row.Player?.Name} ");
                 } else {
-                    ImGui.TextColored(textColor, $" {MatchHelper.GetTeamName((CrystallineConflictTeamName)row.Team)}");
+                    ImGui.TextColored(textColor, $" {MatchHelper.GetTeamName(row.Team ?? CrystallineConflictTeamName.Unknown)}");
                 }
                 ImGui.TableNextColumn();
                 ImGui.TextColored(textColor, $"{(isPlayer ? row.Job : "")}");
@@ -423,23 +417,23 @@ internal class CrystallineConflictMatchDetail : Window {
         if(rowProperty is null) {
             switch(column) {
                 case SortableColumn.Name:
-                    comparator = (r) => r.Player is not null ? r.Player.Name : r.Team.ToString();
+                    comparator = (r) => (r.Player is not null ? r.Player.Name : r.Team.ToString()) ?? "";
                     break;
                 default:
                     var advancedField = typeof(AdvancedStats).GetField(column.ToString());
                     if(advancedField is not null) {
-                        comparator = (r) => advancedField.GetValue(_advancedStats[r]);
+                        comparator = (r) => advancedField.GetValue(_advancedStats[r]) ?? 0;
                     }
                     break;
             }
         } else if(rowProperty.PropertyType.IsEnum) {
-            comparator = (r) => rowProperty.GetValue(r);
+            comparator = (r) => rowProperty.GetValue(r) ?? 0;
         } else {
             comparator = (r) => {
                 if(r.Player is not null && _showPercentages) {
                     var percentageField = typeof(TeamContribution).GetField(column.ToString());
                     if(percentageField is not null) {
-                        return percentageField.GetValue(_teamContributionStats[r]);
+                        return percentageField.GetValue(_teamContributionStats[r]) ?? 0;
                     }
                 }
 

@@ -1,4 +1,6 @@
-﻿using Dalamud.Game.ClientState.Objects.Enums;
+﻿#pragma warning disable
+#if DEBUG
+using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Interface.Windowing;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
@@ -247,3 +249,5 @@ internal unsafe class DebugWindow : Window {
         _plugin.Log.Debug($"parse result: {parseResult} minutes: {ts.Minutes} seconds: {ts.Seconds}");
     }
 }
+#endif
+#pragma warning restore

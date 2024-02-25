@@ -226,7 +226,7 @@ internal unsafe class GameFunctions {
                             reader.ReadByte();
                         }
                     } catch(EndOfStreamException) {
-                        _plugin.Log.Debug(curString);
+                        _plugin.Log.Verbose(curString);
                         return;
                     }
                 }
