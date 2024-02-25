@@ -18,7 +18,6 @@ public class ArenaFilter : DataFilter {
     public ArenaFilter() { }
 
     internal ArenaFilter(Plugin plugin, Action action, ArenaFilter? filter = null) : base(plugin, action) {
-        //AllSelected = true;
         FilterState = new();
         _range = new() {
             "All",

@@ -23,8 +23,8 @@ internal abstract class FilteredList<T> {
 
     protected virtual List<T> DataModel { get; set; } = new();
     public List<T> CurrentPage { get; private set; } = new();
-
     public T? SelectedRow { get; set; }
+
     protected virtual List<ColumnParams> Columns { get; set; } = new();
     protected virtual ImGuiTableFlags TableFlags { get; set; }
 
@@ -44,22 +44,12 @@ internal abstract class FilteredList<T> {
     }
 
     public void GoToPage(int? pageNumber = null) {
-        //_plugin.DataQueue.QueueDataOperation(() => {
-        //    RefreshDataModel();
-        //    //null page number = stay on same page
-        //    pageNumber ??= PageNumber;
-        //    PageNumber = (int)pageNumber;
-        //    CurrentPage = DataModel.Skip(PageNumber * PageSize).Take(PageSize).ToList();
-        //});
-
         pageNumber ??= PageNumber;
         PageNumber = (int)pageNumber;
         CurrentPage = DataModel.Skip(PageNumber * PageSize).Take(PageSize).ToList();
     }
 
     public void Draw() {
-        //draw filters...
-
         ImGui.BeginChild("scrolling", new Vector2(0, -(25 + ImGui.GetStyle().ItemSpacing.Y) * ImGuiHelpers.GlobalScale), true);
         ImGui.BeginTable($"##{GetHashCode()}-Table", Columns.Count, TableFlags);
         //setup columns

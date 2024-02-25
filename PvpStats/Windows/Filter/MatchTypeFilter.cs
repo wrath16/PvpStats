@@ -14,7 +14,6 @@ public class MatchTypeFilter : DataFilter {
     public MatchTypeFilter() { }
 
     internal MatchTypeFilter(Plugin plugin, Action action, MatchTypeFilter? filter = null) : base(plugin, action) {
-        //AllSelected = true;
         FilterState = new() {
                 {CrystallineConflictMatchType.Casual, true },
                 {CrystallineConflictMatchType.Ranked, true },

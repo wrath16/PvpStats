@@ -57,16 +57,5 @@ public class LocalPlayerJobFilter : DataFilter {
                 Refresh();
             });
         }
-
-        //if (ImGui.InputText($"##playerFilter", ref playerName, 50, ImGuiInputTextFlags.None)) {
-        //    if (playerName != _lastValue) {
-        //        _lastValue = playerName;
-        //        _plugin!.DataQueue.QueueDataOperation(() => {
-        //            PlayerNamesRaw = playerName;
-        //            //SetPartyMemberArray(partyMembers);
-        //            //Refresh();
-        //        });
-        //    }
-        //}
     }
 }

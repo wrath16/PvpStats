@@ -2,10 +2,13 @@
 using Dalamud.Interface.Windowing;
 using LiteDB;
 using PvpStats.Helpers;
+using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using PvpStats.Windows;
+using PvpStats.Windows.Detail;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 
 namespace PvpStats.Managers;
@@ -71,22 +74,31 @@ internal class WindowManager : IDisposable {
     }
 #endif
 
-    internal void OpenMatchDetailsWindow(ObjectId id) {
-        var window = WindowSystem.Windows.Where(w => w.WindowName == $"Match Details: {id}").FirstOrDefault();
+    internal void OpenMatchDetailsWindow(CrystallineConflictMatch match) {
+        var windowName = $"Match Details: {match.Id}";
+        var window = WindowSystem.Windows.Where(w => w.WindowName == windowName).FirstOrDefault();
         if(window is not null) {
             window.BringToFront();
             window.IsOpen = true;
+        } else {
+            _plugin.Log.Debug($"Opening item detail for...{match.DutyStartTime}");
+            var itemDetail = new CrystallineConflictMatchDetail(_plugin, match);
+            itemDetail.IsOpen = true;
+            _plugin.WindowManager.AddWindow(itemDetail);
         }
     }
 
-    internal void OpenFullEditWindow(ObjectId id) {
-        var match = _plugin.Storage.GetCCMatches().Query().Where(x => x.Id == id).FirstOrDefault();
-        if(match is not null) {
-            var window = WindowSystem.Windows.Where(w => w.WindowName == $"Full Edit: {match.GetHashCode()}").FirstOrDefault();
-            if(window is not null) {
-                window.BringToFront();
-                window.IsOpen = true;
-            }
+    internal void OpenFullEditWindow(CrystallineConflictMatch match) {
+        var windowName = $"Full Edit: {match.GetHashCode()}";
+        var window = WindowSystem.Windows.Where(w => w.WindowName == windowName).FirstOrDefault();
+        if(window is not null) {
+            window.BringToFront();
+            window.IsOpen = true;
+        } else {
+            _plugin.Log.Debug($"Opening full edit details for...{match.DutyStartTime}");
+            var itemDetail = new FullEditDetail<CrystallineConflictMatch>(_plugin, match);
+            itemDetail.IsOpen = true;
+            _plugin.WindowManager.AddWindow(itemDetail);
         }
     }
 

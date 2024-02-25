@@ -101,10 +101,6 @@ public class TimeFilter : DataFilter {
                     Refresh();
                 });
             }
-
-            //if (ImGui.BeginCombo("##seasonCombo", season, ImGuiComboFlags.NoArrowButton)) {
-            //    ImGui.EndCombo();
-            //}
         }
     }
 }

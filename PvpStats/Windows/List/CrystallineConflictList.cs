@@ -2,8 +2,6 @@
 using ImGuiNET;
 using PvpStats.Helpers;
 using PvpStats.Types.Match;
-using PvpStats.Windows.Detail;
-using System;
 using System.Collections.Generic;
 
 namespace PvpStats.Windows.List;
@@ -28,13 +26,6 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
     }
 
     public override void DrawListItem(CrystallineConflictMatch item) {
-        //ImGui.TableNextColumn();
-        //if (ImGui.Selectable($"{item.DutyStartTime}###{item.Id}", false, ImGuiSelectableFlags.SpanAllColumns)) {
-        //    //select stuff
-        //    //SelectedRow = item;
-        //    _plugin.Log.Debug($"{item.DutyStartTime.ToString()} selected!");
-        //}
-        //ImGui.TableNextColumn();
         ImGui.Text($"{item.DutyStartTime.ToString("MM/dd/yyyy HH:mm")}");
         ImGui.TableNextColumn();
         ImGui.Text($"{MatchHelper.GetArenaName(item.Arena)}");
@@ -66,34 +57,35 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         //#else
         //        DataModel = _plugin.Storage.GetCCMatches().Query().Where(m => !m.IsDeleted && m.IsCompleted).OrderByDescending(m => m.DutyStartTime).ToList();
         //#endif
-
     }
 
     public override void OpenItemDetail(CrystallineConflictMatch item) {
         _plugin.DataQueue.QueueDataOperation(() => {
-            _plugin.Log.Debug($"Opening item detail for...{item.DutyStartTime}");
-            var itemDetail = new CrystallineConflictMatchDetail(_plugin, item);
-            itemDetail.IsOpen = true;
-            try {
-                _plugin.WindowManager.AddWindow(itemDetail);
-            } catch(ArgumentException) {
-                //attempt to open existing window
-                _plugin.WindowManager.OpenMatchDetailsWindow(item.Id);
-            }
+            _plugin.WindowManager.OpenMatchDetailsWindow(item);
+            //_plugin.Log.Debug($"Opening item detail for...{item.DutyStartTime}");
+            //var itemDetail = new CrystallineConflictMatchDetail(_plugin, item);
+            //itemDetail.IsOpen = true;
+            //try {
+            //    _plugin.WindowManager.AddWindow(itemDetail);
+            //} catch(ArgumentException) {
+            //    //attempt to open existing window
+            //    _plugin.WindowManager.OpenMatchDetailsWindow(item.Id);
+            //}
         });
     }
 
     public override void OpenFullEditDetail(CrystallineConflictMatch item) {
         _plugin.DataQueue.QueueDataOperation(() => {
-            _plugin.Log.Debug($"Opening full edit details for...{item.Id}");
-            var fullEditDetail = new FullEditDetail<CrystallineConflictMatch>(_plugin, item);
-            fullEditDetail.IsOpen = true;
-            try {
-                _plugin.WindowManager.AddWindow(fullEditDetail);
-            } catch(ArgumentException) {
-                //attempt to open existing window
-                _plugin.WindowManager.OpenFullEditWindow(item.Id);
-            }
+            _plugin.WindowManager.OpenFullEditWindow(item);
+            //_plugin.Log.Debug($"Opening full edit details for...{item.Id}");
+            //var fullEditDetail = new FullEditDetail<CrystallineConflictMatch>(_plugin, item);
+            //fullEditDetail.IsOpen = true;
+            //try {
+            //    _plugin.WindowManager.AddWindow(fullEditDetail);
+            //} catch(ArgumentException) {
+            //    //attempt to open existing window
+            //    _plugin.WindowManager.OpenFullEditWindow(item.Id);
+            //}
         });
     }
 }

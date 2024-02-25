@@ -4,10 +4,8 @@ using ImGuiNET;
 using LiteDB;
 using Newtonsoft.Json;
 using PvpStats.Types.Match;
-using System;
 using System.IO;
 using System.Numerics;
-using System.Reflection;
 
 namespace PvpStats.Windows.Detail;
 internal class FullEditDetail<T> : Window {
@@ -50,6 +48,7 @@ internal class FullEditDetail<T> : Window {
             _plugin.DataQueue.QueueDataOperation(() => {
                 var returnValue = LiteDB.JsonSerializer.Deserialize(_dataString);
                 var x = BsonMapper.Global.Deserialize<CrystallineConflictMatch>(returnValue);
+                //make this generic for type
                 _plugin.Storage.UpdateCCMatch(x);
             });
             //using(var reader = new StreamReader(_dataString)) {
@@ -64,32 +63,32 @@ internal class FullEditDetail<T> : Window {
         }
     }
 
-    private void DrawProperty(PropertyInfo prop) {
-        var data = prop.GetValue(_dataModel);
-        string? stringData = "";
+    //private void DrawProperty(PropertyInfo prop) {
+    //    var data = prop.GetValue(_dataModel);
+    //    string? stringData = "";
 
-        //BsonMapper.Global.ToDocument(typeof(T), _dataModel).ToString();
+    //    //BsonMapper.Global.ToDocument(typeof(T), _dataModel).ToString();
 
-        switch(prop.PropertyType) {
-            case Type when prop.PropertyType == typeof(string):
-                stringData = data as string;
-                ImGui.InputText(prop.Name, ref stringData, 999, ImGuiInputTextFlags.None);
-                break;
-            case Type numType when prop.PropertyType.IsAssignableFrom(typeof(int)):
-                //string? s = data as string;
-                stringData = data.ToString();
-                if(ImGui.InputText(prop.Name, ref stringData, 999, ImGuiInputTextFlags.CharsDecimal)) {
-                    //tryparse
+    //    switch(prop.PropertyType) {
+    //        case Type when prop.PropertyType == typeof(string):
+    //            stringData = data as string;
+    //            ImGui.InputText(prop.Name, ref stringData, 999, ImGuiInputTextFlags.None);
+    //            break;
+    //        case Type numType when prop.PropertyType.IsAssignableFrom(typeof(int)):
+    //            //string? s = data as string;
+    //            stringData = data.ToString();
+    //            if(ImGui.InputText(prop.Name, ref stringData, 999, ImGuiInputTextFlags.CharsDecimal)) {
+    //                //tryparse
 
-                }
-                break;
+    //            }
+    //            break;
 
-            default:
-                break;
-        }
+    //        default:
+    //            break;
+    //    }
 
-        if(prop.PropertyType == typeof(string)) {
+    //    if(prop.PropertyType == typeof(string)) {
 
-        }
-    }
+    //    }
+    //}
 }
