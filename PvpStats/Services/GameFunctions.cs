@@ -12,12 +12,12 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace PvpStats;
+namespace PvpStats.Services;
 
 internal unsafe class GameFunctions {
     [Signature("48 8D 05 ?? ?? ?? ?? 48 89 06 48 8D 9E ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 86 ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 86 ?? ?? ?? ?? 8D 7D ?? 48 8D 05", ScanType = ScanType.StaticAddress)]
     //[Signature("48 8D 0D ?? ?? ?? ?? BD ?? ?? ?? ?? E8 ?? ?? ?? ?? 84 C0 75", ScanType = ScanType.StaticAddress)]
-    private readonly IntPtr _ccDirector;
+    private readonly nint _ccDirector;
 
     //[Signature("BA ?? ?? ?? ?? E8 ?? ?? ?? ?? 41 8B 4D 08", Offset = 1)]
     //private uint _agentId;
@@ -47,7 +47,7 @@ internal unsafe class GameFunctions {
     //p3 = opcode (0x3ab as of patch 6.57)
     //p4 = dataPtr + 0x10 offset
     //p5 = data size (0x310)
-    private delegate ulong ProcessPvPResultsFunc00Delegate(IntPtr p1, uint p2, ushort p3, IntPtr p4, long p5);
+    private delegate ulong ProcessPvPResultsFunc00Delegate(nint p1, uint p2, ushort p3, nint p4, long p5);
 
     //ProcessZonePacketDown
     //40 53 56 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 44 24 ?? 8B F2
@@ -101,7 +101,7 @@ internal unsafe class GameFunctions {
         return GameMain.Instance()->CurrentContentFinderConditionId;
     }
 
-    internal IntPtr GetInstanceContentCrystallineConflictDirector() {
+    internal nint GetInstanceContentCrystallineConflictDirector() {
         //if (EventFramework.Instance() != null) {
         //    try {
         //        return SigScanner.Scan((IntPtr)EventFramework.Instance(), sizeof(EventFramework), "E8 ?? ?? ?? ?? 0F B6 98");
@@ -178,7 +178,7 @@ internal unsafe class GameFunctions {
         }
     }
 
-    public void PrintAllStrings(IntPtr ptr, int length) {
+    public void PrintAllStrings(nint ptr, int length) {
         using(UnmanagedMemoryStream memoryStream = new((byte*)ptr, length)) {
             using(var reader = new BinaryReader(memoryStream)) {
                 try {
@@ -194,7 +194,7 @@ internal unsafe class GameFunctions {
             }
         }
     }
-    public void PrintAllChars(IntPtr ptr, int length) {
+    public void PrintAllChars(nint ptr, int length) {
         var bytes = new ReadOnlySpan<byte>((void*)ptr, length);
         PrintAllChars(bytes.ToArray(), 8);
     }
@@ -246,7 +246,7 @@ internal unsafe class GameFunctions {
             _plugin.Log.Debug($"checking for value...{toFind.GetType().Name} offset: {offset}");
         }
 
-        using(UnmanagedMemoryStream memoryStream = new((byte*)IntPtr.Add(ptr, offset), length)) {
+        using(UnmanagedMemoryStream memoryStream = new((byte*)nint.Add(ptr, offset), length)) {
             using(var reader = new BinaryReader(memoryStream)) {
                 List<int> matchingCursors = new();
                 int cursor = 0;
@@ -277,7 +277,7 @@ internal unsafe class GameFunctions {
                                     if(output == stringInput[index]) {
                                         match += output;
                                         index++;
-                                        var byteCount = Encoding.UTF8.GetByteCount((new char[] { output }));
+                                        var byteCount = Encoding.UTF8.GetByteCount(new char[] { output });
                                         reader.ReadBytes(byteCount);
                                         if(match.Equals(toFind)) {
                                             matchingCursors.Add(cursor - Encoding.UTF8.GetByteCount(match.Remove(match.Length - 1)));
@@ -446,7 +446,7 @@ internal unsafe class GameFunctions {
 
     internal void ReadBytes(nint ptr, Type type, int length, int offset = 0) {
         //start low length
-        using(UnmanagedMemoryStream memoryStream = new((byte*)IntPtr.Add(ptr, offset), length)) {
+        using(UnmanagedMemoryStream memoryStream = new((byte*)nint.Add(ptr, offset), length)) {
             using(var reader = new BinaryReader(memoryStream)) {
                 int cursor = 0;
                 while(cursor < length) {
@@ -498,7 +498,7 @@ internal unsafe class GameFunctions {
         int size = Marshal.SizeOf(str);
         byte[] arr = new byte[size];
 
-        IntPtr ptr = IntPtr.Zero;
+        nint ptr = nint.Zero;
         try {
             ptr = Marshal.AllocHGlobal(size);
             Marshal.StructureToPtr(str, ptr, true);

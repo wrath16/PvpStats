@@ -88,7 +88,7 @@ internal class MatchManager : IDisposable {
             && opCode != 857 && opCode != 444 && opCode != 550 && opCode != 658 && opCode != 636 && opCode != 132 && opCode != 230 && opCode != 660
             && opCode != 565 && opCode != 258 && opCode != 390 && opCode != 221 && opCode != 167 && opCode != 849) {
             _plugin.Log.Verbose($"OPCODE: {opCode} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
-            _plugin.Functions.PrintAllChars(dataPtr, 0x2000);
+            //_plugin.Functions.PrintAllChars(dataPtr, 0x2000);
             //_plugin.Functions.PrintAllStrings(dataPtr, 0x500);
 
             if(qPopped) {
@@ -325,9 +325,14 @@ internal class MatchManager : IDisposable {
         if(!IsMatchInProgress()) {
             _plugin.Log.Warning("trying to process match results on no match!");
             return;
+            //fallback for case where you load into a game after the match has completed creating a new match
+        } else if((DateTime.Now - _currentMatch!.DutyStartTime).TotalSeconds < 10) {
+            _plugin.Log.Warning("double match detected.");
+            return;
         }
+
         CrystallineConflictPostMatch postMatch = new();
-        _currentMatch!.LocalPlayer ??= (PlayerAlias)_plugin.GameState.GetCurrentPlayer();
+        _currentMatch.LocalPlayer ??= (PlayerAlias)_plugin.GameState.GetCurrentPlayer();
         _currentMatch.DataCenter ??= _plugin.ClientState.LocalPlayer?.CurrentWorld.GameData?.DataCenter.Value?.Name.ToString();
 
         //set teams
