@@ -16,6 +16,7 @@ internal static class PlayerJobHelper {
         { Job.NIN, "Ninja" },
         { Job.SAM, "Samurai" },
         { Job.RPR, "Reaper" },
+        { Job.VPR, "Viper" },
         { Job.WHM, "White Mage" },
         { Job.SCH, "Scholar" },
         { Job.AST, "Astrologian" },
@@ -26,6 +27,7 @@ internal static class PlayerJobHelper {
         { Job.BLM, "Black Mage" },
         { Job.SMN, "Summoner" },
         { Job.RDM, "Red Mage" },
+        { Job.PCT, "Pictomancer" },
     };
 
     internal static Dictionary<JobRole, string> JobRoleName = new Dictionary<JobRole, string>() {
@@ -74,7 +76,7 @@ internal static class PlayerJobHelper {
     }
 
     internal static Job? GetJobFromName(string jobName) {
-        jobName = jobName.ToLower();
+        jobName = jobName.ToLower().Trim();
         foreach(var kvp in AbbreviationNameMap) {
             if(kvp.Value.Equals(jobName, StringComparison.OrdinalIgnoreCase)) {
                 return kvp.Key;
@@ -137,6 +139,7 @@ internal static class PlayerJobHelper {
             case Job.NIN:
             case Job.SAM:
             case Job.RPR:
+            case Job.VPR:
                 return JobSubRole.MELEE;
             case Job.BRD:
             case Job.MCH:
@@ -145,6 +148,7 @@ internal static class PlayerJobHelper {
             case Job.BLM:
             case Job.SMN:
             case Job.RDM:
+            case Job.PCT:
                 return JobSubRole.CASTER;
             default:
                 return null;

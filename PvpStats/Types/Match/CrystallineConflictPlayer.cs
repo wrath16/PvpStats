@@ -4,6 +4,8 @@ namespace PvpStats.Types.Match;
 public class CrystallineConflictPlayer {
     public PlayerAlias Alias { get; set; }
     public Job Job { get; set; }
+    //this is a fallback
+    public uint? ClassJobId { get; set; }
     public PlayerRank? Rank { get; set; }
     public CrystallineConflictTeamName? Team { get; set; }
     public ulong? LodestoneId { get; set; }

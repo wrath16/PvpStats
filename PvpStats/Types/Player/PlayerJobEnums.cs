@@ -14,12 +14,14 @@ public enum Job {
     NIN,
     SAM,
     RPR,
+    VPR,
     BRD,
     MCH,
     DNC,
     BLM,
     SMN,
-    RDM
+    RDM,
+    PCT
 }
 
 public enum JobRole {

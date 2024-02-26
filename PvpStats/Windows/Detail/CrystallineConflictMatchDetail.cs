@@ -226,16 +226,13 @@ internal class CrystallineConflictMatchDetail : Window {
                     ImGuiHelper.RightAlignCursor(playerName0);
                     ImGui.AlignTextToFramePadding();
                     ImGui.TextColored(playerColor0, playerName0);
-                    //if(ImGui.IsItemHovered()) {
-                    //    ImGui.BeginTooltip();
-                    //    ImGui.TextWrapped(firstTeam.Players[i].Alias.HomeWorld);
-                    //    ImGui.EndTooltip();
-                    //}
                     ImGuiHelper.WrappedTooltip(firstTeam.Players[i].Alias.HomeWorld);
                     ImGui.TableNextColumn();
-                    //string playerJob0 = firstTeam.Players[i].Job.ToString();
-                    //ImGui.Text(playerJob0);
-                    ImGui.Image(_plugin.WindowManager.JobIcons[firstTeam.Players[i].Job].ImGuiHandle, new Vector2(24, 24));
+                    try {
+                        ImGui.Image(_plugin.WindowManager.JobIcons[firstTeam.Players[i].Job].ImGuiHandle, new Vector2(24, 24));
+                    } catch(KeyNotFoundException) {
+                        //ImGui.Image(_plugin.WindowManager.JobIcons[firstTeam.Players[i].Job].ImGuiHandle, new Vector2(24, 24));
+                    }
                 } else {
                     ImGui.TableNextColumn();
                     ImGui.TableNextColumn();
@@ -244,9 +241,10 @@ internal class CrystallineConflictMatchDetail : Window {
 
                 if(i < secondTeam.Players.Count) {
                     ImGui.TableNextColumn();
-                    //string playerJob1 = secondTeam.Players[i].Job.ToString();
-                    //ImGui.Text(playerJob1);
-                    ImGui.Image(_plugin.WindowManager.JobIcons[secondTeam.Players[i].Job].ImGuiHandle, new Vector2(24, 24));
+                    try {
+                        ImGui.Image(_plugin.WindowManager.JobIcons[secondTeam.Players[i].Job].ImGuiHandle, new Vector2(24, 24));
+                    } catch(KeyNotFoundException) {
+                    }
                     ImGui.TableNextColumn();
                     var playerColor1 = _dataModel.LocalPlayerTeam is not null && secondTeam.TeamName == _dataModel.LocalPlayerTeam.TeamName ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
                     playerColor1 = _dataModel.LocalPlayer is not null && _dataModel.LocalPlayer.Equals(secondTeam.Players[i]) ? ImGuiColors.DalamudYellow : playerColor1;
