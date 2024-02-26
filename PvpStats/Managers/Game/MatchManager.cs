@@ -452,7 +452,7 @@ internal class MatchManager : IDisposable {
             var newPlayer = new CrystallineConflictPlayer() {
                 Alias = playerStats.Player,
                 Job = (Job)playerStats.Job!,
-                JobId = player.ClassJobId,
+                ClassJobId = player.ClassJobId,
                 Rank = playerStats.PlayerRank
             };
             //set player riser from intro
