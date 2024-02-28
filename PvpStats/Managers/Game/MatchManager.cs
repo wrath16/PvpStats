@@ -30,15 +30,12 @@ internal class MatchManager : IDisposable {
     private bool qPopped = false;
     private bool introStarted = false;
 
-    //p1 = data ref?
-    //p2 = targetId
-    //p3 = dataPtr no 0x10 offset
-    private delegate void CCMatchEndDelegate(IntPtr p1, uint p2, IntPtr p3);
-    [Signature("48 83 EC ?? 4D 8B C8 48 C7 44 24 20 ?? ?? ?? ?? 41 B8 ?? ?? ?? ?? E8 E5 0C 00 00", DetourName = nameof(CCMatchEndDetour))]
-    private readonly Hook<CCMatchEndDelegate> _ccMatchEndHook;
+    private delegate void CCMatchEnd1Delegate(IntPtr p1);
+    [Signature("E8 ?? ?? ?? ?? B0 ?? 48 8B 5C 24 ?? 48 8B 74 24 ?? 48 83 C4 ?? 5F C3 8B 4F ?? 48 8B D3 E8 ?? ?? ?? ?? 48 8B 5C 24", DetourName = nameof(CCMatchEnd1Detour))]
+    private readonly Hook<CCMatchEnd1Delegate> _ccMatchEndHook;
 
     private delegate IntPtr CCDirectorCtorDelegate(IntPtr p1, IntPtr p2, IntPtr p3);
-    [Signature("48 89 5C 24 08 48 89 6C 24 10 48 89 74 24 18 57 48 83 EC ?? 48 8B F1 E8 84 50 FF FF", DetourName = nameof(CCDirectorCtorDetour))]
+    [Signature("E8 ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 03 48 8D 8B ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 83 ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 83 ?? ?? ?? ?? 48 8D 05", DetourName = nameof(CCDirectorCtorDetour))]
     private readonly Hook<CCDirectorCtorDelegate> _ccDirectorCtorHook;
 
     public MatchManager(Plugin plugin) {
@@ -50,7 +47,8 @@ internal class MatchManager : IDisposable {
         _plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "PvPMKSIntroduction", OnPvPIntro);
 
         _plugin.InteropProvider.InitializeFromAttributes(this);
-        _plugin.Log.Debug($"match end address: 0x{_ccMatchEndHook!.Address.ToString("X2")}");
+        _plugin.Log.Debug($"cc director .ctor address: 0x{_ccDirectorCtorHook!.Address.ToString("X2")}");
+        _plugin.Log.Debug($"match end 1 address: 0x{_ccMatchEndHook!.Address.ToString("X2")}");
         _ccDirectorCtorHook.Enable();
         _ccMatchEndHook.Enable();
     }
@@ -66,7 +64,6 @@ internal class MatchManager : IDisposable {
     private unsafe IntPtr CCDirectorCtorDetour(IntPtr p1, IntPtr p2, IntPtr p3) {
         try {
             _plugin.Log.Debug("CC Director .ctor occurred!");
-
             var dutyId = _plugin.GameState.GetCurrentDutyId();
             var territoryId = _plugin.ClientState.TerritoryType;
             _plugin.Log.Debug($"Current duty: {dutyId}");
@@ -96,15 +93,13 @@ internal class MatchManager : IDisposable {
         return _ccDirectorCtorHook.Original(p1, p2, p3);
     }
 
-    private unsafe void CCMatchEndDetour(IntPtr p1, uint p2, IntPtr p3) {
+    private unsafe void CCMatchEnd1Detour(IntPtr p1) {
         _plugin.Log.Information("Match end detour occurred.");
-        var resultsPacket = *(CrystallineConflictResultsPacket*)(p3 + 0x10);
+        var resultsPacket = *(CrystallineConflictResultsPacket*)(p1 + 0x10);
         _plugin.DataQueue.QueueDataOperation(() => {
             ProcessMatchResults(resultsPacket);
         });
-        //_plugin.Functions.PrintAllChars(p3 + 0x10, 0x310);
-        //_plugin.Functions.CreateByteDump(p3 + 0x10, 0x310, "MatchResults");
-        _ccMatchEndHook.Original(p1, p2, p3);
+        _ccMatchEndHook.Original(p1);
 
     }
 
@@ -226,45 +221,7 @@ internal class MatchManager : IDisposable {
 
     private void OnTerritoryChanged(ushort territoryId) {
         var dutyId = _plugin.GameState.GetCurrentDutyId();
-        //var duty = _plugin.DataManager.GetExcelSheet<ContentFinderCondition>()?.GetRow(dutyId);
         _plugin.Log.Debug($"Territory changed: {territoryId}, Current duty: {dutyId}");
-        //_plugin.Log.Debug($"Current content type: {_plugin.GameState.GetContentType()}");
-
-        //if(MatchHelper.IsCrystallineConflictTerritory(territoryId)) {
-        //    _plugin.DataQueue.QueueDataOperation(() => {
-        //        //pickup last match
-        //        var lastMatch = _plugin.Storage.GetCCMatches().Query().ToList().LastOrDefault();
-        //        if(lastMatch != null && !lastMatch.IsCompleted && (DateTime.Now - lastMatch.DutyStartTime).TotalMinutes <= 10) {
-        //            _plugin.Log.Information($"restoring last match...");
-        //            _currentMatch = lastMatch;
-        //        } else {
-        //            //sometimes client state is unavailable at this time
-        //            _currentMatch = new() {
-        //                DutyId = dutyId,
-        //                TerritoryId = territoryId,
-        //                Arena = MatchHelper.CrystallineConflictMapLookup[territoryId],
-        //                MatchType = MatchHelper.GetMatchType(dutyId),
-        //            };
-        //            _plugin.Log.Information($"starting new match on {_currentMatch.Arena}");
-        //            _plugin.Storage.AddCCMatch(_currentMatch);
-        //        }
-
-        //    });
-        //} else {
-        //    if(IsMatchInProgress()) {
-        //        _plugin.DataQueue.QueueDataOperation(() => {
-        //            //_plugin.Log.Debug("Opcodes:");
-        //            //foreach (var opcode in _opCodeCount.OrderByDescending(x => x.Value)) {
-        //            //    _plugin.Log.Debug($"opcode {opcode.Key}: {opcode.Value}");
-        //            //}
-        //            //_opCodeCount = new();
-        //            _opCodeCount = _opCodeCount.OrderBy(x => x.Value).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-        //            _opcodeMatchCount++;
-        //            _currentMatch = null;
-        //            _plugin.WindowManager.Refresh();
-        //        });
-        //    }
-        //}
         if(IsMatchInProgress()) {
             _plugin.DataQueue.QueueDataOperation(() => {
                 _opcodeMatchCount++;
