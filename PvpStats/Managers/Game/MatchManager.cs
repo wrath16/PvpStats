@@ -37,6 +37,10 @@ internal class MatchManager : IDisposable {
     [Signature("48 83 EC ?? 4D 8B C8 48 C7 44 24 20 ?? ?? ?? ?? 41 B8 ?? ?? ?? ?? E8 E5 0C 00 00", DetourName = nameof(CCMatchEndDetour))]
     private readonly Hook<CCMatchEndDelegate> _ccMatchEndHook;
 
+    private delegate IntPtr CCDirectorCtorDelegate(IntPtr p1, IntPtr p2, IntPtr p3);
+    [Signature("48 89 5C 24 08 48 89 6C 24 10 48 89 74 24 18 57 48 83 EC ?? 48 8B F1 E8 84 50 FF FF", DetourName = nameof(CCDirectorCtorDetour))]
+    private readonly Hook<CCDirectorCtorDelegate> _ccDirectorCtorHook;
+
     public MatchManager(Plugin plugin) {
         _plugin = plugin;
 
@@ -47,6 +51,7 @@ internal class MatchManager : IDisposable {
 
         _plugin.InteropProvider.InitializeFromAttributes(this);
         _plugin.Log.Debug($"match end address: 0x{_ccMatchEndHook!.Address.ToString("X2")}");
+        _ccDirectorCtorHook.Enable();
         _ccMatchEndHook.Enable();
     }
 
@@ -55,6 +60,40 @@ internal class MatchManager : IDisposable {
         _plugin.GameNetwork.NetworkMessage -= OnNetworkMessage;
         _plugin.AddonLifecycle.UnregisterListener(OnPvPIntro);
         _ccMatchEndHook.Dispose();
+        _ccDirectorCtorHook.Dispose();
+    }
+
+    private unsafe IntPtr CCDirectorCtorDetour(IntPtr p1, IntPtr p2, IntPtr p3) {
+        try {
+            _plugin.Log.Debug("CC Director .ctor occurred!");
+
+            var dutyId = _plugin.GameState.GetCurrentDutyId();
+            var territoryId = _plugin.ClientState.TerritoryType;
+            _plugin.Log.Debug($"Current duty: {dutyId}");
+            _plugin.Log.Debug($"Current territory: {territoryId}");
+            _plugin.DataQueue.QueueDataOperation(() => {
+                //pickup last match
+                var lastMatch = _plugin.Storage.GetCCMatches().Query().ToList().LastOrDefault();
+                if(lastMatch != null && !lastMatch.IsCompleted && (DateTime.Now - lastMatch.DutyStartTime).TotalMinutes <= 10) {
+                    _plugin.Log.Information($"restoring last match...");
+                    _currentMatch = lastMatch;
+                } else {
+                    //sometimes client state is unavailable at this time
+                    _currentMatch = new() {
+                        DutyId = dutyId,
+                        TerritoryId = territoryId,
+                        Arena = MatchHelper.GetArena(territoryId),
+                        MatchType = MatchHelper.GetMatchType(dutyId),
+                    };
+                    _plugin.Log.Information($"starting new match on {_currentMatch.Arena}");
+                    _plugin.Storage.AddCCMatch(_currentMatch);
+                }
+            });
+        } catch(Exception e) {
+            //suppress all exceptions so game doesn't crash
+            _plugin.Log.Error($"Error in CC director ctor: {e.Message}");
+        }
+        return _ccDirectorCtorHook.Original(p1, p2, p3);
     }
 
     private unsafe void CCMatchEndDetour(IntPtr p1, uint p2, IntPtr p3) {
@@ -189,40 +228,49 @@ internal class MatchManager : IDisposable {
         var dutyId = _plugin.GameState.GetCurrentDutyId();
         //var duty = _plugin.DataManager.GetExcelSheet<ContentFinderCondition>()?.GetRow(dutyId);
         _plugin.Log.Debug($"Territory changed: {territoryId}, Current duty: {dutyId}");
-        if(MatchHelper.IsCrystallineConflictTerritory(territoryId)) {
-            _plugin.DataQueue.QueueDataOperation(() => {
-                //pickup last match
-                var lastMatch = _plugin.Storage.GetCCMatches().Query().ToList().LastOrDefault();
-                if(lastMatch != null && !lastMatch.IsCompleted && (DateTime.Now - lastMatch.DutyStartTime).TotalMinutes <= 10) {
-                    _plugin.Log.Information($"restoring last match...");
-                    _currentMatch = lastMatch;
-                } else {
-                    //sometimes client state is unavailable at this time
-                    _currentMatch = new() {
-                        DutyId = dutyId,
-                        TerritoryId = territoryId,
-                        Arena = MatchHelper.CrystallineConflictMapLookup[territoryId],
-                        MatchType = MatchHelper.GetMatchType(dutyId),
-                    };
-                    _plugin.Log.Information($"starting new match on {_currentMatch.Arena}");
-                    _plugin.Storage.AddCCMatch(_currentMatch);
-                }
+        //_plugin.Log.Debug($"Current content type: {_plugin.GameState.GetContentType()}");
 
+        //if(MatchHelper.IsCrystallineConflictTerritory(territoryId)) {
+        //    _plugin.DataQueue.QueueDataOperation(() => {
+        //        //pickup last match
+        //        var lastMatch = _plugin.Storage.GetCCMatches().Query().ToList().LastOrDefault();
+        //        if(lastMatch != null && !lastMatch.IsCompleted && (DateTime.Now - lastMatch.DutyStartTime).TotalMinutes <= 10) {
+        //            _plugin.Log.Information($"restoring last match...");
+        //            _currentMatch = lastMatch;
+        //        } else {
+        //            //sometimes client state is unavailable at this time
+        //            _currentMatch = new() {
+        //                DutyId = dutyId,
+        //                TerritoryId = territoryId,
+        //                Arena = MatchHelper.CrystallineConflictMapLookup[territoryId],
+        //                MatchType = MatchHelper.GetMatchType(dutyId),
+        //            };
+        //            _plugin.Log.Information($"starting new match on {_currentMatch.Arena}");
+        //            _plugin.Storage.AddCCMatch(_currentMatch);
+        //        }
+
+        //    });
+        //} else {
+        //    if(IsMatchInProgress()) {
+        //        _plugin.DataQueue.QueueDataOperation(() => {
+        //            //_plugin.Log.Debug("Opcodes:");
+        //            //foreach (var opcode in _opCodeCount.OrderByDescending(x => x.Value)) {
+        //            //    _plugin.Log.Debug($"opcode {opcode.Key}: {opcode.Value}");
+        //            //}
+        //            //_opCodeCount = new();
+        //            _opCodeCount = _opCodeCount.OrderBy(x => x.Value).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        //            _opcodeMatchCount++;
+        //            _currentMatch = null;
+        //            _plugin.WindowManager.Refresh();
+        //        });
+        //    }
+        //}
+        if(IsMatchInProgress()) {
+            _plugin.DataQueue.QueueDataOperation(() => {
+                _opcodeMatchCount++;
+                _currentMatch = null;
+                _plugin.WindowManager.Refresh();
             });
-        } else {
-            if(IsMatchInProgress()) {
-                _plugin.DataQueue.QueueDataOperation(() => {
-                    //_plugin.Log.Debug("Opcodes:");
-                    //foreach (var opcode in _opCodeCount.OrderByDescending(x => x.Value)) {
-                    //    _plugin.Log.Debug($"opcode {opcode.Key}: {opcode.Value}");
-                    //}
-                    //_opCodeCount = new();
-                    _opCodeCount = _opCodeCount.OrderBy(x => x.Value).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-                    _opcodeMatchCount++;
-                    _currentMatch = null;
-                    _plugin.WindowManager.Refresh();
-                });
-            }
         }
     }
 
@@ -451,7 +499,7 @@ internal class MatchManager : IDisposable {
             var playerTeam = playerStats.Team == CrystallineConflictTeamName.Astra ? teamAstra : teamUmbra;
             var newPlayer = new CrystallineConflictPlayer() {
                 Alias = playerStats.Player,
-                Job = (Job)playerStats.Job!,
+                Job = (Job)playerStats.Job,
                 ClassJobId = player.ClassJobId,
                 Rank = playerStats.PlayerRank
             };
@@ -506,9 +554,31 @@ internal class MatchManager : IDisposable {
             postMatch.MatchWinner = CrystallineConflictTeamName.Unknown;
         }
         if(_currentMatch.IsSpectated) {
-            postMatch.MatchWinner = resultsPacket.Result == 1 ? CrystallineConflictTeamName.Astra : CrystallineConflictTeamName.Umbra;
+            switch(resultsPacket.Result) {
+                case 1:
+                    postMatch.MatchWinner = CrystallineConflictTeamName.Astra;
+                    break;
+                case 2:
+                    postMatch.MatchWinner = CrystallineConflictTeamName.Umbra;
+                    break;
+                default:
+                    _plugin.Log.Warning("Unable to determine winner...draw?");
+                    postMatch.MatchWinner = CrystallineConflictTeamName.Unknown;
+                    break;
+            }
         } else {
-            postMatch.MatchWinner = resultsPacket.Result == 1 ? _currentMatch.LocalPlayerTeam!.TeamName : _currentMatch.Teams.First(x => x.Value.TeamName != _currentMatch.LocalPlayerTeam!.TeamName).Value.TeamName;
+            switch(resultsPacket.Result) {
+                case 1:
+                    postMatch.MatchWinner = _currentMatch.LocalPlayerTeam!.TeamName;
+                    break;
+                case 2:
+                    postMatch.MatchWinner = _currentMatch.Teams.First(x => x.Value.TeamName != _currentMatch.LocalPlayerTeam!.TeamName).Value.TeamName;
+                    break;
+                default:
+                    _plugin.Log.Warning("Unable to determine winner...draw?");
+                    postMatch.MatchWinner = CrystallineConflictTeamName.Unknown;
+                    break;
+            }
         }
         _currentMatch.MatchWinner = postMatch.MatchWinner;
 

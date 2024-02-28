@@ -27,6 +27,14 @@ public static class MatchHelper {
         { ArenaTier.Crystal, "crystal" }
     };
 
+    public static CrystallineConflictMap? GetArena(uint territoryId) {
+        if(CrystallineConflictMapLookup.ContainsKey(territoryId)) {
+            return CrystallineConflictMapLookup[territoryId];
+        } else {
+            return null;
+        }
+    }
+
     public static CrystallineConflictMatchType GetMatchType(uint dutyId) {
         switch(dutyId) {
             case 835: //palaistra
@@ -57,6 +65,7 @@ public static class MatchHelper {
                 return CrystallineConflictMatchType.Unknown;
         }
     }
+
     public static bool IsCrystallineConflictTerritory(uint territoryId) {
         return CrystallineConflictMapLookup.ContainsKey(territoryId);
     }

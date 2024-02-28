@@ -122,7 +122,7 @@ internal static class PlayerJobHelper {
         }
     }
 
-    internal static JobSubRole? GetSubRoleFromJob(Job job) {
+    internal static JobSubRole? GetSubRoleFromJob(Job? job) {
         switch(job) {
             case Job.PLD:
             case Job.WAR:

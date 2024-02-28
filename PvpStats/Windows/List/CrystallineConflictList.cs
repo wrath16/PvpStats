@@ -28,7 +28,9 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
     public override void DrawListItem(CrystallineConflictMatch item) {
         ImGui.Text($"{item.DutyStartTime.ToString("MM/dd/yyyy HH:mm")}");
         ImGui.TableNextColumn();
-        ImGui.Text($"{MatchHelper.GetArenaName(item.Arena)}");
+        if(item.Arena != null) {
+            ImGui.Text($"{MatchHelper.GetArenaName((CrystallineConflictMap)item.Arena)}");
+        }
         ImGui.TableNextColumn();
         ImGui.Text($"{item.MatchType}");
         ImGui.TableNextColumn();

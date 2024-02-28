@@ -65,7 +65,8 @@ internal class MainWindow : Window {
                     break;
                 case Type _ when filter.GetType() == typeof(ArenaFilter):
                     var arenaFilter = (ArenaFilter)filter;
-                    matches = matches.Where(x => arenaFilter.FilterState[x.Arena]).ToList();
+                    //include unknown maps under all
+                    matches = matches.Where(x => (x.Arena == null && arenaFilter.AllSelected) || arenaFilter.FilterState[(CrystallineConflictMap)x.Arena!]).ToList();
                     _plugin.Configuration.MatchWindowFilters.ArenaFilter = arenaFilter;
                     break;
                 case Type _ when filter.GetType() == typeof(TimeFilter):

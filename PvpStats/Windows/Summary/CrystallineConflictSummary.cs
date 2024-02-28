@@ -102,19 +102,23 @@ internal class CrystallineConflictSummary {
         });
         foreach(var match in matches) {
             if(match.LocalPlayerTeamMember != null) {
-                addJobStat(jobStats, match.LocalPlayerTeamMember.Job, match.IsWin);
+                if(match.LocalPlayerTeamMember.Job != null) {
+                    addJobStat(jobStats, (Job)match.LocalPlayerTeamMember.Job, match.IsWin);
+                }
                 foreach(var team in match.Teams) {
                     if(team.Key == match.LocalPlayerTeam?.TeamName) {
                         foreach(var player in team.Value.Players) {
-                            if(!player.Alias.Equals(match.LocalPlayer)) {
-                                addJobStat(allyJobStats, player.Job, match.IsWin);
-                                addPlayerStat(teammateStats, player.Alias, player.Job, match.IsWin);
+                            if(!player.Alias.Equals(match.LocalPlayer) && player.Job != null) {
+                                addJobStat(allyJobStats, (Job)player.Job, match.IsWin);
+                                addPlayerStat(teammateStats, player.Alias, (Job)player.Job, match.IsWin);
                             }
                         }
                     } else {
                         foreach(var player in team.Value.Players) {
-                            addJobStat(enemyJobStats, player.Job, match.IsWin);
-                            addPlayerStat(enemyStats, player.Alias, player.Job, match.IsWin);
+                            if(player.Job != null) {
+                                addJobStat(enemyJobStats, (Job)player.Job, match.IsWin);
+                                addPlayerStat(enemyStats, player.Alias, (Job)player.Job, match.IsWin);
+                            }
                         }
                     }
                 }

@@ -5,6 +5,7 @@ using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using PvpStats.Helpers;
 using PvpStats.Types.Match;
+using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -130,7 +131,9 @@ internal class CrystallineConflictMatchDetail : Window {
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
         //ImGui.Indent();
-        ImGui.Text($"{MatchHelper.GetArenaName(_dataModel.Arena)}");
+        if(_dataModel.Arena != null) {
+            ImGui.Text($"{MatchHelper.GetArenaName((CrystallineConflictMap)_dataModel.Arena)}");
+        }
         ImGui.TableNextColumn();
         var dutyStartTime = _dataModel.DutyStartTime.ToString();
         ImGuiHelper.RightAlignCursor(dutyStartTime);
@@ -211,27 +214,26 @@ internal class CrystallineConflictMatchDetail : Window {
 
             for(int i = 0; i < maxSize; i++) {
                 if(i < firstTeam.Players.Count) {
+                    var player0 = firstTeam.Players[i];
                     ImGui.TableNextColumn();
-                    string rank0 = firstTeam.Players[i].Rank != null && firstTeam.Players[i].Rank!.Tier != ArenaTier.None ? firstTeam.Players[i].Rank!.ToString() : "";
+                    string rank0 = player0.Rank != null && player0.Rank!.Tier != ArenaTier.None ? player0.Rank!.ToString() : "";
                     ImGuiHelper.RightAlignCursor(rank0);
                     ImGui.AlignTextToFramePadding();
                     ImGui.Text(rank0);
                     ImGui.TableNextColumn();
                     var playerColor0 = _dataModel.LocalPlayerTeam is not null && firstTeam.TeamName == _dataModel.LocalPlayerTeam.TeamName ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
-                    playerColor0 = _dataModel.LocalPlayer is not null && _dataModel.LocalPlayer.Equals(firstTeam.Players[i]) ? ImGuiColors.DalamudYellow : playerColor0;
+                    playerColor0 = _dataModel.LocalPlayer is not null && _dataModel.LocalPlayer.Equals(player0) ? ImGuiColors.DalamudYellow : playerColor0;
                     if(isSpectated) {
                         playerColor0 = firstTeam.TeamName == CrystallineConflictTeamName.Astra ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
                     }
-                    string playerName0 = firstTeam.Players[i].Alias.Name;
+                    string playerName0 = player0.Alias.Name;
                     ImGuiHelper.RightAlignCursor(playerName0);
                     ImGui.AlignTextToFramePadding();
                     ImGui.TextColored(playerColor0, playerName0);
-                    ImGuiHelper.WrappedTooltip(firstTeam.Players[i].Alias.HomeWorld);
+                    ImGuiHelper.WrappedTooltip(player0.Alias.HomeWorld);
                     ImGui.TableNextColumn();
-                    try {
-                        ImGui.Image(_plugin.WindowManager.JobIcons[firstTeam.Players[i].Job].ImGuiHandle, new Vector2(24, 24));
-                    } catch(KeyNotFoundException) {
-                        //ImGui.Image(_plugin.WindowManager.JobIcons[firstTeam.Players[i].Job].ImGuiHandle, new Vector2(24, 24));
+                    if(player0.Job != null && _plugin.WindowManager.JobIcons.ContainsKey((Job)player0.Job)) {
+                        ImGui.Image(_plugin.WindowManager.JobIcons[(Job)player0.Job].ImGuiHandle, new Vector2(24, 24));
                     }
                 } else {
                     ImGui.TableNextColumn();
@@ -240,14 +242,14 @@ internal class CrystallineConflictMatchDetail : Window {
                 }
 
                 if(i < secondTeam.Players.Count) {
+                    var player1 = secondTeam.Players[i];
                     ImGui.TableNextColumn();
-                    try {
-                        ImGui.Image(_plugin.WindowManager.JobIcons[secondTeam.Players[i].Job].ImGuiHandle, new Vector2(24, 24));
-                    } catch(KeyNotFoundException) {
+                    if(player1.Job != null && _plugin.WindowManager.JobIcons.ContainsKey((Job)player1.Job)) {
+                        ImGui.Image(_plugin.WindowManager.JobIcons[(Job)player1.Job].ImGuiHandle, new Vector2(24, 24));
                     }
                     ImGui.TableNextColumn();
                     var playerColor1 = _dataModel.LocalPlayerTeam is not null && secondTeam.TeamName == _dataModel.LocalPlayerTeam.TeamName ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
-                    playerColor1 = _dataModel.LocalPlayer is not null && _dataModel.LocalPlayer.Equals(secondTeam.Players[i]) ? ImGuiColors.DalamudYellow : playerColor1;
+                    playerColor1 = _dataModel.LocalPlayer is not null && _dataModel.LocalPlayer.Equals(player1) ? ImGuiColors.DalamudYellow : playerColor1;
                     if(isSpectated) {
                         playerColor1 = secondTeam.TeamName == CrystallineConflictTeamName.Astra ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
                     }
@@ -255,7 +257,7 @@ internal class CrystallineConflictMatchDetail : Window {
                     ImGui.TextColored(playerColor1, $"     {playerName1}");
                     ImGuiHelper.WrappedTooltip(secondTeam.Players[i].Alias.HomeWorld);
                     ImGui.TableNextColumn();
-                    string rank1 = secondTeam.Players[i].Rank != null && secondTeam.Players[i].Rank?.Tier != ArenaTier.None ? secondTeam.Players[i].Rank!.ToString() : "";
+                    string rank1 = player1.Rank != null && player1.Rank?.Tier != ArenaTier.None ? player1.Rank!.ToString() : "";
                     ImGui.Text(rank1);
                 } else {
                     ImGui.TableNextColumn();

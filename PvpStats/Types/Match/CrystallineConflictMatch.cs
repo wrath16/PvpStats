@@ -24,7 +24,7 @@ public class CrystallineConflictMatch {
     public CrystallineConflictMatchType MatchType { get; set; }
     //should this be id only?
     //public PvpDuty Duty { get; set; }
-    public CrystallineConflictMap Arena { get; set; }
+    public CrystallineConflictMap? Arena { get; set; }
     public uint DutyId { get; set; }
     public uint TerritoryId { get; set; }
 
