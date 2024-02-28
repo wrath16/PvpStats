@@ -24,11 +24,11 @@ internal class MatchManager : IDisposable {
     private Plugin _plugin;
     private CrystallineConflictMatch? _currentMatch;
 
+    //debug variables
     internal Dictionary<ushort, uint> _opCodeCount = new();
     internal int _opcodeMatchCount = 0;
     private DateTime _lastSortTime;
-    private bool qPopped = false;
-    private bool introStarted = false;
+    private bool _qPopped = false;
 
     private delegate void CCMatchEnd1Delegate(IntPtr p1);
     [Signature("E8 ?? ?? ?? ?? B0 ?? 48 8B 5C 24 ?? 48 8B 74 24 ?? 48 83 C4 ?? 5F C3 8B 4F ?? 48 8B D3 E8 ?? ?? ?? ?? 48 8B 5C 24", DetourName = nameof(CCMatchEnd1Detour))]
@@ -42,8 +42,9 @@ internal class MatchManager : IDisposable {
         _plugin = plugin;
 
         _plugin.ClientState.TerritoryChanged += OnTerritoryChanged;
+#if DEBUG
         _plugin.GameNetwork.NetworkMessage += OnNetworkMessage;
-
+#endif
         _plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "PvPMKSIntroduction", OnPvPIntro);
 
         _plugin.InteropProvider.InitializeFromAttributes(this);
@@ -55,7 +56,9 @@ internal class MatchManager : IDisposable {
 
     public void Dispose() {
         _plugin.ClientState.TerritoryChanged -= OnTerritoryChanged;
+#if DEBUG
         _plugin.GameNetwork.NetworkMessage -= OnNetworkMessage;
+#endif
         _plugin.AddonLifecycle.UnregisterListener(OnPvPIntro);
         _ccMatchEndHook.Dispose();
         _ccDirectorCtorHook.Dispose();
@@ -87,7 +90,7 @@ internal class MatchManager : IDisposable {
                 }
             });
         } catch(Exception e) {
-            //suppress all exceptions so game doesn't crash
+            //suppress all exceptions so game doesn't crash if something fails here
             _plugin.Log.Error($"Error in CC director ctor: {e.Message}");
         }
         return _ccDirectorCtorHook.Original(p1, p2, p3);
@@ -100,13 +103,9 @@ internal class MatchManager : IDisposable {
             ProcessMatchResults(resultsPacket);
         });
         _ccMatchEndHook.Original(p1);
-
     }
 
     private unsafe void OnNetworkMessage(nint dataPtr, ushort opCode, uint sourceActorId, uint targetActorId, NetworkMessageDirection direction) {
-        //if (!IsMatchInProgress()) {
-        //    return;
-        //}
         if(direction != NetworkMessageDirection.ZoneDown) {
             return;
         }
@@ -125,7 +124,7 @@ internal class MatchManager : IDisposable {
             _plugin.Functions.PrintAllChars(dataPtr, 0x2000, 8);
             //_plugin.Functions.PrintAllStrings(dataPtr, 0x500);
 
-            if(qPopped) {
+            if(_qPopped) {
                 //_plugin.Functions.CreateByteDump(dataPtr, 0x1000, opCode.ToString());
                 //_plugin.Functions.PrintAllChars(dataPtr, 0x2000);
             }
@@ -138,7 +137,7 @@ internal class MatchManager : IDisposable {
 
         if(opCode == 556) {
             _plugin.Log.Debug("q popped");
-            qPopped = true;
+            _qPopped = true;
         }
 
         ////643 has promise...
@@ -150,73 +149,6 @@ internal class MatchManager : IDisposable {
             _lastSortTime = DateTime.Now;
             _opCodeCount = _opCodeCount.OrderBy(x => x.Value).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         }
-
-        //start duty
-        //if (opCode == 593) {
-        //    _plugin.Log.Debug("duty...started?");
-        //}
-
-        //end duty
-        //if (opCode == 939) {
-        //    //_plugin.Functions.FindValue<int>(0, dataPtr + 0x10, 0x310, 0, true);
-        //    //_plugin.Functions.FindValue<short>(0, dataPtr + 0x10, 0x310, 0, true);
-        //    //_plugin.Functions.FindValue<long>(0, dataPtr, 0x310, 0, true);
-        //    //_plugin.Functions.FindValue<byte>(0, dataPtr + 0x10, 0x310, 0, true);
-        //    //_plugin.Functions.FindValue<float>(0, dataPtr, 0x300, 0, true);
-        //    //_plugin.Functions.FindValue<double>(0, dataPtr, 0x300, 0, true);
-        //    //_plugin.Functions.FindValue<string>("", dataPtr, 0x310, 0, true);
-        //    //_plugin.Functions.ReadBytes(dataPtr, typeof(byte), 0x2000);
-        //    //_plugin.Functions.ReadBytes(dataPtr, typeof(short), 0x2000);
-        //    //_plugin.Functions.ReadBytes(dataPtr, typeof(int), 0x2000);
-
-        //    var clientStruct = (CrystallineConflictResultsPacket*)(dataPtr + 0x10);
-        //    string result = "";
-        //    switch(clientStruct->Result) {
-        //        case 1:
-        //            result = "victory";
-        //            break;
-        //        case 2:
-        //            result = "defeat";
-        //            break;
-        //        default:
-        //            result = "unknown";
-        //            break;
-        //    }
-        //    _plugin.Log.Debug($"RESULT: {result}");
-        //    _plugin.Log.Debug($"MATCH DURATION (s): {clientStruct->MatchLength}");
-        //    _plugin.Log.Debug($"ASTRA PROGRESS: {clientStruct->AstraProgress} UMBRA PROGRESS: {clientStruct->UmbraProgress}");
-        //    _plugin.Log.Debug(string.Format("{0,-25} {1,-15} {2,-6} {3,-5} {4,-15} {5,-8} {6,-8} {7,-8} {8,-15} {9,-15} {10,-15} {11,-15}", "NAME", "WORLD", "TEAM", "JOB", "TIER", "KILLS", "DEATHS", "ASSISTS", "DAMAGE DEALT", "DAMAGE TAKEN", "HP RESTORED", "TIME ON CRYSTAL"));
-
-        //    for (int i = 0; i < 10; i++) {
-        //        //var player = (CrystallineConflictResultsPacket.CrystallineConflictPlayer*)clientStruct->Player[i];
-        //        var player = clientStruct->PlayerSpan[i];
-
-        //        //missing player
-        //        if(player.ClassJobId == 0) {
-        //            continue;
-        //        }
-
-        //        //_plugin.Log.Debug($"{AtkNodeHelper.ReadString(player.PlayerName, 32)}");
-        //        //_plugin.Log.Debug($"WORLD: {player.WorldId}");
-        //        //_plugin.Log.Debug($"TEAM: {player.Team}");
-        //        //_plugin.Log.Debug($"JOB: {player.ClassJobId}");
-        //        //_plugin.Log.Debug($"KILLS: {player.Kills}");
-        //        //_plugin.Log.Debug($"DEATHS: {player.Deaths}");
-        //        //_plugin.Log.Debug($"ASSISTS: {player.Assists}");
-        //        //_plugin.Log.Debug($"DAMAGE DEALT: {player.DamageDealt}");
-        //        //_plugin.Log.Debug($"DAMAGE TAKEN: {player.DamageTaken}");
-        //        //_plugin.Log.Debug($"HP RESTORED: {player.HPRestored}");
-        //        //_plugin.Log.Debug($"TIME ON CRYSTAL: {player.TimeOnCrystal}");
-
-        //        _plugin.Log.Debug(string.Format("{0,-25} {1,-15} {2,-6} {3,-5} {4,-15} {5,-8} {6,-8} {7,-8} {8,-15} {9,-15} {10,-15} {11,-15}",
-        //            AtkNodeHelper.ReadString(player.PlayerName, 32), _plugin.DataManager.GetExcelSheet<World>().GetRow(player.WorldId).Name, player.Team == 0 ? "ASTRA" : "UMBRA",
-        //            _plugin.DataManager.GetExcelSheet<ClassJob>().GetRow(player.ClassJobId).Abbreviation,
-        //            _plugin.DataManager.GetExcelSheet<ColosseumMatchRank>().GetRow(player.ColosseumMatchRankId).Unknown0, player.Kills, player.Deaths, player.Assists, player.DamageDealt, player.DamageTaken, player.HPRestored, player.TimeOnCrystal));
-
-        //        //_plugin.Log.Debug($"PLAYER: {AtkNodeHelper.ReadString(player->PlayerName, 32)} JOB:{_plugin.DataManager.GetExcelSheet<ClassJob>().GetRow(player->ClassJobId).Abbreviation} " +
-        //        //    $"TEAM: {(player->Team == 0 ? "ASTRA" : "UMBRA")}");
-        //    }
-        //}
     }
 
     private void OnTerritoryChanged(ushort territoryId) {
@@ -231,14 +163,14 @@ internal class MatchManager : IDisposable {
         }
     }
 
-    //build team data
+    //extract player info from intro screen
     private unsafe void OnPvPIntro(AddonEvent type, AddonArgs args) {
         if(!IsMatchInProgress()) {
             _plugin.Log.Warning("no match in progress on pvp intro!");
             return;
         }
-        qPopped = false;
-        _plugin.Log.Debug("Pvp intro post setup!");
+        _qPopped = false;
+        _plugin.Log.Debug("Pvp intro post setup");
         var addon = (AtkUnitBase*)args.Addon;
         CrystallineConflictTeam team = new();
 
@@ -256,7 +188,6 @@ internal class MatchManager : IDisposable {
             if(offset >= addon->AtkValuesCount) {
                 break;
             }
-            //TODO account for abbreviated name settings...
             string player = AtkNodeService.ConvertAtkValueToString(addon->AtkValues[offset]);
             string world = AtkNodeService.ConvertAtkValueToString(addon->AtkValues[offset + 6]);
             string job = AtkNodeService.ConvertAtkValueToString(addon->AtkValues[offset + 5]);
@@ -316,55 +247,13 @@ internal class MatchManager : IDisposable {
 
         _plugin.DataQueue.QueueDataOperation(() => {
             foreach(var player in team.Players) {
-                _currentMatch.IntroPlayerInfo.Add(player.Alias, player);
+                _currentMatch!.IntroPlayerInfo.Add(player.Alias, player);
             }
 
-            _plugin.Storage.UpdateCCMatch(_currentMatch);
+            _plugin.Storage.UpdateCCMatch(_currentMatch!);
 
             _plugin.Log.Debug("");
         });
-    }
-
-    //returns true if all names successfully validated
-    private bool? ValidatePlayerAliases() {
-        if(!IsMatchInProgress()) {
-            return null;
-        }
-        bool allValidated = true;
-
-        foreach(var team in _currentMatch!.Teams) {
-            //if can't find player's team ignore team condition
-            bool? isPlayerTeam = _currentMatch!.LocalPlayerTeam?.TeamName is null ? null : team.Key == _currentMatch!.LocalPlayerTeam?.TeamName;
-            foreach(var player in team.Value.Players) {
-                //abbreviated name found
-                if(player.Alias.Name.Contains(".")) {
-                    //_plugin.Log.Debug($"Checking... {player.Alias.Name}");
-                    allValidated = allValidated && ValidatePlayerAgainstObjectTable(player, isPlayerTeam, true);
-                }
-            }
-        }
-        return allValidated;
-    }
-
-    //returns true if match found
-    private bool ValidatePlayerAgainstObjectTable(CrystallineConflictPlayer player, bool? isPartyMember = null, bool updateAlias = false) {
-        foreach(PlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
-            bool homeWorldMatch = player.Alias.HomeWorld.Equals(pc.HomeWorld.GameData.Name.ToString());
-            string translatedJobName = _plugin.Localization.TranslateDataTableEntry<ClassJob>(pc.ClassJob.GameData.Name.ToString(), "Name", ClientLanguage.English);
-            bool jobMatch = player.Job.Equals(PlayerJobHelper.GetJobFromName(translatedJobName));
-            bool isSelf = _plugin.ClientState.LocalPlayer.ObjectId == pc.ObjectId;
-            bool teamMatch = isPartyMember is null || (bool)isPartyMember && pc.StatusFlags.HasFlag(StatusFlags.PartyMember) || !(bool)isPartyMember && !pc.StatusFlags.HasFlag(StatusFlags.PartyMember);
-            //_plugin.Log.Debug($"Checking against... {pc.Name.ToString()} worldmatch: {homeWorldMatch} jobmatch: {jobMatch} teamMatch:{teamMatch}");
-            //_plugin.Log.Debug($"team null? {isPlayerTeam is null} player team? {isPlayerTeam} is p member? {pc.StatusFlags.HasFlag(StatusFlags.PartyMember)} isSelf? {isSelf}");
-            if(homeWorldMatch && jobMatch && (isSelf || teamMatch) && PlayerJobHelper.IsAbbreviatedAliasMatch(player.Alias, pc.Name.ToString())) {
-                _plugin.Log.Debug($"validated player: {player.Alias.Name} is {pc.Name.ToString()}");
-                if(updateAlias) {
-                    player.Alias.Name = pc.Name.ToString();
-                }
-                return true;
-            }
-        }
-        return false;
     }
 
     public bool IsMatchInProgress() {
@@ -456,7 +345,7 @@ internal class MatchManager : IDisposable {
             var playerTeam = playerStats.Team == CrystallineConflictTeamName.Astra ? teamAstra : teamUmbra;
             var newPlayer = new CrystallineConflictPlayer() {
                 Alias = playerStats.Player,
-                Job = (Job)playerStats.Job,
+                Job = playerStats.Job,
                 ClassJobId = player.ClassJobId,
                 Rank = playerStats.PlayerRank
             };
