@@ -97,7 +97,7 @@ internal class MatchManager : IDisposable {
     }
 
     private unsafe void CCMatchEnd1Detour(IntPtr p1) {
-        _plugin.Log.Information("Match end detour occurred.");
+        _plugin.Log.Debug("Match end detour occurred.");
         var resultsPacket = *(CrystallineConflictResultsPacket*)(p1 + 0x10);
         _plugin.DataQueue.QueueDataOperation(() => {
             ProcessMatchResults(resultsPacket);
@@ -249,9 +249,7 @@ internal class MatchManager : IDisposable {
             foreach(var player in team.Players) {
                 _currentMatch!.IntroPlayerInfo.Add(player.Alias, player);
             }
-
             _plugin.Storage.UpdateCCMatch(_currentMatch!);
-
             _plugin.Log.Debug("");
         });
     }
@@ -269,6 +267,8 @@ internal class MatchManager : IDisposable {
             _plugin.Log.Warning("double match detected.");
             return;
         }
+
+        _plugin.Log.Information("Match has ended.");
 
         CrystallineConflictPostMatch postMatch = new();
         _currentMatch.LocalPlayer ??= (PlayerAlias)_plugin.GameState.GetCurrentPlayer();
