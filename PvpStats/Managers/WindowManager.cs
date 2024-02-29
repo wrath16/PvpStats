@@ -17,7 +17,9 @@ internal class WindowManager : IDisposable {
     private WindowSystem WindowSystem;
     private Plugin _plugin;
     private MainWindow MainWindow;
+#if DEBUG
     private DebugWindow? DebugWindow;
+#endif
 
     internal readonly Dictionary<Job, IDalamudTextureWrap> JobIcons = new();
 
