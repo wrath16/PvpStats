@@ -50,31 +50,34 @@ internal abstract class FilteredList<T> {
     }
 
     public void Draw() {
-        ImGui.BeginChild("scrolling", new Vector2(0, -(25 + ImGui.GetStyle().ItemSpacing.Y) * ImGuiHelpers.GlobalScale), true);
-        ImGui.BeginTable($"##{GetHashCode()}-Table", Columns.Count, TableFlags);
-        //setup columns
-        foreach(var column in Columns) {
-            ImGui.TableSetupColumn(column.Name, column.Flags, column.Width);
-        }
-        ImGui.TableNextRow();
-        foreach(var item in CurrentPage) {
-            ImGui.TableNextColumn();
-            if(ImGui.Selectable($"##{item!.GetHashCode()}-selectable", false, ImGuiSelectableFlags.SpanAllColumns)) {
-                OpenItemDetail(item);
-            }
-#if DEBUG
-            if(ImGui.BeginPopupContextItem($"##{item!.GetHashCode()}--ContextMenu", ImGuiPopupFlags.MouseButtonRight)) {
-                if(ImGui.MenuItem($"Edit document##{item!.GetHashCode()}--FullEditContext")) {
-                    OpenFullEditDetail(item);
+        if(ImGui.BeginChild("scrolling", new Vector2(0, -(25 + ImGui.GetStyle().ItemSpacing.Y) * ImGuiHelpers.GlobalScale), true)) {
+            if(ImGui.BeginTable($"##{GetHashCode()}-Table", Columns.Count, TableFlags)) {
+                //setup columns
+                foreach(var column in Columns) {
+                    ImGui.TableSetupColumn(column.Name, column.Flags, column.Width);
                 }
-                ImGui.EndPopup();
-            }
+                ImGui.TableNextRow();
+                foreach(var item in CurrentPage) {
+                    ImGui.TableNextColumn();
+                    if(ImGui.Selectable($"##{item!.GetHashCode()}-selectable", false, ImGuiSelectableFlags.SpanAllColumns)) {
+                        OpenItemDetail(item);
+                    }
+#if DEBUG
+                    if(ImGui.BeginPopupContextItem($"##{item!.GetHashCode()}--ContextMenu", ImGuiPopupFlags.MouseButtonRight)) {
+                        if(ImGui.MenuItem($"Edit document##{item!.GetHashCode()}--FullEditContext")) {
+                            OpenFullEditDetail(item);
+                        }
+                        ImGui.EndPopup();
+                    }
 #endif
-            ImGui.SameLine();
-            DrawListItem(item);
+                    ImGui.SameLine();
+                    DrawListItem(item);
+                }
+                ImGui.EndTable();
+            }
+            ImGui.EndChild();
         }
-        ImGui.EndTable();
-        ImGui.EndChild();
+
         ImGui.Text("");
         if(PageNumber > 0) {
             ImGui.SameLine();
