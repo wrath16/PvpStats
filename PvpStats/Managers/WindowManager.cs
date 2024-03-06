@@ -17,6 +17,7 @@ internal class WindowManager : IDisposable {
     private WindowSystem WindowSystem;
     private Plugin _plugin;
     private MainWindow MainWindow;
+    private ConfigWindow ConfigWindow;
 #if DEBUG
     private DebugWindow? DebugWindow;
 #endif
@@ -36,7 +37,9 @@ internal class WindowManager : IDisposable {
         }
 
         MainWindow = new(plugin);
+        ConfigWindow = new(plugin);
         WindowSystem.AddWindow(MainWindow);
+        WindowSystem.AddWindow(ConfigWindow);
 
 #if DEBUG
         DebugWindow = new(plugin);
@@ -66,6 +69,10 @@ internal class WindowManager : IDisposable {
 
     internal void OpenMainWindow() {
         MainWindow.IsOpen = true;
+    }
+
+    internal void OpenConfigWindow() {
+        ConfigWindow.IsOpen = true;
     }
 
 #if DEBUG

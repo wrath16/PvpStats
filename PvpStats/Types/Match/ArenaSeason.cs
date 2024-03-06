@@ -53,7 +53,7 @@ internal class ArenaSeason {
         { 10, new ArenaSeason() {
             SeasonNumber = 10,
             StartDate = new DateTime(2024,1,16),
-            EndDate = DateTime.MaxValue,
+            EndDate = new DateTime(2024,3,19),
         } },
     };
 

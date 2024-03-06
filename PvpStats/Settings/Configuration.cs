@@ -9,6 +9,8 @@ public class Configuration : IPluginConfiguration {
     public static int CurrentVersion = 0;
     public int Version { get; set; } = CurrentVersion;
     public FilterConfiguration MatchWindowFilters { get; set; } = new();
+    public bool LeftPlayerTeam { get; set; } = false;
+    public bool AnchorTeamNames { get; set; } = true;
 
     [NonSerialized]
     private Plugin? _plugin;

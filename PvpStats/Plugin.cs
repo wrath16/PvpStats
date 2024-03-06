@@ -18,7 +18,7 @@ public sealed class Plugin : IDalamudPlugin {
 
     private const string CCStatsCommandName = "/ccstats";
     private const string DebugCommandName = "/pvpstatsdebug";
-    //private const string ConfigCommandName = "/pvpstatsconfig";
+    private const string ConfigCommandName = "/pvpstatsconfig";
 
     //Dalamud services
     internal DalamudPluginInterface PluginInterface { get; init; }
@@ -105,6 +105,9 @@ public sealed class Plugin : IDalamudPlugin {
             CommandManager.AddHandler(CCStatsCommandName, new CommandInfo(OnCommand) {
                 HelpMessage = "Opens Crystalline Conflict tracker."
             });
+            CommandManager.AddHandler(ConfigCommandName, new CommandInfo(OnConfigCommand) {
+                HelpMessage = "Opens config window."
+            });
 
 #if DEBUG
             CommandManager.AddHandler(DebugCommandName, new CommandInfo(OnDebugCommand) {
@@ -112,6 +115,7 @@ public sealed class Plugin : IDalamudPlugin {
             });
             DebugMode = true;
 #endif
+            PluginInterface.UiBuilder.OpenConfigUi += WindowManager.OpenConfigWindow;
 
             Log.Debug("PvP Stats has started.");
         } catch(Exception e) {
@@ -151,7 +155,7 @@ public sealed class Plugin : IDalamudPlugin {
     }
 
     private void OnConfigCommand(string command, string args) {
-        WindowManager.OpenMainWindow();
+        WindowManager.OpenConfigWindow();
     }
 
 #if DEBUG

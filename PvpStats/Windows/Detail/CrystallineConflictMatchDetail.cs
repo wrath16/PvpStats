@@ -108,6 +108,7 @@ internal class CrystallineConflictMatchDetail : Window {
                     });
                 }
             }
+            SortByColumn(SortableColumn.Name, ImGuiSortDirection.Ascending);
         }
     }
 
@@ -125,149 +126,156 @@ internal class CrystallineConflictMatchDetail : Window {
     }
 
     public override void Draw() {
-        ImGui.BeginTable("header", 2, ImGuiTableFlags.PadOuterX);
-        ImGui.TableSetupColumn("arena", ImGuiTableColumnFlags.WidthStretch);
-        ImGui.TableSetupColumn("time", ImGuiTableColumnFlags.WidthStretch);
-        ImGui.TableNextRow();
-        ImGui.TableNextColumn();
-        //ImGui.Indent();
-        if(_dataModel.Arena != null) {
-            ImGui.Text($"{MatchHelper.GetArenaName((CrystallineConflictMap)_dataModel.Arena)}");
+        if(ImGui.BeginTable("header", 2, ImGuiTableFlags.PadOuterX)) {
+            ImGui.TableSetupColumn("arena", ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableSetupColumn("time", ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+            //ImGui.Indent();
+            if(_dataModel.Arena != null) {
+                ImGui.Text($"{MatchHelper.GetArenaName((CrystallineConflictMap)_dataModel.Arena)}");
+            }
+            ImGui.TableNextColumn();
+            var dutyStartTime = _dataModel.DutyStartTime.ToString();
+            ImGuiHelper.RightAlignCursor(dutyStartTime);
+            ImGui.Text($"{dutyStartTime}");
+            ImGui.EndTable();
         }
-        ImGui.TableNextColumn();
-        var dutyStartTime = _dataModel.DutyStartTime.ToString();
-        ImGuiHelper.RightAlignCursor(dutyStartTime);
-        ImGui.Text($"{dutyStartTime}");
-        ImGui.EndTable();
 
-        ImGui.BeginTable("subheader", 3, ImGuiTableFlags.PadOuterX);
-        ImGui.TableSetupColumn("queue", ImGuiTableColumnFlags.WidthStretch);
-        ImGui.TableSetupColumn("result", ImGuiTableColumnFlags.WidthStretch);
-        ImGui.TableSetupColumn("duration", ImGuiTableColumnFlags.WidthStretch);
-        ImGui.TableNextRow();
-        ImGui.TableNextColumn();
-        ImGui.Text($"{_dataModel.MatchType}");
-        ImGui.TableNextColumn();
-        bool noWinner = _dataModel.MatchWinner is null;
-        bool isSpectated = _dataModel.LocalPlayerTeam is null;
-        bool isWin = _dataModel.MatchWinner == _dataModel.LocalPlayerTeam?.TeamName;
-        var color = ImGuiColors.DalamudWhite;
-        color = noWinner ? ImGuiColors.DalamudGrey : color;
-        string resultText = "";
-        if(isSpectated && _dataModel.MatchWinner is not null) {
-            color = _dataModel.MatchWinner == CrystallineConflictTeamName.Astra ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
-            resultText = MatchHelper.GetTeamName((CrystallineConflictTeamName)_dataModel.MatchWinner) + " WINS";
-        } else {
-            color = isWin ? ImGuiColors.HealerGreen : ImGuiColors.DalamudRed;
+        if(ImGui.BeginTable("subheader", 3, ImGuiTableFlags.PadOuterX)) {
+            ImGui.TableSetupColumn("queue", ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableSetupColumn("result", ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableSetupColumn("duration", ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+            ImGui.Text($"{_dataModel.MatchType}");
+            ImGui.TableNextColumn();
+            bool noWinner = _dataModel.MatchWinner is null;
+            bool isWin = _dataModel.MatchWinner == _dataModel.LocalPlayerTeam?.TeamName;
+            var color = ImGuiColors.DalamudWhite;
             color = noWinner ? ImGuiColors.DalamudGrey : color;
-            resultText = isWin ? "WIN" : "LOSS";
-            resultText = noWinner ? "UNKNOWN" : resultText;
+            string resultText = "";
+            if(_dataModel.IsSpectated && _dataModel.MatchWinner is not null) {
+                color = _dataModel.MatchWinner == CrystallineConflictTeamName.Astra ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
+                resultText = MatchHelper.GetTeamName((CrystallineConflictTeamName)_dataModel.MatchWinner) + " WINS";
+            } else {
+                color = isWin ? ImGuiColors.HealerGreen : ImGuiColors.DalamudRed;
+                color = noWinner ? ImGuiColors.DalamudGrey : color;
+                resultText = isWin ? "WIN" : "LOSS";
+                resultText = noWinner ? "UNKNOWN" : resultText;
+            }
+            ImGuiHelpers.CenterCursorForText(resultText);
+            ImGui.TextColored(color, resultText);
+            ImGui.TableNextColumn();
+            string durationText = "";
+            if(_dataModel.MatchStartTime != null && _dataModel.MatchEndTime != null) {
+                var duration = _dataModel.MatchEndTime - _dataModel.MatchStartTime;
+                durationText = $"{duration.Value.Minutes}{duration.Value.ToString(@"\:ss")}";
+                ImGuiHelper.RightAlignCursor(durationText);
+                ImGui.Text(durationText);
+            }
+            ImGui.EndTable();
         }
-        ImGuiHelpers.CenterCursorForText(resultText);
-        ImGui.TextColored(color, resultText);
-        ImGui.TableNextColumn();
-        string durationText = "";
-        if(_dataModel.MatchStartTime != null && _dataModel.MatchEndTime != null) {
-            var duration = _dataModel.MatchEndTime - _dataModel.MatchStartTime;
-            durationText = $"{duration.Value.Minutes}{duration.Value.ToString(@"\:ss")}";
-            ImGuiHelper.RightAlignCursor(durationText);
-            ImGui.Text(durationText);
-        }
-        ImGui.EndTable();
 
         if(_dataModel.Teams.Count == 2) {
             var firstTeam = _dataModel.Teams.ElementAt(0).Value;
             var secondTeam = _dataModel.Teams.ElementAt(1).Value;
-
-            ImGui.BeginTable("teams", 2, ImGuiTableFlags.PadOuterX);
-            ImGui.TableSetupColumn("team1", ImGuiTableColumnFlags.WidthStretch);
-            ImGui.TableSetupColumn("team2", ImGuiTableColumnFlags.WidthStretch);
-            ImGui.TableNextRow();
-            ImGui.TableNextColumn();
-            var firstTeamName = MatchHelper.GetTeamName(firstTeam.TeamName);
-            ImGuiHelper.CenterAlignCursor(firstTeamName);
-            ImGui.Text($"{firstTeamName}");
-            ImGui.TableNextColumn();
-            var secondTeamName = MatchHelper.GetTeamName(secondTeam.TeamName);
-            ImGuiHelper.CenterAlignCursor(secondTeamName);
-            ImGui.Text($"{secondTeamName}");
-            ImGui.TableNextColumn();
-            var firstTeamProgress = string.Format("   {0:P1}%", firstTeam.Progress / 100f);
-            ImGuiHelper.CenterAlignCursor(firstTeamProgress);
-            ImGui.Text($"{firstTeamProgress}");
-            ImGui.TableNextColumn();
-            var secondTeamProgress = string.Format("   {0:P1}%", secondTeam.Progress / 100f);
-            ImGuiHelper.CenterAlignCursor(secondTeamProgress);
-            ImGui.Text($"{secondTeamProgress}");
-            ImGui.EndTable();
-
-            ImGui.BeginTable($"players##{_dataModel.Id}", 6, ImGuiTableFlags.PadOuterX | ImGuiTableFlags.NoClip);
-            ImGui.TableSetupColumn("rankteam1", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 75f);
-            ImGui.TableSetupColumn("playerteam1", ImGuiTableColumnFlags.WidthStretch);
-            ImGui.TableSetupColumn("jobteam1", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 26f);
-            ImGui.TableSetupColumn("jobteam2", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 26f);
-            ImGui.TableSetupColumn("playerteam2", ImGuiTableColumnFlags.WidthStretch);
-            ImGui.TableSetupColumn("rankteam2", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 75f);
-            ImGui.TableNextRow();
-
-            int maxSize = int.Max(firstTeam.Players.Count, secondTeam.Players.Count);
-
-            for(int i = 0; i < maxSize; i++) {
-                if(i < firstTeam.Players.Count) {
-                    var player0 = firstTeam.Players[i];
-                    ImGui.TableNextColumn();
-                    string rank0 = player0.Rank != null && player0.Rank!.Tier != ArenaTier.None ? player0.Rank!.ToString() : "";
-                    ImGuiHelper.RightAlignCursor(rank0);
-                    ImGui.AlignTextToFramePadding();
-                    ImGui.Text(rank0);
-                    ImGui.TableNextColumn();
-                    var playerColor0 = _dataModel.LocalPlayerTeam is not null && firstTeam.TeamName == _dataModel.LocalPlayerTeam.TeamName ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
-                    playerColor0 = _dataModel.LocalPlayer is not null && _dataModel.LocalPlayer.Equals(player0) ? ImGuiColors.DalamudYellow : playerColor0;
-                    if(isSpectated) {
-                        playerColor0 = firstTeam.TeamName == CrystallineConflictTeamName.Astra ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
-                    }
-                    string playerName0 = player0.Alias.Name;
-                    ImGuiHelper.RightAlignCursor(playerName0);
-                    ImGui.AlignTextToFramePadding();
-                    ImGui.TextColored(playerColor0, playerName0);
-                    ImGuiHelper.WrappedTooltip(player0.Alias.HomeWorld);
-                    ImGui.TableNextColumn();
-                    if(player0.Job != null && _plugin.WindowManager.JobIcons.ContainsKey((Job)player0.Job)) {
-                        ImGui.Image(_plugin.WindowManager.JobIcons[(Job)player0.Job].ImGuiHandle, new Vector2(24, 24));
-                    }
-                } else {
-                    ImGui.TableNextColumn();
-                    ImGui.TableNextColumn();
-                    ImGui.TableNextColumn();
-                }
-
-                if(i < secondTeam.Players.Count) {
-                    var player1 = secondTeam.Players[i];
-                    ImGui.TableNextColumn();
-                    if(player1.Job != null && _plugin.WindowManager.JobIcons.ContainsKey((Job)player1.Job)) {
-                        ImGui.Image(_plugin.WindowManager.JobIcons[(Job)player1.Job].ImGuiHandle, new Vector2(24, 24));
-                    }
-                    ImGui.TableNextColumn();
-                    var playerColor1 = _dataModel.LocalPlayerTeam is not null && secondTeam.TeamName == _dataModel.LocalPlayerTeam.TeamName ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
-                    playerColor1 = _dataModel.LocalPlayer is not null && _dataModel.LocalPlayer.Equals(player1) ? ImGuiColors.DalamudYellow : playerColor1;
-                    if(isSpectated) {
-                        playerColor1 = secondTeam.TeamName == CrystallineConflictTeamName.Astra ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
-                    }
-                    string playerName1 = secondTeam.Players[i].Alias.Name;
-                    ImGui.TextColored(playerColor1, $"     {playerName1}");
-                    ImGuiHelper.WrappedTooltip(secondTeam.Players[i].Alias.HomeWorld);
-                    ImGui.TableNextColumn();
-                    string rank1 = player1.Rank != null && player1.Rank?.Tier != ArenaTier.None ? player1.Rank!.ToString() : "";
-                    ImGui.Text(rank1);
-                } else {
-                    ImGui.TableNextColumn();
-                    ImGui.TableNextColumn();
-                    ImGui.TableNextColumn();
-                }
-
-                //ImGui.TableNextColumn();
+            if(_plugin.Configuration.LeftPlayerTeam && !_dataModel.IsSpectated) {
+                firstTeam = _dataModel.Teams.Where(x => x.Key == _dataModel.LocalPlayerTeam!.TeamName).FirstOrDefault().Value;
+                secondTeam = _dataModel.Teams.Where(x => x.Key != _dataModel.LocalPlayerTeam!.TeamName).FirstOrDefault().Value;
             }
-            ImGui.EndTable();
+
+            if(ImGui.BeginTable("teams", 2, ImGuiTableFlags.PadOuterX)) {
+                ImGui.TableSetupColumn("team1", ImGuiTableColumnFlags.WidthStretch);
+                ImGui.TableSetupColumn("team2", ImGuiTableColumnFlags.WidthStretch);
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                var firstTeamName = MatchHelper.GetTeamName(firstTeam.TeamName);
+                ImGuiHelper.CenterAlignCursor(firstTeamName);
+                ImGui.Text($"{firstTeamName}");
+                ImGui.TableNextColumn();
+                var secondTeamName = MatchHelper.GetTeamName(secondTeam.TeamName);
+                ImGuiHelper.CenterAlignCursor(secondTeamName);
+                ImGui.Text($"{secondTeamName}");
+                ImGui.TableNextColumn();
+                var firstTeamProgress = string.Format("   {0:P1}%", firstTeam.Progress / 100f);
+                ImGuiHelper.CenterAlignCursor(firstTeamProgress);
+                ImGui.Text($"{firstTeamProgress}");
+                ImGui.TableNextColumn();
+                var secondTeamProgress = string.Format("   {0:P1}%", secondTeam.Progress / 100f);
+                ImGuiHelper.CenterAlignCursor(secondTeamProgress);
+                ImGui.Text($"{secondTeamProgress}");
+                ImGui.EndTable();
+            }
+
+            if(ImGui.BeginTable($"players##{_dataModel.Id}", 6, ImGuiTableFlags.PadOuterX | ImGuiTableFlags.NoClip)) {
+                ImGui.TableSetupColumn("rankteam1", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 75f);
+                ImGui.TableSetupColumn("playerteam1", ImGuiTableColumnFlags.WidthStretch);
+                ImGui.TableSetupColumn("jobteam1", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 26f);
+                ImGui.TableSetupColumn("jobteam2", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 26f);
+                ImGui.TableSetupColumn("playerteam2", ImGuiTableColumnFlags.WidthStretch);
+                ImGui.TableSetupColumn("rankteam2", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 75f);
+                ImGui.TableNextRow();
+
+                int maxSize = int.Max(firstTeam.Players.Count, secondTeam.Players.Count);
+
+                for(int i = 0; i < maxSize; i++) {
+                    if(i < firstTeam.Players.Count) {
+                        var player0 = firstTeam.Players[i];
+                        ImGui.TableNextColumn();
+                        string rank0 = player0.Rank != null && player0.Rank!.Tier != ArenaTier.None ? player0.Rank!.ToString() : "";
+                        ImGuiHelper.RightAlignCursor(rank0);
+                        ImGui.AlignTextToFramePadding();
+                        ImGui.Text(rank0);
+                        ImGui.TableNextColumn();
+                        var playerColor0 = _dataModel.LocalPlayerTeam is not null && firstTeam.TeamName == _dataModel.LocalPlayerTeam.TeamName ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
+                        playerColor0 = _dataModel.LocalPlayer is not null && _dataModel.LocalPlayer.Equals(player0) ? ImGuiColors.DalamudYellow : playerColor0;
+                        if(_dataModel.IsSpectated) {
+                            playerColor0 = firstTeam.TeamName == CrystallineConflictTeamName.Astra ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
+                        }
+                        string playerName0 = player0.Alias.Name;
+                        ImGuiHelper.RightAlignCursor(playerName0);
+                        ImGui.AlignTextToFramePadding();
+                        ImGui.TextColored(playerColor0, playerName0);
+                        ImGuiHelper.WrappedTooltip(player0.Alias.HomeWorld);
+                        ImGui.TableNextColumn();
+                        if(player0.Job != null && _plugin.WindowManager.JobIcons.ContainsKey((Job)player0.Job)) {
+                            ImGui.Image(_plugin.WindowManager.JobIcons[(Job)player0.Job].ImGuiHandle, new Vector2(24, 24));
+                        }
+                    } else {
+                        ImGui.TableNextColumn();
+                        ImGui.TableNextColumn();
+                        ImGui.TableNextColumn();
+                    }
+
+                    if(i < secondTeam.Players.Count) {
+                        var player1 = secondTeam.Players[i];
+                        ImGui.TableNextColumn();
+                        if(player1.Job != null && _plugin.WindowManager.JobIcons.ContainsKey((Job)player1.Job)) {
+                            ImGui.Image(_plugin.WindowManager.JobIcons[(Job)player1.Job].ImGuiHandle, new Vector2(24, 24));
+                        }
+                        ImGui.TableNextColumn();
+                        var playerColor1 = _dataModel.LocalPlayerTeam is not null && secondTeam.TeamName == _dataModel.LocalPlayerTeam.TeamName ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
+                        playerColor1 = _dataModel.LocalPlayer is not null && _dataModel.LocalPlayer.Equals(player1) ? ImGuiColors.DalamudYellow : playerColor1;
+                        if(_dataModel.IsSpectated) {
+                            playerColor1 = secondTeam.TeamName == CrystallineConflictTeamName.Astra ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
+                        }
+                        string playerName1 = secondTeam.Players[i].Alias.Name;
+                        ImGui.TextColored(playerColor1, $"     {playerName1}");
+                        ImGuiHelper.WrappedTooltip(secondTeam.Players[i].Alias.HomeWorld);
+                        ImGui.TableNextColumn();
+                        string rank1 = player1.Rank != null && player1.Rank?.Tier != ArenaTier.None ? player1.Rank!.ToString() : "";
+                        ImGui.Text(rank1);
+                    } else {
+                        ImGui.TableNextColumn();
+                        ImGui.TableNextColumn();
+                        ImGui.TableNextColumn();
+                    }
+
+                    //ImGui.TableNextColumn();
+                }
+                ImGui.EndTable();
+            }
         }
         ImGui.NewLine();
         if(_dataModel.PostMatch is null) {
@@ -285,7 +293,7 @@ internal class CrystallineConflictMatchDetail : Window {
             //#endif
 
             if(_dataModel.MatchType == CrystallineConflictMatchType.Ranked && _dataModel.PostMatch.RankBefore is not null && _dataModel.PostMatch.RankAfter is not null) {
-                ImGui.Text($"Rank Change: {_dataModel.PostMatch.RankBefore.ToString()} → {_dataModel.PostMatch.RankAfter.ToString()}");
+                ImGui.Text($"{_dataModel.PostMatch.RankBefore.ToString()} → {_dataModel.PostMatch.RankAfter.ToString()}");
             }
             ImGuiComponents.ToggleButton("##showPercentages", ref _showPercentages);
             ImGui.SameLine();
@@ -450,6 +458,13 @@ internal class CrystallineConflictMatchDetail : Window {
                 }
             };
         }
-        _postMatchRows = direction == ImGuiSortDirection.Ascending ? _postMatchRows.OrderBy(comparator).ToList() : _postMatchRows.OrderByDescending(comparator).ToList();
+        if(_plugin.Configuration.AnchorTeamNames) {
+            var teamList = _postMatchRows.Where(x => x.Player is null).ToList();
+            var playerList = _postMatchRows.Where(x => x.Player is not null).ToList();
+            _postMatchRows = teamList.Concat(direction == ImGuiSortDirection.Ascending ? playerList.OrderBy(comparator) : playerList.OrderByDescending(comparator)).ToList();
+        } else {
+            _postMatchRows = direction == ImGuiSortDirection.Ascending ? _postMatchRows.OrderBy(comparator).ToList() : _postMatchRows.OrderByDescending(comparator).ToList();
+        }
+
     }
 }
