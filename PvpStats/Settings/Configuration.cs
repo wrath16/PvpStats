@@ -11,6 +11,9 @@ public class Configuration : IPluginConfiguration {
     public FilterConfiguration MatchWindowFilters { get; set; } = new();
     public bool LeftPlayerTeam { get; set; } = false;
     public bool AnchorTeamNames { get; set; } = true;
+    public bool ResizeableMatchWindow { get; set; } = true;
+    public bool SizeFiltersToFit { get; set; } = false;
+    public float FilterRatio { get; set; } = 3.2f;
 
     [NonSerialized]
     private Plugin? _plugin;

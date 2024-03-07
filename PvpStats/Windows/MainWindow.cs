@@ -1,3 +1,4 @@
+using Dalamud.Interface;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
@@ -22,6 +23,7 @@ internal class MainWindow : Window {
     private CrystallineConflictSummary ccSummary;
     internal List<DataFilter> Filters { get; private set; } = new();
     internal SemaphoreSlim RefreshLock { get; init; } = new SemaphoreSlim(1, 1);
+    private bool _collapseFilters;
 
     internal MainWindow(Plugin plugin) : base("Crystalline Conflict Tracker") {
         ForceMainWindow = true;
@@ -176,39 +178,22 @@ internal class MainWindow : Window {
     }
 
     public override void Draw() {
-        if(ImGui.BeginChild("FilterChild", new Vector2(ImGui.GetContentRegionAvail().X, float.Max(ImGuiHelpers.GlobalScale * 150, ImGui.GetWindowHeight() / 4f)), true, ImGuiWindowFlags.AlwaysAutoResize)) {
-            if(ImGui.BeginTable("FilterTable", 2, ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.BordersInnerH)) {
-                ImGui.TableSetupColumn("filterName", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 110f);
-                ImGui.TableSetupColumn($"filters", ImGuiTableColumnFlags.WidthStretch);
-                //ImGui.TableNextRow();
-
-                foreach(var filter in Filters) {
-                    //ImGui.PushStyleVar(ImGuiStyleVar.CellPadding, 4);
-                    ImGui.TableNextColumn();
-
-                    if(filter.HelpMessage != null) {
-                        ImGui.AlignTextToFramePadding();
-                        ImGuiHelper.HelpMarker(filter.HelpMessage, false);
-                        ImGui.SameLine();
-                    }
-                    //ImGui.GetStyle().FramePadding.X = ImGui.GetStyle().FramePadding.X - 2f;
-                    string nameText = $"{filter.Name}:";
-                    ImGuiHelper.RightAlignCursor(nameText);
-                    ImGui.AlignTextToFramePadding();
-                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + float.Max(0, 16f - 4f * ImGuiHelpers.GlobalScale));
-                    ImGui.Text($"{nameText}");
-                    //ImGui.PopStyleVar();
-                    //ImGui.GetStyle().FramePadding.X = ImGui.GetStyle().FramePadding.X + 2f;
-                    ImGui.TableNextColumn();
-                    //if (filter.GetType() == typeof(TimeFilter)) {
-                    //    ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
-                    //}
-                    filter.Draw();
-                }
-                ImGui.EndTable();
-            }
+        if(!_collapseFilters && ImGui.BeginChild("FilterChild",
+            new Vector2(ImGui.GetContentRegionAvail().X, float.Max(ImGuiHelpers.GlobalScale * 150, ImGui.GetWindowHeight() / float.Max(_plugin.Configuration.FilterRatio, 1f))),
+            true, ImGuiWindowFlags.AlwaysAutoResize)) {
+            DrawFiltersTable();
             ImGui.EndChild();
         }
+        //I copied this code from Item Search xD
+        ImGui.PushFont(UiBuilder.IconFont);
+        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(0, -5 * ImGui.GetIO().FontGlobalScale));
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
+        if(ImGui.Button($"{(_collapseFilters ? (char)FontAwesomeIcon.CaretDown : (char)FontAwesomeIcon.CaretUp)}", new Vector2(-1, 10 * ImGui.GetIO().FontGlobalScale))) {
+            _collapseFilters = !_collapseFilters;
+        }
+        ImGui.PopStyleVar(2);
+        ImGui.PopFont();
+        ImGuiHelper.WrappedTooltip($"{(_collapseFilters ? "Show filters" : "Hide filters")}");
 
         if(ImGui.BeginTabBar("TabBar", ImGuiTabBarFlags.None)) {
             if(ImGui.BeginTabItem("Matches")) {
@@ -224,6 +209,38 @@ internal class MainWindow : Window {
                 ImGui.EndTabItem();
             }
             ImGui.EndTabBar();
+        }
+    }
+
+    private void DrawFiltersTable() {
+        if(ImGui.BeginTable("FilterTable", 2, ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.BordersInnerH)) {
+            ImGui.TableSetupColumn("filterName", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 110f);
+            ImGui.TableSetupColumn($"filters", ImGuiTableColumnFlags.WidthStretch);
+            //ImGui.TableNextRow();
+            foreach(var filter in Filters) {
+                //ImGui.PushStyleVar(ImGuiStyleVar.CellPadding, 4);
+                ImGui.TableNextColumn();
+
+                if(filter.HelpMessage != null) {
+                    ImGui.AlignTextToFramePadding();
+                    ImGuiHelper.HelpMarker(filter.HelpMessage, false);
+                    ImGui.SameLine();
+                }
+                //ImGui.GetStyle().FramePadding.X = ImGui.GetStyle().FramePadding.X - 2f;
+                string nameText = $"{filter.Name}:";
+                ImGuiHelper.RightAlignCursor(nameText);
+                ImGui.AlignTextToFramePadding();
+                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + float.Max(0, 16f - 4f * ImGuiHelpers.GlobalScale));
+                ImGui.Text($"{nameText}");
+                //ImGui.PopStyleVar();
+                //ImGui.GetStyle().FramePadding.X = ImGui.GetStyle().FramePadding.X + 2f;
+                ImGui.TableNextColumn();
+                //if (filter.GetType() == typeof(TimeFilter)) {
+                //    ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
+                //}
+                filter.Draw();
+            }
+            ImGui.EndTable();
         }
     }
 }

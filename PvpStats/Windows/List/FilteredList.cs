@@ -50,7 +50,7 @@ internal abstract class FilteredList<T> {
     }
 
     public void Draw() {
-        if(ImGui.BeginChild("scrolling", new Vector2(0, -(25 + ImGui.GetStyle().ItemSpacing.Y) * ImGuiHelpers.GlobalScale), true)) {
+        if(ImGui.BeginChild("scrolling", new Vector2(0, -(25 + ImGui.GetStyle().ItemSpacing.Y) * ImGuiHelpers.GlobalScale), true, ImGuiWindowFlags.AlwaysVerticalScrollbar)) {
             if(ImGui.BeginTable($"##{GetHashCode()}-Table", Columns.Count, TableFlags)) {
                 //setup columns
                 foreach(var column in Columns) {

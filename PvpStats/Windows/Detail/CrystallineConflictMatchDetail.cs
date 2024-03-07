@@ -62,7 +62,9 @@ internal class CrystallineConflictMatchDetail : Window {
             MinimumSize = new Vector2(600, 400),
             MaximumSize = new Vector2(1200, 1500)
         };
-        Flags = Flags | ImGuiWindowFlags.AlwaysAutoResize;
+        if(!plugin.Configuration.ResizeableMatchWindow) {
+            Flags |= ImGuiWindowFlags.AlwaysAutoResize;
+        }
         _plugin = plugin;
         _dataModel = match;
 
@@ -298,7 +300,7 @@ internal class CrystallineConflictMatchDetail : Window {
             ImGuiComponents.ToggleButton("##showPercentages", ref _showPercentages);
             ImGui.SameLine();
             ImGui.Text("Show team contributions");
-            ImGuiHelper.HelpMarker("Right-click table header to show and hide columns.");
+            ImGuiHelper.HelpMarker("Right-click table header to show and hide columns including extra metrics.");
             //if(ImGui.BeginChild("statsTableChild")) {
             DrawStatsTable();
             //    ImGui.EndChild();
@@ -308,8 +310,7 @@ internal class CrystallineConflictMatchDetail : Window {
     }
 
     private void DrawStatsTable() {
-        if(ImGui.BeginTable($"postmatchplayers##{_dataModel.Id}", 13, ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable)) {
-
+        if(ImGui.BeginTable($"postmatchplayers##{_dataModel.Id}", 13, ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.ScrollX)) {
             ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthFixed, (uint)SortableColumn.Name);
             ImGui.TableSetupColumn("Job", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 50f, (uint)SortableColumn.Job);
             ImGui.TableSetupColumn("Kills", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 52f, (uint)SortableColumn.Kills);
