@@ -18,11 +18,11 @@ internal static class ImGuiHelper {
         ImGui.SetCursorPosX(posX);
     }
 
-    //internal static void CenterAlignCursorVertical(string text) {
-    //    var size = ImGui.CalcTextSize(text);
-    //    var posY = ImGui.GetCursorPosY() + (ImGui.R - ImGui.CalcTextSize(text).Y) / 2f;
-    //    ImGui.SetCursorPosY(posY);
-    //}
+    internal static void CenterAlignCursorVertical(string text) {
+        var size = ImGui.CalcTextSize(text);
+        var posY = ImGui.GetCursorPosY() + (ImGui.GetContentRegionAvail().Y - ImGui.CalcTextSize(text).Y) / 2f;
+        ImGui.SetCursorPosY(posY);
+    }
 
     internal static void HelpMarker(string text, bool sameLine = true) {
         if(sameLine) {
@@ -33,6 +33,34 @@ internal static class ImGuiHelper {
     }
 
     internal static void WrappedTooltip(string text, float width = 400f) {
+        //width *= ImGuiHelpers.GlobalScale;
+        //string[] splitStrings = text.Split(" ");
+        //string wrappedString = "";
+        //string currentLine = "";
+
+        //foreach(var word in splitStrings) {
+        //    if(ImGui.CalcTextSize($"{currentLine} {word}").X > width) {
+        //        wrappedString += $"\n{word}";
+        //        currentLine = word;
+        //    } else {
+        //        if(currentLine == "") {
+        //            wrappedString += $"{word}";
+        //            currentLine += $"{word}";
+        //        } else {
+        //            wrappedString += $" {word}";
+        //            currentLine += $" {word}";
+        //        }
+        //    }
+        //}
+
+        if(ImGui.IsItemHovered()) {
+            ImGui.BeginTooltip();
+            ImGui.Text(WrappedString(text, width));
+            ImGui.EndTooltip();
+        }
+    }
+
+    internal static string WrappedString(string text, float width) {
         width *= ImGuiHelpers.GlobalScale;
         string[] splitStrings = text.Split(" ");
         string wrappedString = "";
@@ -40,7 +68,11 @@ internal static class ImGuiHelper {
 
         foreach(var word in splitStrings) {
             if(ImGui.CalcTextSize($"{currentLine} {word}").X > width) {
-                wrappedString += $"\n{word}";
+                if(wrappedString == "") {
+                    wrappedString = word;
+                } else {
+                    wrappedString += $"\n{word}";
+                }
                 currentLine = word;
             } else {
                 if(currentLine == "") {
@@ -52,11 +84,6 @@ internal static class ImGuiHelper {
                 }
             }
         }
-
-        if(ImGui.IsItemHovered()) {
-            ImGui.BeginTooltip();
-            ImGui.Text(wrappedString);
-            ImGui.EndTooltip();
-        }
+        return wrappedString;
     }
 }

@@ -80,6 +80,6 @@ public class PlayerAlias : IEquatable<PlayerAlias>, IEquatable<CrystallineConfli
     }
 
     public override int GetHashCode() {
-        return 0;
+        return string.GetHashCode(FullName);
     }
 }

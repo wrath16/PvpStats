@@ -22,6 +22,8 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
 
     protected override ImGuiTableFlags TableFlags { get; set; } = ImGuiTableFlags.SizingStretchProp;
 
+    protected override ImGuiWindowFlags ChildFlags { get; set; } = ImGuiWindowFlags.AlwaysVerticalScrollbar;
+
     public CrystallineConflictList(Plugin plugin) : base(plugin) {
     }
 

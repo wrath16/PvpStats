@@ -21,6 +21,7 @@ internal class MainWindow : Window {
     private Plugin _plugin;
     private CrystallineConflictList ccMatches;
     private CrystallineConflictSummary ccSummary;
+    private CrystallineConflictPlayerList ccPlayers;
     internal List<DataFilter> Filters { get; private set; } = new();
     internal SemaphoreSlim RefreshLock { get; init; } = new SemaphoreSlim(1, 1);
     private bool _collapseFilters;
@@ -30,7 +31,7 @@ internal class MainWindow : Window {
         PositionCondition = ImGuiCond.Always;
         SizeConstraints = new WindowSizeConstraints {
             MinimumSize = new Vector2(400, 400),
-            MaximumSize = new Vector2(750, 1500)
+            MaximumSize = new Vector2(1800, 1500)
         };
         Flags = Flags | ImGuiWindowFlags.NoScrollbar;
         _plugin = plugin;
@@ -45,6 +46,7 @@ internal class MainWindow : Window {
 
         ccMatches = new(plugin);
         ccSummary = new(plugin);
+        ccPlayers = new(plugin, ccMatches);
         _plugin.DataQueue.QueueDataOperation(Refresh);
     }
 
@@ -171,6 +173,7 @@ internal class MainWindow : Window {
             RefreshLock.WaitAsync();
             ccMatches.Refresh(matches);
             ccSummary.Refresh(matches);
+            ccPlayers.Refresh(new());
             _plugin.Configuration.Save();
         } finally {
             RefreshLock.Release();
@@ -200,10 +203,16 @@ internal class MainWindow : Window {
                 ccMatches.Draw();
                 ImGui.EndTabItem();
             }
-
             if(ImGui.BeginTabItem("Summary")) {
                 if(ImGui.BeginChild("SummaryChild")) {
                     ccSummary.Draw();
+                    ImGui.EndChild();
+                }
+                ImGui.EndTabItem();
+            }
+            if(ImGui.BeginTabItem("Players")) {
+                if(ImGui.BeginChild("PlayersChild")) {
+                    ccPlayers.Draw();
                     ImGui.EndChild();
                 }
                 ImGui.EndTabItem();
