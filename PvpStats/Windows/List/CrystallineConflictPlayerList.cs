@@ -1,16 +1,11 @@
 ﻿using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
-using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using ImGuiNET;
 using PvpStats.Helpers;
-using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
 internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
@@ -40,37 +35,37 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
     }
 
     protected override List<ColumnParams> Columns { get; set; } = new() {
-        new ColumnParams{Name = "Name", Width = 200f * ImGuiHelpers.GlobalScale, Flags = ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoHide },
-        new ColumnParams{Name = "Home World", Width = 110f * ImGuiHelpers.GlobalScale, Flags = ImGuiTableColumnFlags.WidthFixed },
-        new ColumnParams{Name = "Favored Job" },
-        new ColumnParams{Name = "Total Matches" },
-        new ColumnParams{Name = "Player Wins", Flags = ImGuiTableColumnFlags.None },
-        new ColumnParams{Name = "Player Losses", Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Player Win Diff.", Flags = ImGuiTableColumnFlags.None },
-        new ColumnParams{Name = "Player Win Rate", Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Your Wins", Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Your Losses", Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Your Win Diff.", Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Your Win Rate", Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Teammate Matches", Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Teammate Wins", Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Teammate Losses", Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Teammate Win Diff.", Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Teammate Win Rate", Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Opponent Matches", Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Opponent Wins", Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Opponent Losses", Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Opponent Win Diff.", Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Opponent Win Rate", Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Name", Id = 0, Width = 200f * ImGuiHelpers.GlobalScale, Flags = ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoHide },
+        new ColumnParams{Name = "Home World", Id = 1, Width = 110f * ImGuiHelpers.GlobalScale, Flags = ImGuiTableColumnFlags.WidthFixed },
+        new ColumnParams{Name = "Favored Job", Id = (uint)typeof(PlayerStats).GetField("FavoredJob").Name.GetHashCode() },
+        new ColumnParams{Name = "Total Matches", Id = (uint)typeof(PlayerStats).GetField("MatchesAll").Name.GetHashCode() },
+        new ColumnParams{Name = "Player Wins", Id = (uint)typeof(PlayerStats).GetField("PlayerWinsAll").Name.GetHashCode(), Flags = ImGuiTableColumnFlags.None },
+        new ColumnParams{Name = "Player Losses", Id = (uint)typeof(PlayerStats).GetField("PlayerLossesAll").Name.GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Player Win Diff.", Id = (uint)typeof(PlayerStats).GetField("PlayerWinDiff").Name.GetHashCode(), Flags = ImGuiTableColumnFlags.None },
+        new ColumnParams{Name = "Player Win Rate", Id = (uint)typeof(PlayerStats).GetField("PlayerWinrateAll").Name.GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Your Wins", Id = (uint)typeof(PlayerStats).GetField("SelfWinsAll").Name.GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Your Losses", Id = (uint)typeof(PlayerStats).GetField("SelfLossesAll").Name.GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Your Win Diff.", Id = (uint)typeof(PlayerStats).GetField("SelfAllWinDiff").Name.GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Your Win Rate", Id = (uint)typeof(PlayerStats).GetField("SelfWinrateAll").Name.GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Teammate Matches", Id = (uint)typeof(PlayerStats).GetField("MatchesTeammate").Name.GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Teammate Wins", Id = (uint)typeof(PlayerStats).GetField("SelfWinsTeammate").Name.GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Teammate Losses", Id = (uint)typeof(PlayerStats).GetField("SelfLossesTeammate").Name.GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Teammate Win Diff.", Id = (uint)typeof(PlayerStats).GetField("SelfTeammateWinDiff").Name.GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Teammate Win Rate", Id = (uint)typeof(PlayerStats).GetField("SelfWinrateTeammate").Name.GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Opponent Matches", Id = (uint)typeof(PlayerStats).GetField("MatchesOpponent").Name.GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Opponent Wins", Id = (uint)typeof(PlayerStats).GetField("SelfWinsOpponent").Name.GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Opponent Losses", Id = (uint)typeof(PlayerStats).GetField("SelfLossesOpponent").Name.GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Opponent Win Diff.", Id = (uint)typeof(PlayerStats).GetField("SelfOpponentWinDiff").Name.GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Opponent Win Rate", Id = (uint)typeof(PlayerStats).GetField("SelfWinrateOpponent").Name.GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
     };
 
-    private CrystallineConflictList ListModel { get;  init; }
+    private CrystallineConflictList ListModel { get; init; }
     private Dictionary<PlayerAlias, PlayerStats> Stats = new();
 
-    protected override ImGuiTableFlags TableFlags { get; set; } = ImGuiTableFlags.Reorderable | ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable 
+    protected override ImGuiTableFlags TableFlags { get; set; } = ImGuiTableFlags.Reorderable | ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable
         | ImGuiTableFlags.BordersInner | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX;
 
-    protected override bool ShowHeader {get; set;} = true;
+    protected override bool ShowHeader { get; set; } = true;
     protected override bool ChildWindow { get; set; } = false;
     protected override string TableName => "##CCPlayerStatsTable";
 
@@ -79,6 +74,19 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
 
     public CrystallineConflictPlayerList(Plugin plugin, CrystallineConflictList listModel) : base(plugin) {
         ListModel = listModel;
+    }
+
+    protected override void PostColumnSetup() {
+        ImGui.TableSetupScrollFreeze(1, 1);
+        //column sorting
+        ImGuiTableSortSpecsPtr sortSpecs = ImGui.TableGetSortSpecs();
+        if(sortSpecs.SpecsDirty) {
+            _plugin.DataQueue.QueueDataOperation(() => {
+                SortByColumn(sortSpecs.Specs.ColumnUserID, sortSpecs.Specs.SortDirection);
+                GoToPage(0);
+            });
+            sortSpecs.SpecsDirty = false;
+        }
     }
 
     public override void DrawListItem(PlayerAlias item) {
@@ -128,7 +136,6 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
         ImGui.TableNextColumn();
         ImGui.TextColored(selfAllWinDiffColor, $"{string.Format("{0:P1}%", Stats[item].SelfWinrateAll)}");
 
-
         ImGui.TableNextColumn();
         ImGui.Text($"{Stats[item].MatchesTeammate}");
         ImGui.TableNextColumn();
@@ -169,8 +176,8 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
     public override void RefreshDataModel() {
         Dictionary<PlayerAlias, PlayerStats> playerStats = new();
         foreach(var match in ListModel.DataModel) {
-            foreach (var team in match.Teams) {
-                foreach (var player in team.Value.Players) {
+            foreach(var team in match.Teams) {
+                foreach(var player in team.Value.Players) {
                     if(!playerStats.ContainsKey(player.Alias)) {
                         playerStats.Add(player.Alias, new());
                     }
@@ -237,5 +244,28 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
         } finally {
             RefreshLock.Release();
         }
+    }
+
+    private void SortByColumn(uint columnId, ImGuiSortDirection direction) {
+        _plugin.Log.Debug($"Sorting by {columnId}");
+        Func<PlayerAlias, object> comparator = (r) => 0;
+
+        //0 = name
+        //1 = homeworld
+        if(columnId == 0) {
+            comparator = (r) => r.Name;
+        } else if(columnId == 1) {
+            comparator = (r) => r.HomeWorld;
+        } else {
+            var fields = typeof(PlayerStats).GetFields();
+            foreach(var field in fields) {
+                var fieldId = field.Name.GetHashCode();
+                if((uint)fieldId == columnId) {
+                    //_plugin.Log.Debug($"Match found! {field.Name}");
+                    comparator = (r) => field.GetValue(Stats[r]) ?? 0;
+                }
+            }
+        }
+        DataModel = direction == ImGuiSortDirection.Ascending ? DataModel.OrderBy(comparator).ToList() : DataModel.OrderByDescending(comparator).ToList();
     }
 }

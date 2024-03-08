@@ -13,6 +13,7 @@ public struct ColumnParams {
     public string Name;
     public ImGuiTableColumnFlags Flags;
     public float Width;
+    public uint Id;
 }
 
 internal abstract class FilteredList<T> {
@@ -35,6 +36,7 @@ internal abstract class FilteredList<T> {
     protected virtual bool ChildWindow { get; set; } = true;
 
     public abstract void RefreshDataModel();
+    protected abstract void PostColumnSetup();
     public abstract void DrawListItem(T item);
     public abstract void OpenItemDetail(T item);
     public abstract void OpenFullEditDetail(T item);
@@ -97,10 +99,11 @@ internal abstract class FilteredList<T> {
         if(ImGui.BeginTable(TableName, Columns.Count, TableFlags)) {
             //setup columns
             foreach(var column in Columns) {
-                ImGui.TableSetupColumn(column.Name, column.Flags, column.Width);
+                ImGui.TableSetupColumn(column.Name, column.Flags, column.Width, column.Id);
             }
+            PostColumnSetup();
             if(ShowHeader) {
-                ImGui.TableSetupScrollFreeze(1, 1);
+                //ImGui.TableSetupScrollFreeze(1, 1);
                 //ImGui.TableHeadersRow();
                 foreach(var column in Columns) {
                     ImGui.TableNextColumn();
