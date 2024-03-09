@@ -86,4 +86,34 @@ internal static class ImGuiHelper {
         }
         return wrappedString;
     }
+
+    internal static string WrappedString(string text, uint lines) {
+        var size = ImGui.CalcTextSize(text).X;
+        var sizePerLine = size / lines * 1.4; //add a margin of error
+        string[] splitStrings = text.Split(" ");
+        string wrappedString = "";
+        string currentLine = "";
+        int lineIndex = 0;
+
+        foreach(var word in splitStrings) {
+            if(ImGui.CalcTextSize($"{currentLine} {word}").X > sizePerLine && currentLine != "" && lineIndex + 1 < lines) {
+                if(wrappedString == "") {
+                    wrappedString = word;
+                } else {
+                    wrappedString += $"\n{word}";
+                    lineIndex++;
+                }
+                currentLine = word;
+            } else {
+                if(currentLine == "") {
+                    wrappedString += $"{word}";
+                    currentLine += $"{word}";
+                } else {
+                    wrappedString += $" {word}";
+                    currentLine += $" {word}";
+                }
+            }
+        }
+        return wrappedString;
+    }
 }

@@ -2,8 +2,8 @@
 using ImGuiNET;
 using LiteDB;
 using PvpStats.Helpers;
-using System.Collections;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -33,11 +33,11 @@ internal abstract class FilteredList<T> {
     protected virtual List<ColumnParams> Columns { get; set; } = new();
     protected virtual ImGuiTableFlags TableFlags { get; set; }
     protected virtual ImGuiWindowFlags ChildFlags { get; set; } = ImGuiWindowFlags.None;
-    protected virtual string TableName => $"##{GetHashCode()}-Table";
+    protected virtual string TableId => $"##{GetHashCode()}-Table";
     protected virtual bool ShowHeader { get; set; } = false;
     protected virtual bool ChildWindow { get; set; } = true;
 
-    public abstract void RefreshDataModel(); 
+    public abstract void RefreshDataModel();
     public abstract void DrawListItem(T item);
     public abstract void OpenItemDetail(T item);
     public abstract void OpenFullEditDetail(T item);
@@ -65,7 +65,7 @@ internal abstract class FilteredList<T> {
         }
 
         try {
-            if(ImGui.BeginChild($"##{GetHashCode()}-Child", new Vector2(0, -(25 + ImGui.GetStyle().ItemSpacing.Y) * ImGuiHelpers.GlobalScale), true, ChildFlags)) {
+            if(ImGui.BeginChild(TableId, new Vector2(0, -(25 + ImGui.GetStyle().ItemSpacing.Y) * ImGuiHelpers.GlobalScale), true, ChildFlags)) {
                 PreTableDraw();
                 DrawTable();
             }
@@ -106,19 +106,22 @@ internal abstract class FilteredList<T> {
     }
 
     private void DrawTable() {
-        if(ImGui.BeginTable(TableName, Columns.Count, TableFlags)) {
+        if(ImGui.BeginTable(TableId, Columns.Count, TableFlags)) {
             try {
                 //setup columns
                 foreach(var column in Columns) {
                     ImGui.TableSetupColumn(column.Name, column.Flags, column.Width * ImGuiHelpers.GlobalScale, column.Id);
                 }
+                var clipper = new ListClipper(CurrentPage.Count, Columns.Count, true);
                 PostColumnSetup();
                 if(ShowHeader) {
                     //ImGui.TableSetupScrollFreeze(1, 1);
                     //ImGui.TableHeadersRow();
-                    foreach(var column in Columns) {
+                    foreach(var i in clipper.Columns) {
+                        var column = Columns[i];
                         ImGui.TableNextColumn();
-                        var tableHeader = ImGuiHelper.WrappedString(column.Name, 50f);
+                        //var tableHeader = ImGuiHelper.WrappedString(column.Name, 80f);
+                        var tableHeader = ImGuiHelper.WrappedString(column.Name, 2);
                         //ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 1f);
                         //this is stupid!
                         if(ImGui.GetColumnIndex() == 0) {
@@ -128,11 +131,10 @@ internal abstract class FilteredList<T> {
                         ImGui.TableHeader(tableHeader);
                     }
                 }
-
                 ImGui.TableNextRow();
-                var clipper = new ListClipper(CurrentPage.Count, Columns.Count, true);
+
                 foreach(var i in clipper.Rows) {
-                    var item = (T)CurrentPage[i];
+                    var item = CurrentPage[i];
                     ImGui.TableNextColumn();
                     if(ImGui.Selectable($"##{item!.GetHashCode()}-selectable", false, ImGuiSelectableFlags.SpanAllColumns)) {
                         OpenItemDetail(item);

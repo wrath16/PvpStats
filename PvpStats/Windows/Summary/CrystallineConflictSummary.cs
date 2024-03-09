@@ -205,12 +205,12 @@ internal class CrystallineConflictSummary {
             //timeOnCrystalContribution = timeContribTotal / statsEligibleMatches;
 
             killContribution = killContribList.OrderBy(x => x).ElementAt(statsEligibleMatches / 2);
-            deathContribution = deathContribList.OrderBy(x => x).ElementAt(statsEligibleMatches / 2); ;
-            assistContribution = assistContribList.OrderBy(x => x).ElementAt(statsEligibleMatches / 2); ;
-            damageDealtContribution = ddContribList.OrderBy(x => x).ElementAt(statsEligibleMatches / 2); ;
-            damageTakenContribution = dtContribList.OrderBy(x => x).ElementAt(statsEligibleMatches / 2); ;
-            hpRestoredContribution = hpContribList.OrderBy(x => x).ElementAt(statsEligibleMatches / 2); ;
-            timeOnCrystalContribution = timeContribList.OrderBy(x => x).ElementAt(statsEligibleMatches / 2); ;
+            deathContribution = deathContribList.OrderBy(x => x).ElementAt(statsEligibleMatches / 2);
+            assistContribution = assistContribList.OrderBy(x => x).ElementAt(statsEligibleMatches / 2);
+            damageDealtContribution = ddContribList.OrderBy(x => x).ElementAt(statsEligibleMatches / 2);
+            damageTakenContribution = dtContribList.OrderBy(x => x).ElementAt(statsEligibleMatches / 2);
+            hpRestoredContribution = hpContribList.OrderBy(x => x).ElementAt(statsEligibleMatches / 2);
+            timeOnCrystalContribution = timeContribList.OrderBy(x => x).ElementAt(statsEligibleMatches / 2);
         }
 
         try {

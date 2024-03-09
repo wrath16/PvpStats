@@ -9,4 +9,6 @@ public class FilterConfiguration {
     public LocalPlayerFilter? LocalPlayerFilter { get; set; }
     public LocalPlayerJobFilter? LocalPlayerJobFilter { get; set; }
     public MiscFilter? MiscFilter { get; set; }
+
+    public uint MinMatches { get; set; } = 1;
 }
