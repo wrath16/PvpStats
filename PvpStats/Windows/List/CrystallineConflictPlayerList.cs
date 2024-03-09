@@ -1,11 +1,14 @@
 ﻿using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using ImGuiNET;
 using PvpStats.Helpers;
 using PvpStats.Types.Player;
+using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace PvpStats.Windows.List;
 internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
@@ -16,6 +19,11 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
         public int PlayerWinDiff, SelfAllWinDiff, SelfTeammateWinDiff, SelfOpponentWinDiff;
         public double PlayerWinrateAll, SelfWinrateAll, SelfWinrateTeammate, SelfWinrateOpponent;
         public Dictionary<Job, JobStats> JobStats = new();
+        public uint ScoreboardMatches; 
+        public double AvgKills, AvgDeaths, AvgAssists, AvgDamageDealt, AvgDamageTaken, AvgHPRestored;
+        public TimeSpan AvgTimeOnCrystal = TimeSpan.Zero;
+        public ulong TotalKills, TotalDeaths, TotalAssists, TotalDamageDealt, TotalDamageTaken, TotalHPRestored;
+        public TimeSpan TotalTimeOnCrystal = TimeSpan.Zero;
         public void AddJobStat(Job job, bool isWin) {
             if(JobStats.ContainsKey(job)) {
                 JobStats[job].Matches++;
@@ -35,8 +43,8 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
     }
 
     protected override List<ColumnParams> Columns { get; set; } = new() {
-        new ColumnParams{Name = "Name", Id = 0, Width = 200f * ImGuiHelpers.GlobalScale, Flags = ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoHide },
-        new ColumnParams{Name = "Home World", Id = 1, Width = 110f * ImGuiHelpers.GlobalScale, Flags = ImGuiTableColumnFlags.WidthFixed },
+        new ColumnParams{Name = "Name", Id = 0, Width = 200f, Flags = ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoHide },
+        new ColumnParams{Name = "Home World", Id = 1, Width = 110f, Flags = ImGuiTableColumnFlags.WidthFixed },
         new ColumnParams{Name = "Favored Job", Id = (uint)typeof(PlayerStats).GetField("FavoredJob").Name.GetHashCode() },
         new ColumnParams{Name = "Total Matches", Id = (uint)typeof(PlayerStats).GetField("MatchesAll").Name.GetHashCode() },
         new ColumnParams{Name = "Player Wins", Id = (uint)typeof(PlayerStats).GetField("PlayerWinsAll").Name.GetHashCode(), Flags = ImGuiTableColumnFlags.None },
@@ -60,10 +68,16 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
     };
 
     private CrystallineConflictList ListModel { get; init; }
+    private OtherPlayerFilter OtherPlayerFilter { get; init; }
     private Dictionary<PlayerAlias, PlayerStats> Stats = new();
+    private int PlayerCount { get; set; }
+    private int MatchCount { get; set; }
+    private uint MinMatches { get; set; } = 1;
+
+    private bool _triggerSort = false;
 
     protected override ImGuiTableFlags TableFlags { get; set; } = ImGuiTableFlags.Reorderable | ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable
-        | ImGuiTableFlags.BordersInner | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX;
+        | ImGuiTableFlags.Borders | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX;
 
     protected override bool ShowHeader { get; set; } = true;
     protected override bool ChildWindow { get; set; } = false;
@@ -72,27 +86,42 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
     //public CrystallineConflictPlayerList(Plugin plugin) : base(plugin) {
     //}
 
-    public CrystallineConflictPlayerList(Plugin plugin, CrystallineConflictList listModel) : base(plugin) {
+    public CrystallineConflictPlayerList(Plugin plugin, CrystallineConflictList listModel, OtherPlayerFilter playerFilter) : base(plugin) {
         ListModel = listModel;
+        OtherPlayerFilter = playerFilter;
+    }
+
+    protected override void PreTableDraw() {
+        int minMatches = (int)MinMatches;
+        ImGui.SetNextItemWidth(float.Max(ImGui.GetContentRegionAvail().X / 3f, 150f * ImGuiHelpers.GlobalScale));
+        if(ImGui.SliderInt("Min. matches", ref minMatches, 1, 100)) {
+            MinMatches = (uint)minMatches;
+            _plugin.DataQueue.QueueDataOperation(() => {
+                RefreshDataModel();
+            });
+        }
+
+        ImGui.TextUnformatted($"Total players:   {PlayerCount}");
     }
 
     protected override void PostColumnSetup() {
         ImGui.TableSetupScrollFreeze(1, 1);
         //column sorting
         ImGuiTableSortSpecsPtr sortSpecs = ImGui.TableGetSortSpecs();
-        if(sortSpecs.SpecsDirty) {
+        if(sortSpecs.SpecsDirty || _triggerSort) {
+            _triggerSort = false;
+            sortSpecs.SpecsDirty = false;
             _plugin.DataQueue.QueueDataOperation(() => {
                 SortByColumn(sortSpecs.Specs.ColumnUserID, sortSpecs.Specs.SortDirection);
                 GoToPage(0);
             });
-            sortSpecs.SpecsDirty = false;
         }
     }
 
     public override void DrawListItem(PlayerAlias item) {
-        ImGui.Text($"{item.Name}");
+        ImGui.TextUnformatted($"{item.Name}");
         ImGui.TableNextColumn();
-        ImGui.Text($"{item.HomeWorld}");
+        ImGui.TextUnformatted($"{item.HomeWorld}");
         ImGui.TableNextColumn();
         var job = Stats[item].FavoredJob;
         var role = PlayerJobHelper.GetRoleFromJob(job);
@@ -111,13 +140,12 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
                 break;
         }
         ImGui.TextColored(jobColor, $"{Stats[item].FavoredJob}");
-
         ImGui.TableNextColumn();
-        ImGui.Text($"{Stats[item].MatchesAll}");
+        ImGui.TextUnformatted($"{Stats[item].MatchesAll}");
         ImGui.TableNextColumn();
-        ImGui.Text($"{Stats[item].PlayerWinsAll}");
+        ImGui.TextUnformatted($"{Stats[item].PlayerWinsAll}");
         ImGui.TableNextColumn();
-        ImGui.Text($"{Stats[item].PlayerLossesAll}");
+        ImGui.TextUnformatted($"{Stats[item].PlayerLossesAll}");
         ImGui.TableNextColumn();
         var playerWinDiff = Stats[item].PlayerWinDiff;
         var playerWinDiffColor = playerWinDiff > 0 ? ImGuiColors.HealerGreen : playerWinDiff < 0 ? ImGuiColors.DPSRed : ImGuiColors.DalamudWhite;
@@ -126,9 +154,9 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
         ImGui.TextColored(playerWinDiffColor, $"{string.Format("{0:P1}%", Stats[item].PlayerWinrateAll)}");
 
         ImGui.TableNextColumn();
-        ImGui.Text($"{Stats[item].SelfWinsAll}");
+        ImGui.TextUnformatted($"{Stats[item].SelfWinsAll}");
         ImGui.TableNextColumn();
-        ImGui.Text($"{Stats[item].SelfLossesAll}");
+        ImGui.TextUnformatted($"{Stats[item].SelfLossesAll}");
         ImGui.TableNextColumn();
         var selfWinDiff = Stats[item].SelfAllWinDiff;
         var selfAllWinDiffColor = selfWinDiff > 0 ? ImGuiColors.HealerGreen : selfWinDiff < 0 ? ImGuiColors.DPSRed : ImGuiColors.DalamudWhite;
@@ -137,11 +165,11 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
         ImGui.TextColored(selfAllWinDiffColor, $"{string.Format("{0:P1}%", Stats[item].SelfWinrateAll)}");
 
         ImGui.TableNextColumn();
-        ImGui.Text($"{Stats[item].MatchesTeammate}");
+        ImGui.TextUnformatted($"{Stats[item].MatchesTeammate}");
         ImGui.TableNextColumn();
-        ImGui.Text($"{Stats[item].SelfWinsTeammate}");
+        ImGui.TextUnformatted($"{Stats[item].SelfWinsTeammate}");
         ImGui.TableNextColumn();
-        ImGui.Text($"{Stats[item].SelfLossesTeammate}");
+        ImGui.TextUnformatted($"{Stats[item].SelfLossesTeammate}");
         ImGui.TableNextColumn();
         var teammateWinDiff = Stats[item].SelfTeammateWinDiff;
         var teammateWinDiffColor = teammateWinDiff > 0 ? ImGuiColors.HealerGreen : teammateWinDiff < 0 ? ImGuiColors.DPSRed : ImGuiColors.DalamudWhite;
@@ -150,18 +178,17 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
         ImGui.TextColored(teammateWinDiffColor, $"{string.Format("{0:P1}%", Stats[item].SelfWinrateTeammate)}");
 
         ImGui.TableNextColumn();
-        ImGui.Text($"{Stats[item].MatchesOpponent}");
+        ImGui.TextUnformatted($"{Stats[item].MatchesOpponent}");
         ImGui.TableNextColumn();
-        ImGui.Text($"{Stats[item].SelfWinsOpponent}");
+        ImGui.TextUnformatted($"{Stats[item].SelfWinsOpponent}");
         ImGui.TableNextColumn();
-        ImGui.Text($"{Stats[item].SelfLossesOpponent}");
+        ImGui.TextUnformatted($"{Stats[item].SelfLossesOpponent}");
         ImGui.TableNextColumn();
         var OpponentWinDiff = Stats[item].SelfOpponentWinDiff;
         var OpponentWinDiffColor = OpponentWinDiff > 0 ? ImGuiColors.HealerGreen : OpponentWinDiff < 0 ? ImGuiColors.DPSRed : ImGuiColors.DalamudWhite;
         ImGui.TextColored(OpponentWinDiffColor, $"{OpponentWinDiff}");
         ImGui.TableNextColumn();
         ImGui.TextColored(OpponentWinDiffColor, $"{string.Format("{0:P1}%", Stats[item].SelfWinrateOpponent)}");
-
     }
 
     //we don't need this
@@ -178,6 +205,16 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
         foreach(var match in ListModel.DataModel) {
             foreach(var team in match.Teams) {
                 foreach(var player in team.Value.Players) {
+                    //check against filters
+                    bool nameMatch = player.Alias.FullName.Contains(OtherPlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase);
+                    bool sideMatch = OtherPlayerFilter.TeamStatus == TeamStatus.Any
+                        || OtherPlayerFilter.TeamStatus == TeamStatus.Teammate && team.Key == match.LocalPlayerTeam?.TeamName
+                        || OtherPlayerFilter.TeamStatus == TeamStatus.Opponent && team.Key != match.LocalPlayerTeam?.TeamName;
+                    bool jobMatch = OtherPlayerFilter.AnyJob || OtherPlayerFilter.PlayerJob == player.Job;
+                    if(!nameMatch || !sideMatch || !jobMatch) {
+                        continue;
+                    }
+
                     if(!playerStats.ContainsKey(player.Alias)) {
                         playerStats.Add(player.Alias, new());
                     }
@@ -217,11 +254,34 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
                     if(player.Job != null) {
                         playerStats[player.Alias].AddJobStat((Job)player.Job, isPlayerWin);
                     }
+
+                    //add scoreboard stats
+                    if(match.PostMatch != null) {
+                        //var teamScoreboard = match.PostMatch.Teams.Where(x => x.Value.PlayerStats.Where(y => y.Player != null && y.Player.Equals(player.Alias)).Count() > 0).FirstOrDefault();
+                        //var playerScoreboard = teamScoreboard.Value.PlayerStats.Where(y => y.Player != null && y.Player.Equals(player.Alias)).FirstOrDefault();
+                        var playerTeamScoreboard = match.PostMatch.Teams.Where(x => x.Key == team.Key).FirstOrDefault().Value;
+                        var playerScoreboard = playerTeamScoreboard.PlayerStats.Where(x => x.Player?.Equals(player.Alias) ?? false).FirstOrDefault();
+                        if(playerScoreboard != null) {
+                            playerStats[player.Alias].ScoreboardMatches++;
+                            playerStats[player.Alias].TotalKills += (ulong)playerScoreboard.Kills;
+                            playerStats[player.Alias].TotalDeaths += (ulong)playerScoreboard.Deaths;
+                            playerStats[player.Alias].TotalAssists += (ulong)playerScoreboard.Assists;
+                            playerStats[player.Alias].TotalDamageDealt += (ulong)playerScoreboard.DamageDealt;
+                            playerStats[player.Alias].TotalDamageTaken += (ulong)playerScoreboard.DamageTaken;
+                            playerStats[player.Alias].TotalHPRestored += (ulong)playerScoreboard.HPRestored;
+                            playerStats[player.Alias].TotalTimeOnCrystal += playerScoreboard.TimeOnCrystal;
+                        }
+                    }
                 }
             }
         }
 
         foreach(var playerStat in playerStats) {
+            //remove players who don't meet match threshold
+            if(playerStat.Value.MatchesAll < MinMatches) {
+                playerStats.Remove(playerStat.Key);
+            }
+
             //set win rates
             playerStat.Value.PlayerWinrateAll = (double)playerStat.Value.PlayerWinsAll / playerStat.Value.MatchesAll;
             playerStat.Value.SelfWinrateAll = (double)playerStat.Value.SelfWinsAll / playerStat.Value.MatchesAll;
@@ -236,14 +296,34 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
 
             //set favored job
             playerStat.Value.FavoredJob = playerStat.Value.JobStats.OrderByDescending(x => x.Value.Matches).FirstOrDefault().Key;
+
+            //set average stats
+            if(playerStat.Value.ScoreboardMatches > 0) {
+                playerStat.Value.AvgKills = (double)playerStat.Value.TotalKills / playerStat.Value.ScoreboardMatches;
+                playerStat.Value.AvgDeaths = (double)playerStat.Value.TotalDeaths / playerStat.Value.ScoreboardMatches;
+                playerStat.Value.AvgAssists = (double)playerStat.Value.TotalAssists / playerStat.Value.ScoreboardMatches;
+                playerStat.Value.AvgDamageDealt = (double)playerStat.Value.TotalDamageDealt / playerStat.Value.ScoreboardMatches;
+                playerStat.Value.AvgDamageTaken = (double)playerStat.Value.TotalDamageTaken / playerStat.Value.ScoreboardMatches;
+                playerStat.Value.AvgHPRestored = (double)playerStat.Value.TotalHPRestored / playerStat.Value.ScoreboardMatches;
+                playerStat.Value.AvgTimeOnCrystal = playerStat.Value.TotalTimeOnCrystal / playerStat.Value.ScoreboardMatches;
+            }
         }
         try {
             RefreshLock.Wait();
             DataModel = playerStats.Keys.ToList();
             Stats = playerStats;
+            PlayerCount = DataModel.Count;
+            _triggerSort = true;
         } finally {
             RefreshLock.Release();
         }
+    }
+
+    private void RemoveByMatchCount() {
+        ////remove players who don't meet match threshold
+        //if(playerStat.Value.MatchesAll < MinMatches) {
+        //    playerStats.Remove(playerStat.Key);
+        //}
     }
 
     private void SortByColumn(uint columnId, ImGuiSortDirection direction) {

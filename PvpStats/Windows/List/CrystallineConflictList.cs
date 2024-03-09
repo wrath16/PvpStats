@@ -27,9 +27,6 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
     public CrystallineConflictList(Plugin plugin) : base(plugin) {
     }
 
-    protected override void PostColumnSetup() {
-    }
-
     public override void DrawListItem(CrystallineConflictMatch item) {
         ImGui.Text($"{item.DutyStartTime.ToString("MM/dd/yyyy HH:mm")}");
         ImGui.TableNextColumn();

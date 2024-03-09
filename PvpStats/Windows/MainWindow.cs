@@ -40,13 +40,14 @@ internal class MainWindow : Window {
         Filters.Add(new TimeFilter(plugin, Refresh, _plugin.Configuration.MatchWindowFilters.TimeFilter));
         Filters.Add(new LocalPlayerFilter(plugin, Refresh, _plugin.Configuration.MatchWindowFilters.LocalPlayerFilter));
         Filters.Add(new LocalPlayerJobFilter(plugin, Refresh, _plugin.Configuration.MatchWindowFilters.LocalPlayerJobFilter));
-        Filters.Add(new OtherPlayerFilter(plugin, Refresh));
+        var otherPlayerFilter = new OtherPlayerFilter(plugin, Refresh);
+        Filters.Add(otherPlayerFilter);
         Filters.Add(new ResultFilter(plugin, Refresh));
         //Filters.Add(new MiscFilter(plugin, Refresh, _plugin.Configuration.MatchWindowFilters.MiscFilter));
 
         ccMatches = new(plugin);
         ccSummary = new(plugin);
-        ccPlayers = new(plugin, ccMatches);
+        ccPlayers = new(plugin, ccMatches, otherPlayerFilter);
         _plugin.DataQueue.QueueDataOperation(Refresh);
     }
 
@@ -200,21 +201,36 @@ internal class MainWindow : Window {
 
         if(ImGui.BeginTabBar("TabBar", ImGuiTabBarFlags.None)) {
             if(ImGui.BeginTabItem("Matches")) {
+                //SizeConstraints = new WindowSizeConstraints {
+                //    MinimumSize = new Vector2(400, 400),
+                //    MaximumSize = new Vector2(725, 1500)
+                //};
                 ccMatches.Draw();
                 ImGui.EndTabItem();
             }
             if(ImGui.BeginTabItem("Summary")) {
-                if(ImGui.BeginChild("SummaryChild")) {
-                    ccSummary.Draw();
-                    ImGui.EndChild();
-                }
+                //if(ImGui.BeginChild("SummaryChild")) {
+                //    ccSummary.Draw();
+                //}
+                //ImGui.EndChild();
+                //SizeConstraints = new WindowSizeConstraints {
+                //    MinimumSize = new Vector2(400, 400),
+                //    MaximumSize = new Vector2(725, 1500)
+                //};
+                ccSummary.Draw();
                 ImGui.EndTabItem();
             }
             if(ImGui.BeginTabItem("Players")) {
-                if(ImGui.BeginChild("PlayersChild")) {
-                    ccPlayers.Draw();
-                    ImGui.EndChild();
-                }
+                //if(ImGui.BeginChild("PlayersChild")) {
+                //    ccPlayers.Draw(); 
+                //}
+                //ImGui.EndChild();
+                //SizeConstraints = new WindowSizeConstraints {
+                //    MinimumSize = new Vector2(600, 400),
+                //    MaximumSize = new Vector2(1800, 1500)
+                //};
+                ccPlayers.Draw();
+
                 ImGui.EndTabItem();
             }
             ImGui.EndTabBar();

@@ -14,7 +14,7 @@ public enum TeamStatus {
 }
 
 public class OtherPlayerFilter : DataFilter {
-    public override string Name => "Other Player";
+    public override string Name => "Player";
     //public override string HelpMessage => "Comma-separate multiple party members.";
     public string PlayerNamesRaw { get; set; } = "";
     public Job PlayerJob { get; set; }
