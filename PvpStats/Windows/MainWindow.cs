@@ -22,6 +22,9 @@ internal class MainWindow : Window {
     private CrystallineConflictList ccMatches;
     private CrystallineConflictSummary ccSummary;
     private CrystallineConflictPlayerList ccPlayers;
+    private Vector2 _ccMatchesSize;
+    private Vector2 _ccSummarySize;
+    private Vector2 _ccPlayerSize;
     internal List<DataFilter> Filters { get; private set; } = new();
     internal SemaphoreSlim RefreshLock { get; init; } = new SemaphoreSlim(1, 1);
     private bool _collapseFilters;
@@ -43,7 +46,7 @@ internal class MainWindow : Window {
         var otherPlayerFilter = new OtherPlayerFilter(plugin, Refresh);
         Filters.Add(otherPlayerFilter);
         Filters.Add(new ResultFilter(plugin, Refresh));
-        //Filters.Add(new MiscFilter(plugin, Refresh, _plugin.Configuration.MatchWindowFilters.MiscFilter));
+        Filters.Add(new MiscFilter(plugin, Refresh, _plugin.Configuration.MatchWindowFilters.MiscFilter));
 
         ccMatches = new(plugin);
         ccSummary = new(plugin);
@@ -205,19 +208,20 @@ internal class MainWindow : Window {
                 //    MinimumSize = new Vector2(400, 400),
                 //    MaximumSize = new Vector2(725, 1500)
                 //};
+                //_ccMatchesSize = ImGui.GetWindowSize();
                 ccMatches.Draw();
                 ImGui.EndTabItem();
             }
             if(ImGui.BeginTabItem("Summary")) {
-                //if(ImGui.BeginChild("SummaryChild")) {
-                //    ccSummary.Draw();
-                //}
-                //ImGui.EndChild();
+                //_ccSummarySize = ImGui.GetWindowSize();
+                if(ImGui.BeginChild("SummaryChild")) {
+                    ccSummary.Draw();
+                }
+                ImGui.EndChild();
                 //SizeConstraints = new WindowSizeConstraints {
                 //    MinimumSize = new Vector2(400, 400),
                 //    MaximumSize = new Vector2(725, 1500)
                 //};
-                ccSummary.Draw();
                 ImGui.EndTabItem();
             }
             if(ImGui.BeginTabItem("Players")) {
@@ -229,6 +233,7 @@ internal class MainWindow : Window {
                 //    MinimumSize = new Vector2(600, 400),
                 //    MaximumSize = new Vector2(1800, 1500)
                 //};
+                //_ccPlayerSize = ImGui.GetWindowSize();
                 ccPlayers.Draw();
 
                 ImGui.EndTabItem();
