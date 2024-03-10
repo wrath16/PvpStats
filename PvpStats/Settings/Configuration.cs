@@ -13,7 +13,10 @@ public class Configuration : IPluginConfiguration {
     public bool AnchorTeamNames { get; set; } = true;
     public bool ResizeableMatchWindow { get; set; } = true;
     public bool SizeFiltersToFit { get; set; } = false;
+    public bool PersistWindowSizePerTab { get; set; } = true;
     public float FilterRatio { get; set; } = 3.2f;
+    public uint FilterHeight { get; set; } = 250;
+    public WindowConfiguration CCWindowConfig { get; set; } = new();
 
     [NonSerialized]
     private Plugin? _plugin;

@@ -29,19 +29,30 @@ internal class ConfigWindow : Window {
 
     private void DrawInterfaceSettings() {
         ImGui.TextColored(ImGuiColors.DalamudYellow, "Tracker Window");
-        var filterRatio = _plugin.Configuration.FilterRatio;
-        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
-        if(ImGui.SliderFloat("Filters height ratio", ref filterRatio, 2f, 5f)) {
-            _plugin.Configuration.FilterRatio = filterRatio;
-            _plugin.Configuration.Save();
-        }
-        ImGuiHelper.HelpMarker("Controls the denominator of the ratio of the window that will be occupied by the filters child.");
+        //var filterRatio = _plugin.Configuration.FilterRatio;
+        //ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
+        //if(ImGui.SliderFloat("Filters height ratio", ref filterRatio, 2f, 5f)) {
+        //    _plugin.Configuration.FilterRatio = filterRatio;
+        //    _plugin.Configuration.Save();
+        //}
+        //ImGuiHelper.HelpMarker("Controls the denominator of the ratio of the window that will be occupied by the filters child.");
         //var sizeToFit = _plugin.Configuration.SizeFiltersToFit;
         //if(ImGui.Checkbox("Size to fit", ref sizeToFit)) {
         //    _plugin.Configuration.SizeFiltersToFit = sizeToFit;
         //    _plugin.Configuration.Save();
         //}
 
+        var filterHeight = (int)_plugin.Configuration.FilterHeight;
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
+        if(ImGui.SliderInt("Filter child height", ref filterHeight, 100, 500)) {
+            _plugin.Configuration.FilterHeight = (uint)filterHeight;
+            _plugin.Configuration.Save();
+        }
+        bool saveTabSize = _plugin.Configuration.PersistWindowSizePerTab;
+        if(ImGui.Checkbox("Save window size per tab", ref saveTabSize)) {
+            _plugin.Configuration.PersistWindowSizePerTab = saveTabSize;
+            _plugin.Configuration.Save();
+        }
         ImGui.Separator();
 
         ImGui.TextColored(ImGuiColors.DalamudYellow, "Match Details Window");

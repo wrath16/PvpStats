@@ -22,9 +22,7 @@ internal class MainWindow : Window {
     private CrystallineConflictList ccMatches;
     private CrystallineConflictSummary ccSummary;
     private CrystallineConflictPlayerList ccPlayers;
-    private Vector2 _ccMatchesSize;
-    private Vector2 _ccSummarySize;
-    private Vector2 _ccPlayerSize;
+    private string _currentTab = "";
     internal List<DataFilter> Filters { get; private set; } = new();
     internal SemaphoreSlim RefreshLock { get; init; } = new SemaphoreSlim(1, 1);
     private bool _collapseFilters;
@@ -186,8 +184,8 @@ internal class MainWindow : Window {
 
     public override void Draw() {
         if(!_collapseFilters && ImGui.BeginChild("FilterChild",
-            new Vector2(ImGui.GetContentRegionAvail().X, float.Max(ImGuiHelpers.GlobalScale * 150, ImGui.GetWindowHeight() / float.Max(_plugin.Configuration.FilterRatio, 1f))),
-            true, ImGuiWindowFlags.AlwaysAutoResize)) {
+            new Vector2(ImGui.GetContentRegionAvail().X, _plugin.Configuration.FilterHeight),
+            true, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.AlwaysVerticalScrollbar)) {
             DrawFiltersTable();
             ImGui.EndChild();
         }
@@ -204,36 +202,20 @@ internal class MainWindow : Window {
 
         if(ImGui.BeginTabBar("TabBar", ImGuiTabBarFlags.None)) {
             if(ImGui.BeginTabItem("Matches")) {
-                //SizeConstraints = new WindowSizeConstraints {
-                //    MinimumSize = new Vector2(400, 400),
-                //    MaximumSize = new Vector2(725, 1500)
-                //};
-                //_ccMatchesSize = ImGui.GetWindowSize();
+                ChangeTab("Matches");
                 ccMatches.Draw();
                 ImGui.EndTabItem();
             }
             if(ImGui.BeginTabItem("Summary")) {
-                //_ccSummarySize = ImGui.GetWindowSize();
+                ChangeTab("Summary");
                 if(ImGui.BeginChild("SummaryChild")) {
                     ccSummary.Draw();
                 }
                 ImGui.EndChild();
-                //SizeConstraints = new WindowSizeConstraints {
-                //    MinimumSize = new Vector2(400, 400),
-                //    MaximumSize = new Vector2(725, 1500)
-                //};
                 ImGui.EndTabItem();
             }
             if(ImGui.BeginTabItem("Players")) {
-                //if(ImGui.BeginChild("PlayersChild")) {
-                //    ccPlayers.Draw(); 
-                //}
-                //ImGui.EndChild();
-                //SizeConstraints = new WindowSizeConstraints {
-                //    MinimumSize = new Vector2(600, 400),
-                //    MaximumSize = new Vector2(1800, 1500)
-                //};
-                //_ccPlayerSize = ImGui.GetWindowSize();
+                ChangeTab("Players");
                 ccPlayers.Draw();
 
                 ImGui.EndTabItem();
@@ -271,6 +253,36 @@ internal class MainWindow : Window {
                 filter.Draw();
             }
             ImGui.EndTable();
+        }
+    }
+
+    private void ChangeTab(string tab) {
+        if(_currentTab != tab) {
+            SaveTabSize(_currentTab);
+            _currentTab = tab;
+            if(_plugin.Configuration.PersistWindowSizePerTab) {
+                LoadTabSize(tab);
+            }
+        } else {
+            SizeCondition = ImGuiCond.Once;
+        }
+    }
+
+    private void SaveTabSize(string tab) {
+        if(tab != "") {
+            if(_plugin.Configuration.CCWindowConfig.TabWindowSizes.ContainsKey(tab)) {
+                _plugin.Configuration.CCWindowConfig.TabWindowSizes[tab] = ImGui.GetWindowSize();
+            } else {
+                _plugin.Configuration.CCWindowConfig.TabWindowSizes.Add(tab, ImGui.GetWindowSize());
+            }
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+    }
+
+    private void LoadTabSize(string tab) {
+        if(_plugin.Configuration.CCWindowConfig.TabWindowSizes.ContainsKey(tab)) {
+            Size = _plugin.Configuration.CCWindowConfig.TabWindowSizes[tab];
+            SizeCondition = ImGuiCond.Always;
         }
     }
 }

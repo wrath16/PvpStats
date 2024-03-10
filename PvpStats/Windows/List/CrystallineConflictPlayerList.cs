@@ -141,7 +141,7 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
         ImGuiHelper.HelpMarker("Right-click table header for column options.", false);
         ImGui.SameLine();
         ImGui.TextUnformatted($"Total players:   {PlayerCount}");
-        
+
     }
 
     protected override void PostColumnSetup() {
