@@ -23,6 +23,7 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
         //public double AvgKills, AvgDeaths, AvgAssists, AvgDamageDealt, AvgDamageTaken, AvgHPRestored;
         public TimeSpan TotalTimeOnCrystal = TimeSpan.Zero, TotalMatchTime = TimeSpan.Zero;
         public ulong TotalKills, TotalDeaths, TotalAssists, TotalDamageDealt, TotalDamageTaken, TotalHPRestored;
+        public ulong? DamageDealtPerKA, DamageDealtPerLife, DamageTakenPerLife, HPRestoredPerLife; 
         //public double KillsPerMin, DeathsPerMin, AssistsPerMin, DamageDealtPerMin, DamageTakenPerMin, HPRestoredPerMin;
         public ScoreboardDouble StatsPerMatch = new(), StatsPerMin = new(), StatsMedianTeamContribution = new();
         public List<ScoreboardDouble> TeamContribs = new();
@@ -101,6 +102,10 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
         new ColumnParams{Name = "Median Damage Taken Contrib.", Id = (uint)"StatsMedianTeamContribution.DamageTaken".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
         new ColumnParams{Name = "Median HP Restored Contrib.", Id = (uint)"StatsMedianTeamContribution.HPRestored".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
         new ColumnParams{Name = "Median Time on Crystal Contrib.", Id = (uint)"StatsMedianTeamContribution.TimeOnCrystalDouble".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Damage Dealt Per Kill/Assist", Id = (uint)"DamageDealtPerKA".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Damage Dealt Per Life", Id = (uint)"DamageDealtPerLife".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Damage Taken Per Life", Id = (uint)"DamageTakenPerLife".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "HP Restored Per Life", Id = (uint)"HPRestoredPerLife".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
     };
 
     private CrystallineConflictList ListModel { get; init; }
@@ -303,6 +308,15 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
         ImGui.TextUnformatted(string.Format("{0:P1}", Stats[item].StatsMedianTeamContribution.HPRestored));
         ImGui.TableNextColumn();
         ImGui.TextUnformatted(string.Format("{0:P1}", Stats[item].StatsMedianTeamContribution.TimeOnCrystalDouble));
+
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{Stats[item].DamageDealtPerKA}");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{Stats[item].DamageDealtPerLife}");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{Stats[item].DamageTakenPerLife}");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{Stats[item].HPRestoredPerLife}");
     }
 
     //we don't need this
@@ -409,10 +423,10 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
         }
 
         foreach(var playerStat in playerStats) {
-            //remove players who don't meet match threshold
-            if(playerStat.Value.MatchesAll < MinMatches) {
-                playerStats.Remove(playerStat.Key);
-            }
+            ////remove players who don't meet match threshold
+            //if(playerStat.Value.MatchesAll < MinMatches) {
+            //    playerStats.Remove(playerStat.Key);
+            //}
 
             //set win rates
             playerStat.Value.PlayerWinrateAll = (double)playerStat.Value.PlayerWinsAll / playerStat.Value.MatchesAll;
@@ -454,6 +468,12 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
                 playerStat.Value.StatsMedianTeamContribution.DamageTaken = playerStat.Value.TeamContribs.OrderBy(x => x.DamageTaken).ElementAt((int)playerStat.Value.ScoreboardMatches / 2).DamageTaken;
                 playerStat.Value.StatsMedianTeamContribution.HPRestored = playerStat.Value.TeamContribs.OrderBy(x => x.HPRestored).ElementAt((int)playerStat.Value.ScoreboardMatches / 2).HPRestored;
                 playerStat.Value.StatsMedianTeamContribution.TimeOnCrystalDouble = playerStat.Value.TeamContribs.OrderBy(x => x.TimeOnCrystalDouble).ElementAt((int)playerStat.Value.ScoreboardMatches / 2).TimeOnCrystalDouble;
+
+                var killsAndAssists = playerStat.Value.TotalKills + playerStat.Value.TotalAssists;
+                playerStat.Value.DamageDealtPerKA = killsAndAssists != 0 ? playerStat.Value.TotalDamageDealt / killsAndAssists : null;
+                playerStat.Value.DamageDealtPerLife = playerStat.Value.TotalDamageDealt / (playerStat.Value.TotalDeaths + 1);
+                playerStat.Value.DamageTakenPerLife = playerStat.Value.TotalDamageTaken / (playerStat.Value.TotalDeaths + 1);
+                playerStat.Value.HPRestoredPerLife = playerStat.Value.TotalHPRestored / (playerStat.Value.TotalDeaths + 1);
             }
         }
         try {

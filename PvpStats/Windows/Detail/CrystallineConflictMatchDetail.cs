@@ -83,8 +83,8 @@ internal class CrystallineConflictMatchDetail : Window {
                 _postMatchRows.Add(teamStats);
                 _advancedStats.Add(teamStats, new AdvancedStats {
                     DamageDealtPerKillAssist = teamStats.DamageDealt / double.Max(teamStats.Kills, 1),
-                    DamageDealtPerDeath = teamStats.DamageDealt / double.Max(teamStats.Deaths + 5, 1),
-                    DamageTakenPerDeath = teamStats.DamageTaken / double.Max(teamStats.Deaths + 5, 1),
+                    DamageDealtPerDeath = teamStats.DamageDealt / double.Max(teamStats.Deaths + team.Value.PlayerStats.Count, 1),
+                    DamageTakenPerDeath = teamStats.DamageTaken / double.Max(teamStats.Deaths + team.Value.PlayerStats.Count, 1),
                     HPPerDeath = teamStats.HPRestored / double.Max(teamStats.Deaths + 5, 1),
                 });
 
