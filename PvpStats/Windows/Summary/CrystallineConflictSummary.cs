@@ -36,7 +36,7 @@ internal class CrystallineConflictSummary {
     private double _averageKills, _averageDeaths, _averageAssists, _averageDamageDealt, _averageDamageTaken, _averageHPRestored;
     private double _killsPerMin, _deathsPerMin, _assistsPerMin, _damageDealtPerMin, _damageTakenPerMin, _hpRestoredPerMin;
     private double _killContribution, _deathContribution, _assistContribution, _damageDealtContribution, _damageTakenContribution, _hpRestoredContribution, _timeOnCrystalContribution;
-    private TimeSpan _averageTimeOnCrystal, _averageMatchLengthStats, _timeOnCrystalPerMin;
+    private TimeSpan _averageTimeOnCrystal, _averageMatchLengthStats, _averageMatchLength, _timeOnCrystalPerMin;
 
     public CrystallineConflictSummary(Plugin plugin) {
         _plugin = plugin;
@@ -54,7 +54,7 @@ internal class CrystallineConflictSummary {
         double averageKills = 0, averageDeaths = 0, averageAssists = 0, averageDamageDealt = 0, averageDamageTaken = 0, averageHPRestored = 0;
         double killsPerMin = 0, deathsPerMin = 0, assistsPerMin = 0, damageDealtPerMin = 0, damageTakenPerMin = 0, hpRestoredPerMin = 0;
         double killContribution = 0, deathContribution = 0, assistContribution = 0, damageDealtContribution = 0, damageTakenContribution = 0, hpRestoredContribution = 0, timeOnCrystalContribution = 0;
-        TimeSpan averageTimeOnCrystal = TimeSpan.FromSeconds(0), averageMatchLengthStats = TimeSpan.FromSeconds(0), timeOnCrystalPerMin = TimeSpan.FromSeconds(0);
+        TimeSpan averageTimeOnCrystal = TimeSpan.Zero, averageMatchLengthStats = TimeSpan.Zero, timeOnCrystalPerMin = TimeSpan.Zero, totalMatchLength = TimeSpan.Zero, averageMatchLength = TimeSpan.Zero;
 
         totalMatches = matches.Count;
         totalWins = matches.Where(x => x.LocalPlayerTeam != null && x.MatchWinner != null && x.MatchWinner == x.LocalPlayerTeam.TeamName).Count();
@@ -101,6 +101,7 @@ internal class CrystallineConflictSummary {
             }
         });
         foreach(var match in matches) {
+            totalMatchLength += match.MatchDuration ?? TimeSpan.Zero;
             if(match.LocalPlayerTeamMember != null) {
                 if(match.LocalPlayerTeamMember.Job != null) {
                     addJobStat(jobStats, (Job)match.LocalPlayerTeamMember.Job, match.IsWin);
@@ -176,7 +177,7 @@ internal class CrystallineConflictSummary {
         enemyJobStats = enemyJobStats.OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         teammateStats = teammateStats.OrderBy(x => x.Value.Matches).OrderByDescending(x => 2 * x.Value.Wins - x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         enemyStats = enemyStats.OrderBy(x => x.Value.Matches).OrderByDescending(x => x.Value.Matches - 2 * x.Value.Wins).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-
+        averageMatchLength = totalMatches != 0 ? totalMatchLength / totalMatches : TimeSpan.Zero;
         //calculate average stats
         if(statsEligibleMatches > 0) {
             averageKills = (float)totalStats.Kills / statsEligibleMatches;
@@ -215,11 +216,12 @@ internal class CrystallineConflictSummary {
 
         try {
             _refreshLock.WaitAsync();
-
             _totalMatches = totalMatches;
             _totalWins = totalWins;
             _totalLosses = totalLosses;
             _totalOther = totalOther;
+            _averageMatchLength = averageMatchLength;
+            _averageMatchLengthStats = averageMatchLengthStats;
             _jobStats = jobStats;
             _allyJobStats = allyJobStats;
             _enemyJobStats = enemyJobStats;
@@ -266,6 +268,21 @@ internal class CrystallineConflictSummary {
                 ImGui.Separator();
                 ImGui.TextColored(ImGuiColors.DalamudYellow, "Jobs Played:");
                 DrawJobTable(_jobStats);
+            }
+
+            if(_statsEligibleMatches > 0) {
+                ImGui.Separator();
+                ImGui.TextColored(ImGuiColors.DalamudYellow, "Average Performance:");
+                //ImGui.SameLine();
+                //ImGui.Text($"Eligible matches: {_statsEligibleMatches}");
+                //ImGui.SameLine();
+                //ImGui.Text($"Eligible wins: {_statsEligibleWins}");
+                //ImGui.SameLine();
+                ImGuiHelper.HelpMarker("1st row: average per match.\n2nd row: average per minute.\n3rd row: median team contribution per match.");
+                DrawMatchStatsTable();
+            }
+
+            if(_jobStats.Count > 0) {
                 ImGui.Separator();
                 ImGui.TextColored(ImGuiColors.DalamudYellow, "Teammates' Jobs Played:");
                 DrawJobTable(_allyJobStats);
@@ -284,18 +301,6 @@ internal class CrystallineConflictSummary {
                 ImGui.Separator();
                 ImGui.TextColored(ImGuiColors.DalamudYellow, "Top Opponents:");
                 DrawPlayerStatsTable(_enemyStats);
-            }
-
-            if(_statsEligibleMatches > 0) {
-                ImGui.Separator();
-                ImGui.TextColored(ImGuiColors.DalamudYellow, "Average Stats:");
-                //ImGui.SameLine();
-                //ImGui.Text($"Eligible matches: {_statsEligibleMatches}");
-                //ImGui.SameLine();
-                //ImGui.Text($"Eligible wins: {_statsEligibleWins}");
-                //ImGui.SameLine();
-                ImGuiHelper.HelpMarker("1st row: average per match.\n2nd row: average per minute.\n3rd row: median team contribution per match.");
-                DrawMatchStatsTable();
             }
         } finally {
             _refreshLock.Release();
@@ -335,6 +340,14 @@ internal class CrystallineConflictSummary {
                     ImGui.Text($"{_totalOther.ToString("N0")}");
                     ImGui.TableNextColumn();
                 }
+                ImGui.TableNextRow();
+                ImGui.TableNextRow();
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                ImGui.Text("Average match length: ");
+                ImGui.TableNextColumn();
+                ImGui.Text($"{_averageMatchLength.Minutes}{_averageMatchLength.ToString(@"\:ss")}");
+                ImGui.TableNextColumn();
             }
             ImGui.EndTable();
         }
