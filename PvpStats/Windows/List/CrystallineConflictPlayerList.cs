@@ -482,6 +482,7 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
             DataModelUntruncated = DataModel;
             Stats = playerStats;
             PlayerCount = DataModel.Count;
+            RemoveByMatchCount(MinMatches);
             _triggerSort = true;
         } finally {
             RefreshLock.Release();
