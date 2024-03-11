@@ -36,6 +36,7 @@ internal class MainWindow : Window {
         };
         Flags = Flags | ImGuiWindowFlags.NoScrollbar;
         _plugin = plugin;
+        _collapseFilters = plugin.Configuration.CCWindowConfig.FiltersCollapsed;
         Filters.Add(new MatchTypeFilter(plugin, Refresh, _plugin.Configuration.MatchWindowFilters.MatchTypeFilter));
         Filters.Add(new ArenaFilter(plugin, Refresh, _plugin.Configuration.MatchWindowFilters.ArenaFilter));
         Filters.Add(new TimeFilter(plugin, Refresh, _plugin.Configuration.MatchWindowFilters.TimeFilter));
@@ -195,6 +196,7 @@ internal class MainWindow : Window {
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
         if(ImGui.Button($"{(_collapseFilters ? (char)FontAwesomeIcon.CaretDown : (char)FontAwesomeIcon.CaretUp)}", new Vector2(-1, 10 * ImGui.GetIO().FontGlobalScale))) {
             _collapseFilters = !_collapseFilters;
+            _plugin.Configuration.CCWindowConfig.FiltersCollapsed = _collapseFilters;
         }
         ImGui.PopStyleVar(2);
         ImGui.PopFont();
@@ -275,7 +277,7 @@ internal class MainWindow : Window {
             } else {
                 _plugin.Configuration.CCWindowConfig.TabWindowSizes.Add(tab, ImGui.GetWindowSize());
             }
-            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+            //_plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
     }
 

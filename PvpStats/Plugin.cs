@@ -148,6 +148,10 @@ public sealed class Plugin : IDalamudPlugin {
         if(DataQueue != null) {
             DataQueue.Dispose();
         }
+
+        if(Configuration != null) {
+            Configuration.Save();
+        }
     }
 
     private void OnCommand(string command, string args) {

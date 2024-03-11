@@ -104,6 +104,7 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
     };
 
     private CrystallineConflictList ListModel { get; init; }
+    private List<PlayerAlias> DataModelUntruncated { get; set; } = new();
     private OtherPlayerFilter OtherPlayerFilter { get; init; }
     private Dictionary<PlayerAlias, PlayerStats> Stats = new();
     private int PlayerCount { get; set; }
@@ -125,6 +126,7 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
     public CrystallineConflictPlayerList(Plugin plugin, CrystallineConflictList listModel, OtherPlayerFilter playerFilter) : base(plugin) {
         ListModel = listModel;
         OtherPlayerFilter = playerFilter;
+        MinMatches = plugin.Configuration.MatchWindowFilters.MinMatches;
     }
 
     protected override void PreTableDraw() {
@@ -133,9 +135,10 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
         if(ImGui.SliderInt("Min. matches", ref minMatches, 1, 100)) {
             MinMatches = (uint)minMatches;
             _plugin.DataQueue.QueueDataOperation(() => {
-                //_plugin.Configuration.MatchWindowFilters.MinMatches = (uint)minMatches;
+                _plugin.Configuration.MatchWindowFilters.MinMatches = MinMatches;
                 //_plugin.Configuration.Save();
-                RefreshDataModel();
+                //RefreshDataModel();
+                RemoveByMatchCount(MinMatches);
             });
         }
         ImGuiHelper.HelpMarker("Right-click table header for column options.", false);
@@ -164,17 +167,23 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
         ImGui.TextUnformatted($"{item.HomeWorld}");
         ImGui.TableNextColumn();
         var job = Stats[item].FavoredJob;
-        var role = PlayerJobHelper.GetRoleFromJob(job);
+        var role = PlayerJobHelper.GetSubRoleFromJob(job);
         var jobColor = ImGuiColors.DalamudWhite;
         switch(role) {
-            case JobRole.TANK:
+            case JobSubRole.TANK:
                 jobColor = ImGuiColors.TankBlue;
                 break;
-            case JobRole.HEALER:
+            case JobSubRole.HEALER:
                 jobColor = ImGuiColors.HealerGreen;
                 break;
-            case JobRole.DPS:
+            case JobSubRole.RANGED:
+                jobColor = ImGuiColors.DalamudOrange;
+                break;
+            case JobSubRole.MELEE:
                 jobColor = ImGuiColors.DPSRed;
+                break;
+            case JobSubRole.CASTER:
+                jobColor = ImGuiColors.ParsedPink;
                 break;
             default:
                 break;
@@ -450,6 +459,7 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
         try {
             RefreshLock.Wait();
             DataModel = playerStats.Keys.ToList();
+            DataModelUntruncated = DataModel;
             Stats = playerStats;
             PlayerCount = DataModel.Count;
             _triggerSort = true;
@@ -458,11 +468,15 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
         }
     }
 
-    private void RemoveByMatchCount() {
-        ////remove players who don't meet match threshold
-        //if(playerStat.Value.MatchesAll < MinMatches) {
-        //    playerStats.Remove(playerStat.Key);
-        //}
+    private void RemoveByMatchCount(uint minMatches) {
+        List<PlayerAlias> DataModelTruncated = new();
+        foreach(var player in DataModelUntruncated) {
+            if(Stats[player].MatchesAll >= minMatches) {
+                DataModelTruncated.Add(player);
+            }
+        }
+        DataModel = DataModelTruncated;
+        GoToPage(0);
     }
 
     private void SortByColumn(uint columnId, ImGuiSortDirection direction) {
