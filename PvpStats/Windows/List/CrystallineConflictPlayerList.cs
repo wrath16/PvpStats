@@ -23,7 +23,7 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
         //public double AvgKills, AvgDeaths, AvgAssists, AvgDamageDealt, AvgDamageTaken, AvgHPRestored;
         public TimeSpan TotalTimeOnCrystal = TimeSpan.Zero, TotalMatchTime = TimeSpan.Zero;
         public ulong TotalKills, TotalDeaths, TotalAssists, TotalDamageDealt, TotalDamageTaken, TotalHPRestored;
-        public ulong? DamageDealtPerKA, DamageDealtPerLife, DamageTakenPerLife, HPRestoredPerLife; 
+        public ulong DamageDealtPerKA, DamageDealtPerLife, DamageTakenPerLife, HPRestoredPerLife; 
         //public double KillsPerMin, DeathsPerMin, AssistsPerMin, DamageDealtPerMin, DamageTakenPerMin, HPRestoredPerMin;
         public ScoreboardDouble StatsPerMatch = new(), StatsPerMin = new(), StatsMedianTeamContribution = new();
         public List<ScoreboardDouble> TeamContribs = new();
@@ -470,7 +470,7 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
                 playerStat.Value.StatsMedianTeamContribution.TimeOnCrystalDouble = playerStat.Value.TeamContribs.OrderBy(x => x.TimeOnCrystalDouble).ElementAt((int)playerStat.Value.ScoreboardMatches / 2).TimeOnCrystalDouble;
 
                 var killsAndAssists = playerStat.Value.TotalKills + playerStat.Value.TotalAssists;
-                playerStat.Value.DamageDealtPerKA = killsAndAssists != 0 ? playerStat.Value.TotalDamageDealt / killsAndAssists : null;
+                playerStat.Value.DamageDealtPerKA = killsAndAssists != 0 ? playerStat.Value.TotalDamageDealt / killsAndAssists : playerStat.Value.TotalDamageDealt;
                 playerStat.Value.DamageDealtPerLife = playerStat.Value.TotalDamageDealt / (playerStat.Value.TotalDeaths + 1);
                 playerStat.Value.DamageTakenPerLife = playerStat.Value.TotalDamageTaken / (playerStat.Value.TotalDeaths + 1);
                 playerStat.Value.HPRestoredPerLife = playerStat.Value.TotalHPRestored / (playerStat.Value.TotalDeaths + 1);
