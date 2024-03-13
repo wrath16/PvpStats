@@ -6,8 +6,9 @@
 Final Fantasy XIV Dalamud plugin for recording PvP match history. Currently only supports Crystalline Conflict, with future plans for Frontline and Rival Wings support.
 
 ## Usage Instructions
-* Matchs are recorded automatically.
+* Matches are recorded automatically. There's no need to wait for the scoreboard to appear for it to be saved.
 * Enter `/ccstats` to open the Crystalline Conflict stats window.
+* Enter `/pvpstatsconfig` or press the gear on the plugin description to access settings.
 
 ## Known Issues
 
