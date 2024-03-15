@@ -1,8 +1,11 @@
 ﻿using Dalamud.Interface.Colors;
+using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PvpStats.Helpers;
 using PvpStats.Types.Display;
 using PvpStats.Types.Player;
+using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -75,20 +78,27 @@ internal class CrystallineConflictJobList : FilteredList<Job> {
 
     public Dictionary<Job, CCPlayerJobStats> StatsModel { get; private set; } = new();
     private CrystallineConflictList ListModel { get; init; }
+    private StatSourceFilter StatSourceFilter { get; set; }
     private bool _triggerSort = false;
 
     public CrystallineConflictJobList(Plugin plugin, CrystallineConflictList listModel) : base(plugin) {
         ListModel = listModel;
+        StatSourceFilter = new(plugin, RefreshDataModel);
     }
 
     protected override void PreTableDraw() {
-        //var minColor = ImGuiColors.DalamudWhite;
-        //var maxColor = ImGuiColors.DPSRed;
+        using(var filterTable = ImRaii.Table("jobListFilterTable", 2)) {
+            if(filterTable) {
+                ImGui.TableSetupColumn("filterName", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 110f);
+                ImGui.TableSetupColumn($"filters", ImGuiTableColumnFlags.WidthStretch);
 
-        //var color = ImGuiHelper.ColorScale(minColor, maxColor, 1, 5, 3);
-        //ImGui.TextColored(minColor, $"min, {minColor.X} {minColor.Y} {minColor.Z} {minColor.W}");
-        //ImGui.TextColored(maxColor, $"max, {maxColor.X} {maxColor.Y} {maxColor.Z} {maxColor.W}");
-        //ImGui.TextColored(color, $"test, {color.X} {color.Y} {color.Z} {color.W}");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Include stats from:");
+                ImGui.TableNextColumn();
+                StatSourceFilter.Draw();
+            }
+        }
+        //ImGuiHelper.HelpMarker("Right-click table header for column options.", false);
     }
 
     protected override void PostColumnSetup() {
@@ -231,29 +241,19 @@ internal class CrystallineConflictJobList : FilteredList<Job> {
         ImGui.TableNextColumn();
         ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardContrib.TimeOnCrystalDouble, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
 
-        //ImGui.TableNextColumn();
-        //ImGuiHelper.DrawPercentage(StatsModel[item].ScoreboardContrib.Kills);
-        //ImGui.TableNextColumn();
-        //ImGuiHelper.DrawPercentage(StatsModel[item].ScoreboardContrib.Deaths);
-        //ImGui.TableNextColumn();
-        //ImGuiHelper.DrawPercentage(StatsModel[item].ScoreboardContrib.Assists);
-        //ImGui.TableNextColumn();
-        //ImGuiHelper.DrawPercentage(StatsModel[item].ScoreboardContrib.DamageDealt);
-        //ImGui.TableNextColumn();
-        //ImGuiHelper.DrawPercentage(StatsModel[item].ScoreboardContrib.DamageTaken);
-        //ImGui.TableNextColumn();
-        //ImGuiHelper.DrawPercentage(StatsModel[item].ScoreboardContrib.HPRestored);
-        //ImGui.TableNextColumn();
-        //ImGuiHelper.DrawPercentage(StatsModel[item].ScoreboardContrib.TimeOnCrystalDouble);
-
         ImGui.TableNextColumn();
         ImGui.TextUnformatted($"{StatsModel[item].ScoreboardTotal.DamageDealtPerKA}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{StatsModel[item].ScoreboardTotal.DamageDealtPerLife}");
+        ImGuiHelper.DrawColorScale(StatsModel[item].ScoreboardTotal.DamageDealtPerLife, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 200000f, 400000f, _plugin.Configuration.ColorScaleStats, "#");
+        //ImGui.TextUnformatted($"{StatsModel[item].ScoreboardTotal.DamageDealtPerLife}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{StatsModel[item].ScoreboardTotal.DamageTakenPerLife}");
+        ImGuiHelper.DrawColorScale(StatsModel[item].ScoreboardTotal.DamageTakenPerLife, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 200000f, 400000f, _plugin.Configuration.ColorScaleStats, "#");
+
+        //ImGui.TextUnformatted($"{StatsModel[item].ScoreboardTotal.DamageTakenPerLife}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{StatsModel[item].ScoreboardTotal.HPRestoredPerLife}");
+        ImGuiHelper.DrawColorScale(StatsModel[item].ScoreboardTotal.HPRestoredPerLife, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 100000f, 500000f, _plugin.Configuration.ColorScaleStats, "#");
+
+        //ImGui.TextUnformatted($"{StatsModel[item].ScoreboardTotal.HPRestoredPerLife}");
     }
 
     public override void OpenFullEditDetail(Job item) {
@@ -282,6 +282,17 @@ internal class CrystallineConflictJobList : FilteredList<Job> {
                 foreach(var player in team.Value.Players) {
                     if(player.Job != null) {
                         var job = (Job)player.Job;
+                        bool isLocalPlayer = player.Alias.Equals(match.LocalPlayer);
+                        bool isTeammate = !match.IsSpectated && team.Key == match.LocalPlayerTeam!.TeamName;
+                        if(!StatSourceFilter.FilterState[StatSource.LocalPlayer] && isLocalPlayer && !match.IsSpectated) {
+                            continue;
+                        } else if(!StatSourceFilter.FilterState[StatSource.Teammate] && isTeammate && !match.IsSpectated) {
+                            continue;
+                        } else if(!StatSourceFilter.FilterState[StatSource.Opponent] && !isTeammate && !match.IsSpectated) {
+                            continue;
+                        } else if(!StatSourceFilter.FilterState[StatSource.Spectated] && match.IsSpectated) {
+                            continue;
+                        }
 
                         statsModel[job].StatsAll.Matches++;
                         if(match.MatchWinner == team.Key) {
@@ -290,7 +301,7 @@ internal class CrystallineConflictJobList : FilteredList<Job> {
                             statsModel[job].StatsAll.Losses++;
                         }
 
-                        if(player.Alias.Equals(match.LocalPlayer)) {
+                        if(isLocalPlayer) {
                             statsModel[job].StatsPersonal.Matches++;
                             if(match.IsWin) {
                                 statsModel[job].StatsPersonal.Wins++;
@@ -300,7 +311,7 @@ internal class CrystallineConflictJobList : FilteredList<Job> {
                         }
 
                         if(!match.IsSpectated) {
-                            if(team.Key == match.LocalPlayerTeam!.TeamName) {
+                            if(isTeammate) {
                                 statsModel[job].StatsTeammate.Matches++;
                                 if(match.IsWin) {
                                     statsModel[job].StatsTeammate.Wins++;

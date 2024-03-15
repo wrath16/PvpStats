@@ -1,0 +1,87 @@
+﻿using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
+using ImGuiNET;
+using System;
+using System.Collections.Generic;
+
+namespace PvpStats.Windows.Filter;
+
+public enum StatSource {
+    LocalPlayer,
+    Teammate,
+    Opponent,
+    Spectated
+}
+
+public class StatSourceFilter : DataFilter {
+
+    public override string Name => "Stat Source";
+    internal bool AllSelected { get; set; }
+    public Dictionary<StatSource, bool> FilterState { get; set; } = new();
+
+    public static Dictionary<StatSource, string> FilterNames => new() {
+        { StatSource.LocalPlayer, "Local Player" },
+        { StatSource.Teammate, "Teammates" },
+        { StatSource.Opponent, "Opponents" },
+        { StatSource.Spectated, "Spectated Matches" }
+    };
+
+    public StatSourceFilter() { }
+
+    internal StatSourceFilter(Plugin plugin, Action action, StatSourceFilter? filter = null) : base(plugin, action) {
+        FilterState = new() {
+                {StatSource.LocalPlayer, true },
+                {StatSource.Teammate, true },
+                {StatSource.Opponent, true },
+                {StatSource.Spectated, true },
+            };
+
+        if(filter is not null) {
+            foreach(var category in filter.FilterState) {
+                FilterState[category.Key] = category.Value;
+            }
+        }
+        UpdateAllSelected();
+    }
+
+    private void UpdateAllSelected() {
+        AllSelected = true;
+        foreach(var category in FilterState) {
+            AllSelected = AllSelected && category.Value;
+        }
+    }
+
+    internal override void Draw() {
+        bool allSelected = AllSelected;
+        if(ImGui.Checkbox($"Select All##{GetHashCode()}", ref allSelected)) {
+            _plugin!.DataQueue.QueueDataOperation(() => {
+                foreach(var category in FilterState) {
+                    FilterState[category.Key] = allSelected;
+                }
+                AllSelected = allSelected;
+                Refresh();
+            });
+        }
+
+        using var table = ImRaii.Table("statSourceTable", 4);
+        if(table) {
+            ImGui.TableSetupColumn($"c1", ImGuiTableColumnFlags.WidthFixed, float.Min(ImGui.GetContentRegionAvail().X / 4, ImGuiHelpers.GlobalScale * 150f));
+            ImGui.TableSetupColumn($"c2", ImGuiTableColumnFlags.WidthFixed, float.Min(ImGui.GetContentRegionAvail().X / 4, ImGuiHelpers.GlobalScale * 150f));
+            ImGui.TableSetupColumn($"c3", ImGuiTableColumnFlags.WidthFixed, float.Min(ImGui.GetContentRegionAvail().X / 4, ImGuiHelpers.GlobalScale * 150f));
+            ImGui.TableSetupColumn($"c4", ImGuiTableColumnFlags.WidthFixed, float.Min(ImGui.GetContentRegionAvail().X / 4, ImGuiHelpers.GlobalScale * 200f));
+            ImGui.TableNextRow();
+
+            foreach(var category in FilterState) {
+                ImGui.TableNextColumn();
+                bool filterState = category.Value;
+                if(ImGui.Checkbox($"{FilterNames[category.Key]}##{GetHashCode()}", ref filterState)) {
+                    _plugin!.DataQueue.QueueDataOperation(() => {
+                        FilterState[category.Key] = filterState;
+                        UpdateAllSelected();
+                        Refresh();
+                    });
+                }
+            }
+        }
+    }
+}

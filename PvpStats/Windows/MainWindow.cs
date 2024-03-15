@@ -62,12 +62,12 @@ internal class MainWindow : Window {
     public override void PreDraw() {
         base.PreDraw();
         //_plugin.Log.Debug($"predraw collapsed: {Collapsed}");
-        if(Collapsed == true) {
-            _plugin.Log.Debug("collapsed");
-            var originalSize = Size;
-            Size = new Vector2(20, 20);
-            Position = new Vector2(Position.Value.X + originalSize.Value.X - 20, Position.Value.Y);
-        }
+        //if(Collapsed == true) {
+        //    _plugin.Log.Debug("collapsed");
+        //    var originalSize = Size;
+        //    Size = new Vector2(20, 20);
+        //    Position = new Vector2(Position.Value.X + originalSize.Value.X - 20, Position.Value.Y);
+        //}
     }
 
     public void Refresh() {
@@ -226,14 +226,14 @@ internal class MainWindow : Window {
                 ImGui.EndChild();
                 ImGui.EndTabItem();
             }
-            if(ImGui.BeginTabItem("Players")) {
-                ChangeTab("Players");
-                ccPlayers.Draw();
-                ImGui.EndTabItem();
-            }
             if(ImGui.BeginTabItem("Jobs")) {
                 ChangeTab("Jobs");
                 ccJobs.Draw();
+                ImGui.EndTabItem();
+            }
+            if(ImGui.BeginTabItem("Players")) {
+                ChangeTab("Players");
+                ccPlayers.Draw();
                 ImGui.EndTabItem();
             }
             ImGui.EndTabBar();
