@@ -22,6 +22,7 @@ internal class MainWindow : Window {
     private CrystallineConflictList ccMatches;
     private CrystallineConflictSummary ccSummary;
     private CrystallineConflictPlayerList ccPlayers;
+    private CrystallineConflictJobList ccJobs;
     private string _currentTab = "";
     internal List<DataFilter> Filters { get; private set; } = new();
     internal SemaphoreSlim RefreshLock { get; init; } = new SemaphoreSlim(1, 1);
@@ -50,6 +51,7 @@ internal class MainWindow : Window {
         ccMatches = new(plugin);
         ccSummary = new(plugin);
         ccPlayers = new(plugin, ccMatches, otherPlayerFilter);
+        ccJobs = new(plugin, ccMatches);
         _plugin.DataQueue.QueueDataOperation(Refresh);
     }
 
@@ -59,6 +61,13 @@ internal class MainWindow : Window {
 
     public override void PreDraw() {
         base.PreDraw();
+        //_plugin.Log.Debug($"predraw collapsed: {Collapsed}");
+        if(Collapsed == true) {
+            _plugin.Log.Debug("collapsed");
+            var originalSize = Size;
+            Size = new Vector2(20, 20);
+            Position = new Vector2(Position.Value.X + originalSize.Value.X - 20, Position.Value.Y);
+        }
     }
 
     public void Refresh() {
@@ -177,6 +186,7 @@ internal class MainWindow : Window {
             ccMatches.Refresh(matches);
             ccSummary.Refresh(matches);
             ccPlayers.Refresh(new());
+            ccJobs.Refresh(new());
             _plugin.Configuration.Save();
         } finally {
             RefreshLock.Release();
@@ -185,7 +195,7 @@ internal class MainWindow : Window {
 
     public override void Draw() {
         if(!_collapseFilters && ImGui.BeginChild("FilterChild",
-            new Vector2(ImGui.GetContentRegionAvail().X, _plugin.Configuration.FilterHeight),
+            new Vector2(ImGui.GetContentRegionAvail().X, _plugin.Configuration.CCWindowConfig.FilterHeight),
             true, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.AlwaysVerticalScrollbar)) {
             DrawFiltersTable();
             ImGui.EndChild();
@@ -219,7 +229,11 @@ internal class MainWindow : Window {
             if(ImGui.BeginTabItem("Players")) {
                 ChangeTab("Players");
                 ccPlayers.Draw();
-
+                ImGui.EndTabItem();
+            }
+            if(ImGui.BeginTabItem("Jobs")) {
+                ChangeTab("Jobs");
+                ccJobs.Draw();
                 ImGui.EndTabItem();
             }
             ImGui.EndTabBar();

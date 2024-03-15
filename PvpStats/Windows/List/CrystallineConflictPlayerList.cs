@@ -23,7 +23,7 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
         //public double AvgKills, AvgDeaths, AvgAssists, AvgDamageDealt, AvgDamageTaken, AvgHPRestored;
         public TimeSpan TotalTimeOnCrystal = TimeSpan.Zero, TotalMatchTime = TimeSpan.Zero;
         public ulong TotalKills, TotalDeaths, TotalAssists, TotalDamageDealt, TotalDamageTaken, TotalHPRestored;
-        public ulong DamageDealtPerKA, DamageDealtPerLife, DamageTakenPerLife, HPRestoredPerLife; 
+        public ulong DamageDealtPerKA, DamageDealtPerLife, DamageTakenPerLife, HPRestoredPerLife;
         //public double KillsPerMin, DeathsPerMin, AssistsPerMin, DamageDealtPerMin, DamageTakenPerMin, HPRestoredPerMin;
         public ScoreboardDouble StatsPerMatch = new(), StatsPerMin = new(), StatsMedianTeamContribution = new();
         public List<ScoreboardDouble> TeamContribs = new();

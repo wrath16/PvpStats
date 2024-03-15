@@ -42,16 +42,21 @@ internal class ConfigWindow : Window {
         //    _plugin.Configuration.Save();
         //}
 
-        var filterHeight = (int)_plugin.Configuration.FilterHeight;
+        var filterHeight = (int)_plugin.Configuration.CCWindowConfig.FilterHeight;
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
         if(ImGui.SliderInt("Filter child height", ref filterHeight, 100, 500)) {
-            _plugin.Configuration.FilterHeight = (uint)filterHeight;
-            _plugin.Configuration.Save();
+            _plugin.Configuration.CCWindowConfig.FilterHeight = (uint)filterHeight;
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
         bool saveTabSize = _plugin.Configuration.PersistWindowSizePerTab;
         if(ImGui.Checkbox("Save window size per tab", ref saveTabSize)) {
             _plugin.Configuration.PersistWindowSizePerTab = saveTabSize;
-            _plugin.Configuration.Save();
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+        bool colorScale = _plugin.Configuration.ColorScaleStats;
+        if(ImGui.Checkbox("Color scale stat values", ref colorScale)) {
+            _plugin.Configuration.ColorScaleStats = colorScale;
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
         ImGui.Separator();
 
@@ -60,20 +65,20 @@ internal class ConfigWindow : Window {
         bool resizeableWindow = _plugin.Configuration.ResizeableMatchWindow;
         if(ImGui.Checkbox("Make window resizeable", ref resizeableWindow)) {
             _plugin.Configuration.ResizeableMatchWindow = resizeableWindow;
-            _plugin.Configuration.Save();
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
         ImGuiHelper.HelpMarker("Reopen windows to reflect changes.");
 
         bool playerTeamLeft = _plugin.Configuration.LeftPlayerTeam;
         if(ImGui.Checkbox("Always show player team on left", ref playerTeamLeft)) {
             _plugin.Configuration.LeftPlayerTeam = playerTeamLeft;
-            _plugin.Configuration.Save();
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
 
         bool anchorTeamNames = _plugin.Configuration.AnchorTeamNames;
         if(ImGui.Checkbox("Anchor team stats", ref anchorTeamNames)) {
             _plugin.Configuration.AnchorTeamNames = anchorTeamNames;
-            _plugin.Configuration.Save();
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
         ImGuiHelper.HelpMarker("Team stat rows will not be affected by sorting.");
         ImGui.Separator();
