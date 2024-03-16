@@ -203,7 +203,7 @@ internal class CrystallineConflictJobList : FilteredList<Job> {
         if(_plugin.Configuration.ColorScaleStats) {
             ImGui.TextColored(ImGuiHelper.ColorScale(ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 30f, 120f, (float)tcpa.TotalSeconds), ImGuiHelper.GetTimeSpanString(tcpa));
         } else {
-            ImGui.TextUnformatted(ImGuiHelper.GetTimeSpanString(StatsModel[item].ScoreboardPerMatch.TimeOnCrystal));
+            ImGui.TextUnformatted(ImGuiHelper.GetTimeSpanString(tcpa));
         }
 
         ImGui.TableNextColumn();
@@ -223,7 +223,7 @@ internal class CrystallineConflictJobList : FilteredList<Job> {
         if(_plugin.Configuration.ColorScaleStats) {
             ImGui.TextColored(ImGuiHelper.ColorScale(ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0f, 30f, (float)tcpm.TotalSeconds), ImGuiHelper.GetTimeSpanString(tcpm));
         } else {
-            ImGui.TextUnformatted(ImGuiHelper.GetTimeSpanString(StatsModel[item].ScoreboardPerMin.TimeOnCrystal));
+            ImGui.TextUnformatted(ImGuiHelper.GetTimeSpanString(tcpm));
         }
 
         ImGui.TableNextColumn();
@@ -242,18 +242,13 @@ internal class CrystallineConflictJobList : FilteredList<Job> {
         ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardContrib.TimeOnCrystalDouble, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
 
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{StatsModel[item].ScoreboardTotal.DamageDealtPerKA}");
+        ImGuiHelper.DrawColorScale(StatsModel[item].ScoreboardTotal.DamageDealtPerKA, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 50000f, 100000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
         ImGuiHelper.DrawColorScale(StatsModel[item].ScoreboardTotal.DamageDealtPerLife, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 200000f, 400000f, _plugin.Configuration.ColorScaleStats, "#");
-        //ImGui.TextUnformatted($"{StatsModel[item].ScoreboardTotal.DamageDealtPerLife}");
         ImGui.TableNextColumn();
         ImGuiHelper.DrawColorScale(StatsModel[item].ScoreboardTotal.DamageTakenPerLife, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 200000f, 400000f, _plugin.Configuration.ColorScaleStats, "#");
-
-        //ImGui.TextUnformatted($"{StatsModel[item].ScoreboardTotal.DamageTakenPerLife}");
         ImGui.TableNextColumn();
         ImGuiHelper.DrawColorScale(StatsModel[item].ScoreboardTotal.HPRestoredPerLife, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 100000f, 500000f, _plugin.Configuration.ColorScaleStats, "#");
-
-        //ImGui.TextUnformatted($"{StatsModel[item].ScoreboardTotal.HPRestoredPerLife}");
     }
 
     public override void OpenFullEditDetail(Job item) {
@@ -389,7 +384,7 @@ internal class CrystallineConflictJobList : FilteredList<Job> {
         }
         try {
             RefreshLock.Wait();
-            DataModel = statsModel.Keys.ToList();
+            DataModel = statsModel.Keys.Where(x => x != Job.VPR && x != Job.PCT).ToList();
             StatsModel = statsModel;
             _triggerSort = true;
         } finally {
