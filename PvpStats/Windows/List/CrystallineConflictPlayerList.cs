@@ -2,6 +2,7 @@
 using Dalamud.Interface.Utility;
 using ImGuiNET;
 using PvpStats.Helpers;
+using PvpStats.Types.Display;
 using PvpStats.Types.Player;
 using PvpStats.Windows.Filter;
 using System;
@@ -11,119 +12,78 @@ using System.Linq;
 namespace PvpStats.Windows.List;
 internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
 
-    private class PlayerStats {
-        public Job FavoredJob;
-        public uint MatchesAll, PlayerWinsAll, SelfWinsAll, PlayerLossesAll, SelfLossesAll, MatchesTeammate, SelfWinsTeammate, SelfLossesTeammate, MatchesOpponent, SelfWinsOpponent, SelfLossesOpponent;
-        public int PlayerWinDiff, SelfAllWinDiff, SelfTeammateWinDiff, SelfOpponentWinDiff;
-        public double PlayerWinrateAll, SelfWinrateAll, SelfWinrateTeammate, SelfWinrateOpponent;
-        public Dictionary<Job, JobStats> JobStats = new();
-
-        //scoreboard stuff
-        public uint ScoreboardMatches;
-        //public double AvgKills, AvgDeaths, AvgAssists, AvgDamageDealt, AvgDamageTaken, AvgHPRestored;
-        public TimeSpan TotalTimeOnCrystal = TimeSpan.Zero, TotalMatchTime = TimeSpan.Zero;
-        public ulong TotalKills, TotalDeaths, TotalAssists, TotalDamageDealt, TotalDamageTaken, TotalHPRestored;
-        public ulong DamageDealtPerKA, DamageDealtPerLife, DamageTakenPerLife, HPRestoredPerLife;
-        //public double KillsPerMin, DeathsPerMin, AssistsPerMin, DamageDealtPerMin, DamageTakenPerMin, HPRestoredPerMin;
-        public ScoreboardDouble StatsPerMatch = new(), StatsPerMin = new(), StatsMedianTeamContribution = new();
-        public List<ScoreboardDouble> TeamContribs = new();
-
-        public void AddJobStat(Job job, bool isWin) {
-            if(JobStats.ContainsKey(job)) {
-                JobStats[job].Matches++;
-                JobStats[job].Wins += isWin ? 1 : 0;
-            } else {
-                JobStats.Add(job, new() {
-                    Matches = 1,
-                    Wins = isWin ? 1 : 0
-                });
-            }
-        }
-        private float _maxNameLength, _maxWorldLength;
-    }
-
-    private class JobStats {
-        public int Matches, Wins;
-    }
-
-    private class ScoreboardDouble {
-        public double Kills, Deaths, Assists, DamageDealt, DamageTaken, HPRestored, TimeOnCrystalDouble;
-        public TimeSpan TimeOnCrystal;
-    }
-
     protected override List<ColumnParams> Columns { get; set; } = new() {
         new ColumnParams{Name = "Name", Id = 0, Width = 200f, Flags = ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoHide },
         new ColumnParams{Name = "Home World", Id = 1, Width = 110f, Flags = ImGuiTableColumnFlags.WidthFixed },
-        new ColumnParams{Name = "Favored Job", Id = (uint)"FavoredJob".GetHashCode() },
-        new ColumnParams{Name = "Total Matches", Id = (uint)"MatchesAll".GetHashCode() },
-        new ColumnParams{Name = "Player Wins", Id = (uint)"PlayerWinsAll".GetHashCode(), Flags = ImGuiTableColumnFlags.None },
-        new ColumnParams{Name = "Player Losses", Id = (uint)"PlayerLossesAll".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Player Win Diff.", Id = (uint)"PlayerWinDiff".GetHashCode(), Flags = ImGuiTableColumnFlags.None },
-        new ColumnParams{Name = "Player Win Rate", Id = (uint)"PlayerWinrateAll".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Your Wins", Id = (uint)"SelfWinsAll".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Your Losses", Id = (uint)"SelfLossesAll".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Your Win Diff.", Id = (uint)"SelfAllWinDiff".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Your Win Rate", Id = (uint)"SelfWinrateAll".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Teammate Matches", Id = (uint)"MatchesTeammate".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Teammate Wins", Id = (uint)"SelfWinsTeammate".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Teammate Losses", Id = (uint)"SelfLossesTeammate".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Teammate Win Diff.", Id = (uint)"SelfTeammateWinDiff".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Teammate Win Rate", Id = (uint)"SelfWinrateTeammate".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Opponent Matches", Id = (uint)"MatchesOpponent".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Opponent Wins", Id = (uint)"SelfWinsOpponent".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Opponent Losses", Id = (uint)"SelfLossesOpponent".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Opponent Win Diff.", Id = (uint)"SelfOpponentWinDiff".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Opponent Win Rate", Id = (uint)"SelfWinrateOpponent".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Total Kills", Id = (uint)"TotalKills".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Total Deaths", Id = (uint)"TotalDeaths".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Total Assists", Id = (uint)"TotalAssists".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Total Damage Dealt", Id = (uint)"TotalDamageDealt".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Total Damage Taken", Id = (uint)"TotalDamageTaken".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Total HP Restored", Id = (uint)"TotalHPRestored".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Total Time on Crystal", Id = (uint)"TotalTimeOnCrystal".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Kills Per Match", Id = (uint)"StatsPerMatch.Kills".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Deaths Per Match", Id = (uint)"StatsPerMatch.Deaths".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Assists Per Match", Id = (uint)"StatsPerMatch.Assists".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Damage Dealt Per Match", Id = (uint)"StatsPerMatch.DamageDealt".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Damage Taken Per Match", Id = (uint)"StatsPerMatch.DamageTaken".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "HP Restored Per Match", Id = (uint)"StatsPerMatch.HPRestored".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Time on Crystal Per Match", Id = (uint)"StatsPerMatch.TimeOnCrystal".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Kills Per Min", Id = (uint)"StatsPerMin.Kills".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Deaths Per Min", Id = (uint)"StatsPerMin.Deaths".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Assists Per Min", Id = (uint)"StatsPerMin.Assists".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Damage Dealt Per Min", Id = (uint)"StatsPerMin.DamageDealt".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Damage Taken Per Min", Id = (uint)"StatsPerMin.DamageTaken".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "HP Restored Per Min", Id = (uint)"StatsPerMin.HPRestored".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Time on Crystal Per Min", Id = (uint)"StatsPerMin.TimeOnCrystal".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Median Kill Contrib.", Id = (uint)"StatsMedianTeamContribution.Kills".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Median Death Contrib.", Id = (uint)"StatsMedianTeamContribution.Deaths".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Median Assist Contrib.", Id = (uint)"StatsMedianTeamContribution.Assists".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Median Damage Dealt Contrib.", Id = (uint)"StatsMedianTeamContribution.DamageDealt".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Median Damage Taken Contrib.", Id = (uint)"StatsMedianTeamContribution.DamageTaken".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Median HP Restored Contrib.", Id = (uint)"StatsMedianTeamContribution.HPRestored".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Median Time on Crystal Contrib.", Id = (uint)"StatsMedianTeamContribution.TimeOnCrystalDouble".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Damage Dealt Per Kill/Assist", Id = (uint)"DamageDealtPerKA".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Damage Dealt Per Life", Id = (uint)"DamageDealtPerLife".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Damage Taken Per Life", Id = (uint)"DamageTakenPerLife".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "HP Restored Per Life", Id = (uint)"HPRestoredPerLife".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Favored Job", Id = (uint)"StatsAll.Job".GetHashCode() },
+        new ColumnParams{Name = "Total Matches", Id = (uint)"StatsAll.Matches".GetHashCode() },
+        new ColumnParams{Name = "Player Wins", Id = (uint)"StatsAll.Wins".GetHashCode(), Flags = ImGuiTableColumnFlags.None },
+        new ColumnParams{Name = "Player Losses", Id = (uint)"StatsAll.Losses".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Player Win Diff.", Id = (uint)"StatsAll.WinDiff".GetHashCode(), Flags = ImGuiTableColumnFlags.None },
+        new ColumnParams{Name = "Player Win Rate", Id = (uint)"StatsAll.WinRate".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Your Wins", Id = (uint)"StatsPersonal.Wins".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Your Losses", Id = (uint)"StatsPersonal.Losses".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Your Win Diff.", Id = (uint)"StatsPersonal.WinDiff".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Your Win Rate", Id = (uint)"StatsPersonal.WinRate".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Teammate Matches", Id = (uint)"StatsTeammate.Matches".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Teammate Wins", Id = (uint)"StatsTeammate.Wins".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Teammate Losses", Id = (uint)"StatsTeammate.Losses".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Teammate Win Diff.", Id = (uint)"StatsTeammate.WinDiff".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Teammate Win Rate", Id = (uint)"StatsTeammate.WinRate".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Opponent Matches", Id = (uint)"StatsOpponent.Matches".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Opponent Wins", Id = (uint)"StatsOpponent.Wins".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Opponent Losses", Id = (uint)"StatsOpponent.Losses".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Opponent Win Diff.", Id = (uint)"StatsOpponent.WinDiff".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Opponent Win Rate", Id = (uint)"StatsOpponent.WinRate".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Total Kills", Id = (uint)"ScoreboardTotal.Kills".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Total Deaths", Id = (uint)"ScoreboardTotal.Deaths".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Total Assists", Id = (uint)"ScoreboardTotal.Assists".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Total Damage Dealt", Id = (uint)"ScoreboardTotal.DamageDealt".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Total Damage Taken", Id = (uint)"ScoreboardTotal.DamageTaken".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Total HP Restored", Id = (uint)"ScoreboardTotal.HPRestored".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Total Time on Crystal", Id = (uint)"ScoreboardTotal.TimeOnCrystal".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Kills Per Match", Id = (uint)"ScoreboardPerMatch.Kills".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Deaths Per Match", Id = (uint)"ScoreboardPerMatch.Deaths".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Assists Per Match", Id = (uint)"ScoreboardPerMatch.Assists".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Damage Dealt Per Match", Id = (uint)"ScoreboardPerMatch.DamageDealt".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Damage Taken Per Match", Id = (uint)"ScoreboardPerMatch.DamageTaken".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "HP Restored Per Match", Id = (uint)"ScoreboardPerMatch.HPRestored".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Time on Crystal Per Match", Id = (uint)"ScoreboardPerMatch.TimeOnCrystal".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Kills Per Min", Id = (uint)"ScoreboardPerMin.Kills".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Deaths Per Min", Id = (uint)"ScoreboardPerMin.Deaths".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Assists Per Min", Id = (uint)"ScoreboardPerMin.Assists".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Damage Dealt Per Min", Id = (uint)"ScoreboardPerMin.DamageDealt".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Damage Taken Per Min", Id = (uint)"ScoreboardPerMin.DamageTaken".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "HP Restored Per Min", Id = (uint)"ScoreboardPerMin.HPRestored".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Time on Crystal Per Min", Id = (uint)"ScoreboardPerMin.TimeOnCrystal".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Median Kill Contrib.", Id = (uint)"ScoreboardContrib.Kills".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Median Death Contrib.", Id = (uint)"ScoreboardContrib.Deaths".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Median Assist Contrib.", Id = (uint)"ScoreboardContrib.Assists".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Median Damage Dealt Contrib.", Id = (uint)"ScoreboardContrib.DamageDealt".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Median Damage Taken Contrib.", Id = (uint)"ScoreboardContrib.DamageTaken".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Median HP Restored Contrib.", Id = (uint)"ScoreboardContrib.HPRestored".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Median Time on Crystal Contrib.", Id = (uint)"ScoreboardContrib.TimeOnCrystalDouble".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Damage Dealt Per Kill/Assist", Id = (uint)"ScoreboardTotal.DamageDealtPerKA".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Damage Dealt Per Life", Id = (uint)"ScoreboardTotal.DamageDealtPerLife".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Damage Taken Per Life", Id = (uint)"ScoreboardTotal.DamageTakenPerLife".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "HP Restored Per Life", Id = (uint)"ScoreboardTotal.HPRestoredPerLife".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
     };
+
+    protected override ImGuiTableFlags TableFlags { get; set; } = ImGuiTableFlags.Reorderable | ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable
+    | ImGuiTableFlags.Borders | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX;
+    protected override bool ShowHeader { get; set; } = true;
+    protected override bool ChildWindow { get; set; } = false;
+    protected override string TableId => "###CCPlayerStatsTable";
 
     private CrystallineConflictList ListModel { get; init; }
     private List<PlayerAlias> DataModelUntruncated { get; set; } = new();
+    public Dictionary<PlayerAlias, CCPlayerJobStats> StatsModel { get; private set; } = new();
     private OtherPlayerFilter OtherPlayerFilter { get; init; }
-    private Dictionary<PlayerAlias, PlayerStats> Stats = new();
     private int PlayerCount { get; set; }
     //private int MatchCount { get; set; }
     private uint MinMatches { get; set; } = 1;
 
     private bool _triggerSort = false;
-
-    protected override ImGuiTableFlags TableFlags { get; set; } = ImGuiTableFlags.Reorderable | ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable
-        | ImGuiTableFlags.Borders | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX;
-
-    protected override bool ShowHeader { get; set; } = true;
-    protected override bool ChildWindow { get; set; } = false;
-    protected override string TableId => "###CCPlayerStatsTable";
 
     //public CrystallineConflictPlayerList(Plugin plugin) : base(plugin) {
     //}
@@ -171,111 +131,89 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
         ImGui.TableNextColumn();
         ImGui.TextUnformatted($"{item.HomeWorld}");
         ImGui.TableNextColumn();
-        var job = Stats[item].FavoredJob;
-        var role = PlayerJobHelper.GetSubRoleFromJob(job);
-        var jobColor = ImGuiColors.DalamudWhite;
-        switch(role) {
-            case JobSubRole.TANK:
-                jobColor = ImGuiColors.TankBlue;
-                break;
-            case JobSubRole.HEALER:
-                jobColor = ImGuiColors.HealerGreen;
-                break;
-            case JobSubRole.RANGED:
-                jobColor = ImGuiColors.DalamudOrange;
-                break;
-            case JobSubRole.MELEE:
-                jobColor = ImGuiColors.DPSRed;
-                break;
-            case JobSubRole.CASTER:
-                jobColor = ImGuiColors.ParsedPink;
-                break;
-            default:
-                break;
+        var job = StatsModel[item].StatsAll.Job;
+        if(job != null ) {
+            ImGui.TextColored(ImGuiHelper.GetJobColor(job), $"{job}");
         }
-        ImGui.TextColored(jobColor, $"{Stats[item].FavoredJob}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].MatchesAll}");
+        ImGui.TextUnformatted($"{StatsModel[item].StatsAll.Matches}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].PlayerWinsAll}");
+        ImGui.TextUnformatted($"{StatsModel[item].StatsAll.Wins}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].PlayerLossesAll}");
+        ImGui.TextUnformatted($"{StatsModel[item].StatsAll.Losses}");
         ImGui.TableNextColumn();
-        var playerWinDiff = Stats[item].PlayerWinDiff;
+        var playerWinDiff = StatsModel[item].StatsAll.WinDiff;
         var playerWinDiffColor = playerWinDiff > 0 ? ImGuiColors.HealerGreen : playerWinDiff < 0 ? ImGuiColors.DPSRed : ImGuiColors.DalamudWhite;
         ImGui.TextColored(playerWinDiffColor, $"{playerWinDiff}");
         ImGui.TableNextColumn();
-        ImGui.TextColored(playerWinDiffColor, $"{string.Format("{0:P1}%", Stats[item].PlayerWinrateAll)}");
+        ImGui.TextColored(playerWinDiffColor, $"{string.Format("{0:P1}%", StatsModel[item].StatsAll.WinRate)}");
 
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].SelfWinsAll}");
+        ImGui.TextUnformatted($"{StatsModel[item].StatsPersonal.Wins}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].SelfLossesAll}");
+        ImGui.TextUnformatted($"{StatsModel[item].StatsPersonal.Losses}");
         ImGui.TableNextColumn();
-        var selfWinDiff = Stats[item].SelfAllWinDiff;
+        var selfWinDiff = StatsModel[item].StatsPersonal.WinDiff;
         var selfAllWinDiffColor = selfWinDiff > 0 ? ImGuiColors.HealerGreen : selfWinDiff < 0 ? ImGuiColors.DPSRed : ImGuiColors.DalamudWhite;
         ImGui.TextColored(selfAllWinDiffColor, $"{selfWinDiff}");
         ImGui.TableNextColumn();
-        ImGui.TextColored(selfAllWinDiffColor, $"{string.Format("{0:P1}%", Stats[item].SelfWinrateAll)}");
+        ImGui.TextColored(selfAllWinDiffColor, $"{string.Format("{0:P1}%", StatsModel[item].StatsPersonal.WinRate)}");
 
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].MatchesTeammate}");
+        ImGui.TextUnformatted($"{StatsModel[item].StatsTeammate.Matches}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].SelfWinsTeammate}");
+        ImGui.TextUnformatted($"{StatsModel[item].StatsTeammate.Wins}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].SelfLossesTeammate}");
+        ImGui.TextUnformatted($"{StatsModel[item].StatsTeammate.Losses}");
         ImGui.TableNextColumn();
-        var teammateWinDiff = Stats[item].SelfTeammateWinDiff;
+        var teammateWinDiff = StatsModel[item].StatsTeammate.WinDiff;
         var teammateWinDiffColor = teammateWinDiff > 0 ? ImGuiColors.HealerGreen : teammateWinDiff < 0 ? ImGuiColors.DPSRed : ImGuiColors.DalamudWhite;
         ImGui.TextColored(teammateWinDiffColor, $"{teammateWinDiff}");
         ImGui.TableNextColumn();
-        ImGui.TextColored(teammateWinDiffColor, $"{string.Format("{0:P1}%", Stats[item].SelfWinrateTeammate)}");
+        ImGuiHelper.DrawPercentage(StatsModel[item].StatsTeammate.WinRate, teammateWinDiffColor);
 
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].MatchesOpponent}");
+        ImGui.TextUnformatted($"{StatsModel[item].StatsOpponent.Matches}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].SelfWinsOpponent}");
+        ImGui.TextUnformatted($"{StatsModel[item].StatsOpponent.Wins}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].SelfLossesOpponent}");
+        ImGui.TextUnformatted($"{StatsModel[item].StatsOpponent.Losses}");
         ImGui.TableNextColumn();
-        var OpponentWinDiff = Stats[item].SelfOpponentWinDiff;
-        var OpponentWinDiffColor = OpponentWinDiff > 0 ? ImGuiColors.HealerGreen : OpponentWinDiff < 0 ? ImGuiColors.DPSRed : ImGuiColors.DalamudWhite;
-        ImGui.TextColored(OpponentWinDiffColor, $"{OpponentWinDiff}");
+        var opponentWinDiff = StatsModel[item].StatsOpponent.WinDiff;
+        var opponentWinDiffColor = opponentWinDiff > 0 ? ImGuiColors.HealerGreen : opponentWinDiff < 0 ? ImGuiColors.DPSRed : ImGuiColors.DalamudWhite;
+        ImGui.TextColored(opponentWinDiffColor, $"{opponentWinDiff}");
         ImGui.TableNextColumn();
-        ImGui.TextColored(OpponentWinDiffColor, $"{string.Format("{0:P1}%", Stats[item].SelfWinrateOpponent)}");
+        ImGuiHelper.DrawPercentage(StatsModel[item].StatsOpponent.WinRate, opponentWinDiffColor);
 
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].TotalKills.ToString("N0")}");
+        ImGui.TextUnformatted($"{StatsModel[item].ScoreboardTotal.Kills.ToString("N0")}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].TotalDeaths.ToString("N0")}");
+        ImGui.TextUnformatted($"{StatsModel[item].ScoreboardTotal.Deaths.ToString("N0")}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].TotalAssists.ToString("N0")}");
+        ImGui.TextUnformatted($"{StatsModel[item].ScoreboardTotal.Assists.ToString("N0")}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].TotalDamageDealt.ToString("N0")}");
+        ImGui.TextUnformatted($"{StatsModel[item].ScoreboardTotal.DamageDealt.ToString("N0")}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].TotalDamageTaken.ToString("N0")}");
+        ImGui.TextUnformatted($"{StatsModel[item].ScoreboardTotal.DamageTaken.ToString("N0")}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].TotalHPRestored.ToString("N0")}");
+        ImGui.TextUnformatted($"{StatsModel[item].ScoreboardTotal.HPRestored.ToString("N0")}");
         ImGui.TableNextColumn();
-        var totalTimeCrystal = Stats[item].TotalTimeOnCrystal;
-        string totalTimeOnCrystalDisplay = $"{(totalTimeCrystal.TotalHours > 0 ? $"{(int)totalTimeCrystal.TotalHours}:" : "")}";
-        totalTimeOnCrystalDisplay += totalTimeCrystal.ToString(@"mm\:ss");
-        ImGui.TextUnformatted(totalTimeOnCrystalDisplay);
+        ImGui.TextUnformatted(ImGuiHelper.GetTimeSpanString(StatsModel[item].ScoreboardTotal.TimeOnCrystal));
 
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)Stats[item].StatsPerMatch.Kills, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 1.0f, 4.5f, _plugin.Configuration.ColorScaleStats, "0.00");
+        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardPerMatch.Kills, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 1.0f, 4.5f, _plugin.Configuration.ColorScaleStats, "0.00");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)Stats[item].StatsPerMatch.Deaths, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 1.5f, 3.5f, _plugin.Configuration.ColorScaleStats, "0.00");
+        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardPerMatch.Deaths, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 1.5f, 3.5f, _plugin.Configuration.ColorScaleStats, "0.00");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)Stats[item].StatsPerMatch.Assists, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 5.0f, 8.0f, _plugin.Configuration.ColorScaleStats, "0.00");
+        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardPerMatch.Assists, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 5.0f, 8.0f, _plugin.Configuration.ColorScaleStats, "0.00");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)Stats[item].StatsPerMatch.DamageDealt, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 400000f, 900000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardPerMatch.DamageDealt, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 400000f, 900000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)Stats[item].StatsPerMatch.DamageTaken, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 400000f, 900000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardPerMatch.DamageTaken, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 400000f, 900000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)Stats[item].StatsPerMatch.HPRestored, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 300000f, 1000000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardPerMatch.HPRestored, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 300000f, 1000000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        var tcpa = Stats[item].StatsPerMatch.TimeOnCrystal;
+        var tcpa = StatsModel[item].ScoreboardPerMatch.TimeOnCrystal;
         if(_plugin.Configuration.ColorScaleStats) {
             ImGui.TextColored(ImGuiHelper.ColorScale(ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 30f, 120f, (float)tcpa.TotalSeconds), ImGuiHelper.GetTimeSpanString(tcpa));
         } else {
@@ -283,19 +221,19 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
         }
 
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)Stats[item].StatsPerMin.Kills, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.7f, _plugin.Configuration.ColorScaleStats, "0.00");
+        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardPerMin.Kills, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.7f, _plugin.Configuration.ColorScaleStats, "0.00");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)Stats[item].StatsPerMin.Deaths, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 0.2f, 0.5f, _plugin.Configuration.ColorScaleStats, "0.00");
+        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardPerMin.Deaths, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 0.2f, 0.5f, _plugin.Configuration.ColorScaleStats, "0.00");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)Stats[item].StatsPerMin.Assists, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.7f, 1.5f, _plugin.Configuration.ColorScaleStats, "0.00");
+        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardPerMin.Assists, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.7f, 1.5f, _plugin.Configuration.ColorScaleStats, "0.00");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)Stats[item].StatsPerMin.DamageDealt, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 70000f, 150000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardPerMin.DamageDealt, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 70000f, 150000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)Stats[item].StatsPerMin.DamageTaken, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 70000f, 150000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardPerMin.DamageTaken, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 70000f, 150000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)Stats[item].StatsPerMin.HPRestored, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 50000f, 200000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardPerMin.HPRestored, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 50000f, 200000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        var tcpm = Stats[item].StatsPerMin.TimeOnCrystal;
+        var tcpm = StatsModel[item].ScoreboardPerMin.TimeOnCrystal;
         if(_plugin.Configuration.ColorScaleStats) {
             ImGui.TextColored(ImGuiHelper.ColorScale(ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0f, 30f, (float)tcpm.TotalSeconds), ImGuiHelper.GetTimeSpanString(tcpm));
         } else {
@@ -303,28 +241,29 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
         }
 
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)Stats[item].StatsMedianTeamContribution.Kills, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardContrib.Kills, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)Stats[item].StatsMedianTeamContribution.Deaths, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardContrib.Deaths, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)Stats[item].StatsMedianTeamContribution.Assists, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardContrib.Assists, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)Stats[item].StatsMedianTeamContribution.DamageDealt, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardContrib.DamageDealt, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)Stats[item].StatsMedianTeamContribution.DamageTaken, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardContrib.DamageTaken, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)Stats[item].StatsMedianTeamContribution.HPRestored, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardContrib.HPRestored, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)Stats[item].StatsMedianTeamContribution.TimeOnCrystalDouble, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardContrib.TimeOnCrystalDouble, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
 
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale(Stats[item].DamageDealtPerKA, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 50000f, 100000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale(StatsModel[item].ScoreboardTotal.DamageDealtPerKA, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 50000f, 100000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale(Stats[item].DamageDealtPerLife, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 200000f, 400000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale(StatsModel[item].ScoreboardTotal.DamageDealtPerLife, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 200000f, 400000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale(Stats[item].DamageTakenPerLife, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 200000f, 400000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale(StatsModel[item].ScoreboardTotal.DamageTakenPerLife, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 200000f, 400000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale(Stats[item].HPRestoredPerLife, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 100000f, 500000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale(StatsModel[item].ScoreboardTotal.HPRestoredPerLife, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 100000f, 500000f, _plugin.Configuration.ColorScaleStats, "#");
+
     }
 
     //we don't need this
@@ -337,85 +276,70 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
     }
 
     public override void RefreshDataModel() {
-        Dictionary<PlayerAlias, PlayerStats> playerStats = new();
+        Dictionary<PlayerAlias, CCPlayerJobStats> statsModel = new();
+        Dictionary<PlayerAlias, List<CCScoreboardDouble>> teamContributions = new();
+        Dictionary<PlayerAlias, Dictionary<Job, CCAggregateStats>> jobStats = new();
+
         foreach(var match in ListModel.DataModel) {
             foreach(var team in match.Teams) {
                 foreach(var player in team.Value.Players) {
+                    bool isLocalPlayer = player.Alias.Equals(match.LocalPlayer);
+                    bool isTeammate = !match.IsSpectated && team.Key == match.LocalPlayerTeam!.TeamName;
                     //check against filters
                     bool nameMatch = player.Alias.FullName.Contains(OtherPlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase);
                     bool sideMatch = OtherPlayerFilter.TeamStatus == TeamStatus.Any
-                        || OtherPlayerFilter.TeamStatus == TeamStatus.Teammate && team.Key == match.LocalPlayerTeam?.TeamName
-                        || OtherPlayerFilter.TeamStatus == TeamStatus.Opponent && team.Key != match.LocalPlayerTeam?.TeamName;
+                        || OtherPlayerFilter.TeamStatus == TeamStatus.Teammate && isTeammate
+                        || OtherPlayerFilter.TeamStatus == TeamStatus.Opponent && !isTeammate && !isLocalPlayer;
                     bool jobMatch = OtherPlayerFilter.AnyJob || OtherPlayerFilter.PlayerJob == player.Job;
                     if(!nameMatch || !sideMatch || !jobMatch) {
                         continue;
                     }
 
-                    if(!playerStats.ContainsKey(player.Alias)) {
-                        playerStats.Add(player.Alias, new());
-                    }
-                    playerStats[player.Alias].MatchesAll++;
-                    bool isPlayerWin = false;
-                    if(!match.IsSpectated) {
-                        if(match.IsWin) {
-                            playerStats[player.Alias].SelfWinsAll++;
-                            if(team.Key == match.LocalPlayerTeam!.TeamName) {
-                                playerStats[player.Alias].SelfWinsTeammate++;
-                                playerStats[player.Alias].MatchesTeammate++;
-                                playerStats[player.Alias].PlayerWinsAll++;
-                                isPlayerWin = true;
-                            } else {
-                                playerStats[player.Alias].SelfWinsOpponent++;
-                                playerStats[player.Alias].MatchesOpponent++;
-                                playerStats[player.Alias].PlayerLossesAll++;
-                            }
-                        } else if(match.MatchWinner != null) {
-                            playerStats[player.Alias].SelfLossesAll++;
-                            if(team.Key == match.LocalPlayerTeam!.TeamName) {
-                                playerStats[player.Alias].SelfLossesTeammate++;
-                                playerStats[player.Alias].MatchesTeammate++;
-                                playerStats[player.Alias].PlayerLossesAll++;
-                            } else {
-                                playerStats[player.Alias].SelfLossesOpponent++;
-                                playerStats[player.Alias].MatchesOpponent++;
-                                playerStats[player.Alias].PlayerWinsAll++;
-                                isPlayerWin = true;
-                            }
-                        } else {
-                            //draw/unfinished
-                        }
-                    } else {
-                        //handle spectated logic here
-                        if(team.Key == match.MatchWinner) {
-                            playerStats[player.Alias].PlayerWinsAll++;
-                        } else if(match.MatchWinner != null) {
-                            playerStats[player.Alias].PlayerLossesAll++;
-                        } else {
-                            //draw/unfinished
-                        }
-                    }
-                    if(player.Job != null) {
-                        playerStats[player.Alias].AddJobStat((Job)player.Job, isPlayerWin);
+                    if(!statsModel.ContainsKey(player.Alias)) {
+                        statsModel.Add(player.Alias, new());
+                        teamContributions.Add(player.Alias, new());
+                        jobStats.Add(player.Alias, new());
                     }
 
-                    //add scoreboard stats
+                    statsModel[player.Alias].StatsAll.Matches++;
+                    if(match.MatchWinner == team.Key) {
+                        statsModel[player.Alias].StatsAll.Wins++;
+                    } else if(match.MatchWinner != null) {
+                        statsModel[player.Alias].StatsAll.Losses++;
+                    }
+
+                    if(!match.IsSpectated) {
+                        if(isTeammate) {
+                            statsModel[player.Alias].StatsTeammate.Matches++;
+                            if(match.IsWin) {
+                                statsModel[player.Alias].StatsTeammate.Wins++;
+                            } else if(match.MatchWinner != null) {
+                                statsModel[player.Alias].StatsTeammate.Losses++;
+                            }
+                        } else {
+                            statsModel[player.Alias].StatsOpponent.Matches++;
+                            if(match.IsWin) {
+                                statsModel[player.Alias].StatsOpponent.Wins++;
+                            } else if(match.MatchWinner != null) {
+                                statsModel[player.Alias].StatsOpponent.Losses++;
+                            }
+                        }
+                    }
+
                     if(match.PostMatch != null) {
-                        //var teamScoreboard = match.PostMatch.Teams.Where(x => x.Value.PlayerStats.Where(y => y.Player != null && y.Player.Equals(player.Alias)).Count() > 0).FirstOrDefault();
-                        //var playerScoreboard = teamScoreboard.Value.PlayerStats.Where(y => y.Player != null && y.Player.Equals(player.Alias)).FirstOrDefault();
                         var playerTeamScoreboard = match.PostMatch.Teams.Where(x => x.Key == team.Key).FirstOrDefault().Value;
                         var playerScoreboard = playerTeamScoreboard.PlayerStats.Where(x => x.Player?.Equals(player.Alias) ?? false).FirstOrDefault();
                         if(playerScoreboard != null) {
-                            playerStats[player.Alias].ScoreboardMatches++;
-                            playerStats[player.Alias].TotalMatchTime += match.PostMatch.MatchDuration;
-                            playerStats[player.Alias].TotalKills += (ulong)playerScoreboard.Kills;
-                            playerStats[player.Alias].TotalDeaths += (ulong)playerScoreboard.Deaths;
-                            playerStats[player.Alias].TotalAssists += (ulong)playerScoreboard.Assists;
-                            playerStats[player.Alias].TotalDamageDealt += (ulong)playerScoreboard.DamageDealt;
-                            playerStats[player.Alias].TotalDamageTaken += (ulong)playerScoreboard.DamageTaken;
-                            playerStats[player.Alias].TotalHPRestored += (ulong)playerScoreboard.HPRestored;
-                            playerStats[player.Alias].TotalTimeOnCrystal += playerScoreboard.TimeOnCrystal;
+                            statsModel[player.Alias].ScoreboardTotal.MatchTime += match.PostMatch.MatchDuration;
+                            statsModel[player.Alias].ScoreboardTotal.Kills += (ulong)playerScoreboard.Kills;
+                            statsModel[player.Alias].ScoreboardTotal.Deaths += (ulong)playerScoreboard.Deaths;
+                            statsModel[player.Alias].ScoreboardTotal.Assists += (ulong)playerScoreboard.Assists;
+                            statsModel[player.Alias].ScoreboardTotal.DamageDealt += (ulong)playerScoreboard.DamageDealt;
+                            statsModel[player.Alias].ScoreboardTotal.DamageTaken += (ulong)playerScoreboard.DamageTaken;
+                            statsModel[player.Alias].ScoreboardTotal.HPRestored += (ulong)playerScoreboard.HPRestored;
+                            statsModel[player.Alias].ScoreboardTotal.TimeOnCrystal += playerScoreboard.TimeOnCrystal;
 
-                            playerStats[player.Alias].TeamContribs.Add(new() {
+                            teamContributions[player.Alias].Add(new() {
                                 Kills = playerTeamScoreboard.TeamStats.Kills != 0 ? (double)playerScoreboard.Kills / playerTeamScoreboard.TeamStats.Kills : 0,
                                 Deaths = playerTeamScoreboard.TeamStats.Deaths != 0 ? (double)playerScoreboard.Deaths / playerTeamScoreboard.TeamStats.Deaths : 0,
                                 Assists = playerTeamScoreboard.TeamStats.Assists != 0 ? (double)playerScoreboard.Assists / playerTeamScoreboard.TeamStats.Assists : 0,
@@ -426,69 +350,58 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
                             });
                         }
                     }
+
+                    if(player.Job != null) {
+                        if(!jobStats[player.Alias].ContainsKey((Job)player.Job)) {
+                            jobStats[player.Alias].Add((Job)player.Job, new());
+                        }
+                        jobStats[player.Alias][(Job)player.Job].Matches++;
+                    }
                 }
             }
         }
 
-        foreach(var playerStat in playerStats) {
-            ////remove players who don't meet match threshold
-            //if(playerStat.Value.MatchesAll < MinMatches) {
-            //    playerStats.Remove(playerStat.Key);
-            //}
-
-            //set win rates
-            playerStat.Value.PlayerWinrateAll = (double)playerStat.Value.PlayerWinsAll / playerStat.Value.MatchesAll;
-            playerStat.Value.SelfWinrateAll = (double)playerStat.Value.SelfWinsAll / playerStat.Value.MatchesAll;
-            playerStat.Value.SelfWinrateTeammate = playerStat.Value.MatchesTeammate != 0 ? (double)playerStat.Value.SelfWinsTeammate / playerStat.Value.MatchesTeammate : 0;
-            playerStat.Value.SelfWinrateOpponent = playerStat.Value.MatchesOpponent != 0 ? (double)playerStat.Value.SelfWinsOpponent / playerStat.Value.MatchesOpponent : 0;
-
-            //set diffs
-            playerStat.Value.PlayerWinDiff = (int)playerStat.Value.PlayerWinsAll - (int)playerStat.Value.PlayerLossesAll;
-            playerStat.Value.SelfAllWinDiff = (int)playerStat.Value.SelfWinsAll - (int)playerStat.Value.SelfLossesAll;
-            playerStat.Value.SelfTeammateWinDiff = (int)playerStat.Value.SelfWinsTeammate - (int)playerStat.Value.SelfLossesTeammate;
-            playerStat.Value.SelfOpponentWinDiff = (int)playerStat.Value.SelfWinsOpponent - (int)playerStat.Value.SelfLossesOpponent;
-
+        foreach(var playerStat in statsModel) {
             //set favored job
-            playerStat.Value.FavoredJob = playerStat.Value.JobStats.OrderByDescending(x => x.Value.Matches).FirstOrDefault().Key;
-
+            playerStat.Value.StatsAll.Job = jobStats[playerStat.Key].OrderByDescending(x => x.Value.Matches).FirstOrDefault().Key;
+            var statMatches = teamContributions[playerStat.Key].Count;
             //set average stats
-            if(playerStat.Value.ScoreboardMatches > 0) {
-                playerStat.Value.StatsPerMatch.Kills = (double)playerStat.Value.TotalKills / playerStat.Value.ScoreboardMatches;
-                playerStat.Value.StatsPerMatch.Deaths = (double)playerStat.Value.TotalDeaths / playerStat.Value.ScoreboardMatches;
-                playerStat.Value.StatsPerMatch.Assists = (double)playerStat.Value.TotalAssists / playerStat.Value.ScoreboardMatches;
-                playerStat.Value.StatsPerMatch.DamageDealt = (double)playerStat.Value.TotalDamageDealt / playerStat.Value.ScoreboardMatches;
-                playerStat.Value.StatsPerMatch.DamageTaken = (double)playerStat.Value.TotalDamageTaken / playerStat.Value.ScoreboardMatches;
-                playerStat.Value.StatsPerMatch.HPRestored = (double)playerStat.Value.TotalHPRestored / playerStat.Value.ScoreboardMatches;
-                playerStat.Value.StatsPerMatch.TimeOnCrystal = playerStat.Value.TotalTimeOnCrystal / playerStat.Value.ScoreboardMatches;
+            if(statMatches > 0) {
+                playerStat.Value.StatsPersonal.Matches = playerStat.Value.StatsTeammate.Matches + playerStat.Value.StatsOpponent.Matches;
+                playerStat.Value.StatsPersonal.Wins = playerStat.Value.StatsTeammate.Wins + playerStat.Value.StatsOpponent.Wins;
+                playerStat.Value.StatsPersonal.Losses = playerStat.Value.StatsTeammate.Losses + playerStat.Value.StatsOpponent.Losses;
 
-                playerStat.Value.StatsPerMin.Kills = playerStat.Value.TotalKills / playerStat.Value.TotalMatchTime.TotalMinutes;
-                playerStat.Value.StatsPerMin.Deaths = playerStat.Value.TotalDeaths / playerStat.Value.TotalMatchTime.TotalMinutes;
-                playerStat.Value.StatsPerMin.Assists = playerStat.Value.TotalAssists / playerStat.Value.TotalMatchTime.TotalMinutes;
-                playerStat.Value.StatsPerMin.DamageDealt = playerStat.Value.TotalDamageDealt / playerStat.Value.TotalMatchTime.TotalMinutes;
-                playerStat.Value.StatsPerMin.DamageTaken = playerStat.Value.TotalDamageTaken / playerStat.Value.TotalMatchTime.TotalMinutes;
-                playerStat.Value.StatsPerMin.HPRestored = playerStat.Value.TotalHPRestored / playerStat.Value.TotalMatchTime.TotalMinutes;
-                playerStat.Value.StatsPerMin.TimeOnCrystal = playerStat.Value.TotalTimeOnCrystal / playerStat.Value.TotalMatchTime.TotalMinutes;
+                playerStat.Value.ScoreboardPerMatch.Kills = (double)playerStat.Value.ScoreboardTotal.Kills / statMatches;
+                playerStat.Value.ScoreboardPerMatch.Deaths = (double)playerStat.Value.ScoreboardTotal.Deaths / statMatches;
+                playerStat.Value.ScoreboardPerMatch.Assists = (double)playerStat.Value.ScoreboardTotal.Assists / statMatches;
+                playerStat.Value.ScoreboardPerMatch.DamageDealt = (double)playerStat.Value.ScoreboardTotal.DamageDealt / statMatches;
+                playerStat.Value.ScoreboardPerMatch.DamageTaken = (double)playerStat.Value.ScoreboardTotal.DamageTaken / statMatches;
+                playerStat.Value.ScoreboardPerMatch.HPRestored = (double)playerStat.Value.ScoreboardTotal.HPRestored / statMatches;
+                playerStat.Value.ScoreboardPerMatch.TimeOnCrystal = playerStat.Value.ScoreboardTotal.TimeOnCrystal / statMatches;
 
-                playerStat.Value.StatsMedianTeamContribution.Kills = playerStat.Value.TeamContribs.OrderBy(x => x.Kills).ElementAt((int)playerStat.Value.ScoreboardMatches / 2).Kills;
-                playerStat.Value.StatsMedianTeamContribution.Deaths = playerStat.Value.TeamContribs.OrderBy(x => x.Deaths).ElementAt((int)playerStat.Value.ScoreboardMatches / 2).Deaths;
-                playerStat.Value.StatsMedianTeamContribution.Assists = playerStat.Value.TeamContribs.OrderBy(x => x.Assists).ElementAt((int)playerStat.Value.ScoreboardMatches / 2).Assists;
-                playerStat.Value.StatsMedianTeamContribution.DamageDealt = playerStat.Value.TeamContribs.OrderBy(x => x.DamageDealt).ElementAt((int)playerStat.Value.ScoreboardMatches / 2).DamageDealt;
-                playerStat.Value.StatsMedianTeamContribution.DamageTaken = playerStat.Value.TeamContribs.OrderBy(x => x.DamageTaken).ElementAt((int)playerStat.Value.ScoreboardMatches / 2).DamageTaken;
-                playerStat.Value.StatsMedianTeamContribution.HPRestored = playerStat.Value.TeamContribs.OrderBy(x => x.HPRestored).ElementAt((int)playerStat.Value.ScoreboardMatches / 2).HPRestored;
-                playerStat.Value.StatsMedianTeamContribution.TimeOnCrystalDouble = playerStat.Value.TeamContribs.OrderBy(x => x.TimeOnCrystalDouble).ElementAt((int)playerStat.Value.ScoreboardMatches / 2).TimeOnCrystalDouble;
+                var matchTime = playerStat.Value.ScoreboardTotal.MatchTime;
+                playerStat.Value.ScoreboardPerMin.Kills = playerStat.Value.ScoreboardTotal.Kills / matchTime.TotalMinutes;
+                playerStat.Value.ScoreboardPerMin.Deaths = playerStat.Value.ScoreboardTotal.Deaths / matchTime.TotalMinutes;
+                playerStat.Value.ScoreboardPerMin.Assists = playerStat.Value.ScoreboardTotal.Assists / matchTime.TotalMinutes;
+                playerStat.Value.ScoreboardPerMin.DamageDealt = playerStat.Value.ScoreboardTotal.DamageDealt / matchTime.TotalMinutes;
+                playerStat.Value.ScoreboardPerMin.DamageTaken = playerStat.Value.ScoreboardTotal.DamageTaken / matchTime.TotalMinutes;
+                playerStat.Value.ScoreboardPerMin.HPRestored = playerStat.Value.ScoreboardTotal.HPRestored / matchTime.TotalMinutes;
+                playerStat.Value.ScoreboardPerMin.TimeOnCrystal = playerStat.Value.ScoreboardTotal.TimeOnCrystal / matchTime.TotalMinutes;
 
-                var killsAndAssists = playerStat.Value.TotalKills + playerStat.Value.TotalAssists;
-                playerStat.Value.DamageDealtPerKA = killsAndAssists != 0 ? playerStat.Value.TotalDamageDealt / killsAndAssists : playerStat.Value.TotalDamageDealt;
-                playerStat.Value.DamageDealtPerLife = playerStat.Value.TotalDamageDealt / (playerStat.Value.TotalDeaths + 1);
-                playerStat.Value.DamageTakenPerLife = playerStat.Value.TotalDamageTaken / (playerStat.Value.TotalDeaths + 1);
-                playerStat.Value.HPRestoredPerLife = playerStat.Value.TotalHPRestored / (playerStat.Value.TotalDeaths + 1);
+                playerStat.Value.ScoreboardContrib.Kills = teamContributions[playerStat.Key].OrderBy(x => x.Kills).ElementAt(statMatches / 2).Kills;
+                playerStat.Value.ScoreboardContrib.Deaths = teamContributions[playerStat.Key].OrderBy(x => x.Deaths).ElementAt(statMatches / 2).Deaths;
+                playerStat.Value.ScoreboardContrib.Assists = teamContributions[playerStat.Key].OrderBy(x => x.Assists).ElementAt(statMatches / 2).Assists;
+                playerStat.Value.ScoreboardContrib.DamageDealt = teamContributions[playerStat.Key].OrderBy(x => x.DamageDealt).ElementAt(statMatches / 2).DamageDealt;
+                playerStat.Value.ScoreboardContrib.DamageTaken = teamContributions[playerStat.Key].OrderBy(x => x.DamageTaken).ElementAt(statMatches / 2).DamageTaken;
+                playerStat.Value.ScoreboardContrib.HPRestored = teamContributions[playerStat.Key].OrderBy(x => x.HPRestored).ElementAt(statMatches / 2).HPRestored;
+                playerStat.Value.ScoreboardContrib.TimeOnCrystalDouble = teamContributions[playerStat.Key].OrderBy(x => x.TimeOnCrystalDouble).ElementAt(statMatches / 2).TimeOnCrystalDouble;
             }
         }
         try {
             RefreshLock.Wait();
-            DataModel = playerStats.Keys.ToList();
+            DataModel = statsModel.Keys.ToList();
             DataModelUntruncated = DataModel;
-            Stats = playerStats;
+            StatsModel = statsModel;
             PlayerCount = DataModel.Count;
             RemoveByMatchCount(MinMatches);
             _triggerSort = true;
@@ -500,7 +413,7 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
     private void RemoveByMatchCount(uint minMatches) {
         List<PlayerAlias> DataModelTruncated = new();
         foreach(var player in DataModelUntruncated) {
-            if(Stats[player].MatchesAll >= minMatches) {
+            if(StatsModel[player].StatsAll.Matches >= minMatches) {
                 DataModelTruncated.Add(player);
             }
         }
@@ -519,27 +432,14 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
         } else if(columnId == 1) {
             comparator = (r) => r.HomeWorld;
         } else {
-            var fields = typeof(PlayerStats).GetFields();
-            foreach(var field in fields) {
-                var fieldId = field.Name.GetHashCode();
-                if((uint)fieldId == columnId) {
-                    //_plugin.Log.Debug($"Match found! {field.Name}");
-                    comparator = (r) => field.GetValue(Stats[r]) ?? 0;
-                    //if(field.FieldType == typeof(TimeSpan)) {
-                    //    comparator = (r) => ((TimeSpan?)field.GetValue(Stats[r]))?.Ticks ?? 0;
-                    //} else {
-                    //    comparator = (r) => field.GetValue(Stats[r]) ?? 0;
-                    //}
-                }
-                if(field.FieldType == typeof(ScoreboardDouble)) {
-                    //iterate
-                    var sFields = field.FieldType.GetFields();
-                    foreach(var sField in sFields) {
-                        var sFieldId = $"{field.Name}.{sField.Name}".GetHashCode();
-                        if((uint)sFieldId == columnId) {
-                            //_plugin.Log.Debug($"Match found! {sField.Name}");
-                            comparator = (r) => sField.GetValue(field.GetValue(Stats[r])) ?? 0;
-                        }
+            //iterate to two levels
+            var props = typeof(CCPlayerJobStats).GetProperties();
+            foreach(var prop in props) {
+                var props2 = prop.PropertyType.GetProperties();
+                foreach(var prop2 in props2) {
+                    var propId = $"{prop.Name}.{prop2.Name}".GetHashCode();
+                    if((uint)propId == columnId) {
+                        comparator = (r) => prop2.GetValue(prop.GetValue(StatsModel[r])) ?? 0;
                     }
                 }
             }

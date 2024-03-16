@@ -136,7 +136,7 @@ internal static class ImGuiHelper {
         return color.Lighten(1f);
     }
 
-    internal static Vector4 GetJobColor(Job job) {
+    internal static Vector4 GetJobColor(Job? job) {
         var role = PlayerJobHelper.GetSubRoleFromJob(job);
         return role != null ? GetSubRoleColor((JobSubRole)role) : ImGuiColors.DalamudWhite;
     }
