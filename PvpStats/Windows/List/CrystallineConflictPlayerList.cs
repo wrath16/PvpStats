@@ -263,60 +263,68 @@ internal class CrystallineConflictPlayerList : FilteredList<PlayerAlias> {
         ImGui.TextUnformatted(totalTimeOnCrystalDisplay);
 
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].StatsPerMatch.Kills.ToString("0.00")}");
+        ImGuiHelper.DrawColorScale((float)Stats[item].StatsPerMatch.Kills, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 1.0f, 4.5f, _plugin.Configuration.ColorScaleStats, "0.00");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].StatsPerMatch.Deaths.ToString("0.00")}");
+        ImGuiHelper.DrawColorScale((float)Stats[item].StatsPerMatch.Deaths, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 1.5f, 3.5f, _plugin.Configuration.ColorScaleStats, "0.00");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].StatsPerMatch.Assists.ToString("0.00")}");
+        ImGuiHelper.DrawColorScale((float)Stats[item].StatsPerMatch.Assists, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 5.0f, 8.0f, _plugin.Configuration.ColorScaleStats, "0.00");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].StatsPerMatch.DamageDealt.ToString("#")}");
+        ImGuiHelper.DrawColorScale((float)Stats[item].StatsPerMatch.DamageDealt, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 400000f, 900000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].StatsPerMatch.DamageTaken.ToString("#")}");
+        ImGuiHelper.DrawColorScale((float)Stats[item].StatsPerMatch.DamageTaken, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 400000f, 900000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].StatsPerMatch.HPRestored.ToString("#")}");
+        ImGuiHelper.DrawColorScale((float)Stats[item].StatsPerMatch.HPRestored, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 300000f, 1000000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        var crystalTimePerMatch = Stats[item].StatsPerMatch.TimeOnCrystal;
-        ImGui.TextUnformatted($"{crystalTimePerMatch.Minutes}{crystalTimePerMatch.ToString(@"\:ss")}");
+        var tcpa = Stats[item].StatsPerMatch.TimeOnCrystal;
+        if(_plugin.Configuration.ColorScaleStats) {
+            ImGui.TextColored(ImGuiHelper.ColorScale(ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 30f, 120f, (float)tcpa.TotalSeconds), ImGuiHelper.GetTimeSpanString(tcpa));
+        } else {
+            ImGui.TextUnformatted(ImGuiHelper.GetTimeSpanString(tcpa));
+        }
 
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].StatsPerMin.Kills.ToString("0.00")}");
+        ImGuiHelper.DrawColorScale((float)Stats[item].StatsPerMin.Kills, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.7f, _plugin.Configuration.ColorScaleStats, "0.00");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].StatsPerMin.Deaths.ToString("0.00")}");
+        ImGuiHelper.DrawColorScale((float)Stats[item].StatsPerMin.Deaths, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 0.2f, 0.5f, _plugin.Configuration.ColorScaleStats, "0.00");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].StatsPerMin.Assists.ToString("0.00")}");
+        ImGuiHelper.DrawColorScale((float)Stats[item].StatsPerMin.Assists, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.7f, 1.5f, _plugin.Configuration.ColorScaleStats, "0.00");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].StatsPerMin.DamageDealt.ToString("#")}");
+        ImGuiHelper.DrawColorScale((float)Stats[item].StatsPerMin.DamageDealt, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 70000f, 150000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].StatsPerMin.DamageTaken.ToString("#")}");
+        ImGuiHelper.DrawColorScale((float)Stats[item].StatsPerMin.DamageTaken, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 70000f, 150000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].StatsPerMin.HPRestored.ToString("#")}");
+        ImGuiHelper.DrawColorScale((float)Stats[item].StatsPerMin.HPRestored, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 50000f, 200000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        var crystalTimePerMin = Stats[item].StatsPerMin.TimeOnCrystal;
-        ImGui.TextUnformatted($"{crystalTimePerMin.Minutes}{crystalTimePerMin.ToString(@"\:ss")}");
+        var tcpm = Stats[item].StatsPerMin.TimeOnCrystal;
+        if(_plugin.Configuration.ColorScaleStats) {
+            ImGui.TextColored(ImGuiHelper.ColorScale(ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0f, 30f, (float)tcpm.TotalSeconds), ImGuiHelper.GetTimeSpanString(tcpm));
+        } else {
+            ImGui.TextUnformatted(ImGuiHelper.GetTimeSpanString(tcpm));
+        }
 
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted(string.Format("{0:P1}", Stats[item].StatsMedianTeamContribution.Kills));
+        ImGuiHelper.DrawColorScale((float)Stats[item].StatsMedianTeamContribution.Kills, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted(string.Format("{0:P1}", Stats[item].StatsMedianTeamContribution.Deaths));
+        ImGuiHelper.DrawColorScale((float)Stats[item].StatsMedianTeamContribution.Deaths, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted(string.Format("{0:P1}", Stats[item].StatsMedianTeamContribution.Assists));
+        ImGuiHelper.DrawColorScale((float)Stats[item].StatsMedianTeamContribution.Assists, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted(string.Format("{0:P1}", Stats[item].StatsMedianTeamContribution.DamageDealt));
+        ImGuiHelper.DrawColorScale((float)Stats[item].StatsMedianTeamContribution.DamageDealt, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted(string.Format("{0:P1}", Stats[item].StatsMedianTeamContribution.DamageTaken));
+        ImGuiHelper.DrawColorScale((float)Stats[item].StatsMedianTeamContribution.DamageTaken, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted(string.Format("{0:P1}", Stats[item].StatsMedianTeamContribution.HPRestored));
+        ImGuiHelper.DrawColorScale((float)Stats[item].StatsMedianTeamContribution.HPRestored, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted(string.Format("{0:P1}", Stats[item].StatsMedianTeamContribution.TimeOnCrystalDouble));
+        ImGuiHelper.DrawColorScale((float)Stats[item].StatsMedianTeamContribution.TimeOnCrystalDouble, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
 
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].DamageDealtPerKA}");
+        ImGuiHelper.DrawColorScale(Stats[item].DamageDealtPerKA, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 50000f, 100000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].DamageDealtPerLife}");
+        ImGuiHelper.DrawColorScale(Stats[item].DamageDealtPerLife, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 200000f, 400000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].DamageTakenPerLife}");
+        ImGuiHelper.DrawColorScale(Stats[item].DamageTakenPerLife, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 200000f, 400000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{Stats[item].HPRestoredPerLife}");
+        ImGuiHelper.DrawColorScale(Stats[item].HPRestoredPerLife, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 100000f, 500000f, _plugin.Configuration.ColorScaleStats, "#");
     }
 
     //we don't need this
