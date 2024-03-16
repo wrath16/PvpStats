@@ -131,7 +131,7 @@ internal abstract class FilteredList<T> {
                         ImGui.TableHeader(tableHeader);
                     }
                 }
-                ImGui.TableNextRow();
+                //ImGui.TableNextRow();
 
                 foreach(var i in clipper.Rows) {
                     var item = CurrentPage[i];

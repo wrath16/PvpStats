@@ -50,8 +50,8 @@ internal class MainWindow : Window {
 
         ccMatches = new(plugin);
         ccSummary = new(plugin);
+        ccJobs = new(plugin, ccMatches, otherPlayerFilter);
         ccPlayers = new(plugin, ccMatches, otherPlayerFilter);
-        ccJobs = new(plugin, ccMatches);
         _plugin.DataQueue.QueueDataOperation(Refresh);
     }
 

@@ -79,11 +79,13 @@ internal class CrystallineConflictJobList : FilteredList<Job> {
     public Dictionary<Job, CCPlayerJobStats> StatsModel { get; private set; } = new();
     private CrystallineConflictList ListModel { get; init; }
     private StatSourceFilter StatSourceFilter { get; set; }
+    private OtherPlayerFilter OtherPlayerFilter { get; init; }
     private bool _triggerSort = false;
 
-    public CrystallineConflictJobList(Plugin plugin, CrystallineConflictList listModel) : base(plugin) {
+    public CrystallineConflictJobList(Plugin plugin, CrystallineConflictList listModel, OtherPlayerFilter playerFilter) : base(plugin) {
         ListModel = listModel;
         StatSourceFilter = new(plugin, RefreshDataModel, plugin.Configuration.MatchWindowFilters.StatSourceFilter);
+        OtherPlayerFilter = playerFilter;
     }
 
     protected override void PreTableDraw() {
@@ -93,6 +95,7 @@ internal class CrystallineConflictJobList : FilteredList<Job> {
                 ImGui.TableSetupColumn($"filters", ImGuiTableColumnFlags.WidthStretch);
 
                 ImGui.TableNextColumn();
+                ImGui.AlignTextToFramePadding();
                 ImGui.TextUnformatted("Include stats from:");
                 ImGui.TableNextColumn();
                 StatSourceFilter.Draw();
@@ -279,6 +282,18 @@ internal class CrystallineConflictJobList : FilteredList<Job> {
                         var job = (Job)player.Job;
                         bool isLocalPlayer = player.Alias.Equals(match.LocalPlayer);
                         bool isTeammate = !match.IsSpectated && !isLocalPlayer  && team.Key == match.LocalPlayerTeam!.TeamName;
+
+                        if(StatSourceFilter.InheritFromPlayerFilter) {
+                            bool nameMatch = player.Alias.FullName.Contains(OtherPlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase);
+                            bool sideMatch = OtherPlayerFilter.TeamStatus == TeamStatus.Any
+                                || OtherPlayerFilter.TeamStatus == TeamStatus.Teammate && isTeammate
+                                || OtherPlayerFilter.TeamStatus == TeamStatus.Opponent && !isTeammate && !isLocalPlayer;
+                            bool jobMatch = OtherPlayerFilter.AnyJob || OtherPlayerFilter.PlayerJob == player.Job;
+                            if(!nameMatch || !sideMatch || !jobMatch) {
+                                continue;
+                            }
+                        }
+
                         if(!StatSourceFilter.FilterState[StatSource.LocalPlayer] && isLocalPlayer) {
                             continue;
                         } else if(!StatSourceFilter.FilterState[StatSource.Teammate] && isTeammate) {
@@ -313,7 +328,7 @@ internal class CrystallineConflictJobList : FilteredList<Job> {
                                 } else if(match.MatchWinner != null) {
                                     statsModel[job].StatsTeammate.Losses++;
                                 }
-                            } else {
+                            } else if(!isLocalPlayer) {
                                 statsModel[job].StatsOpponent.Matches++;
                                 if(match.IsWin) {
                                     statsModel[job].StatsOpponent.Wins++;
