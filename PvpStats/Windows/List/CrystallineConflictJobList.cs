@@ -83,7 +83,7 @@ internal class CrystallineConflictJobList : FilteredList<Job> {
 
     public CrystallineConflictJobList(Plugin plugin, CrystallineConflictList listModel) : base(plugin) {
         ListModel = listModel;
-        StatSourceFilter = new(plugin, RefreshDataModel);
+        StatSourceFilter = new(plugin, RefreshDataModel, plugin.Configuration.MatchWindowFilters.StatSourceFilter);
     }
 
     protected override void PreTableDraw() {
@@ -278,12 +278,12 @@ internal class CrystallineConflictJobList : FilteredList<Job> {
                     if(player.Job != null) {
                         var job = (Job)player.Job;
                         bool isLocalPlayer = player.Alias.Equals(match.LocalPlayer);
-                        bool isTeammate = !match.IsSpectated && team.Key == match.LocalPlayerTeam!.TeamName;
-                        if(!StatSourceFilter.FilterState[StatSource.LocalPlayer] && isLocalPlayer && !match.IsSpectated) {
+                        bool isTeammate = !match.IsSpectated && !isLocalPlayer  && team.Key == match.LocalPlayerTeam!.TeamName;
+                        if(!StatSourceFilter.FilterState[StatSource.LocalPlayer] && isLocalPlayer) {
                             continue;
-                        } else if(!StatSourceFilter.FilterState[StatSource.Teammate] && isTeammate && !match.IsSpectated) {
+                        } else if(!StatSourceFilter.FilterState[StatSource.Teammate] && isTeammate) {
                             continue;
-                        } else if(!StatSourceFilter.FilterState[StatSource.Opponent] && !isTeammate && !match.IsSpectated) {
+                        } else if(!StatSourceFilter.FilterState[StatSource.Opponent] && !isTeammate && !isLocalPlayer) {
                             continue;
                         } else if(!StatSourceFilter.FilterState[StatSource.Spectated] && match.IsSpectated) {
                             continue;
@@ -386,6 +386,8 @@ internal class CrystallineConflictJobList : FilteredList<Job> {
             RefreshLock.Wait();
             DataModel = statsModel.Keys.Where(x => x != Job.VPR && x != Job.PCT).ToList();
             StatsModel = statsModel;
+            _plugin.Configuration.MatchWindowFilters.StatSourceFilter = StatSourceFilter;
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
             _triggerSort = true;
         } finally {
             RefreshLock.Release();
