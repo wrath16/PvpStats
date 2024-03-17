@@ -5,6 +5,7 @@ using ImGuiNET;
 using PvpStats.Types.Player;
 using System;
 using System.Numerics;
+using System.Threading.Tasks;
 
 namespace PvpStats.Helpers;
 internal static class ImGuiHelper {
@@ -182,6 +183,14 @@ internal static class ImGuiHelper {
             display += time.ToString(@"m\:ss");
         }
         return display;
+    }
+
+    internal static void CSVButton(string csv) {
+        if(ImGui.Button("Copy CSV")) {
+            Task.Run(() => {
+                ImGui.SetClipboardText(csv);
+            });
+        }
     }
 
     //internal static void IterateOverProps<T>(T item, int maxDepth, int depth = 0) {

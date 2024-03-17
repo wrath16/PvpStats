@@ -11,7 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace PvpStats.Windows.List;
-internal class CrystallineConflictJobList : FilteredList<Job> {
+internal class CrystallineConflictJobList : CCStatsList<Job> {
 
     protected override List<ColumnParams> Columns { get; set; } = new() {
         new ColumnParams{Name = "Job", Id = 0, Width = 85f, Flags = ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoHide },
@@ -70,17 +70,9 @@ internal class CrystallineConflictJobList : FilteredList<Job> {
         new ColumnParams{Name = "HP Restored Per Life", Id = (uint)"ScoreboardTotal.HPRestoredPerLife".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
     };
 
-    protected override ImGuiTableFlags TableFlags { get; set; } = ImGuiTableFlags.Reorderable | ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable
-        | ImGuiTableFlags.Borders | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX;
-    protected override bool ShowHeader { get; set; } = true;
-    protected override bool ChildWindow { get; set; } = false;
     protected override string TableId => "###CCJobStatsTable";
 
-    public Dictionary<Job, CCPlayerJobStats> StatsModel { get; private set; } = new();
-    private CrystallineConflictList ListModel { get; init; }
     private StatSourceFilter StatSourceFilter { get; set; }
-    private OtherPlayerFilter OtherPlayerFilter { get; init; }
-    private bool _triggerSort = false;
 
     public CrystallineConflictJobList(Plugin plugin, CrystallineConflictList listModel, OtherPlayerFilter playerFilter) : base(plugin) {
         ListModel = listModel;
@@ -101,15 +93,18 @@ internal class CrystallineConflictJobList : FilteredList<Job> {
                 StatSourceFilter.Draw();
             }
         }
-        //ImGuiHelper.HelpMarker("Right-click table header for column options.", false);
+        ImGui.AlignTextToFramePadding();
+        ImGuiHelper.HelpMarker("Right-click table header for column options.", false);
+        ImGui.SameLine();
+        ImGuiHelper.CSVButton(ListCSV);
     }
 
     protected override void PostColumnSetup() {
         ImGui.TableSetupScrollFreeze(1, 1);
         //column sorting
         ImGuiTableSortSpecsPtr sortSpecs = ImGui.TableGetSortSpecs();
-        if(sortSpecs.SpecsDirty || _triggerSort) {
-            _triggerSort = false;
+        if(sortSpecs.SpecsDirty || TriggerSort) {
+            TriggerSort = false;
             sortSpecs.SpecsDirty = false;
             _plugin.DataQueue.QueueDataOperation(() => {
                 SortByColumn(sortSpecs.Specs.ColumnUserID, sortSpecs.Specs.SortDirection);
@@ -281,7 +276,7 @@ internal class CrystallineConflictJobList : FilteredList<Job> {
                     if(player.Job != null) {
                         var job = (Job)player.Job;
                         bool isLocalPlayer = player.Alias.Equals(match.LocalPlayer);
-                        bool isTeammate = !match.IsSpectated && !isLocalPlayer  && team.Key == match.LocalPlayerTeam!.TeamName;
+                        bool isTeammate = !match.IsSpectated && !isLocalPlayer && team.Key == match.LocalPlayerTeam!.TeamName;
 
                         if(StatSourceFilter.InheritFromPlayerFilter) {
                             bool nameMatch = player.Alias.FullName.Contains(OtherPlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase);
@@ -396,6 +391,7 @@ internal class CrystallineConflictJobList : FilteredList<Job> {
                 jobStat.Value.ScoreboardContrib.HPRestored = teamContributions[job].OrderBy(x => x.HPRestored).ElementAt(statMatches / 2).HPRestored;
                 jobStat.Value.ScoreboardContrib.TimeOnCrystalDouble = teamContributions[job].OrderBy(x => x.TimeOnCrystalDouble).ElementAt(statMatches / 2).TimeOnCrystalDouble;
             }
+            ListCSV += CSVRow(statsModel, jobStat.Key);
         }
         try {
             RefreshLock.Wait();
@@ -403,10 +399,30 @@ internal class CrystallineConflictJobList : FilteredList<Job> {
             StatsModel = statsModel;
             _plugin.Configuration.MatchWindowFilters.StatSourceFilter = StatSourceFilter;
             _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
-            _triggerSort = true;
+            TriggerSort = true;
         } finally {
             RefreshLock.Release();
         }
+    }
+
+    private string CSVRow(Dictionary<Job, CCPlayerJobStats> model, Job key) {
+        string csv = "";
+        foreach(var col in Columns) {
+            if(col.Id == 0) {
+                csv += PlayerJobHelper.GetNameFromJob(key);
+            } else if(col.Id == 1) {
+                csv += PlayerJobHelper.GetSubRoleFromJob(key);
+            } else {
+                //find property
+                (var p1, var p2) = GetStatsPropertyFromId(col.Id);
+                if(p1 != null && p2 != null) {
+                    csv += p2.GetValue(p1.GetValue(model[key])) ?? 0;
+                }
+            }
+            csv += ",";
+        }
+        csv += "\n";
+        return csv;
     }
 
     private void SortByColumn(uint columnId, ImGuiSortDirection direction) {
@@ -420,16 +436,9 @@ internal class CrystallineConflictJobList : FilteredList<Job> {
         } else if(columnId == 1) {
             comparator = (r) => PlayerJobHelper.GetSubRoleFromJob(r) ?? 0;
         } else {
-            //iterate to two levels
-            var props = typeof(CCPlayerJobStats).GetProperties();
-            foreach(var prop in props) {
-                var props2 = prop.PropertyType.GetProperties();
-                foreach(var prop2 in props2) {
-                    var propId = $"{prop.Name}.{prop2.Name}".GetHashCode();
-                    if((uint)propId == columnId) {
-                        comparator = (r) => prop2.GetValue(prop.GetValue(StatsModel[r])) ?? 0;
-                    }
-                }
+            (var p1, var p2) = GetStatsPropertyFromId(columnId);
+            if(p1 != null && p2 != null) {
+                comparator = (r) => p2.GetValue(p1.GetValue(StatsModel[r])) ?? 0;
             }
         }
         DataModel = direction == ImGuiSortDirection.Ascending ? DataModel.OrderBy(comparator).ToList() : DataModel.OrderByDescending(comparator).ToList();

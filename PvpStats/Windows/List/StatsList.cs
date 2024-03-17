@@ -1,9 +1,5 @@
 ﻿using ImGuiNET;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
 internal class StatsList<T> : FilteredList<T> {
@@ -14,6 +10,7 @@ internal class StatsList<T> : FilteredList<T> {
     | ImGuiTableFlags.Borders | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX;
     protected override bool ShowHeader { get; set; } = true;
     protected override bool ChildWindow { get; set; } = false;
+    protected bool TriggerSort { get; set; }
 
     public override void DrawListItem(T item) {
         throw new NotImplementedException();
@@ -24,10 +21,8 @@ internal class StatsList<T> : FilteredList<T> {
     }
 
     public override void OpenItemDetail(T item) {
-        throw new NotImplementedException();
     }
 
     public override void RefreshDataModel() {
-        throw new NotImplementedException();
     }
 }
