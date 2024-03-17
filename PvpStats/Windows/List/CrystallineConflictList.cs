@@ -1,7 +1,12 @@
 ﻿using Dalamud.Interface.Colors;
+using Dalamud.Interface.Utility.Raii;
+using Dalamud.Interface.Utility;
 using ImGuiNET;
 using PvpStats.Helpers;
+using PvpStats.Types.Display;
 using PvpStats.Types.Match;
+using PvpStats.Types.Player;
+using PvpStats.Windows.Filter;
 using System.Collections.Generic;
 using System.Numerics;
 
@@ -9,10 +14,10 @@ namespace PvpStats.Windows.List;
 internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> {
 
     protected override List<ColumnParams> Columns { get; set; } = new() {
-        new ColumnParams{Name = "time", Flags = ImGuiTableColumnFlags.WidthStretch, Width = 95f },
-        new ColumnParams{Name = "map", Flags = ImGuiTableColumnFlags.WidthStretch, Width = 100f },
-        new ColumnParams{Name = "queue", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 50f },
-        new ColumnParams{Name = "result", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 40f },
+        new ColumnParams{Name = "Start Time", Flags = ImGuiTableColumnFlags.WidthStretch, Width = 95f },
+        new ColumnParams{Name = "Arena", Flags = ImGuiTableColumnFlags.WidthStretch, Width = 100f },
+        new ColumnParams{Name = "Queue", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 50f },
+        new ColumnParams{Name = "Result", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 40f },
     };
     //protected override List<ColumnParams> Columns { get; set; } = new() {
     //    new ColumnParams{Name = "time" },
@@ -26,6 +31,9 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
     protected override bool ContextMenu { get; set; } = true;
 
     public CrystallineConflictList(Plugin plugin) : base(plugin) {
+    }
+    protected override void PreChildDraw() {
+        ImGuiHelper.CSVButton(ListCSV);
     }
 
     public override void DrawListItem(CrystallineConflictMatch item) {
@@ -65,6 +73,9 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         //#else
         //        DataModel = _plugin.Storage.GetCCMatches().Query().Where(m => !m.IsDeleted && m.IsCompleted).OrderByDescending(m => m.DutyStartTime).ToList();
         //#endif
+        foreach(var match in DataModel) {
+            ListCSV += CSVRow(match);
+        }
     }
 
     public override void OpenItemDetail(CrystallineConflictMatch item) {
@@ -95,4 +106,13 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
 #endif
     }
 
+    private string CSVRow(CrystallineConflictMatch match) {
+        string csv = "";
+        csv += match.DutyStartTime + ",";
+        csv += (match.Arena != null ? MatchHelper.GetArenaName((CrystallineConflictMap)match.Arena) : "") + ",";
+        csv += match.MatchType + ",";
+        csv += match.IsWin ? "WIN" : match.MatchWinner != null ? "LOSS" : "???" + ",";
+        csv += "\n";
+        return csv;
+    }
 }

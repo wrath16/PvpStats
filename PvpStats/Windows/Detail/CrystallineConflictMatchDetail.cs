@@ -50,6 +50,7 @@ internal class CrystallineConflictMatchDetail : Window {
     private Dictionary<CrystallineConflictPostMatchRow, AdvancedStats> _advancedStats = new();
 
     bool _showPercentages;
+    private string _csv;
 
     private SemaphoreSlim _refreshLock = new SemaphoreSlim(1, 1);
 
@@ -113,6 +114,7 @@ internal class CrystallineConflictMatchDetail : Window {
             }
             SortByColumn(SortableColumn.Name, ImGuiSortDirection.Ascending);
         }
+        _csv = BuildCSV();
     }
 
     public void Open(CrystallineConflictMatch match) {
@@ -140,31 +142,31 @@ internal class CrystallineConflictMatchDetail : Window {
                 ImGui.Text($"{MatchHelper.GetArenaName((CrystallineConflictMap)_dataModel.Arena)}");
             }
             ImGui.TableNextColumn();
-            try {
-                ImGui.PushFont(UiBuilder.IconFont);
-                var text = FontAwesomeIcon.Star.ToIconString();
-                //ImGuiHelper.CenterAlignCursor(text);
-                ImGuiHelpers.CenterCursorForText(text);
-                ImGui.SetCursorPosX(ImGui.GetCursorPosX() - 3f * ImGuiHelpers.GlobalScale);
-                if(_dataModel.IsBookmarked) {
-                    ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudYellow);
-                }
-                if(ImGui.Button($"{FontAwesomeIcon.Star.ToIconString()}##--FavoriteMatch")) {
-                    _dataModel.IsBookmarked = !_dataModel.IsBookmarked;
-                    _plugin.DataQueue.QueueDataOperation(() => {
-                        _plugin.Storage.UpdateCCMatch(_dataModel);
-                    });
-                }
-            } finally {
-                if(_dataModel.IsBookmarked) {
-                    ImGui.PopStyleColor();
-                }
-                ImGui.PopFont();
-            }
-            ImGuiHelper.WrappedTooltip("Favorite match");
-
-            //ImGuiHelper.CenterAlignCursor("test");
-            //ImGui.Text("test");
+            DrawFunctions();
+            //try {
+            //    ImGui.PushFont(UiBuilder.IconFont);
+            //    var text = $"{FontAwesomeIcon.Star.ToIconString()}{FontAwesomeIcon.Copy.ToIconString()}";
+            //    //ImGuiHelper.CenterAlignCursor(text);
+            //    ImGuiHelpers.CenterCursorForText(text);
+            //    ImGui.SetCursorPosX(ImGui.GetCursorPosX() - 3f * ImGuiHelpers.GlobalScale);
+            //    if(_dataModel.IsBookmarked) {
+            //        ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudYellow);
+            //    }
+            //    if(ImGui.Button($"{FontAwesomeIcon.Star.ToIconString()}##--FavoriteMatch")) {
+            //        _dataModel.IsBookmarked = !_dataModel.IsBookmarked;
+            //        _plugin.DataQueue.QueueDataOperation(() => {
+            //            _plugin.Storage.UpdateCCMatch(_dataModel);
+            //        });
+            //    }
+            //} finally {
+            //    if(_dataModel.IsBookmarked) {
+            //        ImGui.PopStyleColor();
+            //    }
+            //    ImGui.PopFont();
+            //}
+            //ImGuiHelper.WrappedTooltip("Favorite match");
+            //ImGui.SameLine();
+            //ImGuiHelper.CSVButton("");
             ImGui.TableNextColumn();
             var dutyStartTime = _dataModel.DutyStartTime.ToString();
             ImGuiHelper.RightAlignCursor(dutyStartTime);
@@ -337,6 +339,49 @@ internal class CrystallineConflictMatchDetail : Window {
         }
     }
 
+    private void DrawFunctions() {
+        //need to increment this for each function
+        int functionCount = 2;
+        //float textSize = 0f;
+        //get width of strip
+        try {
+            ImGui.PushFont(UiBuilder.IconFont);
+            string text = "";
+            for(int i = 0; i < functionCount; i++) {
+                text += $"{FontAwesomeIcon.Star.ToIconString()}";
+            }
+            ImGuiHelpers.CenterCursorForText(text);
+            ImGui.SetCursorPosX(ImGui.GetCursorPosX() - (3f + 9f * (functionCount - 1)));
+        } finally {
+            ImGui.PopFont();
+        }
+
+        try {
+            ImGui.PushFont(UiBuilder.IconFont);
+            var text = $"{FontAwesomeIcon.Star.ToIconString()}{FontAwesomeIcon.Copy.ToIconString()}";
+            //ImGuiHelper.CenterAlignCursor(text);
+            //ImGuiHelpers.CenterCursorForText(text);
+            //ImGui.SetCursorPosX(ImGui.GetCursorPosX() - 3f * ImGuiHelpers.GlobalScale);
+            if(_dataModel.IsBookmarked) {
+                ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudYellow);
+            }
+            if(ImGui.Button($"{FontAwesomeIcon.Star.ToIconString()}##--FavoriteMatch")) {
+                _dataModel.IsBookmarked = !_dataModel.IsBookmarked;
+                _plugin.DataQueue.QueueDataOperation(() => {
+                    _plugin.Storage.UpdateCCMatch(_dataModel);
+                });
+            }
+        } finally {
+            if(_dataModel.IsBookmarked) {
+                ImGui.PopStyleColor();
+            }
+            ImGui.PopFont();
+        }
+        ImGuiHelper.WrappedTooltip("Favorite match");
+        ImGui.SameLine();
+        ImGuiHelper.CSVButton(_csv);
+    }
+
     private void DrawStatsTable() {
         if(ImGui.BeginTable($"postmatchplayers##{_dataModel.Id}", 13, ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.ScrollX | ImGuiTableFlags.NoSavedSettings)) {
             ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthFixed, (uint)SortableColumn.Name);
@@ -494,6 +539,32 @@ internal class CrystallineConflictMatchDetail : Window {
         } else {
             _postMatchRows = direction == ImGuiSortDirection.Ascending ? _postMatchRows.OrderBy(comparator).ToList() : _postMatchRows.OrderByDescending(comparator).ToList();
         }
+    }
 
+    private string BuildCSV() {
+        string csv = "";
+        //header
+        csv += "Id,Start Time,Arena,Queue,Winner,Duration,Astra Progress,Umbra Progress,\n";
+        csv += _dataModel.Id + "," + _dataModel.DutyStartTime + ","
+            + (_dataModel.Arena != null ? MatchHelper.GetArenaName((CrystallineConflictMap)_dataModel.Arena!) : "") + ","
+            + _dataModel.MatchType + "," + _dataModel.MatchWinner + "," + _dataModel.MatchDuration + ","
+            + _dataModel.Teams[CrystallineConflictTeamName.Astra].Progress + "," + _dataModel.Teams[CrystallineConflictTeamName.Umbra].Progress + "," 
+            +"\n";
+
+        //post match
+        if(_dataModel.PostMatch != null) {
+            csv += "\n\n\n";
+            csv += "Name,HomeWorld,Job,Team,Kills,Deaths,Assists,Damage Dealt,Damage Taken,HP Restored,Time on Crystal,\n";
+            foreach(var row in _postMatchRows) {
+                if(row.Player != null) {
+                    csv += row.Player.Name + "," + row.Player.HomeWorld + "," + row.Job + ",";
+                } else {
+                    csv += row.Team + ",,,";
+                }
+                csv += row.Team + "," + row.Kills + "," + row.Deaths + "," + row.Assists + "," + row.DamageDealt + "," + row.DamageTaken + "," + row.HPRestored + "," + row.TimeOnCrystal + ",";
+                csv += "\n";
+            }
+        }
+        return csv;
     }
 }

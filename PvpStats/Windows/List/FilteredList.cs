@@ -68,6 +68,7 @@ internal abstract class FilteredList<T> {
         }
 
         try {
+            PreChildDraw();
             if(ImGui.BeginChild(TableId, new Vector2(0, -(25 + ImGui.GetStyle().ItemSpacing.Y) * ImGuiHelpers.GlobalScale), true, ChildFlags)) {
                 PreTableDraw();
                 DrawTable();
@@ -98,6 +99,10 @@ internal abstract class FilteredList<T> {
         } finally {
             RefreshLock.Release();
         }
+    }
+
+    protected virtual void PreChildDraw() {
+
     }
 
     protected virtual void PreTableDraw() {
