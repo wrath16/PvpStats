@@ -65,7 +65,7 @@ internal class CrystallineConflictMatchDetail : Window {
             MaximumSize = new Vector2(1200, 1500)
         };
         if(!plugin.Configuration.ResizeableMatchWindow) {
-            Flags |= ImGuiWindowFlags.AlwaysAutoResize;
+            Flags |= ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings;
         }
         _plugin = plugin;
         _dataModel = match;
@@ -131,6 +131,17 @@ internal class CrystallineConflictMatchDetail : Window {
     }
 
     public override void Draw() {
+        if(_plugin.Configuration.ShowBackgroundImage) {
+            var cursorPosBefore = ImGui.GetCursorPos();
+            //ImGui.SetCursorPosX(ImGui.GetWindowSize().X / 2 - (250f + 3f) * ImGuiHelpers.GlobalScale);
+            //ImGui.SetCursorPosY((ImGui.GetCursorPos().Y + 50f * ImGuiHelpers.GlobalScale));
+            //ImGui.Image(_plugin.WindowManager.CCBannerImage.ImGuiHandle, new Vector2(500, 230) * ImGuiHelpers.GlobalScale, Vector2.Zero, Vector2.One, new Vector4(1, 1, 1, 0.1f));
+            ImGui.SetCursorPosX(ImGui.GetWindowSize().X / 2 - (439f / 2 + 4f) * ImGuiHelpers.GlobalScale);
+            ImGui.SetCursorPosY((ImGui.GetCursorPos().Y - 0f * ImGuiHelpers.GlobalScale));
+            ImGui.Image(_plugin.WindowManager.CCBannerImage.ImGuiHandle, new Vector2(439, 501) * ImGuiHelpers.GlobalScale, Vector2.Zero, Vector2.One, new Vector4(1, 1, 1, 0.05f));
+            ImGui.SetCursorPos(cursorPosBefore);
+        }
+
         if(ImGui.BeginTable("header", 3, ImGuiTableFlags.PadOuterX)) {
             ImGui.TableSetupColumn("arena", ImGuiTableColumnFlags.WidthStretch);
             ImGui.TableSetupColumn("functions", ImGuiTableColumnFlags.WidthStretch);
@@ -143,30 +154,6 @@ internal class CrystallineConflictMatchDetail : Window {
             }
             ImGui.TableNextColumn();
             DrawFunctions();
-            //try {
-            //    ImGui.PushFont(UiBuilder.IconFont);
-            //    var text = $"{FontAwesomeIcon.Star.ToIconString()}{FontAwesomeIcon.Copy.ToIconString()}";
-            //    //ImGuiHelper.CenterAlignCursor(text);
-            //    ImGuiHelpers.CenterCursorForText(text);
-            //    ImGui.SetCursorPosX(ImGui.GetCursorPosX() - 3f * ImGuiHelpers.GlobalScale);
-            //    if(_dataModel.IsBookmarked) {
-            //        ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudYellow);
-            //    }
-            //    if(ImGui.Button($"{FontAwesomeIcon.Star.ToIconString()}##--FavoriteMatch")) {
-            //        _dataModel.IsBookmarked = !_dataModel.IsBookmarked;
-            //        _plugin.DataQueue.QueueDataOperation(() => {
-            //            _plugin.Storage.UpdateCCMatch(_dataModel);
-            //        });
-            //    }
-            //} finally {
-            //    if(_dataModel.IsBookmarked) {
-            //        ImGui.PopStyleColor();
-            //    }
-            //    ImGui.PopFont();
-            //}
-            //ImGuiHelper.WrappedTooltip("Favorite match");
-            //ImGui.SameLine();
-            //ImGuiHelper.CSVButton("");
             ImGui.TableNextColumn();
             var dutyStartTime = _dataModel.DutyStartTime.ToString();
             ImGuiHelper.RightAlignCursor(dutyStartTime);

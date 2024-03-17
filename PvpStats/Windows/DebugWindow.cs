@@ -6,6 +6,7 @@ using Dalamud.Interface.Windowing;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using ImGuiNET;
 using PvpStats.Services;
+using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -43,6 +44,7 @@ internal unsafe class DebugWindow : Window {
     }
 
     public override void Draw() {
+        ImGui.GetBackgroundDrawList().AddImage(_plugin.WindowManager.JobIcons[Job.AST].ImGuiHandle, ImGui.GetWindowPos(), ImGui.GetWindowPos() + ImGui.GetWindowSize());
 
         if(ImGui.BeginTabBar("debugTabs")) {
             if(ImGui.BeginTabItem("Addon")) {

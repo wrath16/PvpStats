@@ -266,7 +266,6 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
             //DataModel.Add(job);
             statsModel.Add(job, new());
             teamContributions.Add(job, new());
-
             //data.Add(job, (new(), new()));
         }
 

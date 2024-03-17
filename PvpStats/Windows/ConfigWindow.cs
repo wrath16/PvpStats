@@ -69,6 +69,11 @@ internal class ConfigWindow : Window {
         }
         ImGuiHelper.HelpMarker("Reopen windows to reflect changes.");
 
+        bool showBackgroundImage = _plugin.Configuration.ShowBackgroundImage;
+        if(ImGui.Checkbox("Show background image", ref showBackgroundImage)) {
+            _plugin.Configuration.ShowBackgroundImage = showBackgroundImage;
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
         bool playerTeamLeft = _plugin.Configuration.LeftPlayerTeam;
         if(ImGui.Checkbox("Always show player team on left", ref playerTeamLeft)) {
             _plugin.Configuration.LeftPlayerTeam = playerTeamLeft;

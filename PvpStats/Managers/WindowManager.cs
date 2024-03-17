@@ -9,6 +9,7 @@ using PvpStats.Windows.Detail;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
 
 namespace PvpStats.Managers;
@@ -23,6 +24,7 @@ internal class WindowManager : IDisposable {
 #endif
 
     internal readonly Dictionary<Job, IDalamudTextureWrap> JobIcons = new();
+    internal IDalamudTextureWrap CCBannerImage { get; private set; }
 
     internal WindowManager(Plugin plugin) {
         _plugin = plugin;
@@ -45,6 +47,9 @@ internal class WindowManager : IDisposable {
         DebugWindow = new(plugin);
         WindowSystem.AddWindow(DebugWindow);
 #endif
+
+        var imagePath = Path.Combine(_plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "cc_logo.png");
+        CCBannerImage = _plugin.PluginInterface.UiBuilder.LoadImage(imagePath);
     }
     private void DrawUI() {
         WindowSystem.Draw();

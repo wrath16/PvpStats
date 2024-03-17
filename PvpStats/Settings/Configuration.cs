@@ -12,6 +12,7 @@ public class Configuration : IPluginConfiguration {
     public bool LeftPlayerTeam { get; set; } = false;
     public bool AnchorTeamNames { get; set; } = true;
     public bool ResizeableMatchWindow { get; set; } = true;
+    public bool ShowBackgroundImage { get; set; } = true;
     public bool SizeFiltersToFit { get; set; } = false;
     public bool PersistWindowSizePerTab { get; set; } = true;
     public bool ColorScaleStats { get; set; } = true;

@@ -8,6 +8,12 @@
     <Copyright></Copyright>
     <PackageProjectUrl></PackageProjectUrl>
   </PropertyGroup>
+<ItemGroup>
+	<Content Include="..\images\background\*.png">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		<Visible>false</Visible>
+	</Content>
+</ItemGroup>
 
   <PropertyGroup>
     <TargetFramework>net7.0-windows</TargetFramework>
