@@ -48,7 +48,7 @@ internal class WindowManager : IDisposable {
         WindowSystem.AddWindow(DebugWindow);
 #endif
 
-        var imagePath = Path.Combine(_plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "cc_logo.png");
+        var imagePath = Path.Combine(_plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "cc_logo_full.png");
         CCBannerImage = _plugin.PluginInterface.UiBuilder.LoadImage(imagePath);
     }
     private void DrawUI() {

@@ -136,9 +136,9 @@ internal class CrystallineConflictMatchDetail : Window {
             //ImGui.SetCursorPosX(ImGui.GetWindowSize().X / 2 - (250f + 3f) * ImGuiHelpers.GlobalScale);
             //ImGui.SetCursorPosY((ImGui.GetCursorPos().Y + 50f * ImGuiHelpers.GlobalScale));
             //ImGui.Image(_plugin.WindowManager.CCBannerImage.ImGuiHandle, new Vector2(500, 230) * ImGuiHelpers.GlobalScale, Vector2.Zero, Vector2.One, new Vector4(1, 1, 1, 0.1f));
-            ImGui.SetCursorPosX(ImGui.GetWindowSize().X / 2 - (439f / 2 + 4f) * ImGuiHelpers.GlobalScale);
-            ImGui.SetCursorPosY((ImGui.GetCursorPos().Y - 0f * ImGuiHelpers.GlobalScale));
-            ImGui.Image(_plugin.WindowManager.CCBannerImage.ImGuiHandle, new Vector2(439, 501) * ImGuiHelpers.GlobalScale, Vector2.Zero, Vector2.One, new Vector4(1, 1, 1, 0.05f));
+            ImGui.SetCursorPosX(ImGui.GetWindowSize().X / 2 - (243 / 2 + 3f) * ImGuiHelpers.GlobalScale);
+            ImGui.SetCursorPosY((ImGui.GetCursorPos().Y + 40f * ImGuiHelpers.GlobalScale));
+            ImGui.Image(_plugin.WindowManager.CCBannerImage.ImGuiHandle, new Vector2(243, 275) * ImGuiHelpers.GlobalScale, Vector2.Zero, Vector2.One, new Vector4(1, 1, 1, 0.1f));
             ImGui.SetCursorPos(cursorPosBefore);
         }
 
