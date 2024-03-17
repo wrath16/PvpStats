@@ -37,6 +37,7 @@ internal abstract class FilteredList<T> {
     protected virtual string TableId => $"##{GetHashCode()}-Table";
     protected virtual bool ShowHeader { get; set; } = false;
     protected virtual bool ChildWindow { get; set; } = true;
+    protected virtual bool ContextMenu { get; set; } = false;
 
     public abstract void RefreshDataModel();
     public abstract void DrawListItem(T item);
@@ -107,6 +108,10 @@ internal abstract class FilteredList<T> {
 
     }
 
+    protected virtual void ContextMenuItems(T item) {
+
+    }
+
     private void DrawTable() {
         if(ImGui.BeginTable(TableId, Columns.Count, TableFlags)) {
             try {
@@ -141,14 +146,11 @@ internal abstract class FilteredList<T> {
                     if(ImGui.Selectable($"##{item!.GetHashCode()}-selectable", false, ImGuiSelectableFlags.SpanAllColumns)) {
                         OpenItemDetail(item);
                     }
-#if DEBUG
-                    if(ImGui.BeginPopupContextItem($"##{item!.GetHashCode()}--ContextMenu", ImGuiPopupFlags.MouseButtonRight)) {
-                        if(ImGui.MenuItem($"Edit document##{item!.GetHashCode()}--FullEditContext")) {
-                            OpenFullEditDetail(item);
-                        }
+                    if(ContextMenu && ImGui.BeginPopupContextItem($"##{item!.GetHashCode()}--ContextMenu", ImGuiPopupFlags.MouseButtonRight)) {
+                        ContextMenuItems(item);
                         ImGui.EndPopup();
                     }
-#endif
+
                     ImGui.SameLine();
                     DrawListItem(item);
                 }

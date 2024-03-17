@@ -93,6 +93,7 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
                 RemoveByMatchCount(MinMatches);
             });
         }
+        ImGui.AlignTextToFramePadding();
         ImGuiHelper.HelpMarker("Right-click table header for column options.", false);
         ImGui.SameLine();
         ImGuiHelper.CSVButton(ListCSV);

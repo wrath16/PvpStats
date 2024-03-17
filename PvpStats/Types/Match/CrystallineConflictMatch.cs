@@ -12,6 +12,7 @@ public class CrystallineConflictMatch {
     public int Version { get; init; } = 0;
     public bool IsCompleted { get; set; }
     public bool IsDeleted { get; set; }
+    public bool IsBookmarked { get; set; }
 
     public DateTime DutyStartTime { get; init; }
     public DateTime? MatchStartTime { get; set; }

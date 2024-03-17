@@ -1,4 +1,5 @@
-﻿using Dalamud.Interface.Colors;
+﻿using Dalamud.Interface;
+using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
@@ -128,8 +129,9 @@ internal class CrystallineConflictMatchDetail : Window {
     }
 
     public override void Draw() {
-        if(ImGui.BeginTable("header", 2, ImGuiTableFlags.PadOuterX)) {
+        if(ImGui.BeginTable("header", 3, ImGuiTableFlags.PadOuterX)) {
             ImGui.TableSetupColumn("arena", ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableSetupColumn("functions", ImGuiTableColumnFlags.WidthStretch);
             ImGui.TableSetupColumn("time", ImGuiTableColumnFlags.WidthStretch);
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
@@ -137,6 +139,32 @@ internal class CrystallineConflictMatchDetail : Window {
             if(_dataModel.Arena != null) {
                 ImGui.Text($"{MatchHelper.GetArenaName((CrystallineConflictMap)_dataModel.Arena)}");
             }
+            ImGui.TableNextColumn();
+            try {
+                ImGui.PushFont(UiBuilder.IconFont);
+                var text = FontAwesomeIcon.Star.ToIconString();
+                //ImGuiHelper.CenterAlignCursor(text);
+                ImGuiHelpers.CenterCursorForText(text);
+                ImGui.SetCursorPosX(ImGui.GetCursorPosX() - 3f * ImGuiHelpers.GlobalScale);
+                if(_dataModel.IsBookmarked) {
+                    ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudYellow);
+                }
+                if(ImGui.Button($"{FontAwesomeIcon.Star.ToIconString()}##--FavoriteMatch")) {
+                    _dataModel.IsBookmarked = !_dataModel.IsBookmarked;
+                    _plugin.DataQueue.QueueDataOperation(() => {
+                        _plugin.Storage.UpdateCCMatch(_dataModel);
+                    });
+                }
+            } finally {
+                if(_dataModel.IsBookmarked) {
+                    ImGui.PopStyleColor();
+                }
+                ImGui.PopFont();
+            }
+            ImGuiHelper.WrappedTooltip("Favorite match");
+
+            //ImGuiHelper.CenterAlignCursor("test");
+            //ImGui.Text("test");
             ImGui.TableNextColumn();
             var dutyStartTime = _dataModel.DutyStartTime.ToString();
             ImGuiHelper.RightAlignCursor(dutyStartTime);

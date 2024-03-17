@@ -3,31 +3,35 @@ using ImGuiNET;
 using PvpStats.Helpers;
 using PvpStats.Types.Match;
 using System.Collections.Generic;
+using System.Numerics;
 
 namespace PvpStats.Windows.List;
 internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> {
 
-    //protected override List<ColumnParams> Columns { get; set; } = new() {
-    //    new ColumnParams{Name = "time", Flags = ImGuiTableColumnFlags.WidthStretch, Width = ImGuiHelpers.GlobalScale * 100f },
-    //    new ColumnParams{Name = "map", Flags = ImGuiTableColumnFlags.WidthStretch, Width = ImGuiHelpers.GlobalScale * 100f },
-    //    new ColumnParams{Name = "queue", Flags = ImGuiTableColumnFlags.WidthFixed, Width = ImGuiHelpers.GlobalScale * 60f },
-    //    new ColumnParams{Name = "result", Flags = ImGuiTableColumnFlags.WidthFixed, Width = ImGuiHelpers.GlobalScale * 40f },
-    //};
     protected override List<ColumnParams> Columns { get; set; } = new() {
-        new ColumnParams{Name = "time" },
-        new ColumnParams{Name = "map" },
-        new ColumnParams{Name = "queue" },
-        new ColumnParams{Name = "result" },
+        new ColumnParams{Name = "time", Flags = ImGuiTableColumnFlags.WidthStretch, Width = 95f },
+        new ColumnParams{Name = "map", Flags = ImGuiTableColumnFlags.WidthStretch, Width = 100f },
+        new ColumnParams{Name = "queue", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 50f },
+        new ColumnParams{Name = "result", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 40f },
     };
+    //protected override List<ColumnParams> Columns { get; set; } = new() {
+    //    new ColumnParams{Name = "time" },
+    //    new ColumnParams{Name = "map" },
+    //    new ColumnParams{Name = "queue" },
+    //    new ColumnParams{Name = "result" },
+    //};
 
     protected override ImGuiTableFlags TableFlags { get; set; } = ImGuiTableFlags.SizingStretchProp;
-
     protected override ImGuiWindowFlags ChildFlags { get; set; } = ImGuiWindowFlags.AlwaysVerticalScrollbar;
+    protected override bool ContextMenu { get; set; } = true;
 
     public CrystallineConflictList(Plugin plugin) : base(plugin) {
     }
 
     public override void DrawListItem(CrystallineConflictMatch item) {
+        if(item.IsBookmarked) {
+            ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(ImGuiColors.DalamudYellow - new Vector4(0f, 0f, 0f, 0.7f)));
+        }
         ImGui.Text($"{item.DutyStartTime.ToString("MM/dd/yyyy HH:mm")}");
         ImGui.TableNextColumn();
         if(item.Arena != null) {
@@ -66,30 +70,29 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
     public override void OpenItemDetail(CrystallineConflictMatch item) {
         _plugin.DataQueue.QueueDataOperation(() => {
             _plugin.WindowManager.OpenMatchDetailsWindow(item);
-            //_plugin.Log.Debug($"Opening item detail for...{item.DutyStartTime}");
-            //var itemDetail = new CrystallineConflictMatchDetail(_plugin, item);
-            //itemDetail.IsOpen = true;
-            //try {
-            //    _plugin.WindowManager.AddWindow(itemDetail);
-            //} catch(ArgumentException) {
-            //    //attempt to open existing window
-            //    _plugin.WindowManager.OpenMatchDetailsWindow(item.Id);
-            //}
         });
     }
 
     public override void OpenFullEditDetail(CrystallineConflictMatch item) {
         _plugin.DataQueue.QueueDataOperation(() => {
             _plugin.WindowManager.OpenFullEditWindow(item);
-            //_plugin.Log.Debug($"Opening full edit details for...{item.Id}");
-            //var fullEditDetail = new FullEditDetail<CrystallineConflictMatch>(_plugin, item);
-            //fullEditDetail.IsOpen = true;
-            //try {
-            //    _plugin.WindowManager.AddWindow(fullEditDetail);
-            //} catch(ArgumentException) {
-            //    //attempt to open existing window
-            //    _plugin.WindowManager.OpenFullEditWindow(item.Id);
-            //}
         });
     }
+
+    protected override void ContextMenuItems(CrystallineConflictMatch item) {
+        bool isBookmarked = item.IsBookmarked;
+        if(ImGui.MenuItem($"Favorite##{item!.GetHashCode()}--AddBookmark", null, isBookmarked)) {
+            item.IsBookmarked = !item.IsBookmarked;
+            _plugin.DataQueue.QueueDataOperation(() => {
+                _plugin.Storage.UpdateCCMatch(item, false);
+            });
+        }
+
+#if DEBUG
+        if(ImGui.MenuItem($"Edit document##{item!.GetHashCode()}--FullEditContext")) {
+            OpenFullEditDetail(item);
+        }
+#endif
+    }
+
 }
