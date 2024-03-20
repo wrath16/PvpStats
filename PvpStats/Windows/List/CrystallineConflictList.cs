@@ -1,12 +1,7 @@
 ﻿using Dalamud.Interface.Colors;
-using Dalamud.Interface.Utility.Raii;
-using Dalamud.Interface.Utility;
 using ImGuiNET;
 using PvpStats.Helpers;
-using PvpStats.Types.Display;
 using PvpStats.Types.Match;
-using PvpStats.Types.Player;
-using PvpStats.Windows.Filter;
 using System.Collections.Generic;
 using System.Numerics;
 

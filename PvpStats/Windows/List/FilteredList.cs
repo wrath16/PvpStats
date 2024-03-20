@@ -29,7 +29,7 @@ internal abstract class FilteredList<T> {
     public virtual List<T> DataModel { get; set; } = new();
     public List<T> CurrentPage { get; private set; } = new();
     public T? SelectedRow { get; set; }
-    public string ListCSV { get; set; }
+    public string ListCSV { get; set; } = "";
 
     protected virtual List<ColumnParams> Columns { get; set; } = new();
     protected virtual ImGuiTableFlags TableFlags { get; set; }

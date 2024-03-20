@@ -259,6 +259,7 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
     public override void RefreshDataModel() {
         Dictionary<Job, CCPlayerJobStats> statsModel = new();
         Dictionary<Job, List<CCScoreboardDouble>> teamContributions = new();
+        ListCSV = CSVHeader();
         //Dictionary<Job, (CCPlayerJobStats, List<CCScoreboardDouble>)> data = new();
 
         var allJobs = Enum.GetValues(typeof(Job)).Cast<Job>();

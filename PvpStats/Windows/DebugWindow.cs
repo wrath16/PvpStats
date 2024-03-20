@@ -203,28 +203,29 @@ internal unsafe class DebugWindow : Window {
             }
 
             if(ImGui.BeginTabItem("Network Messages")) {
+                if(_plugin.MatchManager is not null) {
+                    ImGui.Text($"Current match count: {_plugin.MatchManager._opcodeMatchCount}");
 
-                ImGui.Text($"Current match count: {_plugin.MatchManager._opcodeMatchCount}");
-
-                if(ImGui.BeginTable("opcodetable", 2)) {
-
-                    ImGui.TableNextColumn();
-                    ImGui.Text("Opcode");
-                    ImGui.TableNextColumn();
-                    ImGui.Text("Count");
-
-                    foreach(var opcode in _plugin.MatchManager._opCodeCount) {
+                    if(ImGui.BeginTable("opcodetable", 2)) {
 
                         ImGui.TableNextColumn();
-                        ImGui.Text($"{opcode.Key}");
+                        ImGui.Text("Opcode");
                         ImGui.TableNextColumn();
-                        ImGui.Text($"{opcode.Value}");
+                        ImGui.Text("Count");
+
+                        foreach(var opcode in _plugin.MatchManager._opCodeCount) {
+
+                            ImGui.TableNextColumn();
+                            ImGui.Text($"{opcode.Key}");
+                            ImGui.TableNextColumn();
+                            ImGui.Text($"{opcode.Value}");
+                        }
+
+                        ImGui.EndTable();
                     }
 
-                    ImGui.EndTable();
+                    ImGui.EndTabItem();
                 }
-
-                ImGui.EndTabItem();
             }
 
             ImGui.EndTabBar();

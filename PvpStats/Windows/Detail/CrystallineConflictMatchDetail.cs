@@ -535,8 +535,8 @@ internal class CrystallineConflictMatchDetail : Window {
         csv += _dataModel.Id + "," + _dataModel.DutyStartTime + ","
             + (_dataModel.Arena != null ? MatchHelper.GetArenaName((CrystallineConflictMap)_dataModel.Arena!) : "") + ","
             + _dataModel.MatchType + "," + _dataModel.MatchWinner + "," + _dataModel.MatchDuration + ","
-            + _dataModel.Teams[CrystallineConflictTeamName.Astra].Progress + "," + _dataModel.Teams[CrystallineConflictTeamName.Umbra].Progress + "," 
-            +"\n";
+            + _dataModel.Teams[CrystallineConflictTeamName.Astra].Progress + "," + _dataModel.Teams[CrystallineConflictTeamName.Umbra].Progress + ","
+            + "\n";
 
         //post match
         if(_dataModel.PostMatch != null) {

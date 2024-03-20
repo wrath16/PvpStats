@@ -3,6 +3,7 @@ using Dalamud.Game.Command;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using Dalamud.Utility.Signatures;
 using PvpStats.Managers;
 using PvpStats.Managers.Game;
 using PvpStats.Services;
@@ -39,7 +40,7 @@ public sealed class Plugin : IDalamudPlugin {
     internal IGameInteropProvider InteropProvider { get; init; }
     internal ISigScanner SigScanner { get; init; }
 
-    internal MatchManager MatchManager { get; init; }
+    internal MatchManager? MatchManager { get; init; }
     internal WindowManager WindowManager { get; init; }
 
     internal DataQueueService DataQueue { get; init; }
@@ -100,7 +101,11 @@ public sealed class Plugin : IDalamudPlugin {
             AtkNodeService = new(this);
             Localization = new(this);
             WindowManager = new(this);
-            MatchManager = new(this);
+            try {
+                MatchManager = new(this);
+            } catch(SignatureException e) {
+                Log.Error($"failed to initialize match manager: {e.Message}");
+            }
 
             CommandManager.AddHandler(CCStatsCommandName, new CommandInfo(OnCommand) {
                 HelpMessage = "Opens Crystalline Conflict tracker."
@@ -134,7 +139,7 @@ public sealed class Plugin : IDalamudPlugin {
 #endif
 
         CommandManager.RemoveHandler(CCStatsCommandName);
-        //CommandManager.RemoveHandler(ConfigCommandName);
+        CommandManager.RemoveHandler(ConfigCommandName);
 
         if(MatchManager != null) {
             MatchManager.Dispose();
@@ -147,6 +152,9 @@ public sealed class Plugin : IDalamudPlugin {
         }
         if(DataQueue != null) {
             DataQueue.Dispose();
+        }
+        if(GameState != null) {
+            GameState.Dispose();
         }
 
         if(Configuration != null) {

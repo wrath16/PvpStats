@@ -10,7 +10,7 @@ internal class CCStatsList<T> : StatsList<T> {
 
     public Dictionary<T, CCPlayerJobStats> StatsModel { get; protected set; }
     protected CrystallineConflictList ListModel { get; init; }
-    protected OtherPlayerFilter OtherPlayerFilter { get; init; }
+    protected OtherPlayerFilter? OtherPlayerFilter { get; init; }
 
     protected (PropertyInfo?, PropertyInfo?) GetStatsPropertyFromId(uint columnId) {
         var props = typeof(CCPlayerJobStats).GetProperties();

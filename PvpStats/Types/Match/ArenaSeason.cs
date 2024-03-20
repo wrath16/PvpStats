@@ -55,6 +55,11 @@ internal class ArenaSeason {
             StartDate = new DateTime(2024,1,16),
             EndDate = new DateTime(2024,3,19),
         } },
+        { 11, new ArenaSeason() {
+            SeasonNumber = 11,
+            StartDate = new DateTime(2024,3,19),
+            EndDate = new DateTime(2024,12,31),
+        } },
     };
 
     public int SeasonNumber { get; set; }

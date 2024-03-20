@@ -30,9 +30,13 @@ internal class MatchManager : IDisposable {
     private DateTime _lastSortTime;
     private bool _qPopped = false;
 
-    private delegate void CCMatchEnd1Delegate(IntPtr p1);
-    [Signature("E8 ?? ?? ?? ?? B0 ?? 48 8B 5C 24 ?? 48 8B 74 24 ?? 48 83 C4 ?? 5F C3 8B 4F ?? 48 8B D3 E8 ?? ?? ?? ?? 48 8B 5C 24", DetourName = nameof(CCMatchEnd1Detour))]
-    private readonly Hook<CCMatchEnd1Delegate> _ccMatchEndHook;
+    //p1 = director
+    //p2 = results packet
+    //p3 = results packet + offset (ref to specific variable?)
+    //p4 = ???
+    private delegate void CCMatchEnd101Delegate(IntPtr p1, IntPtr p2, IntPtr p3, uint p4);
+    [Signature("40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ?? ?? ?? ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 85 ?? ?? ?? ?? 0F B6 42", DetourName = nameof(CCMatchEnd101Detour))]
+    private readonly Hook<CCMatchEnd101Delegate> _ccMatchEndHook;
 
     private delegate IntPtr CCDirectorCtorDelegate(IntPtr p1, IntPtr p2, IntPtr p3);
     [Signature("E8 ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 03 48 8D 8B ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 83 ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 83 ?? ?? ?? ?? 48 8D 05", DetourName = nameof(CCDirectorCtorDetour))]
@@ -46,7 +50,6 @@ internal class MatchManager : IDisposable {
         _plugin.GameNetwork.NetworkMessage += OnNetworkMessage;
 #endif
         _plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "PvPMKSIntroduction", OnPvPIntro);
-
         _plugin.InteropProvider.InitializeFromAttributes(this);
         _plugin.Log.Debug($"cc director .ctor address: 0x{_ccDirectorCtorHook!.Address.ToString("X2")}");
         _plugin.Log.Debug($"match end 1 address: 0x{_ccMatchEndHook!.Address.ToString("X2")}");
@@ -65,8 +68,8 @@ internal class MatchManager : IDisposable {
     }
 
     private unsafe IntPtr CCDirectorCtorDetour(IntPtr p1, IntPtr p2, IntPtr p3) {
+        _plugin.Log.Debug("CC Director .ctor occurred!");
         try {
-            _plugin.Log.Debug("CC Director .ctor occurred!");
             var dutyId = _plugin.GameState.GetCurrentDutyId();
             var territoryId = _plugin.ClientState.TerritoryType;
             _plugin.Log.Debug($"Current duty: {dutyId}");
@@ -96,13 +99,16 @@ internal class MatchManager : IDisposable {
         return _ccDirectorCtorHook.Original(p1, p2, p3);
     }
 
-    private unsafe void CCMatchEnd1Detour(IntPtr p1) {
+    private unsafe void CCMatchEnd101Detour(IntPtr p1, IntPtr p2, IntPtr p3, uint p4) {
         _plugin.Log.Debug("Match end detour occurred.");
-        var resultsPacket = *(CrystallineConflictResultsPacket*)(p1 + 0x10);
+#if DEBUG
+        _plugin.Functions.FindValue<byte>(0, p2, 0x400, 0, true);
+#endif
+        var resultsPacket = *(CrystallineConflictResultsPacket*)(p2 + 0x10);
         _plugin.DataQueue.QueueDataOperation(() => {
             ProcessMatchResults(resultsPacket);
         });
-        _ccMatchEndHook.Original(p1);
+        _ccMatchEndHook.Original(p1, p2, p3, p4);
     }
 
     private unsafe void OnNetworkMessage(nint dataPtr, ushort opCode, uint sourceActorId, uint targetActorId, NetworkMessageDirection direction) {
@@ -271,7 +277,7 @@ internal class MatchManager : IDisposable {
         _plugin.Log.Information("Match has ended.");
 
         CrystallineConflictPostMatch postMatch = new();
-        _currentMatch.LocalPlayer ??= (PlayerAlias)_plugin.GameState.GetCurrentPlayer();
+        _currentMatch.LocalPlayer ??= _plugin.GameState.CurrentPlayer;
         _currentMatch.DataCenter ??= _plugin.ClientState.LocalPlayer?.CurrentWorld.GameData?.DataCenter.Value?.Name.ToString();
 
         //set teams

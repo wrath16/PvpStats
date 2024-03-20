@@ -4,7 +4,6 @@ using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using PvpStats.Helpers;
 using PvpStats.Types.Match;
-using PvpStats.Types.Player;
 using PvpStats.Windows.Filter;
 using PvpStats.Windows.List;
 using PvpStats.Windows.Summary;
@@ -122,8 +121,8 @@ internal class MainWindow : Window {
                     break;
                 case Type _ when filter.GetType() == typeof(LocalPlayerFilter):
                     var localPlayerFilter = (LocalPlayerFilter)filter;
-                    if(localPlayerFilter.CurrentPlayerOnly && _plugin.ClientState.IsLoggedIn && _plugin.GameState.GetCurrentPlayer() != null) {
-                        matches = matches.Where(x => x.LocalPlayer != null && x.LocalPlayer.Equals((PlayerAlias)_plugin.GameState.GetCurrentPlayer())).ToList();
+                    if(localPlayerFilter.CurrentPlayerOnly && _plugin.ClientState.IsLoggedIn && _plugin.GameState.CurrentPlayer != null) {
+                        matches = matches.Where(x => x.LocalPlayer != null && x.LocalPlayer.Equals(_plugin.GameState.CurrentPlayer)).ToList();
                     }
                     _plugin.Configuration.MatchWindowFilters.LocalPlayerFilter = localPlayerFilter;
                     break;
