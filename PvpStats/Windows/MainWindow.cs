@@ -1,5 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using PvpStats.Helpers;
@@ -22,6 +23,7 @@ internal class MainWindow : Window {
     private CrystallineConflictSummary ccSummary;
     private CrystallineConflictPlayerList ccPlayers;
     private CrystallineConflictJobList ccJobs;
+    private CrystallineConflictPvPProfile ccProfile;
     private string _currentTab = "";
     internal List<DataFilter> Filters { get; private set; } = new();
     internal SemaphoreSlim RefreshLock { get; init; } = new SemaphoreSlim(1, 1);
@@ -52,6 +54,7 @@ internal class MainWindow : Window {
         ccSummary = new(plugin);
         ccJobs = new(plugin, ccMatches, otherPlayerFilter);
         ccPlayers = new(plugin, ccMatches, otherPlayerFilter);
+        ccProfile = new(plugin);
         _plugin.DataQueue.QueueDataOperation(Refresh);
     }
 
@@ -241,6 +244,13 @@ internal class MainWindow : Window {
             if(ImGui.BeginTabItem("Players")) {
                 ChangeTab("Players");
                 ccPlayers.Draw();
+                ImGui.EndTabItem();
+            }
+            if(ImGui.BeginTabItem("Profile")) {
+                ChangeTab("Profile");
+                using(var child = ImRaii.Child("ProfileChild")) {
+                    ccProfile.Draw();
+                }
                 ImGui.EndTabItem();
             }
             ImGui.EndTabBar();

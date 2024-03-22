@@ -219,7 +219,7 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
         ImGui.TableNextColumn();
         var tcpm = StatsModel[item].ScoreboardPerMin.TimeOnCrystal;
         if(_plugin.Configuration.ColorScaleStats) {
-            ImGui.TextColored(ImGuiHelper.ColorScale(ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0f, 30f, (float)tcpm.TotalSeconds), ImGuiHelper.GetTimeSpanString(tcpm));
+            ImGui.TextColored(ImGuiHelper.ColorScale(ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 4f, 25f, (float)tcpm.TotalSeconds), ImGuiHelper.GetTimeSpanString(tcpm));
         } else {
             ImGui.TextUnformatted(ImGuiHelper.GetTimeSpanString(tcpm));
         }
