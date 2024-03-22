@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace PvpStats.Managers;
 internal class WindowManager : IDisposable {
@@ -32,7 +33,7 @@ internal class WindowManager : IDisposable {
 
         //MainWindow = new();
         _plugin.PluginInterface.UiBuilder.Draw += DrawUI;
-        //_plugin.PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
+        _plugin.PluginInterface.UiBuilder.OpenConfigUi += OpenConfigWindow;
 
         foreach(var icon in PlayerJobHelper.JobIcons) {
             JobIcons.Add(icon.Key, _plugin.TextureProvider.GetIcon(icon.Value));
@@ -50,18 +51,25 @@ internal class WindowManager : IDisposable {
 
         var imagePath = Path.Combine(_plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "cc_logo_full.png");
         CCBannerImage = _plugin.PluginInterface.UiBuilder.LoadImage(imagePath);
+
+        _plugin.ClientState.Login += OnLogin;
     }
     private void DrawUI() {
         WindowSystem.Draw();
     }
 
-    private void DrawConfigUI() {
-    }
-
     public void Dispose() {
         WindowSystem.RemoveAllWindows();
         _plugin.PluginInterface.UiBuilder.Draw -= DrawUI;
-        //_plugin.PluginInterface.UiBuilder.OpenConfigUi -= DrawConfigUI;
+        _plugin.PluginInterface.UiBuilder.OpenConfigUi -= OpenConfigWindow;
+
+        _plugin.ClientState.Login -= OnLogin;
+    }
+
+    private void OnLogin() {
+        Task.Delay(3000).ContinueWith((t) => {
+            _plugin.DataQueue.QueueDataOperation(Refresh);
+        });
     }
 
     internal void AddWindow(Window window) {
@@ -117,7 +125,7 @@ internal class WindowManager : IDisposable {
     }
 
     public void Refresh() {
+        _plugin.Log.Debug("refreshing windows...");
         MainWindow.Refresh();
     }
-
 }

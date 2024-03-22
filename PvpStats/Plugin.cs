@@ -120,7 +120,7 @@ public sealed class Plugin : IDalamudPlugin {
             });
             DebugMode = true;
 #endif
-            PluginInterface.UiBuilder.OpenConfigUi += WindowManager.OpenConfigWindow;
+            //PluginInterface.UiBuilder.OpenConfigUi += WindowManager.OpenConfigWindow;
 
             Log.Debug("PvP Stats has started.");
         } catch(Exception e) {

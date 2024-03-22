@@ -15,7 +15,6 @@ internal class GameStateService : IDisposable {
 
     internal GameStateService(Plugin plugin) {
         _plugin = plugin;
-
         _plugin.Framework.Update += OnFrameworkUpdate;
     }
 
