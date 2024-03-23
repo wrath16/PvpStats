@@ -13,13 +13,10 @@ Final Fantasy XIV Dalamud plugin for recording PvP match history. Currently only
 * Enter `/pvpstatsconfig` or press the gear on the plugin description to access settings.
 
 ## Known Issues
-* Local player filter does not work when first logging in.
 
 ## Feature Roadmap
-May or may not get implemented:
+May or may not eventually get implemented:
 * Lodestone player verification.
-* CSV export.
-* Match bookmarks.
 * Records and rank graph.
 * Player details window.
 * Frontline support.
