@@ -17,6 +17,9 @@ public class PlayerRank {
     };
     public static readonly int StarsPerRiser = 3;
 
+    public static PlayerRank MaxRank => new() { Tier = ArenaTier.Crystal };
+    public static PlayerRank MinRank => new() { Tier = ArenaTier.None, Riser = 1, Stars = 0 };
+
     public ArenaTier Tier { get; set; }
     public int? Riser { get; set; }
     public int? Stars { get; set; }
@@ -36,6 +39,19 @@ public class PlayerRank {
             }
             starCount += Stars ?? 0;
             return starCount;
+        }
+    }
+
+    [BsonIgnore]
+    public int TotalCredit {
+        get {
+            if(Tier == ArenaTier.Crystal && Credit != null) {
+                return (int)Credit;
+            }
+            PlayerRank maxRank = new() {
+                Tier = ArenaTier.Crystal,
+            };
+            return (maxRank.TotalStars - TotalStars) * -100;
         }
     }
 

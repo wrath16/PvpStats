@@ -24,6 +24,7 @@ internal class MainWindow : Window {
     private CrystallineConflictPlayerList ccPlayers;
     private CrystallineConflictJobList ccJobs;
     private CrystallineConflictPvPProfile ccProfile;
+    private CrystallineConflictRankGraph ccRank;
     private string _currentTab = "";
     internal List<DataFilter> Filters { get; private set; } = new();
     internal SemaphoreSlim RefreshLock { get; init; } = new SemaphoreSlim(1, 1);
@@ -55,6 +56,7 @@ internal class MainWindow : Window {
         ccJobs = new(plugin, ccMatches, otherPlayerFilter);
         ccPlayers = new(plugin, ccMatches, otherPlayerFilter);
         ccProfile = new(plugin);
+        ccRank = new(plugin);
         _plugin.DataQueue.QueueDataOperation(Refresh);
     }
 
@@ -197,6 +199,7 @@ internal class MainWindow : Window {
             ccSummary.Refresh(matches);
             ccPlayers.Refresh(new());
             ccJobs.Refresh(new());
+            ccRank.Refresh(matches);
             _plugin.Configuration.Save();
         } finally {
             RefreshLock.Release();
@@ -252,6 +255,14 @@ internal class MainWindow : Window {
                     ccProfile.Draw();
                 }
                 ImGui.EndTabItem();
+            }
+            using(var tab = ImRaii.TabItem("Credit")) {
+                if(tab) {
+                    ChangeTab("Credit");
+                    using(ImRaii.Child("CreditChild")) {
+                        ccRank.Draw();
+                    }
+                }
             }
             ImGui.EndTabBar();
         }
