@@ -47,6 +47,7 @@ public static class MatchHelper {
             case 856: //palaistra
             case 854: //volcanid heart
             case 857: //volcanic heart
+            case 852: //cloud 9
             case 855: //cloud 9
             case 858: //cloud 9
             case 917: //clockwork castletown

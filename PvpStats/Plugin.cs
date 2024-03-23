@@ -42,6 +42,7 @@ public sealed class Plugin : IDalamudPlugin {
 
     internal MatchManager? MatchManager { get; init; }
     internal WindowManager WindowManager { get; init; }
+    internal MigrationManager MigrationManager { get; init; }
 
     internal DataQueueService DataQueue { get; init; }
     internal LocalizationService Localization { get; init; }
@@ -101,11 +102,13 @@ public sealed class Plugin : IDalamudPlugin {
             AtkNodeService = new(this);
             Localization = new(this);
             WindowManager = new(this);
+            MigrationManager = new(this);
             try {
                 MatchManager = new(this);
             } catch(SignatureException e) {
                 Log.Error($"failed to initialize match manager: {e.Message}");
             }
+            DataQueue.QueueDataOperation(MigrationManager.BulkUpdateMatchTypes);
 
             CommandManager.AddHandler(CCStatsCommandName, new CommandInfo(OnCommand) {
                 HelpMessage = "Opens Crystalline Conflict tracker."
