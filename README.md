@@ -1,6 +1,8 @@
 # PvP Tracker
 
-![image](https://github.com/wrath16/PvpStats/blob/master/images/example.PNG)
+![image](https://raw.githubusercontent.com/wrath16/PvpStats/master/images/example1.PNG)
+![image](https://raw.githubusercontent.com/wrath16/PvpStats/master/images/example2.PNG)
+![image](https://raw.githubusercontent.com/wrath16/PvpStats/master/images/example3.PNG)
 
 [![Download count](https://img.shields.io/endpoint?url=https://qzysathwfhebdai6xgauhz4q7m0mzmrf.lambda-url.us-east-1.on.aws/PvpStats)](https://github.com/wrath16/PvpStats)
 
