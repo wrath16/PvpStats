@@ -43,9 +43,10 @@ public static class MatchHelper {
             case 912: //clockwork castletown
             case 967: //red sands
                 return CrystallineConflictMatchType.Casual;
+            case 850: //palaistra
             case 853: //palaistra
             case 856: //palaistra
-            case 854: //volcanid heart
+            case 854: //volcanic heart
             case 857: //volcanic heart
             case 852: //cloud 9
             case 855: //cloud 9

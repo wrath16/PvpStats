@@ -15,6 +15,9 @@ public class Configuration : IPluginConfiguration {
     public bool ShowBackgroundImage { get; set; } = true;
     public bool SizeFiltersToFit { get; set; } = false;
     public bool PersistWindowSizePerTab { get; set; } = true;
+    public bool MinimizeWindow { get; set; } = true;
+    public bool MinimizeDirectionLeft { get; set; } = false;
+    public bool ResizeWindowLeft { get; set; } = false;
     public bool ColorScaleStats { get; set; } = true;
     public WindowConfiguration CCWindowConfig { get; set; } = new();
 

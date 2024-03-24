@@ -94,7 +94,7 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
             }
         }
         ImGui.AlignTextToFramePadding();
-        ImGuiHelper.HelpMarker("Right-click table header for column options.", false);
+        ImGuiHelper.HelpMarker("Right-click table header for column options.", false, true);
         ImGui.SameLine();
         ImGuiHelper.CSVButton(ListCSV);
     }

@@ -311,7 +311,8 @@ internal class CrystallineConflictMatchDetail : Window {
             //            //ImGui.NewLine();
             //#endif
 
-            if(_dataModel.MatchType == CrystallineConflictMatchType.Ranked && _dataModel.PostMatch.RankBefore is not null && _dataModel.PostMatch.RankAfter is not null) {
+            if((_dataModel.MatchType == CrystallineConflictMatchType.Ranked || _dataModel.MatchType == CrystallineConflictMatchType.Unknown)
+                && _dataModel.PostMatch.RankBefore is not null && _dataModel.PostMatch.RankAfter is not null) {
                 ImGui.Text($"{_dataModel.PostMatch.RankBefore.ToString()} → {_dataModel.PostMatch.RankAfter.ToString()}");
             }
             ImGuiComponents.ToggleButton("##showPercentages", ref _showPercentages);

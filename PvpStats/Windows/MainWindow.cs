@@ -30,9 +30,15 @@ internal class MainWindow : Window {
     internal SemaphoreSlim RefreshLock { get; init; } = new SemaphoreSlim(1, 1);
     private bool _collapseFilters;
 
+    private bool _firstDraw, _lastWindowCollapsed, _windowCollapsed;
+    private Vector2 _lastWindowSize, _lastWindowPosition, _savedWindowSize;
+
+    //private bool _positionChangeReset, _sizeChangeReset;
+
     internal MainWindow(Plugin plugin) : base("Crystalline Conflict Tracker") {
-        ForceMainWindow = true;
-        PositionCondition = ImGuiCond.Always;
+        //ForceMainWindow = true;
+        //PositionCondition = ImGuiCond.Always;
+        //SizeCondition = ImGuiCond.Always;
         SizeConstraints = new WindowSizeConstraints {
             MinimumSize = new Vector2(425, 400),
             MaximumSize = new Vector2(1800, 1500)
@@ -62,17 +68,6 @@ internal class MainWindow : Window {
 
     public override void OnClose() {
         base.OnClose();
-    }
-
-    public override void PreDraw() {
-        base.PreDraw();
-        //_plugin.Log.Debug($"predraw collapsed: {Collapsed}");
-        //if(Collapsed == true) {
-        //    _plugin.Log.Debug("collapsed");
-        //    var originalSize = Size;
-        //    Size = new Vector2(20, 20);
-        //    Position = new Vector2(Position.Value.X + originalSize.Value.X - 20, Position.Value.Y);
-        //}
     }
 
     public void Refresh() {
@@ -206,7 +201,49 @@ internal class MainWindow : Window {
         }
     }
 
+    public override void PreDraw() {
+        //_plugin.Log.Debug($"predraw collapsed: {Collapsed}");
+        if(_plugin.Configuration.MinimizeWindow && _windowCollapsed && !_lastWindowCollapsed && _firstDraw) {
+            _plugin.Log.Debug($"collapsed. Position: ({_lastWindowPosition.X},{_lastWindowPosition.Y}) Size: ({_lastWindowSize.X},{_lastWindowSize.Y})");
+            if(!_plugin.Configuration.MinimizeDirectionLeft) {
+                SetWindowPosition(new Vector2(_lastWindowPosition.X + (_lastWindowSize.X - 425), _lastWindowPosition.Y));
+            }
+            SetWindowSize(new Vector2(425, _lastWindowSize.Y));
+            _savedWindowSize = _lastWindowSize;
+        } else if(_plugin.Configuration.MinimizeWindow && !_windowCollapsed && _lastWindowCollapsed && _savedWindowSize != Vector2.Zero) {
+
+        } else if(_windowCollapsed) {
+            PositionCondition = ImGuiCond.Once;
+        }
+
+        _lastWindowCollapsed = _windowCollapsed;
+        _windowCollapsed = true;
+        base.PreDraw();
+    }
+
     public override void Draw() {
+        _firstDraw = true;
+        _windowCollapsed = false;
+        SizeCondition = ImGuiCond.Once;
+        PositionCondition = ImGuiCond.Once;
+        //if(_sizeChangeReset) {
+        //    SizeCondition = ImGuiCond.Once;
+        //    _sizeChangeReset = false;
+        //}
+        //if(_positionChangeReset) {
+        //    PositionCondition = ImGuiCond.Once;
+        //    _positionChangeReset = false;
+        //}
+        if(_plugin.Configuration.MinimizeWindow && _lastWindowCollapsed && _savedWindowSize != Vector2.Zero) {
+            _plugin.Log.Debug($"un-collapsed window");
+            if(!_plugin.Configuration.MinimizeDirectionLeft) {
+                SetWindowPosition(new Vector2(ImGui.GetWindowPos().X - (_savedWindowSize.X - 425), ImGui.GetWindowPos().Y));
+            }
+            SetWindowSize(_savedWindowSize);
+        }
+        _lastWindowSize = ImGui.GetWindowSize();
+        _lastWindowPosition = ImGui.GetWindowPos();
+
         if(!_collapseFilters && ImGui.BeginChild("FilterChild",
             new Vector2(ImGui.GetContentRegionAvail().X, _plugin.Configuration.CCWindowConfig.FilterHeight),
             true, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.AlwaysVerticalScrollbar)) {
@@ -226,44 +263,28 @@ internal class MainWindow : Window {
         ImGuiHelper.WrappedTooltip($"{(_collapseFilters ? "Show filters" : "Hide filters")}");
 
         if(ImGui.BeginTabBar("TabBar", ImGuiTabBarFlags.None)) {
-            if(ImGui.BeginTabItem("Matches")) {
-                ChangeTab("Matches");
-                ccMatches.Draw();
-                ImGui.EndTabItem();
+            //ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 6f);
+            if(_plugin.Configuration.ResizeWindowLeft) {
+                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 20f);
             }
-            if(ImGui.BeginTabItem("Summary")) {
-                ChangeTab("Summary");
-                if(ImGui.BeginChild("SummaryChild")) {
+            Tab("Matches", ccMatches.Draw);
+            Tab("Summary", () => {
+                using(ImRaii.Child("SummaryChild")) {
                     ccSummary.Draw();
                 }
-                ImGui.EndChild();
-                ImGui.EndTabItem();
-            }
-            if(ImGui.BeginTabItem("Jobs")) {
-                ChangeTab("Jobs");
-                ccJobs.Draw();
-                ImGui.EndTabItem();
-            }
-            if(ImGui.BeginTabItem("Players")) {
-                ChangeTab("Players");
-                ccPlayers.Draw();
-                ImGui.EndTabItem();
-            }
-            if(ImGui.BeginTabItem("Profile")) {
-                ChangeTab("Profile");
-                using(var child = ImRaii.Child("ProfileChild")) {
+            });
+            Tab("Jobs", ccJobs.Draw);
+            Tab("Players", ccPlayers.Draw);
+            Tab("Credit", () => {
+                using(ImRaii.Child("CreditChild")) {
+                    ccRank.Draw();
+                }
+            });
+            Tab("Profile", () => {
+                using(ImRaii.Child("ProfileChild")) {
                     ccProfile.Draw();
                 }
-                ImGui.EndTabItem();
-            }
-            using(var tab = ImRaii.TabItem("Credit")) {
-                if(tab) {
-                    ChangeTab("Credit");
-                    using(ImRaii.Child("CreditChild")) {
-                        ccRank.Draw();
-                    }
-                }
-            }
+            });
             ImGui.EndTabBar();
         }
     }
@@ -300,15 +321,39 @@ internal class MainWindow : Window {
         }
     }
 
+    private unsafe void Tab(string name, Action action) {
+        var flags = ImGuiTabItemFlags.None;
+        if(_plugin.Configuration.ResizeWindowLeft) {
+            flags |= ImGuiTabItemFlags.Trailing;
+        }
+        //convert to byte* this is stupid!
+        //byte[] nameBytes = Encoding.UTF8.GetBytes(name);
+        //var namePtr = &nameBytes;
+        //using(var tab = ImRaii.TabItem((byte*)&nameBytes, flags)) {
+        //    if(tab) {
+        //        ChangeTab(name);
+        //        action.Invoke();
+        //    }
+        //}
+        using(var tab = ImRaii.TabItem(name)) {
+            if(tab) {
+                ChangeTab(name);
+                action.Invoke();
+            }
+        }
+    }
+
     private void ChangeTab(string tab) {
         if(_currentTab != tab) {
+            _plugin.Log.Debug("changing tab to " + tab);
             SaveTabSize(_currentTab);
             _currentTab = tab;
             if(_plugin.Configuration.PersistWindowSizePerTab) {
                 LoadTabSize(tab);
             }
         } else {
-            SizeCondition = ImGuiCond.Once;
+            //SizeCondition = ImGuiCond.Once;
+            //PositionCondition = ImGuiCond.Once;
         }
     }
 
@@ -325,8 +370,27 @@ internal class MainWindow : Window {
 
     private void LoadTabSize(string tab) {
         if(_plugin.Configuration.CCWindowConfig.TabWindowSizes.ContainsKey(tab)) {
-            Size = _plugin.Configuration.CCWindowConfig.TabWindowSizes[tab];
-            SizeCondition = ImGuiCond.Always;
+            var currentSize = ImGui.GetWindowSize();
+            var newSize = _plugin.Configuration.CCWindowConfig.TabWindowSizes[tab];
+            if(_plugin.Configuration.ResizeWindowLeft) {
+                var currentPos = ImGui.GetWindowPos();
+                SetWindowPosition(new Vector2(currentPos.X - (newSize.X - currentSize.X), currentPos.Y));
+            }
+            SetWindowSize(newSize);
         }
+    }
+
+    private void SetWindowSize(Vector2 size) {
+        SizeCondition = ImGuiCond.Always;
+        Size = size;
+        _plugin.Log.Debug($"Setting size to: ({Size.Value.X},{Size.Value.Y})");
+        //_sizeChangeReset = true;
+    }
+
+    private void SetWindowPosition(Vector2 pos) {
+        PositionCondition = ImGuiCond.Always;
+        Position = pos;
+        _plugin.Log.Debug($"Setting position to: ({Position.Value.X},{Position.Value.Y})");
+        //_positionChangeReset = true;
     }
 }

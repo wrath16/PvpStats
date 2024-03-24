@@ -48,9 +48,25 @@ internal class ConfigWindow : Window {
             _plugin.Configuration.CCWindowConfig.FilterHeight = (uint)filterHeight;
             _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
+        bool minimize = _plugin.Configuration.MinimizeWindow;
+        if(ImGui.Checkbox("Shrink window on collapse", ref minimize)) {
+            _plugin.Configuration.MinimizeWindow = minimize;
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+        bool minimizeDir = _plugin.Configuration.MinimizeDirectionLeft;
+        if(ImGui.Checkbox("Anchor left-side of window on shrink", ref minimizeDir)) {
+            _plugin.Configuration.MinimizeDirectionLeft = minimizeDir;
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+        ImGuiHelper.HelpMarker("Only applies to previous setting. Otherwise anchors on the right-side.", true, true);
         bool saveTabSize = _plugin.Configuration.PersistWindowSizePerTab;
         if(ImGui.Checkbox("Save window size per tab", ref saveTabSize)) {
             _plugin.Configuration.PersistWindowSizePerTab = saveTabSize;
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+        bool resizeLeft = _plugin.Configuration.ResizeWindowLeft;
+        if(ImGui.Checkbox("Resize window leftwards on tab switch", ref resizeLeft)) {
+            _plugin.Configuration.ResizeWindowLeft = resizeLeft;
             _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
         bool colorScale = _plugin.Configuration.ColorScaleStats;
@@ -67,7 +83,7 @@ internal class ConfigWindow : Window {
             _plugin.Configuration.ResizeableMatchWindow = resizeableWindow;
             _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
-        ImGuiHelper.HelpMarker("Reopen windows to reflect changes.");
+        ImGuiHelper.HelpMarker("Reopen windows to reflect changes.", true, true);
 
         bool showBackgroundImage = _plugin.Configuration.ShowBackgroundImage;
         if(ImGui.Checkbox("Show background image", ref showBackgroundImage)) {
@@ -85,7 +101,7 @@ internal class ConfigWindow : Window {
             _plugin.Configuration.AnchorTeamNames = anchorTeamNames;
             _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
-        ImGuiHelper.HelpMarker("Team stat rows will not be affected by sorting.");
+        ImGuiHelper.HelpMarker("Team stat rows will not be affected by sorting.", true, true);
         ImGui.Separator();
     }
 }
