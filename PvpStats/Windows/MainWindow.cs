@@ -33,12 +33,7 @@ internal class MainWindow : Window {
     private bool _firstDraw, _lastWindowCollapsed, _windowCollapsed;
     private Vector2 _lastWindowSize, _lastWindowPosition, _savedWindowSize;
 
-    //private bool _positionChangeReset, _sizeChangeReset;
-
     internal MainWindow(Plugin plugin) : base("Crystalline Conflict Tracker") {
-        //ForceMainWindow = true;
-        //PositionCondition = ImGuiCond.Always;
-        //SizeCondition = ImGuiCond.Always;
         SizeConstraints = new WindowSizeConstraints {
             MinimumSize = new Vector2(425, 400),
             MaximumSize = new Vector2(1800, 1500)
@@ -206,10 +201,10 @@ internal class MainWindow : Window {
         if(_plugin.Configuration.MinimizeWindow && _windowCollapsed && !_lastWindowCollapsed && _firstDraw) {
             _plugin.Log.Debug($"collapsed. Position: ({_lastWindowPosition.X},{_lastWindowPosition.Y}) Size: ({_lastWindowSize.X},{_lastWindowSize.Y})");
             if(!_plugin.Configuration.MinimizeDirectionLeft) {
-                SetWindowPosition(new Vector2(_lastWindowPosition.X + (_lastWindowSize.X - 425), _lastWindowPosition.Y));
+                SetWindowPosition(new Vector2((_lastWindowPosition.X + (_lastWindowSize.X - 425 * ImGuiHelpers.GlobalScale)), _lastWindowPosition.Y));
             }
             SetWindowSize(new Vector2(425, _lastWindowSize.Y));
-            _savedWindowSize = _lastWindowSize;
+            _savedWindowSize = _lastWindowSize / ImGuiHelpers.GlobalScale;
         } else if(_plugin.Configuration.MinimizeWindow && !_windowCollapsed && _lastWindowCollapsed && _savedWindowSize != Vector2.Zero) {
 
         } else if(_windowCollapsed) {
@@ -226,18 +221,10 @@ internal class MainWindow : Window {
         _windowCollapsed = false;
         SizeCondition = ImGuiCond.Once;
         PositionCondition = ImGuiCond.Once;
-        //if(_sizeChangeReset) {
-        //    SizeCondition = ImGuiCond.Once;
-        //    _sizeChangeReset = false;
-        //}
-        //if(_positionChangeReset) {
-        //    PositionCondition = ImGuiCond.Once;
-        //    _positionChangeReset = false;
-        //}
         if(_plugin.Configuration.MinimizeWindow && _lastWindowCollapsed && _savedWindowSize != Vector2.Zero) {
             _plugin.Log.Debug($"un-collapsed window");
             if(!_plugin.Configuration.MinimizeDirectionLeft) {
-                SetWindowPosition(new Vector2(ImGui.GetWindowPos().X - (_savedWindowSize.X - 425), ImGui.GetWindowPos().Y));
+                SetWindowPosition(new Vector2(ImGui.GetWindowPos().X - (_savedWindowSize.X - 425) * ImGuiHelpers.GlobalScale, ImGui.GetWindowPos().Y));
             }
             SetWindowSize(_savedWindowSize);
         }
@@ -360,9 +347,9 @@ internal class MainWindow : Window {
     private void SaveTabSize(string tab) {
         if(tab != "") {
             if(_plugin.Configuration.CCWindowConfig.TabWindowSizes.ContainsKey(tab)) {
-                _plugin.Configuration.CCWindowConfig.TabWindowSizes[tab] = ImGui.GetWindowSize();
+                _plugin.Configuration.CCWindowConfig.TabWindowSizes[tab] = ImGui.GetWindowSize() / ImGuiHelpers.GlobalScale;
             } else {
-                _plugin.Configuration.CCWindowConfig.TabWindowSizes.Add(tab, ImGui.GetWindowSize());
+                _plugin.Configuration.CCWindowConfig.TabWindowSizes.Add(tab, ImGui.GetWindowSize() / ImGuiHelpers.GlobalScale);
             }
             //_plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
