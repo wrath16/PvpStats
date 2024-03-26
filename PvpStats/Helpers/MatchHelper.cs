@@ -43,19 +43,47 @@ public static class MatchHelper {
             case 912: //clockwork castletown
             case 967: //red sands
                 return CrystallineConflictMatchType.Casual;
+            case 838: //palaistra (assumed)
+            case 841: //palaistra (assumed)
+            case 847: //palaistra (assumed)
             case 850: //palaistra
             case 853: //palaistra
             case 856: //palaistra
+            case 859: //palaistra (assumed)
+            case 839: //volcanic heart (assumed)
+            case 842: //volcanic heart (assumed)
+            case 848: //volcanic heart (assumed)
+            case 851: //volcanic heart (assumed)
             case 854: //volcanic heart
             case 857: //volcanic heart
+            case 860: //volcanic heart (assumed)
+            case 840: //cloud 9 (assumed)
+            case 843: //cloud 9 (assumed)
+            case 849: //cloud 9 (assumed)
             case 852: //cloud 9
             case 855: //cloud 9
             case 858: //cloud 9
+            case 861: //cloud 9 (assumed)
+            case 913: //clockwork castletown (assumed)
+            case 914: //clockwork castletown (assumed)
+            case 915: //clockwork castletown (assumed)
+            case 916: //clockwork castletown (assumed)
             case 917: //clockwork castletown
             case 918: //clockwork castletown
+            case 919: //clockwork castletown (assumed)
+            case 920: //clockwork castletown (assumed)
+            case 921: //clockwork castletown (assumed)
+            case 922: //clockwork castletown (assumed)
+            case 968: //red sands (assumed)
+            case 969: //red sands (assumed)
             case 970: //red sands
+            case 971: //red sands (assumed)
             case 972: //red sands
             case 973: //red sands
+            case 974: //red sands (assumed)
+            case 975: //red sands (assumed)
+            case 976: //red sands (assumed)
+            case 977: //red sands (assumed)
                 return CrystallineConflictMatchType.Ranked;
             case 862: //palaistra
             case 863: //volcanic heart
