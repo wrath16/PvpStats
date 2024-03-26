@@ -35,7 +35,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         if(item.IsBookmarked) {
             ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(ImGuiColors.DalamudYellow - new Vector4(0f, 0f, 0f, 0.7f)));
         }
-        ImGui.Text($"{item.DutyStartTime.ToString("MM/dd/yyyy HH:mm")}");
+        ImGui.Text($"{item.DutyStartTime:MM/dd/yyyy HH:mm}");
         ImGui.TableNextColumn();
         if(item.Arena != null) {
             ImGui.Text($"{MatchHelper.GetArenaName((CrystallineConflictMap)item.Arena)}");

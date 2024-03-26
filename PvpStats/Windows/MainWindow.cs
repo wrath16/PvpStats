@@ -21,6 +21,7 @@ internal class MainWindow : Window {
     private Plugin _plugin;
     private CrystallineConflictList ccMatches;
     private CrystallineConflictSummary ccSummary;
+    private CrystallineConflictRecords ccRecords;
     private CrystallineConflictPlayerList ccPlayers;
     private CrystallineConflictJobList ccJobs;
     private CrystallineConflictPvPProfile ccProfile;
@@ -54,6 +55,7 @@ internal class MainWindow : Window {
 
         ccMatches = new(plugin);
         ccSummary = new(plugin);
+        ccRecords = new(plugin);
         ccJobs = new(plugin, ccMatches, otherPlayerFilter);
         ccPlayers = new(plugin, ccMatches, otherPlayerFilter);
         ccProfile = new(plugin);
@@ -187,6 +189,7 @@ internal class MainWindow : Window {
             RefreshLock.WaitAsync();
             ccMatches.Refresh(matches);
             ccSummary.Refresh(matches);
+            ccRecords.Refresh(matches);
             ccPlayers.Refresh(new());
             ccJobs.Refresh(new());
             ccRank.Refresh(matches);
@@ -258,6 +261,11 @@ internal class MainWindow : Window {
             Tab("Summary", () => {
                 using(ImRaii.Child("SummaryChild")) {
                     ccSummary.Draw();
+                }
+            });
+            Tab("Records", () => {
+                using(ImRaii.Child("RecordsChild")) {
+                    ccRecords.Draw();
                 }
             });
             Tab("Jobs", ccJobs.Draw);
