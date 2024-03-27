@@ -2,6 +2,7 @@
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using PvpStats.Helpers;
@@ -331,40 +332,27 @@ internal class CrystallineConflictMatchDetail : Window {
     private void DrawFunctions() {
         //need to increment this for each function
         int functionCount = 2;
-        //float textSize = 0f;
         //get width of strip
-        try {
-            ImGui.PushFont(UiBuilder.IconFont);
+        using(_ = ImRaii.PushFont(UiBuilder.IconFont)) {
             string text = "";
             for(int i = 0; i < functionCount; i++) {
                 text += $"{FontAwesomeIcon.Star.ToIconString()}";
             }
             ImGuiHelpers.CenterCursorForText(text);
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() - (3f + 9f * (functionCount - 1)));
-        } finally {
-            ImGui.PopFont();
         }
 
-        try {
-            ImGui.PushFont(UiBuilder.IconFont);
+        using(_ = ImRaii.PushFont(UiBuilder.IconFont)) {
             var text = $"{FontAwesomeIcon.Star.ToIconString()}{FontAwesomeIcon.Copy.ToIconString()}";
-            //ImGuiHelper.CenterAlignCursor(text);
-            //ImGuiHelpers.CenterCursorForText(text);
-            //ImGui.SetCursorPosX(ImGui.GetCursorPosX() - 3f * ImGuiHelpers.GlobalScale);
-            if(_dataModel.IsBookmarked) {
-                ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudYellow);
+            var color = _dataModel.IsBookmarked ? ImGuiColors.DalamudYellow : ImGuiColors.DalamudWhite;
+            using(_ = ImRaii.PushColor(ImGuiCol.Text, color)) {
+                if(ImGui.Button($"{FontAwesomeIcon.Star.ToIconString()}##--FavoriteMatch")) {
+                    _dataModel.IsBookmarked = !_dataModel.IsBookmarked;
+                    _plugin.DataQueue.QueueDataOperation(() => {
+                        _plugin.Storage.UpdateCCMatch(_dataModel);
+                    });
+                }
             }
-            if(ImGui.Button($"{FontAwesomeIcon.Star.ToIconString()}##--FavoriteMatch")) {
-                _dataModel.IsBookmarked = !_dataModel.IsBookmarked;
-                _plugin.DataQueue.QueueDataOperation(() => {
-                    _plugin.Storage.UpdateCCMatch(_dataModel);
-                });
-            }
-        } finally {
-            if(_dataModel.IsBookmarked) {
-                ImGui.PopStyleColor();
-            }
-            ImGui.PopFont();
         }
         ImGuiHelper.WrappedTooltip("Favorite match");
         ImGui.SameLine();
