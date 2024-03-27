@@ -4,49 +4,31 @@ using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PvpStats.Helpers;
-using PvpStats.Types.Display;
 using PvpStats.Types.Match;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Summary;
 internal class CrystallineConflictRecords {
 
     private Plugin _plugin;
     private SemaphoreSlim _refreshLock = new SemaphoreSlim(1);
-    private int _spectatedMatchCount = 0;
 
-    internal CrystallineConflictMatch? LongestMatch { get; private set; }
-    internal CrystallineConflictMatch? ShortestMatch { get; private set; }
-    internal CrystallineConflictMatch? ClosestMatch { get; private set; }
-    internal CrystallineConflictMatch? ClosestWin { get; private set; }
-    internal CrystallineConflictMatch? ClosestLoss { get; private set; }
-    internal CrystallineConflictMatch? MostKills { get; private set; }
-    internal CrystallineConflictMatch? MostDeaths { get; private set; }
-    internal CrystallineConflictMatch? MostAssists { get; private set; }
-    internal CrystallineConflictMatch? MostDamageDealt { get; private set; }
-    internal CrystallineConflictMatch? MostDamageTaken { get; private set; }
-    internal CrystallineConflictMatch? MostHPRestored { get; private set; }
-    internal CrystallineConflictMatch? MostTimeOnCrystal { get; private set; }
-
-    private Dictionary<CrystallineConflictMatch, List<(string,string)>> Superlatives = new();
+    private Dictionary<CrystallineConflictMatch, List<(string, string)>> Superlatives = new();
 
     internal int LongestWinStreak { get; private set; }
     internal int LongestLossStreak { get; private set; }
-
 
     internal CrystallineConflictRecords(Plugin plugin) {
         _plugin = plugin;
     }
 
     public void Refresh(List<CrystallineConflictMatch> matches) {
-        CrystallineConflictMatch? longestMatch = null, shortestMatch = null, closestMatch = null, closestWin = null, closestLoss = null, 
+        CrystallineConflictMatch? longestMatch = null, shortestMatch = null, closestMatch = null, closestWin = null, closestLoss = null,
             mostKills = null, mostDeaths = null, mostAssists = null, mostDamageDealt = null, mostDamageTaken = null, mostHPRestored = null, mostTimeOnCrystal = null;
-        int longestWinStreak = 0, longestLossStreak = 0, spectatedMatchCount = 0;
+        int longestWinStreak = 0, longestLossStreak = 0, spectatedMatchCount = 0, currentWinStreak = 0, currentLossStreak = 0;
 
         foreach(var match in matches) {
             //track these for spectated matches as well
@@ -61,7 +43,7 @@ internal class CrystallineConflictRecords {
             if(shortestMatch == null || match.MatchDuration < shortestMatch.MatchDuration) {
                 shortestMatch = match;
             }
-            if(closestMatch == null || match.LoserProgress > longestMatch.LoserProgress) {
+            if(closestMatch == null || match.LoserProgress > closestMatch.LoserProgress) {
                 closestMatch = match;
             }
 
@@ -99,14 +81,20 @@ internal class CrystallineConflictRecords {
             }
 
             if(match.IsWin) {
-                longestWinStreak++;
+                currentWinStreak++;
+                if(currentWinStreak > longestWinStreak) {
+                    longestWinStreak = currentWinStreak;
+                }
             } else {
-                longestWinStreak = 0;
+                currentWinStreak = 0;
             }
             if(match.IsLoss) {
-                longestLossStreak++;
+                currentLossStreak++;
+                if(currentLossStreak > longestLossStreak) {
+                    longestLossStreak = currentLossStreak;
+                }
             } else {
-                longestLossStreak = 0;
+                currentLossStreak = 0;
             }
         }
 
@@ -117,15 +105,15 @@ internal class CrystallineConflictRecords {
                 if(Superlatives.ContainsKey(match)) {
                     Superlatives[match].Add((sup, val));
                 } else {
-                    _plugin.Log.Debug($"adding superlative {sup} {val} to {match.Id.ToString()}");
+                    //_plugin.Log.Debug($"adding superlative {sup} {val} to {match.Id.ToString()}");
                     Superlatives.Add(match, new() { (sup, val) });
                 }
             };
             Superlatives = new();
             if(longestMatch != null) {
                 addSuperlative(longestMatch, "Longest match", ImGuiHelper.GetTimeSpanString((TimeSpan)longestMatch!.MatchDuration));
-                addSuperlative(shortestMatch, "Shortest match", ImGuiHelper.GetTimeSpanString((TimeSpan)shortestMatch.MatchDuration));
-                addSuperlative(closestMatch, "Closest match", closestMatch.LoserProgress.ToString());
+                addSuperlative(shortestMatch, "Shortest match", ImGuiHelper.GetTimeSpanString((TimeSpan)shortestMatch!.MatchDuration));
+                addSuperlative(closestMatch, "Closest match", closestMatch!.LoserProgress.ToString());
                 if(mostKills != null) {
                     addSuperlative(mostKills, "Most kills", mostKills!.LocalPlayerStats!.Kills.ToString());
                     addSuperlative(mostDeaths, "Most deaths", mostDeaths!.LocalPlayerStats!.Deaths.ToString());
@@ -135,22 +123,7 @@ internal class CrystallineConflictRecords {
                     addSuperlative(mostHPRestored, "Most HP restored", mostHPRestored!.LocalPlayerStats!.HPRestored.ToString());
                     addSuperlative(mostTimeOnCrystal, "Longest time on crystal", ImGuiHelper.GetTimeSpanString(mostTimeOnCrystal!.LocalPlayerStats!.TimeOnCrystal));
                 }
-
             }
-
-
-            LongestMatch = longestMatch;
-            ShortestMatch = shortestMatch;
-            ClosestMatch = closestMatch;
-            ClosestWin = closestWin;
-            ClosestLoss = closestLoss;
-            MostKills = mostKills;
-            MostDeaths = mostDeaths;
-            MostAssists = mostAssists;
-            MostDamageDealt = mostDamageDealt;
-            MostDamageTaken = mostDamageTaken;
-            MostHPRestored = mostHPRestored;
-            MostTimeOnCrystal = mostTimeOnCrystal;
             LongestWinStreak = longestWinStreak;
             LongestLossStreak = longestLossStreak;
         } finally {
@@ -159,28 +132,37 @@ internal class CrystallineConflictRecords {
     }
 
     public void Draw() {
-        if(LongestMatch == null) {
+        if(!_refreshLock.Wait(0)) {
             return;
         }
+        try {
+            using(var table = ImRaii.Table("streaks", 2, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
+                if(table) {
+                    ImGui.TableSetupColumn("title", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 158f);
+                    ImGui.TableSetupColumn($"value", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 50f);
 
-        foreach(var match in Superlatives) {
-            var x = match.Value;
-            DrawStat2(match.Key, match.Value.Select(x => x.Item1).ToArray(), match.Value.Select(x => x.Item2).ToArray());
+                    ImGui.TableNextColumn();
+                    ImGui.TextColored(ImGuiColors.DalamudYellow, "Longest win streak:");
+                    ImGui.TableNextColumn();
+                    ImGui.Text(LongestWinStreak.ToString());
+                    ImGui.TableNextColumn();
+                    ImGui.TextColored(ImGuiColors.DalamudYellow, "Longest loss streak:");
+                    ImGui.TableNextColumn();
+                    ImGui.Text(LongestLossStreak.ToString());
+                }
+            }
+            ImGui.Separator();
+            foreach(var match in Superlatives) {
+                var x = match.Value;
+                DrawStat(match.Key, match.Value.Select(x => x.Item1).ToArray(), match.Value.Select(x => x.Item2).ToArray());
+                ImGui.Separator();
+            }
+        } finally {
+            _refreshLock.Release();
         }
-
-
-        //DrawStat("Longest match", ImGuiHelper.GetTimeSpanString((TimeSpan)LongestMatch.MatchDuration), LongestMatch);
-        //DrawStat("Shortest match", ImGuiHelper.GetTimeSpanString((TimeSpan)ShortestMatch.MatchDuration), ShortestMatch);
-        //DrawStat("Most kills", MostKills.LocalPlayerStats.Kills.ToString(), MostKills);
-        //DrawStat("Most deaths", MostDeaths.LocalPlayerStats.Deaths.ToString(), MostDeaths);
-        //DrawStat("Most assists", MostAssists.LocalPlayerStats.Assists.ToString(), MostAssists);
-        //DrawStat("Most damage dealt", MostDamageDealt.LocalPlayerStats.DamageDealt.ToString(), MostDamageDealt);
-        //DrawStat("Most damage taken", MostDamageTaken.LocalPlayerStats.DamageTaken.ToString(), MostDamageTaken);
-        //DrawStat("Most HP restored", MostHPRestored.LocalPlayerStats.HPRestored.ToString(), MostHPRestored);
-        //DrawStat("Longest time on crystal", ImGuiHelper.GetTimeSpanString((TimeSpan)MostTimeOnCrystal.LocalPlayerStats.TimeOnCrystal), MostTimeOnCrystal);
     }
 
-    private void DrawStat2(CrystallineConflictMatch match, string[] superlatives, string[] values) {
+    private void DrawStat(CrystallineConflictMatch match, string[] superlatives, string[] values) {
         using(var table = ImRaii.Table("headertable", 3, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
             if(table) {
                 ImGui.TableSetupColumn("title", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 158f);
@@ -204,59 +186,6 @@ internal class CrystallineConflictRecords {
                 }
             }
         }
-
-        using(var table = ImRaii.Table("match", 4, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
-            if(table) {
-                ImGui.TableSetupColumn("Time", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 100f);
-                ImGui.TableSetupColumn("Arena", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 150f);
-                ImGui.TableSetupColumn("Job", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 40f);
-                ImGui.TableSetupColumn("Result", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 40f);
-
-                ImGui.TableNextColumn();
-                ImGui.Text($"{match.DutyStartTime:MM/dd/yyyy HH:mm}");
-                ImGui.TableNextColumn();
-                if(match.Arena != null) {
-                    ImGui.Text(MatchHelper.GetArenaName((CrystallineConflictMap)match.Arena));
-                }
-                ImGui.TableNextColumn();
-                if(!match.IsSpectated) {
-                    ImGui.TextColored(ImGuiHelper.GetJobColor(match.LocalPlayerTeamMember!.Job), $"{match.LocalPlayerTeamMember!.Job}");
-                    ImGui.TableNextColumn();
-                    var color = match.IsWin ? ImGuiColors.HealerGreen : match.IsLoss ? ImGuiColors.DalamudRed : ImGuiColors.DalamudGrey;
-                    var result = match.IsWin ? "WIN" : match.IsLoss ? "LOSS" : "???";
-                    ImGui.TextColored(color, result);
-                } else {
-                    ImGui.Text($"Spectated");
-                }
-            }
-        }
-    }
-
-    private void DrawStat(string title, string value, CrystallineConflictMatch match, bool drawMatch = true) {
-        using(var table = ImRaii.Table("title", 3, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
-            if(table) {
-                ImGui.TableSetupColumn("title", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 158f);
-                ImGui.TableSetupColumn($"value", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 50f);
-                ImGui.TableSetupColumn($"examine", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 45f);
-
-                ImGui.TableNextColumn();
-                ImGui.AlignTextToFramePadding();
-                ImGui.TextColored(ImGuiColors.DalamudYellow, title + ":");
-                ImGui.TableNextColumn();
-
-                ImGui.Text(value);
-                ImGui.TableNextColumn();
-                if(drawMatch) {
-                    using(var font = ImRaii.PushFont(UiBuilder.IconFont)) {
-                        if(ImGui.Button($"{FontAwesomeIcon.Search.ToIconString()}##{match.GetHashCode()}--ViewDetails")) {
-                            _plugin.WindowManager.OpenMatchDetailsWindow(match);
-                        }
-                    }
-                }
-            }
-        }
-
-        if(!drawMatch) return;
 
         using(var table = ImRaii.Table("match", 4, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
             if(table) {

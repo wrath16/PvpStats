@@ -82,7 +82,7 @@ public class CrystallineConflictMatch {
     public CrystallineConflictPostMatchRow? LocalPlayerStats {
         get {
             if(IsSpectated || PostMatch == null) return null;
-            return PostMatch.Teams[LocalPlayerTeam!.TeamName].PlayerStats.Where(x => LocalPlayer!.Equals(x.Player)).First();
+            return PostMatch.Teams[LocalPlayerTeam!.TeamName].PlayerStats.Where(x => LocalPlayer!.Equals(x.Player)).FirstOrDefault();
         }
     }
 
