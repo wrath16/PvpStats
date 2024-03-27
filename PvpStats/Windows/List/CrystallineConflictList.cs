@@ -1,9 +1,12 @@
-﻿using Dalamud.Interface.Colors;
+﻿using Dalamud.Interface;
+using Dalamud.Interface.Colors;
+using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PvpStats.Helpers;
 using PvpStats.Types.Match;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Text.RegularExpressions;
 
 namespace PvpStats.Windows.List;
 internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> {
@@ -29,6 +32,13 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
     }
     protected override void PreChildDraw() {
         ImGuiHelper.CSVButton(ListCSV);
+        ImGui.SameLine();
+        using(var font = ImRaii.PushFont(UiBuilder.IconFont)) {
+            if(ImGui.Button($"{FontAwesomeIcon.Ban.ToIconString()}##CloseAllMatches")) {
+                _plugin.DataQueue.QueueDataOperation(_plugin.WindowManager.CloseAllMatchWindows);
+            }
+        }
+        ImGuiHelper.WrappedTooltip("Close all open match windows");
     }
 
     public override void DrawListItem(CrystallineConflictMatch item) {

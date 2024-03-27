@@ -64,8 +64,9 @@ internal class CrystallineConflictMatchDetail : Window {
             MinimumSize = new Vector2(600, 400),
             MaximumSize = new Vector2(1200, 1500)
         };
+        Flags |= ImGuiWindowFlags.NoSavedSettings;
         if(!plugin.Configuration.ResizeableMatchWindow) {
-            Flags |= ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings;
+            Flags |= ImGuiWindowFlags.AlwaysAutoResize;
         }
         _plugin = plugin;
         _dataModel = match;

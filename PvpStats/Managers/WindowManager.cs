@@ -110,6 +110,13 @@ internal class WindowManager : IDisposable {
         }
     }
 
+    internal void CloseAllMatchWindows() {
+        var windows = WindowSystem.Windows.Where(w => w.WindowName.StartsWith("Match Details: ", StringComparison.OrdinalIgnoreCase));
+        foreach(var window in windows) {
+            window.IsOpen = false;
+        }
+    }
+
     internal void OpenFullEditWindow(CrystallineConflictMatch match) {
         var windowName = $"Full Edit: {match.GetHashCode()}";
         var window = WindowSystem.Windows.Where(w => w.WindowName == windowName).FirstOrDefault();
