@@ -4,18 +4,21 @@ using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PvpStats.Helpers;
 using PvpStats.Types.Match;
+using System;
 using System.Collections.Generic;
 using System.Numerics;
-using System.Text.RegularExpressions;
 
 namespace PvpStats.Windows.List;
 internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> {
 
     protected override List<ColumnParams> Columns { get; set; } = new() {
-        new ColumnParams{Name = "Start Time", Flags = ImGuiTableColumnFlags.WidthStretch, Width = 95f },
-        new ColumnParams{Name = "Arena", Flags = ImGuiTableColumnFlags.WidthStretch, Width = 100f },
+        new ColumnParams{Name = "Start Time", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 125f },
+        new ColumnParams{Name = "Arena", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 145f },
+        new ColumnParams{Name = "Job", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 40f, Priority = 1 },
         new ColumnParams{Name = "Queue", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 50f },
+        new ColumnParams{Name = "Duration", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 40f, Priority = 2 },
         new ColumnParams{Name = "Result", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 40f },
+        new ColumnParams{Name = "RankAfter", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 125f, Priority = 3 },
     };
     //protected override List<ColumnParams> Columns { get; set; } = new() {
     //    new ColumnParams{Name = "time" },
@@ -24,9 +27,10 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
     //    new ColumnParams{Name = "result" },
     //};
 
-    protected override ImGuiTableFlags TableFlags { get; set; } = ImGuiTableFlags.SizingStretchProp;
+    protected override ImGuiTableFlags TableFlags { get; set; } = ImGuiTableFlags.Hideable;
     protected override ImGuiWindowFlags ChildFlags { get; set; } = ImGuiWindowFlags.AlwaysVerticalScrollbar;
     protected override bool ContextMenu { get; set; } = true;
+    protected override bool DynamicColumns { get; set; } = true;
 
     public CrystallineConflictList(Plugin plugin) : base(plugin) {
     }
@@ -51,7 +55,13 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
             ImGui.Text($"{MatchHelper.GetArenaName((CrystallineConflictMap)item.Arena)}");
         }
         ImGui.TableNextColumn();
+        if(!item.IsSpectated) {
+            ImGui.TextColored(ImGuiHelper.GetJobColor(item.LocalPlayerTeamMember!.Job), item.LocalPlayerTeamMember.Job.ToString());
+        }
+        ImGui.TableNextColumn();
         ImGui.Text($"{item.MatchType}");
+        ImGui.TableNextColumn();
+        ImGui.Text(ImGuiHelper.GetTimeSpanString(item.MatchDuration ?? TimeSpan.Zero));
         ImGui.TableNextColumn();
         bool noWinner = item.MatchWinner is null;
         bool isWin = item.MatchWinner == item.LocalPlayerTeam?.TeamName;
@@ -68,6 +78,10 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
             resultText = noWinner ? "???" : resultText;
         }
         ImGui.TextColored(color, resultText);
+        ImGui.TableNextColumn();
+        if(item.MatchType == CrystallineConflictMatchType.Ranked && item.PostMatch != null) {
+            ImGui.Text(item.PostMatch.RankAfter.ToString());
+        }
         //ImGui.TableNextColumn();
         //ImGui.TableNextRow();
     }
@@ -115,8 +129,11 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         string csv = "";
         csv += match.DutyStartTime + ",";
         csv += (match.Arena != null ? MatchHelper.GetArenaName((CrystallineConflictMap)match.Arena) : "") + ",";
+        csv += (!match.IsSpectated ? match.LocalPlayerTeamMember.Job : "") + ",";
         csv += match.MatchType + ",";
-        csv += match.IsWin ? "WIN" : match.MatchWinner != null ? "LOSS" : "???" + ",";
+        csv += match.MatchDuration + ",";
+        csv += (match.IsWin ? "WIN" : match.MatchWinner != null ? "LOSS" : "???") + ",";
+        csv += (match.MatchType == CrystallineConflictMatchType.Ranked && match.PostMatch != null ? match.PostMatch.RankAfter?.ToString() : "") + ",";
         csv += "\n";
         return csv;
     }

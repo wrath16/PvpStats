@@ -16,6 +16,7 @@ public struct ColumnParams {
     public ImGuiTableColumnFlags Flags;
     public float Width;
     public uint Id;
+    public int Priority;
 }
 
 internal abstract class FilteredList<T> {
@@ -38,6 +39,7 @@ internal abstract class FilteredList<T> {
     protected virtual bool ShowHeader { get; set; } = false;
     protected virtual bool ChildWindow { get; set; } = true;
     protected virtual bool ContextMenu { get; set; } = false;
+    protected virtual bool DynamicColumns { get; set; } = false;
 
     public abstract void RefreshDataModel();
     public abstract void DrawListItem(T item);
@@ -144,6 +146,17 @@ internal abstract class FilteredList<T> {
                     }
                 }
                 //ImGui.TableNextRow();
+                //must also set table flags to hideable for this to work
+                if(DynamicColumns) {
+                    int prioLevel = GetLowestPrio();
+                    for(int i = 0; i < Columns.Count; i++) {
+                        if(Columns[i].Priority > prioLevel) {
+                            ImGui.TableSetColumnEnabled(i, false);
+                        } else {
+                            ImGui.TableSetColumnEnabled(i, true);
+                        }
+                    }
+                }
 
                 foreach(var i in clipper.Rows) {
                     var item = CurrentPage[i];
@@ -164,6 +177,23 @@ internal abstract class FilteredList<T> {
             }
         }
     }
+
+    protected int GetLowestPrio() {
+        float width = ImGui.GetContentRegionAvail().X - 15f * ImGuiHelpers.GlobalScale; //for scrollbar...
+        float currentWidth = 0f;
+        int i = 0;
+        //this should not be hard-coded
+        for(i = 0; i < Columns.Count; i++) {
+            foreach(var column in Columns.Where(x => x.Priority == i)) {
+                currentWidth += column.Width * ImGuiHelpers.GlobalScale;
+                if(currentWidth > width) {
+                    return int.Max(0, i - 1);
+                }
+            }
+        }
+        return int.Max(0, i - 1);
+    }
+
     protected string CSVHeader() {
         string header = "";
         foreach(var col in Columns) {

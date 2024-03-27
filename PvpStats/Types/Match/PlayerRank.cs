@@ -100,11 +100,11 @@ public class PlayerRank {
 
         if(Tier == ArenaTier.Crystal) {
             if(Credit != null) {
-                rank += $" {Credit}";
+                rank += $"   {Credit}";
             }
         } else {
             if(Riser != null) {
-                rank += $" {Riser} ";
+                rank += $" {Riser}   ";
             }
             if(Stars != null) {
                 for(int i = 0; i < Stars; i++) {

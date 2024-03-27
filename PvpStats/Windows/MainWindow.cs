@@ -37,7 +37,7 @@ internal class MainWindow : Window {
     internal MainWindow(Plugin plugin) : base("Crystalline Conflict Tracker") {
         SizeConstraints = new WindowSizeConstraints {
             MinimumSize = new Vector2(425, 400),
-            MaximumSize = new Vector2(1800, 1500)
+            MaximumSize = new Vector2(5000, 5000)
         };
         Flags = Flags | ImGuiWindowFlags.NoScrollbar;
         _plugin = plugin;
