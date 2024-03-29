@@ -20,9 +20,8 @@ Final Fantasy XIV Dalamud plugin for recording PvP match history. Currently only
 
 ## Feature Roadmap
 May or may not eventually get implemented:
-* Using Lodestone IDs to track stats across alias changes.
-* Records and rank graph.
-* Player details window.
+* IPC integration with PlayerTrack to persist stats across player name changes/world transfers.
+* FR/DE/JP localization.
 * Frontline support.
 * Rival Wings support.
 * Chat log, kill feed, crystal progress tracking.
