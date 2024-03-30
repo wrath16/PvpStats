@@ -80,7 +80,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         ImGui.TextColored(color, resultText);
         ImGui.TableNextColumn();
         if(item.MatchType == CrystallineConflictMatchType.Ranked && item.PostMatch != null) {
-            ImGui.Text(item.PostMatch.RankAfter.ToString());
+            ImGui.Text(item.PostMatch.RankAfter?.ToString() ?? "");
         }
         //ImGui.TableNextColumn();
         //ImGui.TableNextRow();
