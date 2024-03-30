@@ -383,7 +383,16 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
                 playerStat.Value.ScoreboardContrib.TimeOnCrystalDouble = teamContributions[playerStat.Key].OrderBy(x => x.TimeOnCrystalDouble).ElementAt(statMatches / 2).TimeOnCrystalDouble;
             }
             ListCSV += CSVRow(statsModel, playerStat.Key);
+
+            //var prevAliases = _plugin.Lodestone?.GetPreviousAliases(playerStat.Key);
+            //if(prevAliases != null && prevAliases.Length > 0) {
+            //    foreach( var alias in prevAliases) {
+            //        _plugin.Log.Debug($"alternate alias for {playerStat.Key} {alias}");
+            //    }
+            //}
         }
+        //_plugin.Lodestone?.GetAllPreviousAliases(statsModel.Keys.ToList());
+
         try {
             RefreshLock.Wait();
             DataModel = statsModel.Keys.ToList();

@@ -2,6 +2,7 @@
 #if DEBUG
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
+using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using ImGuiNET;
@@ -24,6 +25,7 @@ internal unsafe class DebugWindow : Window {
     private string _pname = "";
 
     private string _toFind = "";
+    private string _player = "";
 
     internal DebugWindow(Plugin plugin) : base("Pvp Stats Debug") {
         ForceMainWindow = true;
@@ -225,6 +227,28 @@ internal unsafe class DebugWindow : Window {
                     }
 
                     ImGui.EndTabItem();
+                }
+            }
+
+            using (var tab = ImRaii.TabItem("IPC")) {
+                if(tab) {
+                    var playerName = _player;
+                    if(ImGui.InputTextWithHint("###PlayerNameInput", "Enter player name and world", ref playerName, 50, ImGuiInputTextFlags.EnterReturnsTrue)) {
+                        _player = playerName;
+                        try {
+                            var alias = (PlayerAlias)_player;
+                            //_plugin.Log.Debug(_plugin.Lodestone.GetPlayerCurrentNameWorld(alias));
+                            //var prevNames = _plugin.Lodestone.GetPlayerCurrentNameWorld(alias);
+                            _plugin.Log.Debug(_plugin.Lodestone.GetPlayerLodestoneId(alias).ToString());
+                            var prevAliases = _plugin.Lodestone.GetPreviousAliases(alias);
+                            foreach(var a in prevAliases) {
+                                _plugin.Log.Debug(a);
+                            }
+
+                        } catch(ArgumentException) {
+
+                        }
+                    }
                 }
             }
 

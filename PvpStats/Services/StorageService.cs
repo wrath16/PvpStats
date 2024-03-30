@@ -1,5 +1,6 @@
 ﻿using LiteDB;
 using PvpStats.Types.Match;
+using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,6 +10,8 @@ using System.Threading;
 namespace PvpStats.Services;
 internal class StorageService {
     private const string CCTable = "ccmatch";
+    private const string AutoPlayerLinksTable = "playerlinks_auto";
+    private const string ManualPlayerLinksTable = "playerlinks_manual";
 
     private Plugin _plugin;
     private SemaphoreSlim _dbLock = new SemaphoreSlim(1, 1);
@@ -42,7 +45,6 @@ internal class StorageService {
     internal void AddCCMatches(IEnumerable<CrystallineConflictMatch> matches, bool toSave = true) {
         LogUpdate(null, matches.Count());
         WriteToDatabase(() => GetCCMatches().Insert(matches.Where(m => m.Id != null)), toSave);
-
     }
 
     internal void UpdateCCMatch(CrystallineConflictMatch match, bool toSave = true) {
@@ -53,6 +55,34 @@ internal class StorageService {
     internal void UpdateCCMatches(IEnumerable<CrystallineConflictMatch> matches, bool toSave = true) {
         LogUpdate(null, matches.Count());
         WriteToDatabase(() => GetCCMatches().Update(matches.Where(m => m.Id != null)), toSave);
+    }
+
+    internal ILiteCollection<PlayerAliasLink> GetAutoLinks() {
+        return Database.GetCollection<PlayerAliasLink>(AutoPlayerLinksTable);
+    }
+
+    internal void AddAutoLinks(IEnumerable<PlayerAliasLink> links, bool toSave = false) {
+        LogUpdate(null, links.Count());
+        WriteToDatabase(() => GetAutoLinks().Insert(links.Where(x => x.Id != null)), toSave);
+    }
+
+    internal void UpdateAutoLinks(IEnumerable<PlayerAliasLink> links, bool toSave = false) {
+        LogUpdate(null, links.Count());
+        WriteToDatabase(() => GetAutoLinks().Update(links.Where(x => x.Id != null)), toSave);
+    }
+
+    internal ILiteCollection<PlayerAliasLink> GetManualLinks() {
+        return Database.GetCollection<PlayerAliasLink>(ManualPlayerLinksTable);
+    }
+
+    internal void AddPlayerLinks(IEnumerable<PlayerAliasLink> links, bool toSave = false) {
+        LogUpdate(null, links.Count());
+        WriteToDatabase(() => GetManualLinks().Insert(links.Where(x => x.Id != null)), toSave);
+    }
+
+    internal void UpdatePlayerLinks(IEnumerable<PlayerAliasLink> links, bool toSave = false) {
+        LogUpdate(null, links.Count());
+        WriteToDatabase(() => GetManualLinks().Update(links.Where(x => x.Id != null)), toSave);
     }
 
     private void LogUpdate(string? id = null, int count = 0) {
