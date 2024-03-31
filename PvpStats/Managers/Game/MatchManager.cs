@@ -75,22 +75,14 @@ internal class MatchManager : IDisposable {
             _plugin.Log.Debug($"Current duty: {dutyId}");
             _plugin.Log.Debug($"Current territory: {territoryId}");
             _plugin.DataQueue.QueueDataOperation(() => {
-                //pickup last match
-                var lastMatch = _plugin.Storage.GetCCMatches().Query().ToList().LastOrDefault();
-                if(lastMatch != null && !lastMatch.IsCompleted && (DateTime.Now - lastMatch.DutyStartTime).TotalMinutes <= 10) {
-                    _plugin.Log.Information($"restoring last match...");
-                    _currentMatch = lastMatch;
-                } else {
-                    //sometimes client state is unavailable at this time
-                    _currentMatch = new() {
-                        DutyId = dutyId,
-                        TerritoryId = territoryId,
-                        Arena = MatchHelper.GetArena(territoryId),
-                        MatchType = MatchHelper.GetMatchType(dutyId),
-                    };
-                    _plugin.Log.Information($"starting new match on {_currentMatch.Arena}");
-                    _plugin.Storage.AddCCMatch(_currentMatch);
-                }
+                _currentMatch = new() {
+                    DutyId = dutyId,
+                    TerritoryId = territoryId,
+                    Arena = MatchHelper.GetArena(territoryId),
+                    MatchType = MatchHelper.GetMatchType(dutyId),
+                };
+                _plugin.Log.Information($"starting new match on {_currentMatch.Arena}");
+                _plugin.Storage.AddCCMatch(_currentMatch);
             });
         } catch(Exception e) {
             //suppress all exceptions so game doesn't crash if something fails here
