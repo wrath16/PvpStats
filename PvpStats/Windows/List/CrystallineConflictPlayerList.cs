@@ -86,12 +86,8 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
         ImGui.SetNextItemWidth(float.Max(ImGui.GetContentRegionAvail().X / 3f, 150f * ImGuiHelpers.GlobalScale));
         if(ImGui.SliderInt("Min. matches", ref minMatches, 1, 100)) {
             MinMatches = (uint)minMatches;
-            _plugin.DataQueue.QueueDataOperation(() => {
-                _plugin.Configuration.MatchWindowFilters.MinMatches = MinMatches;
-                //_plugin.Configuration.Save();
-                //RefreshDataModel();
-                RemoveByMatchCount(MinMatches);
-            });
+            _plugin.Configuration.MatchWindowFilters.MinMatches = MinMatches;
+            RemoveByMatchCount(MinMatches);
         }
         ImGui.AlignTextToFramePadding();
         ImGuiHelper.HelpMarker("Right-click table header for column options.", false, true);
