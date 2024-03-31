@@ -108,7 +108,6 @@ public sealed class Plugin : IDalamudPlugin {
             } catch(SignatureException e) {
                 Log.Error($"failed to initialize match manager: {e.Message}");
             }
-            DataQueue.QueueDataOperation(MigrationManager.BulkUpdateMatchTypes);
 
             CommandManager.AddHandler(CCStatsCommandName, new CommandInfo(OnCommand) {
                 HelpMessage = "Opens Crystalline Conflict tracker."
