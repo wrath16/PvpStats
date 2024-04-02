@@ -49,7 +49,7 @@ public sealed class Plugin : IDalamudPlugin {
     internal StorageService Storage { get; init; }
     internal GameStateService GameState { get; init; }
     internal AtkNodeService AtkNodeService { get; init; }
-    internal LodestoneService? Lodestone { get; init; }
+    internal PlayerLinkService? PlayerLinksService { get; init; }
 
     public Configuration Configuration { get; init; }
     internal MemoryService Functions { get; init; }
@@ -101,7 +101,7 @@ public sealed class Plugin : IDalamudPlugin {
             Functions = new(this);
             GameState = new(this);
             AtkNodeService = new(this);
-            Lodestone = new(this);
+            PlayerLinksService = new(this);
             Localization = new(this);
             WindowManager = new(this);
             MigrationManager = new(this);

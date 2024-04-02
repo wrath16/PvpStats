@@ -4,7 +4,7 @@ using PvpStats.Types.Match;
 using System;
 
 namespace PvpStats.Types.Player;
-public class PlayerAlias : IEquatable<PlayerAlias>, IEquatable<CrystallineConflictPlayer>, IEquatable<string> {
+public class PlayerAlias : IEquatable<PlayerAlias>, IEquatable<CrystallineConflictPlayer>, IEquatable<string>, IComparable<PlayerAlias> {
     public string Name { get; set; } = "";
     public string HomeWorld { get; set; } = "";
     //[BsonId]
@@ -81,5 +81,9 @@ public class PlayerAlias : IEquatable<PlayerAlias>, IEquatable<CrystallineConfli
 
     public override int GetHashCode() {
         return string.GetHashCode(FullName);
+    }
+
+    public int CompareTo(PlayerAlias? other) {
+        return FullName.CompareTo(other?.FullName);
     }
 }

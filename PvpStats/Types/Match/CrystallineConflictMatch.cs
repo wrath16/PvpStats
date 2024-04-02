@@ -79,6 +79,19 @@ public class CrystallineConflictMatch {
     }
 
     [BsonIgnore]
+    public List<CrystallineConflictPlayer> Players {
+        get {
+            List<CrystallineConflictPlayer> crystallineConflictPlayers = new();
+            foreach(var team in Teams) {
+                foreach(var player in team.Value.Players) {
+                    crystallineConflictPlayers.Add(player);
+                }
+            }
+            return crystallineConflictPlayers;
+        }
+    }
+
+    [BsonIgnore]
     public CrystallineConflictPostMatchRow? LocalPlayerStats {
         get {
             if(IsSpectated || PostMatch == null) return null;

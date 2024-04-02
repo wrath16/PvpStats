@@ -68,7 +68,10 @@ internal class WindowManager : IDisposable {
 
     private void OnLogin() {
         Task.Delay(3000).ContinueWith((t) => {
-            _plugin.DataQueue.QueueDataOperation(Refresh);
+            _plugin.DataQueue.QueueDataOperation(() => {
+                _plugin.PlayerLinksService?.BuildAutoLinksCache();
+                Refresh();
+            });
         });
     }
 

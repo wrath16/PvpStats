@@ -4,6 +4,7 @@ using Dalamud.Interface.Utility;
 using ImGuiNET;
 using PvpStats.Types.Player;
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
 
@@ -188,4 +189,24 @@ internal static class ImGuiHelper {
     //        }
     //    }
     //}
+
+    internal static void FormattedCollapsibleHeader((string, float)[] columns, Action action) {
+        List<string> formattedText = new();
+        foreach(var column in columns) {
+            float targetWidth = column.Item2 * ImGuiHelpers.GlobalScale;
+            string text = column.Item1;
+            while(ImGui.CalcTextSize(text).X < targetWidth) {
+                text += " ";
+            }
+            formattedText.Add(text);
+        }
+
+        var headerText = "";
+        for(int i = 0; i < columns.Length; i++) {
+            headerText += "{" + i + "} ";
+        }
+        if(ImGui.CollapsingHeader(string.Format(headerText, formattedText.ToArray()))) {
+            action.Invoke();
+        }
+    }
 }

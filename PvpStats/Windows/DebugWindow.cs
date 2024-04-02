@@ -230,7 +230,7 @@ internal unsafe class DebugWindow : Window {
                 }
             }
 
-            using (var tab = ImRaii.TabItem("IPC")) {
+            using(var tab = ImRaii.TabItem("IPC")) {
                 if(tab) {
                     var playerName = _player;
                     if(ImGui.InputTextWithHint("###PlayerNameInput", "Enter player name and world", ref playerName, 50, ImGuiInputTextFlags.EnterReturnsTrue)) {
@@ -239,8 +239,8 @@ internal unsafe class DebugWindow : Window {
                             var alias = (PlayerAlias)_player;
                             //_plugin.Log.Debug(_plugin.Lodestone.GetPlayerCurrentNameWorld(alias));
                             //var prevNames = _plugin.Lodestone.GetPlayerCurrentNameWorld(alias);
-                            _plugin.Log.Debug(_plugin.Lodestone.GetPlayerLodestoneId(alias).ToString());
-                            var prevAliases = _plugin.Lodestone.GetPreviousAliases(alias);
+                            _plugin.Log.Debug(_plugin.PlayerLinksService.GetPlayerLodestoneId(alias).ToString());
+                            var prevAliases = _plugin.PlayerLinksService.GetPreviousAliases(alias);
                             foreach(var a in prevAliases) {
                                 _plugin.Log.Debug(a);
                             }

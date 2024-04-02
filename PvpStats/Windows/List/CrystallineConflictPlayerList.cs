@@ -75,6 +75,8 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
     private int PlayerCount { get; set; }
     private uint MinMatches { get; set; } = 1;
 
+    internal Dictionary<PlayerAlias, List<PlayerAlias>> ActiveLinks = new();
+
     public CrystallineConflictPlayerList(Plugin plugin, CrystallineConflictList listModel, OtherPlayerFilter playerFilter) : base(plugin) {
         ListModel = listModel;
         OtherPlayerFilter = playerFilter;
@@ -114,6 +116,13 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
 
     public override void DrawListItem(PlayerAlias item) {
         ImGui.TextUnformatted($"{item.Name}");
+        if(ActiveLinks.ContainsKey(item)) {
+            string tooltipText = "Including stats for:\n\n";
+            ActiveLinks[item].ForEach(x => tooltipText += x + "\n");
+            tooltipText = tooltipText.Substring(0, tooltipText.Length - 1);
+            ImGuiHelper.WrappedTooltip(tooltipText);
+        }
+
         ImGui.TableNextColumn();
         ImGui.TextUnformatted($"{item.HomeWorld}");
         ImGui.TableNextColumn();
@@ -265,6 +274,7 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
         Dictionary<PlayerAlias, CCPlayerJobStats> statsModel = new();
         Dictionary<PlayerAlias, List<CCScoreboardDouble>> teamContributions = new();
         Dictionary<PlayerAlias, Dictionary<Job, CCAggregateStats>> jobStats = new();
+        Dictionary<PlayerAlias, List<PlayerAlias>> activeLinks = new();
 
         foreach(var match in ListModel.DataModel) {
             foreach(var team in match.Teams) {
@@ -347,6 +357,48 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
             }
         }
 
+        //player linking
+        if(_plugin.Configuration.EnablePlayerLinking && _plugin.PlayerLinksService != null) {
+            //auto links
+            foreach(var playerLink in _plugin.PlayerLinksService.AutoPlayerLinksCache) {
+                foreach(var linkedAlias in playerLink.LinkedAliases) {
+                    if(statsModel.ContainsKey(linkedAlias)) {
+                        _plugin.Log.Debug($"Coalescing {linkedAlias} into {playerLink.CurrentAlias}...");
+                        if(statsModel.ContainsKey(playerLink.CurrentAlias)) {
+                            statsModel[playerLink.CurrentAlias].StatsAll += statsModel[linkedAlias].StatsAll;
+                            //statsModel[playerLink.CurrentAlias].StatsAll.Matches += statsModel[linkedAlias].StatsAll.Matches;
+                            //statsModel[playerLink.CurrentAlias].StatsAll.Wins += statsModel[linkedAlias].StatsAll.Wins;
+                            //statsModel[playerLink.CurrentAlias].StatsAll.Losses += statsModel[linkedAlias].StatsAll.Losses;
+                            teamContributions[playerLink.CurrentAlias].Concat(teamContributions[linkedAlias]);
+                            foreach(var jobStat in jobStats[linkedAlias]) {
+                                if(!jobStats[playerLink.CurrentAlias].ContainsKey(jobStat.Key)) {
+                                    jobStats[playerLink.CurrentAlias].Add(jobStat.Key, new() {
+                                        Matches = jobStat.Value.Matches,
+                                    });
+                                } else {
+                                    jobStats[playerLink.CurrentAlias][jobStat.Key].Matches += jobStat.Value.Matches;
+                                }
+                            }
+                        } else {
+                            statsModel.Add(playerLink.CurrentAlias, statsModel[linkedAlias]);
+                            teamContributions.Add(playerLink.CurrentAlias, teamContributions[linkedAlias]);
+                            jobStats.Add(playerLink.CurrentAlias, jobStats[linkedAlias]);
+                        }
+                        //remove
+                        statsModel.Remove(linkedAlias);
+                        teamContributions.Remove(linkedAlias);
+                        jobStats.Remove(linkedAlias);
+
+                        if(activeLinks.ContainsKey(playerLink.CurrentAlias)) {
+                            activeLinks[playerLink.CurrentAlias].Add(linkedAlias);
+                        } else {
+                            activeLinks.Add(playerLink.CurrentAlias, new() { linkedAlias });
+                        }
+                    }
+                }
+            }
+        }
+
         foreach(var playerStat in statsModel) {
             //set favored job
             playerStat.Value.StatsAll.Job = jobStats[playerStat.Key].OrderByDescending(x => x.Value.Matches).FirstOrDefault().Key;
@@ -398,6 +450,7 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
             DataModel = statsModel.Keys.ToList();
             DataModelUntruncated = DataModel;
             StatsModel = statsModel;
+            ActiveLinks = activeLinks;
             PlayerCount = DataModel.Count;
             RemoveByMatchCount(MinMatches);
             TriggerSort = true;

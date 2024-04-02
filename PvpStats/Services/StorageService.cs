@@ -75,14 +75,14 @@ internal class StorageService {
         return Database.GetCollection<PlayerAliasLink>(ManualPlayerLinksTable);
     }
 
-    internal void AddPlayerLinks(IEnumerable<PlayerAliasLink> links, bool toSave = false) {
-        LogUpdate(null, links.Count());
-        WriteToDatabase(() => GetManualLinks().Insert(links.Where(x => x.Id != null)), toSave);
+    internal void AddManualLink(PlayerAliasLink link, bool toSave = false) {
+        LogUpdate(link.Id.ToString());
+        WriteToDatabase(() => GetManualLinks().Insert(link), toSave);
     }
 
-    internal void UpdatePlayerLinks(IEnumerable<PlayerAliasLink> links, bool toSave = false) {
-        LogUpdate(null, links.Count());
-        WriteToDatabase(() => GetManualLinks().Update(links.Where(x => x.Id != null)), toSave);
+    internal void UpdateManualLink(PlayerAliasLink link, bool toSave = false) {
+        LogUpdate(link.Id.ToString());
+        WriteToDatabase(() => GetManualLinks().Update(link), toSave);
     }
 
     private void LogUpdate(string? id = null, int count = 0) {
