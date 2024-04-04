@@ -52,7 +52,7 @@ internal class CrystallineConflictRankGraph {
         //}
         //_plugin.Log.Debug($"min cred: {PlayerRank.MinRank.TotalCredit}");
         try {
-            _refreshLock.WaitAsync();
+            _refreshLock.Wait();
             RankData = rankData;
             WinData = winData;
             LossData = lossData;

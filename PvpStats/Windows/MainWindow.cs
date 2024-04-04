@@ -202,7 +202,7 @@ internal class MainWindow : Window {
             }
         }
         try {
-            RefreshLock.WaitAsync();
+            RefreshLock.Wait();
             ccMatches.Refresh(matches);
             ccSummary.Refresh(matches);
             ccRecords.Refresh(matches);

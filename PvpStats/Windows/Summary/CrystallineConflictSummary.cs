@@ -215,7 +215,7 @@ internal class CrystallineConflictSummary {
         }
 
         try {
-            _refreshLock.WaitAsync();
+            _refreshLock.Wait();
             _totalMatches = totalMatches;
             _totalWins = totalWins;
             _totalLosses = totalLosses;

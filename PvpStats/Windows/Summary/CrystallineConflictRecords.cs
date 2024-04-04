@@ -102,7 +102,7 @@ internal class CrystallineConflictRecords {
         }
 
         try {
-            _refreshLock.WaitAsync();
+            _refreshLock.Wait();
             var addSuperlative = (CrystallineConflictMatch? match, string sup, string val) => {
                 if(match == null) return;
                 if(Superlatives.ContainsKey(match)) {
