@@ -236,14 +236,14 @@ internal unsafe class DebugWindow : Window {
                     if(ImGui.InputTextWithHint("###PlayerNameInput", "Enter player name and world", ref playerName, 50, ImGuiInputTextFlags.EnterReturnsTrue)) {
                         _player = playerName;
                         try {
-                            var alias = (PlayerAlias)_player;
-                            //_plugin.Log.Debug(_plugin.Lodestone.GetPlayerCurrentNameWorld(alias));
-                            //var prevNames = _plugin.Lodestone.GetPlayerCurrentNameWorld(alias);
-                            _plugin.Log.Debug(_plugin.PlayerLinksService.GetPlayerLodestoneId(alias).ToString());
-                            var prevAliases = _plugin.PlayerLinksService.GetPreviousAliases(alias);
-                            foreach(var a in prevAliases) {
-                                _plugin.Log.Debug(a);
-                            }
+                            //var alias = (PlayerAlias)_player;
+                            ////_plugin.Log.Debug(_plugin.Lodestone.GetPlayerCurrentNameWorld(alias));
+                            ////var prevNames = _plugin.Lodestone.GetPlayerCurrentNameWorld(alias);
+                            //_plugin.Log.Debug(_plugin.PlayerLinksService.GetPlayerLodestoneId(alias).ToString());
+                            //var prevAliases = _plugin.PlayerLinksService.GetPreviousAliases(alias);
+                            //foreach(var a in prevAliases) {
+                            //    _plugin.Log.Debug(a);
+                            //}
 
                         } catch(ArgumentException) {
 

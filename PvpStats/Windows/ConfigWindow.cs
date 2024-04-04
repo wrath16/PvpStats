@@ -1,10 +1,12 @@
-﻿using Dalamud.Interface.Colors;
+﻿using Dalamud.Interface;
+using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using PvpStats.Helpers;
 using PvpStats.Types.Player;
+using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 
@@ -12,6 +14,11 @@ namespace PvpStats.Windows;
 internal class ConfigWindow : Window {
 
     private Plugin _plugin;
+    private PlayerAliasLink _newManualLink;
+    private string[] _linksVerbCombo = new[] { "IS", "IS NOT" };
+    internal List<PlayerAliasLink> ManualLinks { get; private set; } = new();
+
+    private float _saveOpacity = 0f;
 
     public ConfigWindow(Plugin plugin) : base("PvP Tracker Settings") {
         SizeConstraints = new WindowSizeConstraints {
@@ -19,6 +26,17 @@ internal class ConfigWindow : Window {
             MaximumSize = new Vector2(800, 800)
         };
         _plugin = plugin;
+        _newManualLink = new();
+        //_plugin.DataQueue.QueueDataOperation(Refresh);
+    }
+
+    internal void Refresh() {
+        _newManualLink = new();
+        ManualLinks = _plugin.Storage.GetManualLinks().Query().ToList();
+    }
+
+    public override void OnOpen() {
+        _plugin.DataQueue.QueueDataOperation(Refresh);
     }
 
     public override void Draw() {
@@ -114,48 +132,114 @@ internal class ConfigWindow : Window {
     }
 
     private void DrawPlayerLinkSettings() {
-
-        //enable setting...
         bool playerLinking = _plugin.Configuration.EnablePlayerLinking;
         if(ImGui.Checkbox("Enable player linking", ref playerLinking)) {
             _plugin.Configuration.EnablePlayerLinking = playerLinking;
-            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+            _plugin.DataQueue.QueueDataOperation(() => {
+                _plugin.Configuration.Save();
+                _plugin.WindowManager.Refresh();
+            });
         }
         ImGuiHelper.HelpMarker("Enable/disable combining of player stats with different aliases linked with the same unique character or player.");
         bool autoLinking = _plugin.Configuration.EnableAutoPlayerLinking;
         if(ImGui.Checkbox("Enable auto linking (requires PlayerTrack)", ref autoLinking)) {
             _plugin.Configuration.EnableAutoPlayerLinking = autoLinking;
-            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
-        }
-        ImGuiHelper.HelpMarker("Use data from PlayerTrack to correlate players across name changes/world transfers.\n\n" +
-            "Currently does not consider the point in time at which an alias was observed as a variable and applies all known names to all known home worlds. Does not work on your own character (for now).");
-
-        if(_plugin.PlayerLinksService == null) return;
-
-        if(ImGui.Button("Update Now")) {
             _plugin.DataQueue.QueueDataOperation(() => {
-                _plugin.PlayerLinksService.BuildAutoLinksCache();
+                _plugin.Configuration.Save();
                 _plugin.WindowManager.Refresh();
             });
         }
-
-        ImGui.Text("Players with auto-linked aliases: ");
-
-        using(var child = ImRaii.Child("autoPlayerLinks", ImGui.GetContentRegionAvail(), true)) {
-            if(child) {
-                foreach(var playerLink in _plugin.PlayerLinksService.AutoPlayerLinksCache.OrderBy(x => x.CurrentAlias)) {
-                    DrawPlayerLink(playerLink);
+        ImGuiHelper.HelpMarker("Use data from PlayerTrack to correlate players across name changes/world transfers.\n\n" +
+            "Currently does not consider the point in time at which an alias was observed as a variable and applies all known names to all known home worlds. Does not work on your own character (for now).");
+        bool manualLinking = _plugin.Configuration.EnableManualPlayerLinking;
+        if(ImGui.Checkbox("Enable manual linking", ref manualLinking)) {
+            _plugin.Configuration.EnableManualPlayerLinking = manualLinking;
+            _plugin.DataQueue.QueueDataOperation(() => {
+                _plugin.Configuration.Save();
+                _plugin.WindowManager.Refresh();
+            });
+        }
+        ImGuiHelper.HelpMarker("Use the manual tab to create manual player links if you do not wish to use PlayerTrack or to track" +
+            " un-covered scenarios such as personal character alias changes, tracking known alt characters or to override erroneous auto links.");
+        using(var tabBar = ImRaii.TabBar("LinksTabBar")) {
+            using(var tab = ImRaii.TabItem("Auto")) {
+                if(tab) {
+                    if(ImGui.Button("Update Now")) {
+                        _plugin.DataQueue.QueueDataOperation(() => {
+                            _plugin.PlayerLinksService.BuildAutoLinksCache();
+                            _plugin.WindowManager.Refresh();
+                        });
+                    }
+                    if(_plugin.PlayerLinksService.IsInitialized()) {
+                        DrawAutoPlayerLinkSettings();
+                    }
+                }
+            }
+            using(var tab = ImRaii.TabItem("Manual")) {
+                if(tab) {
+                    DrawManualPlayerLinkSettings();
                 }
             }
         }
     }
 
-    private void DrawPlayerLink(PlayerAliasLink playerLink) {
-        //if(ImGui.CollapsingHeader(playerLink.CurrentAlias)) {
-        //    foreach(var prevAlias in playerLink.LinkedAliases) {
-        //        ImGui.Text(prevAlias);
-        //    }
-        //}
+    private void DrawAutoPlayerLinkSettings() {
+        ImGui.Text("Players with auto-linked aliases: ");
+
+        using(var child = ImRaii.Child("AutoPlayerLinks", ImGui.GetContentRegionAvail(), true)) {
+            if(child) {
+                foreach(var playerLink in _plugin.PlayerLinksService.AutoPlayerLinksCache.OrderBy(x => x.CurrentAlias)) {
+                    DrawAutoPlayerLink(playerLink);
+                }
+            }
+        }
+    }
+
+    private void DrawManualPlayerLinkSettings() {
+        using(var child = ImRaii.Child("ManualLinksChild", new Vector2(0, -(25 + ImGui.GetStyle().ItemSpacing.Y) * ImGuiHelpers.GlobalScale), true)) {
+            if(child) {
+                using(var table = ImRaii.Table("ManualLinksTabke", 4, ImGuiTableFlags.NoSavedSettings)) {
+                    if(table) {
+                        ImGui.TableSetupColumn("LinkedAlias", ImGuiTableColumnFlags.WidthFixed, 180f * ImGuiHelpers.GlobalScale);
+                        ImGui.TableSetupColumn("Verb", ImGuiTableColumnFlags.WidthFixed, 75f * ImGuiHelpers.GlobalScale);
+                        ImGui.TableSetupColumn("SourceAlias", ImGuiTableColumnFlags.WidthFixed, 180f * ImGuiHelpers.GlobalScale);
+                        ImGui.TableSetupColumn("Button", ImGuiTableColumnFlags.WidthFixed, 50f * ImGuiHelpers.GlobalScale);
+                        try {
+                            foreach(var link in ManualLinks) {
+                                DrawManualPlayerLink(link);
+                            }
+                            DrawManualPlayerLink(_newManualLink, true);
+                        } catch {
+                            //suppress remove elements
+                        }
+
+                    }
+                }
+            }
+        }
+        if(ImGui.Button("Save")) {
+            _plugin.DataQueue.QueueDataOperation(() => {
+                _plugin.Storage.SetManualLinks(ManualLinks, true);
+            }).ContinueWith((t) => {
+                _saveOpacity = 1f;
+            });
+        }
+        if(_saveOpacity > 0f) {
+            ImGui.SameLine();
+            ImGui.TextColored(new Vector4(1f, 1f, 1f, _saveOpacity), "Saved!");
+            _saveOpacity -= 0.002f;
+        }
+
+        ImGui.SameLine();
+        ImGui.SetCursorPosX(ImGui.GetContentRegionMax().X - 60f * ImGuiHelpers.GlobalScale);
+        if(ImGui.Button("Cancel")) {
+            _plugin.DataQueue.QueueDataOperation(() => {
+                Refresh();
+            });
+        }
+    }
+
+    private void DrawAutoPlayerLink(PlayerAliasLink playerLink) {
         ImGuiHelper.FormattedCollapsibleHeader(new[] { (playerLink.CurrentAlias.Name, 200f), (playerLink.CurrentAlias.HomeWorld, 200f), }, () => {
             foreach(var prevAlias in playerLink.LinkedAliases) {
                 using(var table = ImRaii.Table($"{playerLink.Id}--AliasTable", 2)) {
@@ -171,5 +255,64 @@ internal class ConfigWindow : Window {
                 }
             }
         });
+    }
+
+    private void DrawManualPlayerLink(PlayerAliasLink playerLink, bool isNew = false) {
+        string inputText1 = "";
+        string inputText2 = "";
+        if(playerLink.LinkedAliases.Count > 0) {
+            inputText2 = playerLink.LinkedAliases[0];
+        }
+
+        if(playerLink.CurrentAlias != null) {
+            inputText1 = playerLink.CurrentAlias;
+        }
+
+        ImGui.TableNextColumn();
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
+        if(ImGui.InputTextWithHint($"###{playerLink.GetHashCode()}--CurrentAlias", "Enter main player", ref inputText1, 60)) {
+            try {
+                playerLink.CurrentAlias = (PlayerAlias)inputText1;
+            } catch {
+                playerLink.CurrentAlias = null;
+            }
+        }
+
+        ImGui.TableNextColumn();
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
+        int verbIndex = playerLink.IsUnlink ? 1 : 0;
+        if(ImGui.Combo($"###{playerLink.GetHashCode()}--IsUnlink", ref verbIndex, _linksVerbCombo, _linksVerbCombo.Length)) {
+            playerLink.IsUnlink = verbIndex == 1;
+        }
+
+        ImGui.TableNextColumn();
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
+        if(ImGui.InputTextWithHint($"###{playerLink.GetHashCode()}--LinkedAlias", "Enter linked player", ref inputText2, 60)) {
+            try {
+                if(playerLink.LinkedAliases.Count <= 0) {
+                    playerLink.LinkedAliases.Add((PlayerAlias)inputText2);
+                } else {
+                    playerLink.LinkedAliases[0] = (PlayerAlias)inputText2;
+                }
+            } catch {
+                playerLink.LinkedAliases = new();
+            }
+        }
+        ImGui.TableNextColumn();
+        using(var font = ImRaii.PushFont(UiBuilder.IconFont)) {
+            if(isNew) {
+                if(ImGui.Button($"{FontAwesomeIcon.Plus.ToIconString()}###{playerLink.GetHashCode()}--Button")) {
+                    ManualLinks.Add(playerLink);
+                    _newManualLink = new();
+                }
+
+            } else {
+                if(ImGui.Button($"{FontAwesomeIcon.Trash.ToIconString()}###{playerLink.GetHashCode()}--Button")) {
+                    ManualLinks.Remove(playerLink);
+                }
+
+            }
+        }
+        ImGuiHelper.WrappedTooltip(isNew ? "Add Link" : "Remove");
     }
 }

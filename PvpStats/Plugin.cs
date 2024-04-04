@@ -49,7 +49,7 @@ public sealed class Plugin : IDalamudPlugin {
     internal StorageService Storage { get; init; }
     internal GameStateService GameState { get; init; }
     internal AtkNodeService AtkNodeService { get; init; }
-    internal PlayerLinkService? PlayerLinksService { get; init; }
+    internal PlayerLinkService PlayerLinksService { get; init; }
 
     public Configuration Configuration { get; init; }
     internal MemoryService Functions { get; init; }

@@ -10,6 +10,7 @@ public class Configuration : IPluginConfiguration {
     public int Version { get; set; } = CurrentVersion;
     public bool EnablePlayerLinking { get; set; } = true;
     public bool EnableAutoPlayerLinking { get; set; } = true;
+    public bool EnableManualPlayerLinking { get; set; } = true;
     public FilterConfiguration MatchWindowFilters { get; set; } = new();
     public bool LeftPlayerTeam { get; set; } = false;
     public bool AnchorTeamNames { get; set; } = true;
