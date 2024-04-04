@@ -134,45 +134,44 @@ internal class ConfigWindow : Window {
     private void DrawPlayerLinkSettings() {
         bool playerLinking = _plugin.Configuration.EnablePlayerLinking;
         if(ImGui.Checkbox("Enable player linking", ref playerLinking)) {
-            _plugin.Configuration.EnablePlayerLinking = playerLinking;
             _plugin.DataQueue.QueueDataOperation(() => {
+                _plugin.Configuration.EnablePlayerLinking = playerLinking;
                 _plugin.Configuration.Save();
                 _plugin.WindowManager.Refresh();
             });
         }
-        ImGuiHelper.HelpMarker("Enable/disable combining of player stats with different aliases linked with the same unique character or player.");
+        ImGuiHelper.HelpMarker("Enable combining of player stats with different aliases linked with the same unique character or player.");
         bool autoLinking = _plugin.Configuration.EnableAutoPlayerLinking;
         if(ImGui.Checkbox("Enable auto linking (requires PlayerTrack)", ref autoLinking)) {
-            _plugin.Configuration.EnableAutoPlayerLinking = autoLinking;
             _plugin.DataQueue.QueueDataOperation(() => {
+                _plugin.Configuration.EnableAutoPlayerLinking = autoLinking;
                 _plugin.Configuration.Save();
                 _plugin.WindowManager.Refresh();
             });
         }
-        ImGuiHelper.HelpMarker("Use data from PlayerTrack to correlate players across name changes/world transfers.\n\n" +
-            "Currently does not consider the point in time at which an alias was observed as a variable and applies all known names to all known home worlds. Does not work on your own character (for now).");
+        ImGuiHelper.HelpMarker("Use name change data from PlayerTrack to create player links.\n\n" +
+            "Greedily combines all known names with all known worlds. Does not work on your own character (for now).");
         bool manualLinking = _plugin.Configuration.EnableManualPlayerLinking;
         if(ImGui.Checkbox("Enable manual linking", ref manualLinking)) {
-            _plugin.Configuration.EnableManualPlayerLinking = manualLinking;
             _plugin.DataQueue.QueueDataOperation(() => {
+                _plugin.Configuration.EnableManualPlayerLinking = manualLinking;
                 _plugin.Configuration.Save();
                 _plugin.WindowManager.Refresh();
             });
         }
-        ImGuiHelper.HelpMarker("Use the manual tab to create manual player links if you do not wish to use PlayerTrack or to track" +
-            " un-covered scenarios such as personal character alias changes, tracking known alt characters or to override erroneous auto links.");
+        ImGuiHelper.HelpMarker("Use the manual tab to create player links by hand or to track" +
+            " un-covered auto link scenarios such as personal character alias changes, track known alt characters or to override mistakes.");
         using(var tabBar = ImRaii.TabBar("LinksTabBar")) {
             using(var tab = ImRaii.TabItem("Auto")) {
                 if(tab) {
                     if(ImGui.Button("Update Now")) {
                         _plugin.DataQueue.QueueDataOperation(() => {
-                            _plugin.PlayerLinksService.BuildAutoLinksCache();
-                            _plugin.WindowManager.Refresh();
+                            if(_plugin.PlayerLinksService.BuildAutoLinksCache()) {
+                                _plugin.WindowManager.Refresh();
+                            }
                         });
                     }
-                    if(_plugin.PlayerLinksService.IsInitialized()) {
-                        DrawAutoPlayerLinkSettings();
-                    }
+                    DrawAutoPlayerLinkSettings();
                 }
             }
             using(var tab = ImRaii.TabItem("Manual")) {
@@ -219,7 +218,10 @@ internal class ConfigWindow : Window {
         }
         if(ImGui.Button("Save")) {
             _plugin.DataQueue.QueueDataOperation(() => {
-                _plugin.Storage.SetManualLinks(ManualLinks, true);
+                _plugin.Storage.SetManualLinks(ManualLinks, false);
+                if(_plugin.Configuration.EnablePlayerLinking && _plugin.Configuration.EnableManualPlayerLinking) {
+                    _plugin.WindowManager.Refresh();
+                }
             }).ContinueWith((t) => {
                 _saveOpacity = 1f;
             });

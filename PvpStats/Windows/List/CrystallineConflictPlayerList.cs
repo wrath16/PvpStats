@@ -275,6 +275,7 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
         Dictionary<PlayerAlias, Dictionary<Job, CCAggregateStats>> jobStats = new();
         Dictionary<PlayerAlias, List<PlayerAlias>> activeLinks = new();
 
+        List<PlayerAlias> linkedPlayerAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(OtherPlayerFilter.PlayerNamesRaw);
         foreach(var match in ListModel.DataModel) {
             foreach(var team in match.Teams) {
                 foreach(var player in team.Value.Players) {
@@ -282,6 +283,9 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
                     bool isTeammate = !match.IsSpectated && team.Key == match.LocalPlayerTeam!.TeamName;
                     //check against filters
                     bool nameMatch = player.Alias.FullName.Contains(OtherPlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase);
+                    if(_plugin.Configuration.EnablePlayerLinking && !nameMatch) {
+                        nameMatch = linkedPlayerAliases.Contains(player.Alias);
+                    }
                     bool sideMatch = OtherPlayerFilter.TeamStatus == TeamStatus.Any
                         || OtherPlayerFilter.TeamStatus == TeamStatus.Teammate && isTeammate
                         || OtherPlayerFilter.TeamStatus == TeamStatus.Opponent && !isTeammate && !isLocalPlayer;
@@ -360,7 +364,7 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
         if(_plugin.Configuration.EnablePlayerLinking) {
             var manualLinks = _plugin.Storage.GetManualLinks().Query().ToList();
             var unLinks = manualLinks.Where(x => x.IsUnlink).ToList();
-            var checkPlayerLink = (PlayerAliasLink playerLink, bool isAuto) => {
+            var checkPlayerLink = (PlayerAliasLink playerLink) => {
                 if(playerLink.IsUnlink) return;
                 foreach(var linkedAlias in playerLink.LinkedAliases) {
                     bool blocked = unLinks.Where(x => x.CurrentAlias.Equals(playerLink.CurrentAlias) && x.LinkedAliases.Contains(linkedAlias)).Any();
@@ -400,46 +404,14 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
             //manual links
             if(_plugin.Configuration.EnableManualPlayerLinking) {
                 foreach(var playerLink in manualLinks) {
-                    checkPlayerLink(playerLink, false);
+                    checkPlayerLink(playerLink);
                 }
             }
 
             //auto links
             if(_plugin.Configuration.EnableAutoPlayerLinking) {
                 foreach(var playerLink in _plugin.PlayerLinksService.AutoPlayerLinksCache) {
-                    checkPlayerLink(playerLink, true);
-                    //foreach(var linkedAlias in playerLink.LinkedAliases) {
-                    //    if(statsModel.ContainsKey(linkedAlias)) {
-                    //        _plugin.Log.Debug($"Coalescing {linkedAlias} into {playerLink.CurrentAlias}...");
-                    //        if(statsModel.ContainsKey(playerLink.CurrentAlias)) {
-                    //            statsModel[playerLink.CurrentAlias].StatsAll += statsModel[linkedAlias].StatsAll;
-                    //            teamContributions[playerLink.CurrentAlias].Concat(teamContributions[linkedAlias]);
-                    //            foreach(var jobStat in jobStats[linkedAlias]) {
-                    //                if(!jobStats[playerLink.CurrentAlias].ContainsKey(jobStat.Key)) {
-                    //                    jobStats[playerLink.CurrentAlias].Add(jobStat.Key, new() {
-                    //                        Matches = jobStat.Value.Matches,
-                    //                    });
-                    //                } else {
-                    //                    jobStats[playerLink.CurrentAlias][jobStat.Key].Matches += jobStat.Value.Matches;
-                    //                }
-                    //            }
-                    //        } else {
-                    //            statsModel.Add(playerLink.CurrentAlias, statsModel[linkedAlias]);
-                    //            teamContributions.Add(playerLink.CurrentAlias, teamContributions[linkedAlias]);
-                    //            jobStats.Add(playerLink.CurrentAlias, jobStats[linkedAlias]);
-                    //        }
-                    //        //remove
-                    //        statsModel.Remove(linkedAlias);
-                    //        teamContributions.Remove(linkedAlias);
-                    //        jobStats.Remove(linkedAlias);
-
-                    //        if(activeLinks.ContainsKey(playerLink.CurrentAlias)) {
-                    //            activeLinks[playerLink.CurrentAlias].Add(linkedAlias);
-                    //        } else {
-                    //            activeLinks.Add(playerLink.CurrentAlias, new() { linkedAlias });
-                    //        }
-                    //    }
-                    //}
+                    checkPlayerLink(playerLink);
                 }
             }
         }

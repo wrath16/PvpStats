@@ -2,9 +2,11 @@ using Dalamud.Interface;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
+using Dalamud.Utility;
 using ImGuiNET;
 using PvpStats.Helpers;
 using PvpStats.Types.Match;
+using PvpStats.Types.Player;
 using PvpStats.Windows.Filter;
 using PvpStats.Windows.List;
 using PvpStats.Windows.Summary;
@@ -119,7 +121,12 @@ internal class MainWindow : Window {
                 case Type _ when filter.GetType() == typeof(LocalPlayerFilter):
                     var localPlayerFilter = (LocalPlayerFilter)filter;
                     if(localPlayerFilter.CurrentPlayerOnly && _plugin.ClientState.IsLoggedIn && _plugin.GameState.CurrentPlayer != null) {
-                        matches = matches.Where(x => x.LocalPlayer != null && x.LocalPlayer.Equals(_plugin.GameState.CurrentPlayer)).ToList();
+                        if(_plugin.Configuration.EnablePlayerLinking) {
+                            var linkedAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(_plugin.GameState.CurrentPlayer);
+                            matches = matches.Where(x => x.LocalPlayer != null && (x.LocalPlayer.Equals(_plugin.GameState.CurrentPlayer) || linkedAliases.Contains(x.LocalPlayer))).ToList();
+                        } else {
+                            matches = matches.Where(x => x.LocalPlayer != null && x.LocalPlayer.Equals(_plugin.GameState.CurrentPlayer)).ToList();
+                        }
                     }
                     _plugin.Configuration.MatchWindowFilters.LocalPlayerFilter = localPlayerFilter;
                     break;
@@ -137,9 +144,10 @@ internal class MainWindow : Window {
                     break;
                 case Type _ when filter.GetType() == typeof(OtherPlayerFilter):
                     var otherPlayerFilter = (OtherPlayerFilter)filter;
-                    //if (!otherPlayerFilter.PlayerNamesRaw.IsNullOrEmpty()) {
-
-                    //}
+                    List<PlayerAlias> linkedPlayerAliases = new();
+                    if(!otherPlayerFilter.PlayerNamesRaw.IsNullOrEmpty() && _plugin.Configuration.EnablePlayerLinking) {
+                        linkedPlayerAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(otherPlayerFilter.PlayerNamesRaw);
+                    }
                     matches = matches.Where(x => {
                         foreach(var team in x.Teams) {
                             if(otherPlayerFilter.TeamStatus == TeamStatus.Teammate && team.Key != x.LocalPlayerTeam?.TeamName) {
@@ -150,8 +158,16 @@ internal class MainWindow : Window {
                             foreach(var player in team.Value.Players) {
                                 if(!otherPlayerFilter.AnyJob && player.Job != otherPlayerFilter.PlayerJob) {
                                     continue;
-                                } else if(player.Alias.FullName.Contains(otherPlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase)) {
-                                    return true;
+                                }
+                                if(_plugin.Configuration.EnablePlayerLinking) {
+                                    if(player.Alias.FullName.Contains(otherPlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase)
+                                    || linkedPlayerAliases.Any(x => x.Equals(player.Alias))) {
+                                        return true;
+                                    }
+                                } else {
+                                    if(player.Alias.FullName.Contains(otherPlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase)) {
+                                        return true;
+                                    }
                                 }
                             }
                         }

@@ -1,4 +1,5 @@
 ﻿using Dalamud.Plugin.Ipc;
+using Dalamud.Plugin.Ipc.Exceptions;
 using Lumina.Excel.GeneratedSheets2;
 using PvpStats.Types.Player;
 using System;
@@ -8,38 +9,25 @@ using System.Linq;
 namespace PvpStats.Services;
 internal class PlayerLinkService {
     private Plugin _plugin;
-    private ICallGateSubscriber<(string, uint)[], ((string, uint), string[], uint[])[]>? GetPlayersPreviousNamesWorldsFunction;
+    private ICallGateSubscriber<(string, uint)[], ((string, uint), string[], uint[])[]> GetPlayersPreviousNamesWorldsFunction;
 
     internal List<PlayerAliasLink> AutoPlayerLinksCache { get; private set; }
+    //private List<PlayerAliasLink> ManualPlayerLinksCache { get; set; }
 
     internal PlayerLinkService(Plugin plugin) {
         _plugin = plugin;
         AutoPlayerLinksCache = new();
         _plugin.DataQueue.QueueDataOperation(() => {
             AutoPlayerLinksCache = _plugin.Storage.GetAutoLinks().Query().ToList();
-            _plugin.Log.Debug($"Restored link count: {AutoPlayerLinksCache.Count.ToString()}");
+            _plugin.Log.Debug($"Restored auto link count: {AutoPlayerLinksCache.Count}");
         });
-        //Initialize();
+        GetPlayersPreviousNamesWorldsFunction = _plugin.PluginInterface.GetIpcSubscriber<(string, uint)[], ((string, uint), string[], uint[])[]>("PlayerTrack.GetPlayersPreviousNamesWorlds");
     }
 
-    private bool Initialize() {
-        try {
-            GetPlayersPreviousNamesWorldsFunction = _plugin.PluginInterface.GetIpcSubscriber<(string, uint)[], ((string, uint), string[], uint[])[]>("PlayerTrack.GetPlayersPreviousNamesWorlds");
-            _plugin.Log.Information("Player Track IPC initialized.");
-            return true;
-        } catch {
-            _plugin.Log.Warning("Unable to initialize PlayerTrack IPC.");
-            return false;
-        }
-    }
-
-    internal bool IsInitialized() {
-        return GetPlayersPreviousNamesWorldsFunction != null;
-    }
-
-    internal void BuildAutoLinksCache() {
-        if(!IsInitialized() && !Initialize()) return;
-        _plugin.Log.Information("Building Player Alias links cache from PlayerTrack IPC...");
+    //returns whether cache was updated successfully
+    internal bool BuildAutoLinksCache() {
+        //if(!IsInitialized() && !Initialize()) return;
+        _plugin.Log.Information("Building player alias links cache from PlayerTrack IPC data...");
         var matches = _plugin.Storage.GetCCMatches().Query().ToList();
         List<PlayerAlias> allPlayers = new();
         foreach(var match in matches) {
@@ -51,13 +39,24 @@ internal class PlayerLinkService {
         }
 
         if(allPlayers.Any()) {
-            AutoPlayerLinksCache = GetPlayerNameHistory(allPlayers);
+            try {
+                AutoPlayerLinksCache = GetPlayerNameHistory(allPlayers);
+            } catch(IpcNotReadyError e) {
+                if(_plugin.Configuration.EnableAutoPlayerLinking) {
+                    _plugin.Log.Error("Unable to query PlayerTrack IPC: check whether plugin is installed and up to date.");
+                } else {
+                    _plugin.Log.Information("PlayerTrack IPC unavailable.");
+                }
+                return false;
+            }
             _plugin.Log.Information($"Players with previous aliases: {AutoPlayerLinksCache.Count}");
             _plugin.DataQueue.QueueDataOperation(() => {
                 _plugin.Storage.GetAutoLinks().DeleteAll();
                 _plugin.Storage.AddAutoLinks(AutoPlayerLinksCache);
             });
+            return true;
         }
+        return false;
     }
 
     private List<PlayerAliasLink> GetPlayerNameHistory(List<PlayerAlias> players) {
@@ -88,5 +87,43 @@ internal class PlayerLinkService {
             });
         }
         return playersLinks;
+    }
+
+    internal List<PlayerAlias> GetAllLinkedAliases(PlayerAlias player) {
+        return GetAllLinkedAliases(player.FullName);
+    }
+
+    //for a partial string match
+    internal List<PlayerAlias> GetAllLinkedAliases(string playerNameFragment) {
+        var manualLinks = _plugin.Storage.GetManualLinks().Query().ToList();
+        var unLinks = manualLinks.Where(x => x.IsUnlink).ToList();
+        List<PlayerAlias> linkedAliases = new();
+        var addAlias = ((PlayerAlias alias) => {
+            if(!linkedAliases.Contains(alias)) {
+                linkedAliases.Add(alias);
+            }
+        });
+        var removeAlias = ((PlayerAlias alias) => {
+            linkedAliases.Remove(alias);
+        });
+        var checkPlayerLink = (PlayerAliasLink link) => {
+            if(!link.IsUnlink
+            && (link.CurrentAlias.FullName.Contains(playerNameFragment, StringComparison.OrdinalIgnoreCase)
+            || link.LinkedAliases.Any(x => x.FullName.Contains(playerNameFragment, StringComparison.OrdinalIgnoreCase)))) {
+                addAlias(link.CurrentAlias);
+                link.LinkedAliases.ForEach(addAlias);
+            } else if(link.IsUnlink) {
+                removeAlias(link.CurrentAlias);
+                link.LinkedAliases.ForEach(removeAlias);
+            }
+        };
+        if(_plugin.Configuration.EnableAutoPlayerLinking) {
+            AutoPlayerLinksCache.ForEach(checkPlayerLink);
+        }
+        if(_plugin.Configuration.EnableManualPlayerLinking) {
+            manualLinks.ForEach(checkPlayerLink);
+            unLinks.ForEach(checkPlayerLink);
+        }
+        return linkedAliases;
     }
 }

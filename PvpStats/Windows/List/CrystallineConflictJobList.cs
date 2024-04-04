@@ -261,6 +261,7 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
         Dictionary<Job, List<CCScoreboardDouble>> teamContributions = new();
         ListCSV = CSVHeader();
         //Dictionary<Job, (CCPlayerJobStats, List<CCScoreboardDouble>)> data = new();
+        List<PlayerAlias> linkedPlayerAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(OtherPlayerFilter.PlayerNamesRaw);
 
         var allJobs = Enum.GetValues(typeof(Job)).Cast<Job>();
         foreach(var job in allJobs) {
@@ -280,6 +281,9 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
 
                         if(StatSourceFilter.InheritFromPlayerFilter) {
                             bool nameMatch = player.Alias.FullName.Contains(OtherPlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase);
+                            if(_plugin.Configuration.EnablePlayerLinking && !nameMatch) {
+                                nameMatch = linkedPlayerAliases.Contains(player.Alias);
+                            }
                             bool sideMatch = OtherPlayerFilter.TeamStatus == TeamStatus.Any
                                 || OtherPlayerFilter.TeamStatus == TeamStatus.Teammate && isTeammate
                                 || OtherPlayerFilter.TeamStatus == TeamStatus.Opponent && !isTeammate && !isLocalPlayer;
