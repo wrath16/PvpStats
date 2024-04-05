@@ -209,4 +209,11 @@ internal static class ImGuiHelper {
             action.Invoke();
         }
     }
+
+    internal static void SetDynamicWidth(float minWidth, float maxWidth, float factor) {
+        float width = ImGui.GetContentRegionAvail().X / factor;
+        minWidth = minWidth * ImGuiHelpers.GlobalScale;
+        maxWidth = maxWidth * ImGuiHelpers.GlobalScale;
+        ImGui.SetNextItemWidth(width < minWidth ? minWidth : width > maxWidth ? maxWidth : width);
+    }
 }
