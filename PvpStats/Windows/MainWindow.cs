@@ -220,7 +220,9 @@ internal class MainWindow : Window {
     }
 
     public override void Draw() {
-        _firstDraw = true;
+        if(!ImGui.IsWindowCollapsed()) {
+            _firstDraw = true;
+        }
         _windowCollapsed = false;
         SizeCondition = ImGuiCond.Once;
         PositionCondition = ImGuiCond.Once;
