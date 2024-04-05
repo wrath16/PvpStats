@@ -9,7 +9,7 @@ using System.Linq;
 namespace PvpStats.Services;
 internal class PlayerLinkService {
     private Plugin _plugin;
-    private ICallGateSubscriber<(string, uint)[], ((string, uint), string[], uint[])[]> GetPlayersPreviousNamesWorldsFunction;
+    private ICallGateSubscriber<(string, uint)[], ((string, uint), (string, uint)[])[]> GetPreviousAliasesFunction;
 
     internal List<PlayerAliasLink> AutoPlayerLinksCache { get; private set; }
     internal List<PlayerAliasLink> ManualPlayerLinksCache { get; private set; }
@@ -22,7 +22,7 @@ internal class PlayerLinkService {
             AutoPlayerLinksCache = _plugin.Storage.GetAutoLinks().Query().ToList();
             _plugin.Log.Debug($"Restored auto link count: {AutoPlayerLinksCache.Count}");
         });
-        GetPlayersPreviousNamesWorldsFunction = _plugin.PluginInterface.GetIpcSubscriber<(string, uint)[], ((string, uint), string[], uint[])[]>("PlayerTrack.GetPlayersPreviousNamesWorlds");
+        GetPreviousAliasesFunction = _plugin.PluginInterface.GetIpcSubscriber<(string, uint)[], ((string, uint), (string, uint)[])[]>("PlayerTrack.GetUniquePlayerNameWorldHistories");
     }
 
     internal void SaveManualLinksCache(List<PlayerAliasLink> playerLinks) {
@@ -85,24 +85,15 @@ internal class PlayerLinkService {
     private List<PlayerAliasLink> GetPlayerNameHistory(List<PlayerAlias> players) {
         var worlds = _plugin.DataManager.GetExcelSheet<World>();
         var playersWithWorldId = players.Select(x => (x.Name, worlds.Where(y => y.Name.ToString().Equals(x.HomeWorld, StringComparison.OrdinalIgnoreCase)).Select(y => y.RowId).First()));
-        var results = GetPlayersPreviousNamesWorldsFunction.InvokeFunc(playersWithWorldId.ToArray());
+        var results = GetPreviousAliasesFunction.InvokeFunc(playersWithWorldId.ToArray());
         List<PlayerAliasLink> playersLinks = new();
 
         foreach(var result in results) {
-            PlayerAlias sourceAlias = (PlayerAlias)$"{result.Item1.Item1} {worlds.GetRow(result.Item1.Item2).Name.ToString()}";
+            PlayerAlias sourceAlias = (PlayerAlias)$"{result.Item1.Item1} {worlds.GetRow(result.Item1.Item2).Name}";
             List<PlayerAlias> prevAliases = new();
-            List<string> names = result.Item2.ToList();
-            List<string> worldNames = result.Item3.Select(x => worlds.GetRow(x).Name.ToString()).ToList();
-            names.Add(sourceAlias.Name);
-            worldNames.Add(sourceAlias.HomeWorld);
-
-            foreach(var playerName in names) {
-                foreach(var world in worldNames) {
-                    var alias = (PlayerAlias)$"{playerName} {world}";
-                    if(!alias.Equals(sourceAlias)) {
-                        prevAliases.Add(alias);
-                    }
-                }
+            foreach(var prevResult in result.Item2) {
+                var alias = (PlayerAlias)$"{prevResult.Item1} {worlds.GetRow(prevResult.Item2).Name}";
+                prevAliases.Add(alias);
             }
             playersLinks.Add(new() {
                 CurrentAlias = sourceAlias,
