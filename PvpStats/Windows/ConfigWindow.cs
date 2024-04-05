@@ -37,6 +37,7 @@ internal class ConfigWindow : Window {
             foreach(var linkedAlias in playerLink.LinkedAliases) {
                 flattenedList.Add(new() {
                     CurrentAlias = playerLink.CurrentAlias,
+                    IsUnlink = playerLink.IsUnlink,
                     LinkedAliases = new() { linkedAlias }
                 });
             }

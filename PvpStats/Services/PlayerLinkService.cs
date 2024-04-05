@@ -34,6 +34,7 @@ internal class PlayerLinkService {
             if(existingItem != null) {
                 playerLink.LinkedAliases.ForEach(x => {
                     if(!existingItem.LinkedAliases.Contains(x)) {
+                        //_plugin.Log.Debug($"Adding {x} to {existingItem.CurrentAlias} unlink: {existingItem.IsUnlink}");
                         existingItem.LinkedAliases.Add(x);
                     }
                 });
