@@ -12,16 +12,39 @@ internal class PlayerLinkService {
     private ICallGateSubscriber<(string, uint)[], ((string, uint), string[], uint[])[]> GetPlayersPreviousNamesWorldsFunction;
 
     internal List<PlayerAliasLink> AutoPlayerLinksCache { get; private set; }
-    //private List<PlayerAliasLink> ManualPlayerLinksCache { get; set; }
+    internal List<PlayerAliasLink> ManualPlayerLinksCache { get; private set; }
 
     internal PlayerLinkService(Plugin plugin) {
         _plugin = plugin;
         AutoPlayerLinksCache = new();
         _plugin.DataQueue.QueueDataOperation(() => {
+            ManualPlayerLinksCache = _plugin.Storage.GetManualLinks().Query().ToList();
             AutoPlayerLinksCache = _plugin.Storage.GetAutoLinks().Query().ToList();
             _plugin.Log.Debug($"Restored auto link count: {AutoPlayerLinksCache.Count}");
         });
         GetPlayersPreviousNamesWorldsFunction = _plugin.PluginInterface.GetIpcSubscriber<(string, uint)[], ((string, uint), string[], uint[])[]>("PlayerTrack.GetPlayersPreviousNamesWorlds");
+    }
+
+    internal void SaveManualLinksCache(List<PlayerAliasLink> playerLinks) {
+        _plugin.Log.Debug("Saving manual player links...");
+        List<PlayerAliasLink> consolidatedList = new();
+        //consolidate list
+        foreach(var playerLink in playerLinks.Where(x => x.CurrentAlias != null && x.LinkedAliases.Count > 0)) {
+            var existingItem = consolidatedList.Where(x => x.CurrentAlias!.Equals(playerLink.CurrentAlias) && x.IsUnlink == playerLink.IsUnlink).FirstOrDefault();
+            if(existingItem != null) {
+                playerLink.LinkedAliases.ForEach(x => {
+                    if(!existingItem.LinkedAliases.Contains(x)) {
+                        existingItem.LinkedAliases.Add(x);
+                    }
+                });
+            } else {
+                consolidatedList.Add(playerLink);
+            }
+        }
+        ManualPlayerLinksCache = consolidatedList;
+        if(consolidatedList.Any()) {
+            _plugin.Storage.SetManualLinks(consolidatedList);
+        }
     }
 
     //returns whether cache was updated successfully
@@ -51,8 +74,7 @@ internal class PlayerLinkService {
             }
             _plugin.Log.Information($"Players with previous aliases: {AutoPlayerLinksCache.Count}");
             _plugin.DataQueue.QueueDataOperation(() => {
-                _plugin.Storage.GetAutoLinks().DeleteAll();
-                _plugin.Storage.AddAutoLinks(AutoPlayerLinksCache);
+                _plugin.Storage.SetAutoLinks(AutoPlayerLinksCache);
             });
             return true;
         }
@@ -95,8 +117,8 @@ internal class PlayerLinkService {
 
     //for a partial string match
     internal List<PlayerAlias> GetAllLinkedAliases(string playerNameFragment) {
-        var manualLinks = _plugin.Storage.GetManualLinks().Query().ToList();
-        var unLinks = manualLinks.Where(x => x.IsUnlink).ToList();
+        //var manualLinks = _plugin.Storage.GetManualLinks().Query().ToList();
+        var unLinks = ManualPlayerLinksCache.Where(x => x.IsUnlink).ToList();
         List<PlayerAlias> linkedAliases = new();
         var addAlias = ((PlayerAlias alias) => {
             if(!linkedAliases.Contains(alias)) {
@@ -121,7 +143,7 @@ internal class PlayerLinkService {
             AutoPlayerLinksCache.ForEach(checkPlayerLink);
         }
         if(_plugin.Configuration.EnableManualPlayerLinking) {
-            manualLinks.ForEach(checkPlayerLink);
+            ManualPlayerLinksCache.ForEach(checkPlayerLink);
             unLinks.ForEach(checkPlayerLink);
         }
         return linkedAliases;

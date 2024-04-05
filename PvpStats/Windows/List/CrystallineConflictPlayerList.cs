@@ -362,8 +362,8 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
 
         //player linking
         if(_plugin.Configuration.EnablePlayerLinking) {
-            var manualLinks = _plugin.Storage.GetManualLinks().Query().ToList();
-            var unLinks = manualLinks.Where(x => x.IsUnlink).ToList();
+            //var manualLinks = _plugin.Storage.GetManualLinks().Query().ToList();
+            var unLinks = _plugin.PlayerLinksService.ManualPlayerLinksCache.Where(x => x.IsUnlink).ToList();
             var checkPlayerLink = (PlayerAliasLink playerLink) => {
                 if(playerLink.IsUnlink) return;
                 foreach(var linkedAlias in playerLink.LinkedAliases) {
@@ -403,7 +403,7 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
 
             //manual links
             if(_plugin.Configuration.EnableManualPlayerLinking) {
-                foreach(var playerLink in manualLinks) {
+                foreach(var playerLink in _plugin.PlayerLinksService.ManualPlayerLinksCache) {
                     checkPlayerLink(playerLink);
                 }
             }

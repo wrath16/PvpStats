@@ -32,7 +32,17 @@ internal class ConfigWindow : Window {
 
     internal void Refresh() {
         _newManualLink = new();
-        ManualLinks = _plugin.Storage.GetManualLinks().Query().ToList();
+        List<PlayerAliasLink> flattenedList = new();
+        foreach(var playerLink in _plugin.PlayerLinksService.ManualPlayerLinksCache) {
+            foreach(var linkedAlias in playerLink.LinkedAliases) {
+                flattenedList.Add(new() {
+                    CurrentAlias = playerLink.CurrentAlias,
+                    LinkedAliases = new() { linkedAlias }
+                });
+            }
+        }
+        ManualLinks = flattenedList;
+        //ManualLinks = _plugin.Storage.GetManualLinks().Query().ToList();
     }
 
     public override void OnOpen() {
@@ -218,7 +228,8 @@ internal class ConfigWindow : Window {
         }
         if(ImGui.Button("Save")) {
             _plugin.DataQueue.QueueDataOperation(() => {
-                _plugin.Storage.SetManualLinks(ManualLinks, false);
+                //_plugin.Storage.SetManualLinks(ManualLinks, false);
+                _plugin.PlayerLinksService.SaveManualLinksCache(ManualLinks);
                 if(_plugin.Configuration.EnablePlayerLinking && _plugin.Configuration.EnableManualPlayerLinking) {
                     _plugin.WindowManager.Refresh();
                 }

@@ -61,14 +61,10 @@ internal class StorageService {
         return Database.GetCollection<PlayerAliasLink>(AutoPlayerLinksTable);
     }
 
-    internal void AddAutoLinks(IEnumerable<PlayerAliasLink> links, bool toSave = false) {
+    internal void SetAutoLinks(IEnumerable<PlayerAliasLink> links, bool toSave = false) {
         LogUpdate(null, links.Count());
+        _plugin.Storage.GetAutoLinks().DeleteAll();
         WriteToDatabase(() => GetAutoLinks().Insert(links.Where(x => x.Id != null)), toSave);
-    }
-
-    internal void UpdateAutoLinks(IEnumerable<PlayerAliasLink> links, bool toSave = false) {
-        LogUpdate(null, links.Count());
-        WriteToDatabase(() => GetAutoLinks().Update(links.Where(x => x.Id != null)), toSave);
     }
 
     internal ILiteCollection<PlayerAliasLink> GetManualLinks() {
@@ -89,19 +85,6 @@ internal class StorageService {
         _plugin.Log.Verbose(string.Format("Invoking {0,-25} {2,-30}{3,-30} Caller: {1,-70}",
             writeMethod?.Name, $"{callingMethod?.DeclaringType?.ToString() ?? ""}.{callingMethod?.Name ?? ""}", id != null ? $"ID: {id}" : "", count != 0 ? $"Count: {count}" : ""));
     }
-
-    ////all writes are asynchronous for performance reasons
-    //private Task AsyncWriteToDatabase(Func<object> action, bool toSave = true) {
-    //    return Task.Run(async () => {
-    //        try {
-    //            await _dbLock.WaitAsync();
-    //            action.Invoke();
-    //        }
-    //        finally {
-    //            _dbLock.Release();
-    //        }
-    //    });
-    //}
 
     //synchronous write
     private void WriteToDatabase(Func<object> action, bool toSave = true) {
