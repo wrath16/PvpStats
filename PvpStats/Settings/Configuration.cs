@@ -37,11 +37,12 @@ public class Configuration : IPluginConfiguration {
     }
 
     public void Save() {
-        try {
-            _fileLock.Wait();
-            _plugin!.PluginInterface.SavePluginConfig(this);
-        } finally {
-            _fileLock.Release();
-        }
+        //try {
+        //    await _fileLock.WaitAsync();
+        //    _plugin!.PluginInterface.SavePluginConfig(this);
+        //} finally {
+        //    _fileLock.Release();
+        //}
+        _plugin!.PluginInterface.SavePluginConfig(this);
     }
 }

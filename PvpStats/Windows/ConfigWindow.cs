@@ -51,6 +51,7 @@ internal class ConfigWindow : Window {
     }
 
     public override void Draw() {
+        //_plugin.Log.Verbose("draw config");
         if(ImGui.BeginTabBar("SettingsTabBar")) {
             if(ImGui.BeginTabItem("Interface")) {
                 DrawInterfaceSettings();
@@ -62,6 +63,7 @@ internal class ConfigWindow : Window {
             }
             ImGui.EndTabBar();
         }
+        //_plugin.Log.Verbose("draw config end");
     }
 
     private void DrawInterfaceSettings() {
@@ -145,29 +147,29 @@ internal class ConfigWindow : Window {
     private void DrawPlayerLinkSettings() {
         bool playerLinking = _plugin.Configuration.EnablePlayerLinking;
         if(ImGui.Checkbox("Enable player linking", ref playerLinking)) {
-            _plugin.DataQueue.QueueDataOperation(() => {
+            _plugin.DataQueue.QueueDataOperation(async () => {
                 _plugin.Configuration.EnablePlayerLinking = playerLinking;
                 _plugin.Configuration.Save();
-                _plugin.WindowManager.Refresh();
+                await _plugin.WindowManager.Refresh();
             });
         }
         ImGuiHelper.HelpMarker("Enable combining of player stats with different aliases linked with the same unique character or player.");
         bool autoLinking = _plugin.Configuration.EnableAutoPlayerLinking;
         if(ImGui.Checkbox("Enable auto linking (requires PlayerTrack)", ref autoLinking)) {
-            _plugin.DataQueue.QueueDataOperation(() => {
+            _plugin.DataQueue.QueueDataOperation(async () => {
                 _plugin.Configuration.EnableAutoPlayerLinking = autoLinking;
                 _plugin.Configuration.Save();
-                _plugin.WindowManager.Refresh();
+                await _plugin.WindowManager.Refresh();
             });
         }
         ImGuiHelper.HelpMarker("Use name change data from PlayerTrack to create player links.\n\n" +
             "Greedily combines all known names with all known worlds. Does not work on your own character (for now).");
         bool manualLinking = _plugin.Configuration.EnableManualPlayerLinking;
         if(ImGui.Checkbox("Enable manual linking", ref manualLinking)) {
-            _plugin.DataQueue.QueueDataOperation(() => {
+            _plugin.DataQueue.QueueDataOperation(async () => {
                 _plugin.Configuration.EnableManualPlayerLinking = manualLinking;
                 _plugin.Configuration.Save();
-                _plugin.WindowManager.Refresh();
+                await _plugin.WindowManager.Refresh();
             });
         }
         ImGuiHelper.HelpMarker("Use the manual tab to create player links by hand or to track" +
@@ -176,10 +178,8 @@ internal class ConfigWindow : Window {
             using(var tab = ImRaii.TabItem("Auto")) {
                 if(tab) {
                     if(ImGui.Button("Update Now")) {
-                        _plugin.DataQueue.QueueDataOperation(() => {
-                            if(_plugin.PlayerLinksService.BuildAutoLinksCache()) {
-                                _plugin.WindowManager.Refresh();
-                            }
+                        _plugin.DataQueue.QueueDataOperation(async () => {
+                            await _plugin.PlayerLinksService.BuildAutoLinksCache();
                         });
                     }
                     DrawAutoPlayerLinkSettings();
@@ -228,11 +228,11 @@ internal class ConfigWindow : Window {
             }
         }
         if(ImGui.Button("Save")) {
-            _plugin.DataQueue.QueueDataOperation(() => {
+            _plugin.DataQueue.QueueDataOperation(async () => {
                 //_plugin.Storage.SetManualLinks(ManualLinks, false);
-                _plugin.PlayerLinksService.SaveManualLinksCache(ManualLinks);
+                await _plugin.PlayerLinksService.SaveManualLinksCache(ManualLinks);
                 if(_plugin.Configuration.EnablePlayerLinking && _plugin.Configuration.EnableManualPlayerLinking) {
-                    _plugin.WindowManager.Refresh();
+                    await _plugin.WindowManager.Refresh();
                 }
             }).ContinueWith((t) => {
                 _saveOpacity = 1f;

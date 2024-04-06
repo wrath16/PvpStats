@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System;
+using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Filter;
 public abstract class DataFilter {
@@ -8,23 +9,23 @@ public abstract class DataFilter {
     public virtual string Name => "";
     [JsonIgnore]
     public virtual string? HelpMessage { get; }
-    private Action? RefreshData { get; init; }
+    private Func<Task>? RefreshData { get; init; }
 
     [JsonConstructor]
     public DataFilter() {
     }
 
-    protected DataFilter(Plugin plugin, Action action) {
+    protected DataFilter(Plugin plugin, Func<Task> action) {
         _plugin = plugin;
         RefreshData = action;
     }
 
-    internal void Refresh() {
+    internal async Task Refresh() {
         //_plugin.DataQueue.QueueDataOperation(() => RefreshData());
         if(RefreshData is null) {
             throw new InvalidOperationException("No refresh action initialized!");
         }
-        RefreshData();
+        await RefreshData();
     }
 
     internal abstract void Draw();

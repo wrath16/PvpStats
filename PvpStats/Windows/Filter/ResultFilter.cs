@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Filter;
 
@@ -19,7 +20,7 @@ public class ResultFilter : DataFilter {
 
     public ResultFilter() { }
 
-    internal ResultFilter(Plugin plugin, Action action, ResultFilter? filter = null) : base(plugin, action) {
+    internal ResultFilter(Plugin plugin, Func<Task> action, ResultFilter? filter = null) : base(plugin, action) {
         Result = MatchResult.Any;
         if(filter is not null) {
             Result = filter.Result;
@@ -35,9 +36,9 @@ public class ResultFilter : DataFilter {
         //bool allSelected = AllSelected;
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2);
         if(ImGui.Combo($"##matchResultCombo", ref currentIndex, _resultCombo.ToArray(), _resultCombo.Count)) {
-            _plugin!.DataQueue.QueueDataOperation(() => {
+            _plugin!.DataQueue.QueueDataOperation(async () => {
                 Result = (MatchResult)currentIndex;
-                Refresh();
+                await Refresh();
             });
         }
     }

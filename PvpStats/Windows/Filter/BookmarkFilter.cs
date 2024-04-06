@@ -1,5 +1,6 @@
 ﻿using ImGuiNET;
 using System;
+using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Filter;
 
@@ -9,7 +10,7 @@ public class BookmarkFilter : DataFilter {
 
     public BookmarkFilter() { }
 
-    internal BookmarkFilter(Plugin plugin, Action action, BookmarkFilter? filter = null) : base(plugin, action) {
+    internal BookmarkFilter(Plugin plugin, Func<Task> action, BookmarkFilter? filter = null) : base(plugin, action) {
         if(filter is not null) {
             BookmarkedOnly = filter.BookmarkedOnly;
         }
@@ -18,9 +19,9 @@ public class BookmarkFilter : DataFilter {
     internal override void Draw() {
         bool bookMarkedOnly = BookmarkedOnly;
         if(ImGui.Checkbox("", ref bookMarkedOnly)) {
-            _plugin!.DataQueue.QueueDataOperation(() => {
+            _plugin!.DataQueue.QueueDataOperation(async () => {
                 BookmarkedOnly = bookMarkedOnly;
-                Refresh();
+                await Refresh();
             });
         }
     }

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Summary;
 internal class CrystallineConflictRankGraph {
@@ -22,7 +23,7 @@ internal class CrystallineConflictRankGraph {
         _plugin = plugin;
     }
 
-    public void Refresh(List<CrystallineConflictMatch> matches) {
+    public async Task Refresh(List<CrystallineConflictMatch> matches) {
         List<(DateTime, int)> rankData = new();
         List<(DateTime, int)> winData = new();
         List<(DateTime, int)> lossData = new();
@@ -52,7 +53,7 @@ internal class CrystallineConflictRankGraph {
         //}
         //_plugin.Log.Debug($"min cred: {PlayerRank.MinRank.TotalCredit}");
         try {
-            _refreshLock.Wait();
+            await _refreshLock.WaitAsync();
             RankData = rankData;
             WinData = winData;
             LossData = lossData;

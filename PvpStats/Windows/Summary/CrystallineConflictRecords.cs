@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Summary;
 internal class CrystallineConflictRecords {
@@ -25,7 +26,7 @@ internal class CrystallineConflictRecords {
         _plugin = plugin;
     }
 
-    public void Refresh(List<CrystallineConflictMatch> matches) {
+    public async Task Refresh(List<CrystallineConflictMatch> matches) {
         CrystallineConflictMatch? longestMatch = null, shortestMatch = null, closestMatch = null, closestWin = null, closestLoss = null,
             mostKills = null, mostDeaths = null, mostAssists = null, mostDamageDealt = null, mostDamageTaken = null, mostHPRestored = null, mostTimeOnCrystal = null;
         int longestWinStreak = 0, longestLossStreak = 0, spectatedMatchCount = 0, currentWinStreak = 0, currentLossStreak = 0;
@@ -102,7 +103,7 @@ internal class CrystallineConflictRecords {
         }
 
         try {
-            _refreshLock.Wait();
+            await _refreshLock.WaitAsync();
             var addSuperlative = (CrystallineConflictMatch? match, string sup, string val) => {
                 if(match == null) return;
                 if(Superlatives.ContainsKey(match)) {

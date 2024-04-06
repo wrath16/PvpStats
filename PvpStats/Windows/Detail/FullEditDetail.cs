@@ -45,11 +45,11 @@ internal class FullEditDetail<T> : Window {
             ImGui.EndChild();
         }
         if(ImGui.Button("Save")) {
-            _plugin.DataQueue.QueueDataOperation(() => {
+            _plugin.DataQueue.QueueDataOperation(async () => {
                 var returnValue = LiteDB.JsonSerializer.Deserialize(_dataString);
                 var x = BsonMapper.Global.Deserialize<CrystallineConflictMatch>(returnValue);
                 //make this generic for type
-                _plugin.Storage.UpdateCCMatch(x);
+                await _plugin.Storage.UpdateCCMatch(x);
             });
             //using(var reader = new StreamReader(_dataString)) {
             //    var returnValue = LiteDB.JsonSerializer.Deserialize(_dataString);

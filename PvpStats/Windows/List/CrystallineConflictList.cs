@@ -7,6 +7,7 @@ using PvpStats.Types.Match;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
 internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> {
@@ -86,7 +87,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         //ImGui.TableNextRow();
     }
 
-    public override void RefreshDataModel() {
+    public async override Task RefreshDataModel() {
         //#if DEBUG
         //        DataModel = _plugin.Storage.GetCCMatches().Query().Where(m => !m.IsDeleted).OrderByDescending(m => m.DutyStartTime).ToList();
         //#else
@@ -95,6 +96,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         foreach(var match in DataModel) {
             ListCSV += CSVRow(match);
         }
+        await Task.CompletedTask;
     }
 
     public override void OpenItemDetail(CrystallineConflictMatch item) {
@@ -113,8 +115,8 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         bool isBookmarked = item.IsBookmarked;
         if(ImGui.MenuItem($"Favorite##{item!.GetHashCode()}--AddBookmark", null, isBookmarked)) {
             item.IsBookmarked = !item.IsBookmarked;
-            _plugin.DataQueue.QueueDataOperation(() => {
-                _plugin.Storage.UpdateCCMatch(item, false);
+            _plugin.DataQueue.QueueDataOperation(async () => {
+                await _plugin.Storage.UpdateCCMatch(item, false);
             });
         }
 
@@ -129,7 +131,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         string csv = "";
         csv += match.DutyStartTime + ",";
         csv += (match.Arena != null ? MatchHelper.GetArenaName((CrystallineConflictMap)match.Arena) : "") + ",";
-        csv += (!match.IsSpectated ? match.LocalPlayerTeamMember.Job : "") + ",";
+        csv += (!match.IsSpectated ? match.LocalPlayerTeamMember!.Job : "") + ",";
         csv += match.MatchType + ",";
         csv += match.MatchDuration + ",";
         csv += (match.IsWin ? "WIN" : match.MatchWinner != null ? "LOSS" : "???") + ",";

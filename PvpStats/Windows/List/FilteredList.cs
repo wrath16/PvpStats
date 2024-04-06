@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
 
@@ -41,7 +42,6 @@ internal abstract class FilteredList<T> {
     protected virtual bool ContextMenu { get; set; } = false;
     protected virtual bool DynamicColumns { get; set; } = false;
 
-    public abstract void RefreshDataModel();
     public abstract void DrawListItem(T item);
     public abstract void OpenItemDetail(T item);
     public abstract void OpenFullEditDetail(T item);
@@ -51,11 +51,15 @@ internal abstract class FilteredList<T> {
         GoToPage();
     }
 
-    internal void Refresh(List<T> dataModel) {
+    internal async Task Refresh(List<T> dataModel) {
         DataModel = dataModel;
         ListCSV = CSVHeader();
-        RefreshDataModel();
+        await RefreshDataModel();
         GoToPage();
+    }
+
+    public virtual async Task RefreshDataModel() {
+        await Task.CompletedTask;
     }
 
     public void GoToPage(int? pageNumber = null) {

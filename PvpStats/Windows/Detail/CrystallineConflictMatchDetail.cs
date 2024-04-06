@@ -348,8 +348,8 @@ internal class CrystallineConflictMatchDetail : Window {
             using(_ = ImRaii.PushColor(ImGuiCol.Text, color)) {
                 if(ImGui.Button($"{FontAwesomeIcon.Star.ToIconString()}##--FavoriteMatch")) {
                     _dataModel.IsBookmarked = !_dataModel.IsBookmarked;
-                    _plugin.DataQueue.QueueDataOperation(() => {
-                        _plugin.Storage.UpdateCCMatch(_dataModel);
+                    _plugin.DataQueue.QueueDataOperation(async () => {
+                        await _plugin.Storage.UpdateCCMatch(_dataModel);
                     });
                 }
             }

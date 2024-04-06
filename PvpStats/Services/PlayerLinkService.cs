@@ -5,6 +5,7 @@ using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace PvpStats.Services;
 internal class PlayerLinkService {
@@ -17,6 +18,7 @@ internal class PlayerLinkService {
     internal PlayerLinkService(Plugin plugin) {
         _plugin = plugin;
         AutoPlayerLinksCache = new();
+        ManualPlayerLinksCache = new();
         _plugin.DataQueue.QueueDataOperation(() => {
             ManualPlayerLinksCache = _plugin.Storage.GetManualLinks().Query().ToList();
             AutoPlayerLinksCache = _plugin.Storage.GetAutoLinks().Query().ToList();
@@ -25,7 +27,7 @@ internal class PlayerLinkService {
         GetPreviousAliasesFunction = _plugin.PluginInterface.GetIpcSubscriber<(string, uint)[], ((string, uint), (string, uint)[])[]>("PlayerTrack.GetUniquePlayerNameWorldHistories");
     }
 
-    internal void SaveManualLinksCache(List<PlayerAliasLink> playerLinks) {
+    internal async Task SaveManualLinksCache(List<PlayerAliasLink> playerLinks) {
         _plugin.Log.Debug("Saving manual player links...");
         List<PlayerAliasLink> consolidatedList = new();
         //consolidate list
@@ -44,12 +46,11 @@ internal class PlayerLinkService {
         }
         ManualPlayerLinksCache = consolidatedList;
         if(consolidatedList.Any()) {
-            _plugin.Storage.SetManualLinks(consolidatedList);
+            await _plugin.Storage.SetManualLinks(consolidatedList);
         }
     }
 
-    //returns whether cache was updated successfully
-    internal bool BuildAutoLinksCache() {
+    internal async Task BuildAutoLinksCache() {
         //if(!IsInitialized() && !Initialize()) return;
         _plugin.Log.Information("Building player alias links cache from PlayerTrack IPC data...");
         var matches = _plugin.Storage.GetCCMatches().Query().ToList();
@@ -65,21 +66,19 @@ internal class PlayerLinkService {
         if(allPlayers.Any()) {
             try {
                 AutoPlayerLinksCache = GetPlayerNameHistory(allPlayers);
-            } catch(IpcNotReadyError e) {
+            } catch(IpcNotReadyError) {
                 if(_plugin.Configuration.EnableAutoPlayerLinking) {
                     _plugin.Log.Error("Unable to query PlayerTrack IPC: check whether plugin is installed and up to date.");
                 } else {
                     _plugin.Log.Information("PlayerTrack IPC unavailable.");
                 }
-                return false;
             }
             _plugin.Log.Information($"Players with previous aliases: {AutoPlayerLinksCache.Count}");
-            _plugin.DataQueue.QueueDataOperation(() => {
-                _plugin.Storage.SetAutoLinks(AutoPlayerLinksCache);
-            });
-            return true;
+            //_plugin.DataQueue.QueueDataOperation(async () => {
+            //    await _plugin.Storage.SetAutoLinks(AutoPlayerLinksCache);
+            //});
+            await _plugin.Storage.SetAutoLinks(AutoPlayerLinksCache);
         }
-        return false;
     }
 
     private List<PlayerAliasLink> GetPlayerNameHistory(List<PlayerAlias> players) {

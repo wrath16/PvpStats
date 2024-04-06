@@ -1,4 +1,6 @@
-﻿using Dalamud.Interface.Colors;
+﻿using Dalamud.Interface;
+using Dalamud.Interface.Colors;
+using Dalamud.Interface.Utility.Raii;
 using Dalamud.Utility;
 using ImGuiNET;
 using PvpStats.Helpers;
@@ -8,6 +10,7 @@ using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
 internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
@@ -89,10 +92,10 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
     protected override void PreTableDraw() {
         bool inheritFromPlayerFilter = InheritFromPlayerFilter;
         if(ImGui.Checkbox($"Inherit from player filter##{GetHashCode()}", ref inheritFromPlayerFilter)) {
-            _plugin!.DataQueue.QueueDataOperation(() => {
+            _plugin!.DataQueue.QueueDataOperation(async () => {
                 InheritFromPlayerFilter = inheritFromPlayerFilter;
                 _plugin.Configuration.MatchWindowFilters.PlayersInheritFromPlayerFilter = inheritFromPlayerFilter;
-                RefreshDataModel();
+                await RefreshDataModel();
             });
         }
         ImGuiHelper.HelpMarker("Will only include stats for players who match all conditions of the player filter.");
@@ -116,7 +119,22 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
         ImGui.AlignTextToFramePadding();
         ImGuiHelper.HelpMarker("Right-click table header for column options.", false, true);
         ImGui.SameLine();
-        ImGuiHelper.CSVButton(ListCSV);
+        //ImGuiHelper.CSVButton(ListCSV);
+        using(ImRaii.PushFont(UiBuilder.IconFont)) {
+            if(ImGui.Button($"{FontAwesomeIcon.Copy.ToIconString()}##--CopyCSV")) {
+                _plugin.DataQueue.QueueDataOperation(() => {
+                    ListCSV = CSVHeader();
+                    foreach(var stat in StatsModel) {
+                        ListCSV += CSVRow(StatsModel, stat.Key);
+                    }
+                    Task.Run(() => {
+                        ImGui.SetClipboardText(ListCSV);
+                    });
+                });
+            }
+        }
+        ImGuiHelper.WrappedTooltip("Copy CSV to clipboard");
+
         ImGui.SameLine();
         ImGui.TextUnformatted($"Total players:   {DataModel.Count}");
 
@@ -290,13 +308,16 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
         return;
     }
 
-    public override void RefreshDataModel() {
+    public override async Task RefreshDataModel() {
         Dictionary<PlayerAlias, CCPlayerJobStats> statsModel = new();
         Dictionary<PlayerAlias, List<CCScoreboardDouble>> teamContributions = new();
         Dictionary<PlayerAlias, Dictionary<Job, CCAggregateStats>> jobStats = new();
         Dictionary<PlayerAlias, List<PlayerAlias>> activeLinks = new();
 
         List<PlayerAlias> linkedPlayerAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(OtherPlayerFilter.PlayerNamesRaw);
+#if DEBUG
+        DateTime d1 = DateTime.Now;
+#endif
         foreach(var match in ListModel.DataModel) {
             foreach(var team in match.Teams) {
                 foreach(var player in team.Value.Players) {
@@ -382,6 +403,10 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
                 }
             }
         }
+#if DEBUG
+        DateTime d2 = DateTime.Now;
+        _plugin.Log.Debug($"list loop: {(d2 - d1).TotalMilliseconds}ms");
+#endif
 
         //player linking
         if(_plugin.Configuration.EnablePlayerLinking) {
@@ -392,7 +417,7 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
                 foreach(var linkedAlias in playerLink.LinkedAliases) {
                     bool blocked = unLinks.Where(x => x.CurrentAlias.Equals(playerLink.CurrentAlias) && x.LinkedAliases.Contains(linkedAlias)).Any();
                     if(!blocked && statsModel.ContainsKey(linkedAlias)) {
-                        _plugin.Log.Debug($"Coalescing {linkedAlias} into {playerLink.CurrentAlias}...");
+                        _plugin.Log.Verbose($"Coalescing {linkedAlias} into {playerLink.CurrentAlias}...");
                         if(statsModel.ContainsKey(playerLink.CurrentAlias)) {
                             statsModel[playerLink.CurrentAlias].StatsAll += statsModel[linkedAlias].StatsAll;
                             teamContributions[playerLink.CurrentAlias].Concat(teamContributions[linkedAlias]);
@@ -439,6 +464,11 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
             }
         }
 
+#if DEBUG
+        DateTime d3 = DateTime.Now;
+        _plugin.Log.Debug($"player links: {(d3 - d2).TotalMilliseconds}ms");
+#endif
+
         foreach(var playerStat in statsModel) {
             //set favored job
             playerStat.Value.StatsAll.Job = jobStats[playerStat.Key].OrderByDescending(x => x.Value.Matches).FirstOrDefault().Key;
@@ -474,11 +504,16 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
                 playerStat.Value.ScoreboardContrib.HPRestored = teamContributions[playerStat.Key].OrderBy(x => x.HPRestored).ElementAt(statMatches / 2).HPRestored;
                 playerStat.Value.ScoreboardContrib.TimeOnCrystalDouble = teamContributions[playerStat.Key].OrderBy(x => x.TimeOnCrystalDouble).ElementAt(statMatches / 2).TimeOnCrystalDouble;
             }
-            ListCSV += CSVRow(statsModel, playerStat.Key);
+            //ListCSV += CSVRow(statsModel, playerStat.Key);
         }
 
+#if DEBUG
+        DateTime d4 = DateTime.Now;
+        _plugin.Log.Debug($"aggregate stats: {(d4 - d3).TotalMilliseconds}ms");
+#endif
+
         try {
-            RefreshLock.Wait();
+            await RefreshLock.WaitAsync();
             DataModel = statsModel.Keys.ToList();
             DataModelUntruncated = DataModel;
             StatsModel = statsModel;
@@ -489,6 +524,11 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
         } finally {
             RefreshLock.Release();
         }
+
+#if DEBUG
+        DateTime d5 = DateTime.Now;
+        _plugin.Log.Debug($"finalize: {(d5 - d4).TotalMilliseconds}ms");
+#endif
     }
 
     private void ApplyQuickFilters(uint minMatches, string searchText) {

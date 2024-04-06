@@ -1,4 +1,5 @@
-﻿using Dalamud.Interface.Colors;
+﻿using Dalamud.Interface;
+using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
@@ -9,6 +10,7 @@ using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
 internal class CrystallineConflictJobList : CCStatsList<Job> {
@@ -96,7 +98,19 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
         ImGui.AlignTextToFramePadding();
         ImGuiHelper.HelpMarker("Right-click table header for column options.", false, true);
         ImGui.SameLine();
-        ImGuiHelper.CSVButton(ListCSV);
+        using(ImRaii.PushFont(UiBuilder.IconFont)) {
+            if(ImGui.Button($"{FontAwesomeIcon.Copy.ToIconString()}##--CopyCSV")) {
+                _plugin.DataQueue.QueueDataOperation(() => {
+                    ListCSV = CSVHeader();
+                    foreach(var stat in StatsModel) {
+                        ListCSV += CSVRow(StatsModel, stat.Key);
+                    }
+                    Task.Run(() => {
+                        ImGui.SetClipboardText(ListCSV);
+                    });
+                });
+            }
+        }
     }
 
     protected override void PostColumnSetup() {
@@ -256,7 +270,7 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
     public override void OpenItemDetail(Job item) {
     }
 
-    public override void RefreshDataModel() {
+    public override async Task RefreshDataModel() {
         Dictionary<Job, CCPlayerJobStats> statsModel = new();
         Dictionary<Job, List<CCScoreboardDouble>> teamContributions = new();
         ListCSV = CSVHeader();
@@ -395,10 +409,10 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
                 jobStat.Value.ScoreboardContrib.HPRestored = teamContributions[job].OrderBy(x => x.HPRestored).ElementAt(statMatches / 2).HPRestored;
                 jobStat.Value.ScoreboardContrib.TimeOnCrystalDouble = teamContributions[job].OrderBy(x => x.TimeOnCrystalDouble).ElementAt(statMatches / 2).TimeOnCrystalDouble;
             }
-            ListCSV += CSVRow(statsModel, jobStat.Key);
+            //ListCSV += CSVRow(statsModel, jobStat.Key);
         }
         try {
-            RefreshLock.Wait();
+            await RefreshLock.WaitAsync();
             DataModel = statsModel.Keys.Where(x => x != Job.VPR && x != Job.PCT).ToList();
             StatsModel = statsModel;
             _plugin.Configuration.MatchWindowFilters.StatSourceFilter = StatSourceFilter;

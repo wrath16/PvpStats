@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace PvpStats.Windows;
 
@@ -69,7 +70,7 @@ internal class MainWindow : Window {
         base.OnClose();
     }
 
-    public void Refresh() {
+    public async Task Refresh() {
         var matches = _plugin.Storage.GetCCMatches().Query().Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
         foreach(var filter in Filters) {
             switch(filter.GetType()) {
@@ -202,14 +203,51 @@ internal class MainWindow : Window {
             }
         }
         try {
-            RefreshLock.Wait();
-            ccMatches.Refresh(matches);
-            ccSummary.Refresh(matches);
-            ccRecords.Refresh(matches);
-            ccPlayers.Refresh(new());
-            ccJobs.Refresh(new());
-            ccRank.Refresh(matches);
-            _plugin.Configuration.Save();
+            await RefreshLock.WaitAsync();
+            //Task.WaitAll([
+            //    ccMatches.Refresh(matches),
+            //    ccSummary.Refresh(matches),
+            //    ccRecords.Refresh(matches),
+            //    ccPlayers.Refresh(new()),
+            //    ccJobs.Refresh(new()),
+            //    ccRank.Refresh(matches),
+            //]);
+            DateTime d1 = DateTime.Now;
+            await ccMatches.Refresh(matches);
+#if DEBUG
+            DateTime d2 = DateTime.Now;
+            _plugin.Log.Debug($"Matches refresh: {(d2 - d1).TotalMilliseconds}ms");
+#endif
+            await ccSummary.Refresh(matches);
+#if DEBUG
+            DateTime d3 = DateTime.Now;
+            _plugin.Log.Debug($"Summary refresh: {(d3 - d2).TotalMilliseconds}ms");
+#endif
+            await ccRecords.Refresh(matches);
+#if DEBUG
+            DateTime d4 = DateTime.Now;
+            _plugin.Log.Debug($"Records refresh: {(d4 - d3).TotalMilliseconds}ms");
+#endif
+            await ccPlayers.Refresh(new());
+#if DEBUG
+            DateTime d5 = DateTime.Now;
+            _plugin.Log.Debug($"Players refresh: {(d5 - d4).TotalMilliseconds}ms");
+#endif
+            await ccJobs.Refresh(new());
+#if DEBUG
+            DateTime d6 = DateTime.Now;
+            _plugin.Log.Debug($"Jobs refresh: {(d6 - d5).TotalMilliseconds}ms");
+#endif
+            await ccRank.Refresh(matches);
+#if DEBUG
+            DateTime d7 = DateTime.Now;
+            _plugin.Log.Debug($"Rank refresh: {(d7 - d6).TotalMilliseconds}ms");
+#endif
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+#if DEBUG
+            DateTime d8 = DateTime.Now;
+            _plugin.Log.Debug($"Config save: {(d8 - d7).TotalMilliseconds}ms");
+#endif
         } finally {
             RefreshLock.Release();
         }
@@ -236,7 +274,9 @@ internal class MainWindow : Window {
     }
 
     public override void Draw() {
-        _firstDraw = true;
+        if(!ImGui.IsWindowCollapsed()) {
+            _firstDraw = true;
+        }
         _windowCollapsed = false;
         SizeCondition = ImGuiCond.Once;
         PositionCondition = ImGuiCond.Once;

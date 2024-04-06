@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 
 namespace PvpStats.Windows.List;
-internal class CCStatsList<T> : StatsList<T> {
+internal abstract class CCStatsList<T> : StatsList<T> {
     public CCStatsList(Plugin plugin) : base(plugin) {
     }
 

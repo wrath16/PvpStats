@@ -22,7 +22,4 @@ internal class StatsList<T> : FilteredList<T> {
 
     public override void OpenItemDetail(T item) {
     }
-
-    public override void RefreshDataModel() {
-    }
 }
