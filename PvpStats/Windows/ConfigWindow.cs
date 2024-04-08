@@ -9,6 +9,8 @@ using PvpStats.Types.Player;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PvpStats.Windows;
 internal class ConfigWindow : Window {
@@ -16,7 +18,9 @@ internal class ConfigWindow : Window {
     private Plugin _plugin;
     private PlayerAliasLink _newManualLink;
     private string[] _linksVerbCombo = new[] { "IS", "IS NOT" };
-    internal List<PlayerAliasLink> ManualLinks { get; private set; } = new();
+    private List<PlayerAliasLink> ManualLinks { get; set; } = new();
+    private List<PlayerAliasLink> AutoLinks { get; set; } = new();
+    protected SemaphoreSlim RefreshLock { get; init; } = new SemaphoreSlim(1);
 
     private float _saveOpacity = 0f;
 
@@ -30,7 +34,7 @@ internal class ConfigWindow : Window {
         //_plugin.DataQueue.QueueDataOperation(Refresh);
     }
 
-    internal void Refresh() {
+    internal async Task Refresh() {
         _newManualLink = new();
         List<PlayerAliasLink> flattenedList = new();
         foreach(var playerLink in _plugin.PlayerLinksService.ManualPlayerLinksCache) {
@@ -42,7 +46,13 @@ internal class ConfigWindow : Window {
                 });
             }
         }
-        ManualLinks = flattenedList;
+        try {
+            await RefreshLock.WaitAsync();
+            ManualLinks = flattenedList;
+            AutoLinks = _plugin.PlayerLinksService.AutoPlayerLinksCache.OrderBy(x => x.CurrentAlias).ToList();
+        } finally {
+            RefreshLock.Release();
+        }
         //ManualLinks = _plugin.Storage.GetManualLinks().Query().ToList();
     }
 
@@ -163,7 +173,7 @@ internal class ConfigWindow : Window {
             });
         }
         ImGuiHelper.HelpMarker("Use name change data from PlayerTrack to create player links.\n\n" +
-            "Greedily combines all known names with all known worlds. Does not work on your own character (for now).");
+            "Does not work on your own character (for now).");
         bool manualLinking = _plugin.Configuration.EnableManualPlayerLinking;
         if(ImGui.Checkbox("Enable manual linking", ref manualLinking)) {
             _plugin.DataQueue.QueueDataOperation(async () => {
@@ -180,6 +190,7 @@ internal class ConfigWindow : Window {
                     if(ImGui.Button("Update Now")) {
                         _plugin.DataQueue.QueueDataOperation(async () => {
                             await _plugin.PlayerLinksService.BuildAutoLinksCache();
+                            await _plugin.WindowManager.Refresh();
                         });
                     }
                     DrawAutoPlayerLinkSettings();
@@ -198,7 +209,7 @@ internal class ConfigWindow : Window {
 
         using(var child = ImRaii.Child("AutoPlayerLinks", ImGui.GetContentRegionAvail(), true)) {
             if(child) {
-                foreach(var playerLink in _plugin.PlayerLinksService.AutoPlayerLinksCache.OrderBy(x => x.CurrentAlias)) {
+                foreach(var playerLink in AutoLinks) {
                     DrawAutoPlayerLink(playerLink);
                 }
             }
@@ -247,8 +258,8 @@ internal class ConfigWindow : Window {
         ImGui.SameLine();
         ImGui.SetCursorPosX(ImGui.GetContentRegionMax().X - 60f * ImGuiHelpers.GlobalScale);
         if(ImGui.Button("Cancel")) {
-            _plugin.DataQueue.QueueDataOperation(() => {
-                Refresh();
+            _plugin.DataQueue.QueueDataOperation(async () => {
+                await Refresh();
             });
         }
     }

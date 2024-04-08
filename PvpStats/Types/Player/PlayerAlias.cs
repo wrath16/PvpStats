@@ -14,12 +14,21 @@ public class PlayerAlias : IEquatable<PlayerAlias>, IEquatable<CrystallineConfli
         s = s.Trim();
         var splitString = s.Split(" ");
         if(splitString is null || splitString.Length != 3) {
-            throw new ArgumentException("Cannot convert string to player alias!");
+            throw new ArgumentException($"Cannot convert string to player alias: {s}");
         }
         return new PlayerAlias(splitString[0] + " " + splitString[1], splitString[2]);
     }
 
     public static implicit operator string(PlayerAlias p) => $"{p.Name} {p.HomeWorld}";
+
+    public static bool IsPlayersAlias(string s) {
+        try {
+            PlayerAlias alias = (PlayerAlias)s;
+            return true;
+        } catch(ArgumentException) {
+            return false;
+        }
+    }
 
     [BsonIgnore]
     public string FirstName {

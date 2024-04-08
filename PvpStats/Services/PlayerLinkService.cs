@@ -1,5 +1,6 @@
 ﻿using Dalamud.Plugin.Ipc;
 using Dalamud.Plugin.Ipc.Exceptions;
+using Dalamud.Utility;
 using Lumina.Excel.GeneratedSheets2;
 using PvpStats.Types.Player;
 using System;
@@ -24,7 +25,7 @@ internal class PlayerLinkService {
             AutoPlayerLinksCache = _plugin.Storage.GetAutoLinks().Query().ToList();
             _plugin.Log.Debug($"Restored auto link count: {AutoPlayerLinksCache.Count}");
         });
-        GetPreviousAliasesFunction = _plugin.PluginInterface.GetIpcSubscriber<(string, uint)[], ((string, uint), (string, uint)[])[]>("PlayerTrack.GetUniquePlayerNameWorldHistories");
+        GetPreviousAliasesFunction = _plugin.PluginInterface.GetIpcSubscriber<(string, uint)[], ((string, uint), (string, uint)[])[]>("PlayerTrack.GetPlayerNameWorldHistories");
     }
 
     internal async Task SaveManualLinksCache(List<PlayerAliasLink> playerLinks) {
@@ -86,18 +87,30 @@ internal class PlayerLinkService {
         var playersWithWorldId = players.Select(x => (x.Name, worlds.Where(y => y.Name.ToString().Equals(x.HomeWorld, StringComparison.OrdinalIgnoreCase)).Select(y => y.RowId).First()));
         var results = GetPreviousAliasesFunction.InvokeFunc(playersWithWorldId.ToArray());
         List<PlayerAliasLink> playersLinks = new();
-
         foreach(var result in results) {
-            PlayerAlias sourceAlias = (PlayerAlias)$"{result.Item1.Item1} {worlds.GetRow(result.Item1.Item2).Name}";
+            PlayerAlias sourceAlias = (PlayerAlias)$"{result.Item1.Item1} {worlds.GetRow(result.Item1.Item2)?.Name}";
             List<PlayerAlias> prevAliases = new();
             foreach(var prevResult in result.Item2) {
-                var alias = (PlayerAlias)$"{prevResult.Item1} {worlds.GetRow(prevResult.Item2).Name}";
-                prevAliases.Add(alias);
+                //ignore partial results, self results and duplicates
+                if(!prevResult.Item1.IsNullOrEmpty() && prevResult.Item2 != 0
+                     && !(prevResult.Item1 == result.Item1.Item1 && prevResult.Item2 == result.Item1.Item2)) {
+                    //string aliasString = $"{prevResult.Item1} {worlds.GetRow(prevResult.Item2).Name}";
+                    try {
+                        var alias = (PlayerAlias)$"{prevResult.Item1} {worlds.GetRow(prevResult.Item2)?.Name}";
+                        if(!prevAliases.Contains(alias)) {
+                            prevAliases.Add(alias);
+                        }
+                    } catch(ArgumentException) {
+                        continue;
+                    }
+                }
             }
-            playersLinks.Add(new() {
-                CurrentAlias = sourceAlias,
-                LinkedAliases = prevAliases,
-            });
+            if(prevAliases.Count > 0) {
+                playersLinks.Add(new() {
+                    CurrentAlias = sourceAlias,
+                    LinkedAliases = prevAliases,
+                });
+            }
         }
         return playersLinks;
     }

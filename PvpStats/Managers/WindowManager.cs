@@ -136,7 +136,7 @@ internal class WindowManager : IDisposable {
 
     public async Task Refresh() {
         _plugin.Log.Debug("refreshing windows...");
-        ConfigWindow.Refresh();
+        await ConfigWindow.Refresh();
         await MainWindow.Refresh();
     }
 }
