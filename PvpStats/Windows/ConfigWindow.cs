@@ -183,7 +183,7 @@ internal class ConfigWindow : Window {
             });
         }
         ImGuiHelper.HelpMarker("Use the manual tab to create player links by hand or to track" +
-            " un-covered auto link scenarios such as personal character alias changes, track known alt characters or to override mistakes.");
+            " un-covered auto link scenarios such as personal character alias changes, track known alt characters or to override mistakes.\n\nEnter format as <player name> <home world>");
         using(var tabBar = ImRaii.TabBar("LinksTabBar")) {
             using(var tab = ImRaii.TabItem("Auto")) {
                 if(tab) {

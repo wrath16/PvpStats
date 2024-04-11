@@ -445,21 +445,32 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
                         } else {
                             activeLinks.Add(playerLink.CurrentAlias, new() { linkedAlias });
                         }
+                        if(activeLinks.ContainsKey(linkedAlias)) {
+                            activeLinks[linkedAlias].Where(x => !x.Equals(playerLink.CurrentAlias)).ToList().ForEach(x => activeLinks[playerLink.CurrentAlias].Add(x));
+                        }
                     }
                 }
             };
 
-            //manual links
-            if(_plugin.Configuration.EnableManualPlayerLinking) {
-                foreach(var playerLink in _plugin.PlayerLinksService.ManualPlayerLinksCache) {
-                    checkPlayerLink(playerLink);
-                }
-            }
-
             //auto links
             if(_plugin.Configuration.EnableAutoPlayerLinking) {
                 foreach(var playerLink in _plugin.PlayerLinksService.AutoPlayerLinksCache) {
-                    checkPlayerLink(playerLink);
+                    try {
+                        checkPlayerLink(playerLink);
+                    } catch(Exception e) {
+                        _plugin.Log.Error($"Unable to add player link: {e.GetType()} {e.Message}\n {e.StackTrace}");
+                    }
+                }
+            }
+
+            //manual links
+            if(_plugin.Configuration.EnableManualPlayerLinking) {
+                foreach(var playerLink in _plugin.PlayerLinksService.ManualPlayerLinksCache) {
+                    try {
+                        checkPlayerLink(playerLink);
+                    } catch(Exception e) {
+                        _plugin.Log.Error($"Unable to add player link: {e.GetType()} {e.Message}\n {e.StackTrace}");
+                    }
                 }
             }
         }
