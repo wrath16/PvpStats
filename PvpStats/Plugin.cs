@@ -6,6 +6,7 @@ using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using PvpStats.Managers;
 using PvpStats.Managers.Game;
+using PvpStats.Managers.Stats;
 using PvpStats.Services;
 using PvpStats.Settings;
 using System;
@@ -43,6 +44,7 @@ public sealed class Plugin : IDalamudPlugin {
     internal MatchManager? MatchManager { get; init; }
     internal WindowManager WindowManager { get; init; }
     internal MigrationManager MigrationManager { get; init; }
+    internal CrystallineConflictStatsManager CCStatsEngine { get; init; }
 
     internal DataQueueService DataQueue { get; init; }
     internal LocalizationService Localization { get; init; }
@@ -105,6 +107,7 @@ public sealed class Plugin : IDalamudPlugin {
             Localization = new(this);
             WindowManager = new(this);
             MigrationManager = new(this);
+            CCStatsEngine = new(this);
             try {
                 MatchManager = new(this);
             } catch(SignatureException e) {

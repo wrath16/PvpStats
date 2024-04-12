@@ -1,0 +1,710 @@
+﻿using Dalamud.Utility;
+using PvpStats.Helpers;
+using PvpStats.Types.Display;
+using PvpStats.Types.Match;
+using PvpStats.Types.Player;
+using PvpStats.Windows.Filter;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace PvpStats.Managers.Stats;
+internal class CrystallineConflictStatsManager {
+
+    private Plugin _plugin;
+    internal protected SemaphoreSlim RefreshLock { get; private set; } = new SemaphoreSlim(1);
+
+    //internal List<DataFilter> Filters { get; private set; } = new();
+
+    //matches
+    internal List<CrystallineConflictMatch> Matches { get; private set; } = new();
+
+    //summary
+    internal CCPlayerJobStats LocalPlayerStats { get; private set; } = new();
+    internal Dictionary<Job, CCAggregateStats> LocalPlayerJobStats { get; private set; } = new();
+    internal Dictionary<CrystallineConflictMap, CCAggregateStats> ArenaStats { get; private set; } = new();
+    internal Dictionary<PlayerAlias, CCAggregateStats> TeammateStats { get; private set; } = new();
+    internal Dictionary<PlayerAlias, CCAggregateStats> OpponentStats { get; private set; } = new();
+    internal Dictionary<Job, CCAggregateStats> TeammateJobStats { get; private set; } = new();
+    internal Dictionary<Job, CCAggregateStats> OpponentJobStats { get; private set; } = new();
+    internal TimeSpan AverageMatchDuration { get; private set; } = new();
+
+    //records
+    internal Dictionary<CrystallineConflictMatch, List<(string, string)>> Superlatives = new();
+    internal int LongestWinStreak { get; private set; }
+    internal int LongestLossStreak { get; private set; }
+
+    //jobs
+    internal List<Job> Jobs { get; private set; } = new();
+    internal Dictionary<Job, CCPlayerJobStats> JobStats { get; private set; } = new();
+
+    //players
+    internal List<PlayerAlias> Players { get; private set; } = new();
+    internal Dictionary<PlayerAlias, CCPlayerJobStats> PlayerStats { get; private set; } = new();
+    internal Dictionary<PlayerAlias, List<PlayerAlias>> ActiveLinks { get; private set; } = new();
+
+    internal CrystallineConflictStatsManager(Plugin plugin) {
+        _plugin = plugin;
+    }
+
+    internal async Task Refresh(List<DataFilter> matchFilters, StatSourceFilter jobStatSourceFilter, bool playerStatSourceInherit) {
+        List<Job> jobs = new();
+        Dictionary<Job, CCPlayerJobStats> jobStats = new();
+        Dictionary<Job, List<CCScoreboardDouble>> jobTeamContributions = new();
+        List<PlayerAlias> players = new();
+        Dictionary<PlayerAlias, CCPlayerJobStats> playerStats = new();
+        Dictionary<PlayerAlias, Dictionary<Job, CCAggregateStats>> playerJobStatsLookup = new();
+        Dictionary<PlayerAlias, Dictionary<Job, CCAggregateStats>> teammateJobStatsLookup = new();
+        Dictionary<PlayerAlias, Dictionary<Job, CCAggregateStats>> opponentJobStatsLookup = new();
+        Dictionary<PlayerAlias, List<CCScoreboardDouble>> playerTeamContributions = new();
+        CCPlayerJobStats localPlayerStats = new();
+        List<CCScoreboardDouble> localPlayerTeamContributions = new();
+        Dictionary<CrystallineConflictMap, CCAggregateStats> arenaStats = new();
+        Dictionary<PlayerAlias, CCAggregateStats> teammateStats = new();
+        Dictionary<PlayerAlias, CCAggregateStats> opponentStats = new();
+        Dictionary<Job, CCAggregateStats> localPlayerJobStats = new();
+        Dictionary<Job, CCAggregateStats> teammateJobStats = new();
+        Dictionary<Job, CCAggregateStats> opponentJobStats = new();
+        Dictionary<PlayerAlias, List<PlayerAlias>> activeLinks = new();
+        Dictionary<CrystallineConflictMatch, List<(string, string)>> superlatives = new();
+        CrystallineConflictMatch? longestMatch = null, shortestMatch = null, closestMatch = null, closestWin = null, closestLoss = null,
+            mostKills = null, mostDeaths = null, mostAssists = null, mostDamageDealt = null, mostDamageTaken = null, mostHPRestored = null, mostTimeOnCrystal = null;
+        int longestWinStreak = 0, longestLossStreak = 0, spectatedMatchCount = 0, currentWinStreak = 0, currentLossStreak = 0;
+        TimeSpan totalMatchTime = TimeSpan.Zero;
+
+        var matches = FilterMatches(matchFilters);
+        var playerFilter = (OtherPlayerFilter)matchFilters.First(x => x.GetType() == typeof(OtherPlayerFilter));
+        var linkedPlayerAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(playerFilter.PlayerNamesRaw);
+        var allJobs = Enum.GetValues(typeof(Job)).Cast<Job>();
+        foreach(var job in allJobs) {
+            jobStats.Add(job, new());
+            jobTeamContributions.Add(job, new());
+        }
+
+        foreach(var match in matches) {
+            totalMatchTime += match.MatchDuration ?? TimeSpan.Zero;
+            //process records
+            //track these for spectated matches as well
+            if(longestMatch == null) {
+                longestMatch = match;
+                shortestMatch = match;
+                closestMatch = match;
+            }
+            if(longestMatch == null || match.MatchDuration > longestMatch.MatchDuration) {
+                longestMatch = match;
+            }
+            if(shortestMatch == null || match.MatchDuration < shortestMatch.MatchDuration) {
+                shortestMatch = match;
+            }
+            if(closestMatch == null || match.LoserProgress > closestMatch.LoserProgress) {
+                closestMatch = match;
+            }
+
+            if(match.IsSpectated) {
+                spectatedMatchCount++;
+                //continue;
+            } else {
+                if(mostKills == null || match.LocalPlayerStats?.Kills > mostKills.LocalPlayerStats?.Kills
+                    || (match.LocalPlayerStats?.Kills == mostKills.LocalPlayerStats?.Kills && match.MatchDuration < mostKills.MatchDuration)) {
+                    mostKills = match;
+                }
+                if(mostDeaths == null || match.LocalPlayerStats?.Deaths > mostDeaths.LocalPlayerStats?.Deaths
+                    || (match.LocalPlayerStats?.Deaths == mostDeaths.LocalPlayerStats?.Deaths && match.MatchDuration < mostDeaths.MatchDuration)) {
+                    mostDeaths = match;
+                }
+                if(mostAssists == null || match.LocalPlayerStats?.Assists > mostAssists.LocalPlayerStats?.Assists
+                    || (match.LocalPlayerStats?.Assists == mostAssists.LocalPlayerStats?.Assists && match.MatchDuration < mostAssists.MatchDuration)) {
+                    mostAssists = match;
+                }
+                if(mostDamageDealt == null || match.LocalPlayerStats?.DamageDealt > mostDamageDealt.LocalPlayerStats?.DamageDealt) {
+                    mostDamageDealt = match;
+                }
+                if(mostDamageTaken == null || match.LocalPlayerStats?.DamageTaken > mostDamageTaken.LocalPlayerStats?.DamageTaken) {
+                    mostDamageTaken = match;
+                }
+                if(mostHPRestored == null || match.LocalPlayerStats?.HPRestored > mostHPRestored.LocalPlayerStats?.HPRestored) {
+                    mostHPRestored = match;
+                }
+                if(mostTimeOnCrystal == null || match.LocalPlayerStats?.TimeOnCrystal > mostTimeOnCrystal.LocalPlayerStats?.TimeOnCrystal) {
+                    mostTimeOnCrystal = match;
+                }
+                if(match.IsWin && (closestWin == null || match.LoserProgress > closestWin.LoserProgress)) {
+                    closestWin = match;
+                }
+                if(match.IsLoss && (closestLoss == null || match.LoserProgress > closestLoss.LoserProgress)) {
+                    closestLoss = match;
+                }
+
+                if(match.IsWin) {
+                    currentWinStreak++;
+                    if(currentWinStreak > longestWinStreak) {
+                        longestWinStreak = currentWinStreak;
+                    }
+                } else {
+                    currentWinStreak = 0;
+                }
+                if(match.IsLoss) {
+                    currentLossStreak++;
+                    if(currentLossStreak > longestLossStreak) {
+                        longestLossStreak = currentLossStreak;
+                    }
+                } else {
+                    currentLossStreak = 0;
+                }
+            }
+
+            //local player stats
+            if(!match.IsSpectated && match.PostMatch != null) {
+                AddPlayerJobStat(localPlayerStats, localPlayerTeamContributions, match, match.LocalPlayerTeam!, match.LocalPlayerTeamMember!);
+                if(match.LocalPlayerTeamMember!.Job != null) {
+                    var job = (Job)match.LocalPlayerTeamMember!.Job;
+                    if(!localPlayerJobStats.ContainsKey(job)) {
+                        localPlayerJobStats.Add(job, new());
+                    }
+                    IncrementAggregateStats(localPlayerJobStats[job], match);
+                }
+            }
+
+            //arena stats
+            if(match.Arena != null) {
+                var arena = (CrystallineConflictMap)match.Arena;
+                if(!arenaStats.ContainsKey(arena)) {
+                    arenaStats.Add(arena, new());
+                }
+                IncrementAggregateStats(arenaStats[arena], match);
+            }
+
+            //process player and job stats
+            foreach(var team in match.Teams) {
+                foreach(var player in team.Value.Players) {
+                    bool isLocalPlayer = player.Alias.Equals(match.LocalPlayer);
+                    bool isTeammate = !match.IsSpectated && !isLocalPlayer && team.Key == match.LocalPlayerTeam!.TeamName;
+                    bool isOpponent = !match.IsSpectated && !isLocalPlayer && !isTeammate;
+                    bool jobStatsEligible = true;
+                    bool playerStatsEligible = true;
+                    bool nameMatch = player.Alias.FullName.Contains(playerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase);
+                    if(_plugin.Configuration.EnablePlayerLinking && !nameMatch) {
+                        nameMatch = linkedPlayerAliases.Contains(player.Alias);
+                    }
+                    bool sideMatch = playerFilter.TeamStatus == TeamStatus.Any
+                        || playerFilter.TeamStatus == TeamStatus.Teammate && isTeammate
+                        || playerFilter.TeamStatus == TeamStatus.Opponent && !isTeammate && !isLocalPlayer;
+                    bool jobMatch = playerFilter.AnyJob || playerFilter.PlayerJob == player.Job;
+                    if(!nameMatch || !sideMatch || !jobMatch) {
+                        if(jobStatSourceFilter.InheritFromPlayerFilter) {
+                            jobStatsEligible = false;
+                        }
+                        if(playerStatSourceInherit) {
+                            playerStatsEligible = false;
+                        }
+                    }
+                    if(player.Job == null) {
+                        jobStatsEligible = false;
+                    }
+
+                    if(!jobStatSourceFilter.FilterState[StatSource.LocalPlayer] && isLocalPlayer) {
+                        jobStatsEligible = false;
+                    } else if(!jobStatSourceFilter.FilterState[StatSource.Teammate] && isTeammate) {
+                        jobStatsEligible = false;
+                    } else if(!jobStatSourceFilter.FilterState[StatSource.Opponent] && !isTeammate && !isLocalPlayer) {
+                        jobStatsEligible = false;
+                    } else if(!jobStatSourceFilter.FilterState[StatSource.Spectated] && match.IsSpectated) {
+                        jobStatsEligible = false;
+                    }
+                    var job = (Job)player.Job!;
+
+                    if(isTeammate) {
+                        if(!teammateStats.ContainsKey(player.Alias)) {
+                            teammateStats.Add(player.Alias, new());
+                        }
+                        IncrementAggregateStats(teammateStats[player.Alias], match);
+                        if(player.Job != null) {
+                            if(!teammateJobStats.ContainsKey(job)) {
+                                teammateJobStats.Add(job, new());
+                            }
+                            IncrementAggregateStats(teammateJobStats[job], match);
+                            if(!teammateJobStatsLookup.ContainsKey(player.Alias)) {
+                                teammateJobStatsLookup.Add(player.Alias, new());
+                            }
+                            if(!teammateJobStatsLookup[player.Alias].ContainsKey(job)) {
+                                teammateJobStatsLookup[player.Alias].Add(job, new());
+                            }
+                            IncrementAggregateStats(teammateJobStatsLookup[player.Alias][job], match);
+                        }
+                    } else if(isOpponent) {
+                        if(!opponentStats.ContainsKey(player.Alias)) {
+                            opponentStats.Add(player.Alias, new());
+                        }
+                        IncrementAggregateStats(opponentStats[player.Alias], match);
+                        if(player.Job != null) {
+                            if(!opponentJobStats.ContainsKey((Job)player.Job)) {
+                                opponentJobStats.Add((Job)player.Job, new());
+                            }
+                            IncrementAggregateStats(opponentJobStats[(Job)player.Job], match);
+                        }
+                        if(!opponentJobStatsLookup.ContainsKey(player.Alias)) {
+                            opponentJobStatsLookup.Add(player.Alias, new());
+                        }
+                        if(!opponentJobStatsLookup[player.Alias].ContainsKey(job)) {
+                            opponentJobStatsLookup[player.Alias].Add(job, new());
+                        }
+                        IncrementAggregateStats(opponentJobStatsLookup[player.Alias][job], match);
+                    }
+
+                    if(jobStatsEligible) {
+                        AddPlayerJobStat(jobStats[job], jobTeamContributions[job], match, team.Value, player);
+                    }
+
+                    if(playerStatsEligible) {
+                        if(!playerStats.ContainsKey(player.Alias)) {
+                            playerStats.Add(player.Alias, new());
+                            playerTeamContributions.Add(player.Alias, new());
+                            playerJobStatsLookup.Add(player.Alias, new());
+                        }
+                        AddPlayerJobStat(playerStats[player.Alias], playerTeamContributions[player.Alias], match, team.Value, player);
+                        if(player.Job != null) {
+                            if(!playerJobStatsLookup[player.Alias].ContainsKey((Job)player.Job)) {
+                                playerJobStatsLookup[player.Alias].Add((Job)player.Job, new());
+                            }
+                            IncrementAggregateStats(playerJobStatsLookup[player.Alias][(Job)player.Job], match);
+                        }
+                    }
+                }
+            }
+        }
+
+        //player linking
+        if(_plugin.Configuration.EnablePlayerLinking) {
+            //var manualLinks = _plugin.Storage.GetManualLinks().Query().ToList();
+            var unLinks = _plugin.PlayerLinksService.ManualPlayerLinksCache.Where(x => x.IsUnlink).ToList();
+            var checkPlayerLink = (PlayerAliasLink playerLink) => {
+                if(playerLink.IsUnlink) return;
+                foreach(var linkedAlias in playerLink.LinkedAliases) {
+                    bool blocked = unLinks.Where(x => x.CurrentAlias.Equals(playerLink.CurrentAlias) && x.LinkedAliases.Contains(linkedAlias)).Any();
+                    if(!blocked) {
+                        bool anyMatch = false;
+                        if(playerStats.ContainsKey(linkedAlias)) {
+                            anyMatch = true;
+                            if(playerStats.ContainsKey(playerLink.CurrentAlias)) {
+                                playerStats[playerLink.CurrentAlias].StatsAll += playerStats[linkedAlias].StatsAll;
+                                playerTeamContributions[playerLink.CurrentAlias].Concat(playerTeamContributions[linkedAlias]);
+                                foreach(var jobStat in playerJobStatsLookup[linkedAlias]) {
+                                    if(!playerJobStatsLookup[playerLink.CurrentAlias].ContainsKey(jobStat.Key)) {
+                                        playerJobStatsLookup[playerLink.CurrentAlias].Add(jobStat.Key, new() {
+                                            Matches = jobStat.Value.Matches,
+                                        });
+                                    } else {
+                                        playerJobStatsLookup[playerLink.CurrentAlias][jobStat.Key].Matches += jobStat.Value.Matches;
+                                    }
+                                }
+                            } else {
+                                playerStats.Add(playerLink.CurrentAlias, playerStats[linkedAlias]);
+                                playerTeamContributions.Add(playerLink.CurrentAlias, playerTeamContributions[linkedAlias]);
+                                playerJobStatsLookup.Add(playerLink.CurrentAlias, playerJobStatsLookup[linkedAlias]);
+                            }
+                            playerStats.Remove(linkedAlias);
+                            playerTeamContributions.Remove(linkedAlias);
+                            playerJobStatsLookup.Remove(linkedAlias);
+                        }
+                        if(teammateStats.ContainsKey(linkedAlias)) {
+                            anyMatch = true;
+                            if(teammateStats.ContainsKey(playerLink.CurrentAlias)) {
+                                teammateStats[playerLink.CurrentAlias] += teammateStats[linkedAlias];
+                                foreach(var jobStat in teammateJobStatsLookup[linkedAlias]) {
+                                    if(!teammateJobStatsLookup[playerLink.CurrentAlias].ContainsKey(jobStat.Key)) {
+                                        teammateJobStatsLookup[playerLink.CurrentAlias].Add(jobStat.Key, new() {
+                                            Matches = jobStat.Value.Matches,
+                                        });
+                                    } else {
+                                        teammateJobStatsLookup[playerLink.CurrentAlias][jobStat.Key].Matches += jobStat.Value.Matches;
+                                    }
+                                }
+                            } else {
+                                teammateStats.Add(playerLink.CurrentAlias, teammateStats[linkedAlias]);
+                                teammateJobStatsLookup.Add(playerLink.CurrentAlias, teammateJobStatsLookup[linkedAlias]);
+                            }
+                            teammateStats.Remove(linkedAlias);
+                            teammateJobStatsLookup.Remove(linkedAlias);
+                        }
+                        if(opponentStats.ContainsKey(linkedAlias)) {
+                            anyMatch = true;
+                            if(opponentStats.ContainsKey(playerLink.CurrentAlias)) {
+                                opponentStats[playerLink.CurrentAlias] += opponentStats[linkedAlias];
+                                foreach(var jobStat in opponentJobStatsLookup[linkedAlias]) {
+                                    if(!opponentJobStatsLookup[playerLink.CurrentAlias].ContainsKey(jobStat.Key)) {
+                                        opponentJobStatsLookup[playerLink.CurrentAlias].Add(jobStat.Key, new() {
+                                            Matches = jobStat.Value.Matches,
+                                        });
+                                    } else {
+                                        opponentJobStatsLookup[playerLink.CurrentAlias][jobStat.Key].Matches += jobStat.Value.Matches;
+                                    }
+                                }
+                            } else {
+                                opponentStats.Add(playerLink.CurrentAlias, opponentStats[linkedAlias]);
+                                opponentJobStatsLookup.Add(playerLink.CurrentAlias, opponentJobStatsLookup[linkedAlias]);
+                            }
+                            opponentStats.Remove(linkedAlias);
+                            opponentJobStatsLookup.Remove(linkedAlias);
+                        }
+                        if(anyMatch) {
+                            _plugin.Log.Verbose($"Coalescing {linkedAlias} into {playerLink.CurrentAlias}...");
+                            if(activeLinks.ContainsKey(playerLink.CurrentAlias)) {
+                                activeLinks[playerLink.CurrentAlias].Add(linkedAlias);
+                            } else {
+                                activeLinks.Add(playerLink.CurrentAlias, new() { linkedAlias });
+                            }
+                            if(activeLinks.ContainsKey(linkedAlias)) {
+                                activeLinks[linkedAlias].Where(x => !x.Equals(playerLink.CurrentAlias)).ToList().ForEach(x => activeLinks[playerLink.CurrentAlias].Add(x));
+                            }
+                        }
+                    }
+
+                    //if(!blocked && playerStats.ContainsKey(linkedAlias)) {
+                    //    _plugin.Log.Verbose($"Coalescing {linkedAlias} into {playerLink.CurrentAlias}...");
+                    //    if(playerStats.ContainsKey(playerLink.CurrentAlias)) {
+                    //        playerStats[playerLink.CurrentAlias].StatsAll += playerStats[linkedAlias].StatsAll;
+                    //        playerTeamContributions[playerLink.CurrentAlias].Concat(playerTeamContributions[linkedAlias]);
+                    //        foreach(var jobStat in playerJobStatsLookup[linkedAlias]) {
+                    //            if(!playerJobStatsLookup[playerLink.CurrentAlias].ContainsKey(jobStat.Key)) {
+                    //                playerJobStatsLookup[playerLink.CurrentAlias].Add(jobStat.Key, new() {
+                    //                    Matches = jobStat.Value.Matches,
+                    //                });
+                    //            } else {
+                    //                playerJobStatsLookup[playerLink.CurrentAlias][jobStat.Key].Matches += jobStat.Value.Matches;
+                    //            }
+                    //        }
+                    //    } else {
+                    //        playerStats.Add(playerLink.CurrentAlias, playerStats[linkedAlias]);
+                    //        playerTeamContributions.Add(playerLink.CurrentAlias, playerTeamContributions[linkedAlias]);
+                    //        playerJobStatsLookup.Add(playerLink.CurrentAlias, playerJobStatsLookup[linkedAlias]);
+                    //    }
+                    //    //remove
+                    //    playerStats.Remove(linkedAlias);
+                    //    playerTeamContributions.Remove(linkedAlias);
+                    //    playerJobStatsLookup.Remove(linkedAlias);
+
+                    //    if(activeLinks.ContainsKey(playerLink.CurrentAlias)) {
+                    //        activeLinks[playerLink.CurrentAlias].Add(linkedAlias);
+                    //    } else {
+                    //        activeLinks.Add(playerLink.CurrentAlias, new() { linkedAlias });
+                    //    }
+                    //    if(activeLinks.ContainsKey(linkedAlias)) {
+                    //        activeLinks[linkedAlias].Where(x => !x.Equals(playerLink.CurrentAlias)).ToList().ForEach(x => activeLinks[playerLink.CurrentAlias].Add(x));
+                    //    }
+                    //}
+                }
+            };
+
+            //auto links
+            if(_plugin.Configuration.EnableAutoPlayerLinking) {
+                foreach(var playerLink in _plugin.PlayerLinksService.AutoPlayerLinksCache) {
+                    try {
+                        checkPlayerLink(playerLink);
+                    } catch(Exception e) {
+                        _plugin.Log.Error($"Unable to add player link: {e.GetType()} {e.Message}\n {e.StackTrace}");
+                    }
+                }
+            }
+
+            //manual links
+            if(_plugin.Configuration.EnableManualPlayerLinking) {
+                foreach(var playerLink in _plugin.PlayerLinksService.ManualPlayerLinksCache) {
+                    try {
+                        checkPlayerLink(playerLink);
+                    } catch(Exception e) {
+                        _plugin.Log.Error($"Unable to add player link: {e.GetType()} {e.Message}\n {e.StackTrace}");
+                    }
+                }
+            }
+        }
+
+        foreach(var jobStat in jobStats) {
+            SetScoreboardStats(jobStat.Value, jobTeamContributions[jobStat.Key]);
+        }
+
+        foreach(var playerStat in playerStats) {
+            playerStat.Value.StatsAll.Job = playerJobStatsLookup[playerStat.Key].OrderByDescending(x => x.Value.Matches).FirstOrDefault().Key;
+            SetScoreboardStats(playerStat.Value, playerTeamContributions[playerStat.Key]);
+        }
+        SetScoreboardStats(localPlayerStats, localPlayerTeamContributions);
+        foreach(var teammateStat in teammateStats) {
+            teammateStat.Value.Job = teammateJobStatsLookup[teammateStat.Key].OrderByDescending(x => x.Value.WinDiff).FirstOrDefault().Key;
+        }
+        foreach(var opponentStat in opponentStats) {
+            opponentStat.Value.Job = opponentJobStatsLookup[opponentStat.Key].OrderBy(x => x.Value.WinDiff).FirstOrDefault().Key;
+        }
+
+        try {
+            await RefreshLock.WaitAsync();
+            Matches = matches;
+            Players = playerStats.Keys.ToList();
+            PlayerStats = playerStats;
+            Jobs = jobStats.Keys.Where(x => x != Job.VPR && x != Job.PCT).ToList();
+            JobStats = jobStats;
+            LocalPlayerStats = localPlayerStats;
+            LocalPlayerJobStats = localPlayerJobStats.OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            TeammateStats = teammateStats.OrderBy(x => x.Value.Matches).OrderByDescending(x => x.Value.WinDiff).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            TeammateJobStats = teammateJobStats.OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            OpponentStats = opponentStats.OrderBy(x => x.Value.Matches).OrderBy(x => x.Value.WinDiff).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            OpponentJobStats = opponentJobStats.OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            ArenaStats = arenaStats.OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            AverageMatchDuration = matches.Count > 0 ? totalMatchTime / matches.Count : TimeSpan.Zero;
+            var addSuperlative = (CrystallineConflictMatch? match, string sup, string val) => {
+                if(match == null) return;
+                if(Superlatives.ContainsKey(match)) {
+                    Superlatives[match].Add((sup, val));
+                } else {
+                    //_plugin.Log.Debug($"adding superlative {sup} {val} to {match.Id.ToString()}");
+                    Superlatives.Add(match, new() { (sup, val) });
+                }
+            };
+            Superlatives = new();
+            if(longestMatch != null) {
+                addSuperlative(longestMatch, "Longest match", ImGuiHelper.GetTimeSpanString((TimeSpan)longestMatch!.MatchDuration));
+                addSuperlative(shortestMatch, "Shortest match", ImGuiHelper.GetTimeSpanString((TimeSpan)shortestMatch!.MatchDuration));
+                addSuperlative(closestMatch, "Closest match", closestMatch!.LoserProgress.ToString());
+                if(mostKills != null) {
+                    addSuperlative(mostKills, "Most kills", mostKills!.LocalPlayerStats!.Kills.ToString());
+                    addSuperlative(mostDeaths, "Most deaths", mostDeaths!.LocalPlayerStats!.Deaths.ToString());
+                    addSuperlative(mostAssists, "Most assists", mostAssists!.LocalPlayerStats!.Assists.ToString());
+                    addSuperlative(mostDamageDealt, "Most damage dealt", mostDamageDealt!.LocalPlayerStats!.DamageDealt.ToString());
+                    addSuperlative(mostDamageTaken, "Most damage taken", mostDamageTaken!.LocalPlayerStats!.DamageTaken.ToString());
+                    addSuperlative(mostHPRestored, "Most HP restored", mostHPRestored!.LocalPlayerStats!.HPRestored.ToString());
+                    addSuperlative(mostTimeOnCrystal, "Longest time on crystal", ImGuiHelper.GetTimeSpanString(mostTimeOnCrystal!.LocalPlayerStats!.TimeOnCrystal));
+                }
+            }
+            LongestWinStreak = longestWinStreak;
+            LongestLossStreak = longestLossStreak;
+        } finally {
+            RefreshLock.Release();
+        }
+    }
+
+    internal void AddPlayerJobStat(CCPlayerJobStats statsModel, List<CCScoreboardDouble> teamContributions,
+        CrystallineConflictMatch match, CrystallineConflictTeam team, CrystallineConflictPlayer player) {
+        bool isLocalPlayer = player.Alias.Equals(match.LocalPlayer);
+        bool isTeammate = !match.IsSpectated && !isLocalPlayer && team.TeamName == match.LocalPlayerTeam!.TeamName;
+
+        statsModel.StatsAll.Matches++;
+        if(match.MatchWinner == team.TeamName) {
+            statsModel.StatsAll.Wins++;
+        } else if(match.MatchWinner != null) {
+            statsModel.StatsAll.Losses++;
+        }
+
+        if(!match.IsSpectated) {
+            if(isTeammate) {
+                IncrementAggregateStats(statsModel.StatsTeammate, match);
+            } else {
+                IncrementAggregateStats(statsModel.StatsOpponent, match);
+            }
+        }
+
+        if(match.PostMatch != null) {
+            var playerTeamScoreboard = match.PostMatch.Teams.Where(x => x.Key == team.TeamName).FirstOrDefault().Value;
+            var playerScoreboard = playerTeamScoreboard.PlayerStats.Where(x => x.Player?.Equals(player.Alias) ?? false).FirstOrDefault();
+            if(playerScoreboard != null) {
+                statsModel.ScoreboardTotal.MatchTime += match.PostMatch.MatchDuration;
+                statsModel.ScoreboardTotal.Kills += (ulong)playerScoreboard.Kills;
+                statsModel.ScoreboardTotal.Deaths += (ulong)playerScoreboard.Deaths;
+                statsModel.ScoreboardTotal.Assists += (ulong)playerScoreboard.Assists;
+                statsModel.ScoreboardTotal.DamageDealt += (ulong)playerScoreboard.DamageDealt;
+                statsModel.ScoreboardTotal.DamageTaken += (ulong)playerScoreboard.DamageTaken;
+                statsModel.ScoreboardTotal.HPRestored += (ulong)playerScoreboard.HPRestored;
+                statsModel.ScoreboardTotal.TimeOnCrystal += playerScoreboard.TimeOnCrystal;
+
+                teamContributions.Add(new() {
+                    Kills = playerTeamScoreboard.TeamStats.Kills != 0 ? (double)playerScoreboard.Kills / playerTeamScoreboard.TeamStats.Kills : 0,
+                    Deaths = playerTeamScoreboard.TeamStats.Deaths != 0 ? (double)playerScoreboard.Deaths / playerTeamScoreboard.TeamStats.Deaths : 0,
+                    Assists = playerTeamScoreboard.TeamStats.Assists != 0 ? (double)playerScoreboard.Assists / playerTeamScoreboard.TeamStats.Assists : 0,
+                    DamageDealt = playerTeamScoreboard.TeamStats.DamageDealt != 0 ? (double)playerScoreboard.DamageDealt / playerTeamScoreboard.TeamStats.DamageDealt : 0,
+                    DamageTaken = playerTeamScoreboard.TeamStats.DamageTaken != 0 ? (double)playerScoreboard.DamageTaken / playerTeamScoreboard.TeamStats.DamageTaken : 0,
+                    HPRestored = playerTeamScoreboard.TeamStats.HPRestored != 0 ? (double)playerScoreboard.HPRestored / playerTeamScoreboard.TeamStats.HPRestored : 0,
+                    TimeOnCrystalDouble = playerTeamScoreboard.TeamStats.TimeOnCrystal.Ticks != 0 ? playerScoreboard.TimeOnCrystal / playerTeamScoreboard.TeamStats.TimeOnCrystal : 0,
+                });
+            }
+        }
+    }
+
+    internal void SetScoreboardStats(CCPlayerJobStats stats, List<CCScoreboardDouble> teamContributions) {
+        var statMatches = teamContributions.Count;
+        //set average stats
+        if(statMatches > 0) {
+            stats.StatsPersonal.Matches = stats.StatsTeammate.Matches + stats.StatsOpponent.Matches;
+            stats.StatsPersonal.Wins = stats.StatsTeammate.Wins + stats.StatsOpponent.Wins;
+            stats.StatsPersonal.Losses = stats.StatsTeammate.Losses + stats.StatsOpponent.Losses;
+
+            stats.ScoreboardPerMatch.Kills = (double)stats.ScoreboardTotal.Kills / statMatches;
+            stats.ScoreboardPerMatch.Deaths = (double)stats.ScoreboardTotal.Deaths / statMatches;
+            stats.ScoreboardPerMatch.Assists = (double)stats.ScoreboardTotal.Assists / statMatches;
+            stats.ScoreboardPerMatch.DamageDealt = (double)stats.ScoreboardTotal.DamageDealt / statMatches;
+            stats.ScoreboardPerMatch.DamageTaken = (double)stats.ScoreboardTotal.DamageTaken / statMatches;
+            stats.ScoreboardPerMatch.HPRestored = (double)stats.ScoreboardTotal.HPRestored / statMatches;
+            stats.ScoreboardPerMatch.TimeOnCrystal = stats.ScoreboardTotal.TimeOnCrystal / statMatches;
+
+            var matchTime = stats.ScoreboardTotal.MatchTime;
+            stats.ScoreboardPerMin.Kills = stats.ScoreboardTotal.Kills / matchTime.TotalMinutes;
+            stats.ScoreboardPerMin.Deaths = stats.ScoreboardTotal.Deaths / matchTime.TotalMinutes;
+            stats.ScoreboardPerMin.Assists = stats.ScoreboardTotal.Assists / matchTime.TotalMinutes;
+            stats.ScoreboardPerMin.DamageDealt = stats.ScoreboardTotal.DamageDealt / matchTime.TotalMinutes;
+            stats.ScoreboardPerMin.DamageTaken = stats.ScoreboardTotal.DamageTaken / matchTime.TotalMinutes;
+            stats.ScoreboardPerMin.HPRestored = stats.ScoreboardTotal.HPRestored / matchTime.TotalMinutes;
+            stats.ScoreboardPerMin.TimeOnCrystal = stats.ScoreboardTotal.TimeOnCrystal / matchTime.TotalMinutes;
+
+            stats.ScoreboardContrib.Kills = teamContributions.OrderBy(x => x.Kills).ElementAt(statMatches / 2).Kills;
+            stats.ScoreboardContrib.Deaths = teamContributions.OrderBy(x => x.Deaths).ElementAt(statMatches / 2).Deaths;
+            stats.ScoreboardContrib.Assists = teamContributions.OrderBy(x => x.Assists).ElementAt(statMatches / 2).Assists;
+            stats.ScoreboardContrib.DamageDealt = teamContributions.OrderBy(x => x.DamageDealt).ElementAt(statMatches / 2).DamageDealt;
+            stats.ScoreboardContrib.DamageTaken = teamContributions.OrderBy(x => x.DamageTaken).ElementAt(statMatches / 2).DamageTaken;
+            stats.ScoreboardContrib.HPRestored = teamContributions.OrderBy(x => x.HPRestored).ElementAt(statMatches / 2).HPRestored;
+            stats.ScoreboardContrib.TimeOnCrystalDouble = teamContributions.OrderBy(x => x.TimeOnCrystalDouble).ElementAt(statMatches / 2).TimeOnCrystalDouble;
+        }
+    }
+
+    internal void IncrementAggregateStats(CCAggregateStats stats, CrystallineConflictMatch match) {
+        stats.Matches++;
+        if(match.IsWin) {
+            stats.Wins++;
+        } else if(match.IsLoss) {
+            stats.Losses++;
+        }
+    }
+
+    private List<CrystallineConflictMatch> FilterMatches(List<DataFilter> filters) {
+        var matches = _plugin.Storage.GetCCMatches().Query().Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
+        foreach(var filter in filters) {
+            switch(filter.GetType()) {
+                case Type _ when filter.GetType() == typeof(MatchTypeFilter):
+                    var matchTypeFilter = (MatchTypeFilter)filter;
+                    matches = matches.Where(x => matchTypeFilter.FilterState[x.MatchType]).ToList();
+                    //_plugin.Configuration.MatchWindowFilters.MatchTypeFilter = matchTypeFilter;
+                    break;
+                case Type _ when filter.GetType() == typeof(ArenaFilter):
+                    var arenaFilter = (ArenaFilter)filter;
+                    //include unknown maps under all
+                    matches = matches.Where(x => (x.Arena == null && arenaFilter.AllSelected) || arenaFilter.FilterState[(CrystallineConflictMap)x.Arena!]).ToList();
+                    //_plugin.Configuration.MatchWindowFilters.ArenaFilter = arenaFilter;
+                    break;
+                case Type _ when filter.GetType() == typeof(TimeFilter):
+                    var timeFilter = (TimeFilter)filter;
+                    switch(timeFilter.StatRange) {
+                        case TimeRange.PastDay:
+                            matches = matches.Where(x => (DateTime.Now - x.DutyStartTime).TotalHours < 24).ToList();
+                            break;
+                        case TimeRange.PastWeek:
+                            matches = matches.Where(x => (DateTime.Now - x.DutyStartTime).TotalDays < 7).ToList();
+                            break;
+                        case TimeRange.ThisMonth:
+                            matches = matches.Where(x => x.DutyStartTime.Month == DateTime.Now.Month && x.DutyStartTime.Year == DateTime.Now.Year).ToList();
+                            break;
+                        case TimeRange.LastMonth:
+                            var lastMonth = DateTime.Now.AddMonths(-1);
+                            matches = matches.Where(x => x.DutyStartTime.Month == lastMonth.Month && x.DutyStartTime.Year == lastMonth.Year).ToList();
+                            break;
+                        case TimeRange.ThisYear:
+                            matches = matches.Where(x => x.DutyStartTime.Year == DateTime.Now.Year).ToList();
+                            break;
+                        case TimeRange.LastYear:
+                            matches = matches.Where(x => x.DutyStartTime.Year == DateTime.Now.AddYears(-1).Year).ToList();
+                            break;
+                        case TimeRange.Custom:
+                            matches = matches.Where(x => x.DutyStartTime > timeFilter.StartTime && x.DutyStartTime < timeFilter.EndTime).ToList();
+                            break;
+                        case TimeRange.Season:
+                            matches = matches.Where(x => x.DutyStartTime > ArenaSeason.Season[timeFilter.Season].StartDate && x.DutyStartTime < ArenaSeason.Season[timeFilter.Season].EndDate).ToList();
+                            break;
+                        case TimeRange.All:
+                        default:
+                            break;
+                    }
+                    //_plugin.Configuration.MatchWindowFilters.TimeFilter = timeFilter;
+                    break;
+                case Type _ when filter.GetType() == typeof(LocalPlayerFilter):
+                    var localPlayerFilter = (LocalPlayerFilter)filter;
+                    if(localPlayerFilter.CurrentPlayerOnly && _plugin.ClientState.IsLoggedIn && _plugin.GameState.CurrentPlayer != null) {
+                        if(_plugin.Configuration.EnablePlayerLinking) {
+                            var linkedAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(_plugin.GameState.CurrentPlayer);
+                            matches = matches.Where(x => x.LocalPlayer != null && (x.LocalPlayer.Equals(_plugin.GameState.CurrentPlayer) || linkedAliases.Contains(x.LocalPlayer))).ToList();
+                        } else {
+                            matches = matches.Where(x => x.LocalPlayer != null && x.LocalPlayer.Equals(_plugin.GameState.CurrentPlayer)).ToList();
+                        }
+                    }
+                    //_plugin.Configuration.MatchWindowFilters.LocalPlayerFilter = localPlayerFilter;
+                    break;
+                case Type _ when filter.GetType() == typeof(LocalPlayerJobFilter):
+                    var localPlayerJobFilter = (LocalPlayerJobFilter)filter;
+                    //_plugin.Log.Debug($"anyjob: {localPlayerJobFilter.AnyJob} role: {localPlayerJobFilter.JobRole} job: {localPlayerJobFilter.PlayerJob}");
+                    if(!localPlayerJobFilter.AnyJob) {
+                        if(localPlayerJobFilter.JobRole != null) {
+                            matches = matches.Where(x => x.LocalPlayer != null && x.LocalPlayerTeamMember != null && PlayerJobHelper.GetSubRoleFromJob(x.LocalPlayerTeamMember.Job) == localPlayerJobFilter.JobRole).ToList();
+                        } else {
+                            matches = matches.Where(x => x.LocalPlayer != null && x.LocalPlayerTeamMember != null && x.LocalPlayerTeamMember.Job == localPlayerJobFilter.PlayerJob).ToList();
+                        }
+                    }
+                    //_plugin.Configuration.MatchWindowFilters.LocalPlayerJobFilter = localPlayerJobFilter;
+                    break;
+                case Type _ when filter.GetType() == typeof(OtherPlayerFilter):
+                    var otherPlayerFilter = (OtherPlayerFilter)filter;
+                    List<PlayerAlias> linkedPlayerAliases = new();
+                    if(!otherPlayerFilter.PlayerNamesRaw.IsNullOrEmpty() && _plugin.Configuration.EnablePlayerLinking) {
+                        linkedPlayerAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(otherPlayerFilter.PlayerNamesRaw);
+                    }
+                    matches = matches.Where(x => {
+                        foreach(var team in x.Teams) {
+                            if(otherPlayerFilter.TeamStatus == TeamStatus.Teammate && team.Key != x.LocalPlayerTeam?.TeamName) {
+                                continue;
+                            } else if(otherPlayerFilter.TeamStatus == TeamStatus.Opponent && team.Key == x.LocalPlayerTeam?.TeamName) {
+                                continue;
+                            }
+                            foreach(var player in team.Value.Players) {
+                                if(!otherPlayerFilter.AnyJob && player.Job != otherPlayerFilter.PlayerJob) {
+                                    continue;
+                                }
+                                if(_plugin.Configuration.EnablePlayerLinking) {
+                                    if(player.Alias.FullName.Contains(otherPlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase)
+                                    || linkedPlayerAliases.Any(x => x.Equals(player.Alias))) {
+                                        return true;
+                                    }
+                                } else {
+                                    if(player.Alias.FullName.Contains(otherPlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase)) {
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+                        return false;
+                    }).ToList();
+                    //_plugin.Configuration.MatchWindowFilters.OtherPlayerFilter = otherPlayerFilter;
+                    break;
+                case Type _ when filter.GetType() == typeof(ResultFilter):
+                    var resultFilter = (ResultFilter)filter;
+                    if(resultFilter.Result == MatchResult.Win) {
+                        matches = matches.Where(x => x.IsWin).ToList();
+                    } else if(resultFilter.Result == MatchResult.Loss) {
+                        matches = matches.Where(x => !x.IsWin && x.MatchWinner != null && !x.IsSpectated).ToList();
+                    } else if(resultFilter.Result == MatchResult.Other) {
+                        matches = matches.Where(x => x.IsSpectated || x.MatchWinner == null).ToList();
+                    }
+                    break;
+                case Type _ when filter.GetType() == typeof(BookmarkFilter):
+                    var bookmarkFilter = (BookmarkFilter)filter;
+                    if(bookmarkFilter.BookmarkedOnly) {
+                        matches = matches.Where(x => x.IsBookmarked).ToList();
+                    }
+                    //_plugin.Configuration.MatchWindowFilters.BookmarkFilter = bookmarkFilter;
+                    break;
+                case Type _ when filter.GetType() == typeof(MiscFilter):
+                    var miscFilter = (MiscFilter)filter;
+                    if(miscFilter.MustHaveStats) {
+                        matches = matches.Where(x => x.PostMatch is not null).ToList();
+                    }
+                    //_plugin.Configuration.MatchWindowFilters.MiscFilter = miscFilter;
+                    break;
+            }
+        }
+        return matches;
+    }
+
+}

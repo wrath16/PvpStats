@@ -71,6 +71,7 @@ internal class MainWindow : Window {
     }
 
     public async Task Refresh() {
+        DateTime d0 = DateTime.Now;
         var matches = _plugin.Storage.GetCCMatches().Query().Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
         foreach(var filter in Filters) {
             switch(filter.GetType()) {
@@ -212,13 +213,17 @@ internal class MainWindow : Window {
             //    ccJobs.Refresh(new()),
             //    ccRank.Refresh(matches),
             //]);
+#if DEBUG
             DateTime d1 = DateTime.Now;
+            _plugin.Log.Debug($"Match filter + wait: {(d1 - d0).TotalMilliseconds}ms");
+#endif
             await ccMatches.Refresh(matches);
 #if DEBUG
             DateTime d2 = DateTime.Now;
             _plugin.Log.Debug($"Matches refresh: {(d2 - d1).TotalMilliseconds}ms");
 #endif
             await ccSummary.Refresh(matches);
+            //await _plugin.CCStatsEngine.Refresh(Filters, ccJobs.StatSourceFilter, ccPlayers.InheritFromPlayerFilter);
 #if DEBUG
             DateTime d3 = DateTime.Now;
             _plugin.Log.Debug($"Summary refresh: {(d3 - d2).TotalMilliseconds}ms");
@@ -247,6 +252,7 @@ internal class MainWindow : Window {
 #if DEBUG
             DateTime d8 = DateTime.Now;
             _plugin.Log.Debug($"Config save: {(d8 - d7).TotalMilliseconds}ms");
+            _plugin.Log.Debug($"TOTAL: {(d8 - d0).TotalMilliseconds}ms");
 #endif
         } finally {
             RefreshLock.Release();
@@ -256,7 +262,9 @@ internal class MainWindow : Window {
     public override void PreDraw() {
         //_plugin.Log.Debug($"predraw collapsed: {Collapsed}");
         if(_plugin.Configuration.MinimizeWindow && _windowCollapsed && !_lastWindowCollapsed && _firstDraw) {
+#if DEBUG
             _plugin.Log.Debug($"collapsed. Position: ({_lastWindowPosition.X},{_lastWindowPosition.Y}) Size: ({_lastWindowSize.X},{_lastWindowSize.Y})");
+#endif
             if(!_plugin.Configuration.MinimizeDirectionLeft) {
                 SetWindowPosition(new Vector2((_lastWindowPosition.X + (_lastWindowSize.X - 425 * ImGuiHelpers.GlobalScale)), _lastWindowPosition.Y));
             }
@@ -281,7 +289,9 @@ internal class MainWindow : Window {
         SizeCondition = ImGuiCond.Once;
         PositionCondition = ImGuiCond.Once;
         if(_plugin.Configuration.MinimizeWindow && _lastWindowCollapsed && _savedWindowSize != Vector2.Zero) {
+#if DEBUG
             _plugin.Log.Debug($"un-collapsed window");
+#endif
             if(!_plugin.Configuration.MinimizeDirectionLeft) {
                 SetWindowPosition(new Vector2(ImGui.GetWindowPos().X - (_savedWindowSize.X - 425) * ImGuiHelpers.GlobalScale, ImGui.GetWindowPos().Y));
             }
@@ -396,7 +406,9 @@ internal class MainWindow : Window {
 
     private void ChangeTab(string tab) {
         if(_currentTab != tab) {
+#if DEBUG
             _plugin.Log.Debug("changing tab to " + tab);
+#endif
             SaveTabSize(_currentTab);
             _currentTab = tab;
             if(_plugin.Configuration.PersistWindowSizePerTab) {
@@ -434,14 +446,18 @@ internal class MainWindow : Window {
     private void SetWindowSize(Vector2 size) {
         SizeCondition = ImGuiCond.Always;
         Size = size;
+#if DEBUG
         _plugin.Log.Debug($"Setting size to: ({Size.Value.X},{Size.Value.Y})");
+#endif
         //_sizeChangeReset = true;
     }
 
     private void SetWindowPosition(Vector2 pos) {
         PositionCondition = ImGuiCond.Always;
         Position = pos;
+#if DEBUG
         _plugin.Log.Debug($"Setting position to: ({Position.Value.X},{Position.Value.Y})");
+#endif
         //_positionChangeReset = true;
     }
 }

@@ -74,7 +74,7 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
 
     protected override string TableId => "###CCJobStatsTable";
 
-    private StatSourceFilter StatSourceFilter { get; set; }
+    internal StatSourceFilter StatSourceFilter { get; private set; }
 
     public CrystallineConflictJobList(Plugin plugin, CrystallineConflictList listModel, OtherPlayerFilter playerFilter) : base(plugin) {
         ListModel = listModel;

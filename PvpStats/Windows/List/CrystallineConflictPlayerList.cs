@@ -76,7 +76,7 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
 
     private List<PlayerAlias> DataModelUntruncated { get; set; } = new();
     private int PlayerCount { get; set; }
-    private bool InheritFromPlayerFilter { get; set; } = true;
+    internal bool InheritFromPlayerFilter { get; private set; } = true;
     private uint MinMatches { get; set; } = 1;
     private string PlayerQuickSearch { get; set; } = "";
 
