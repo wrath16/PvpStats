@@ -45,6 +45,7 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
         new ColumnParams{Name = "Total Damage Taken", Id = (uint)"ScoreboardTotal.DamageTaken".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
         new ColumnParams{Name = "Total HP Restored", Id = (uint)"ScoreboardTotal.HPRestored".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
         new ColumnParams{Name = "Total Time on Crystal", Id = (uint)"ScoreboardTotal.TimeOnCrystal".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Total Kills/Assists", Id = (uint)"ScoreboardTotal.KillsAndAssists".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
         new ColumnParams{Name = "Kills Per Match", Id = (uint)"ScoreboardPerMatch.Kills".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
         new ColumnParams{Name = "Deaths Per Match", Id = (uint)"ScoreboardPerMatch.Deaths".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
         new ColumnParams{Name = "Assists Per Match", Id = (uint)"ScoreboardPerMatch.Assists".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
@@ -52,6 +53,7 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
         new ColumnParams{Name = "Damage Taken Per Match", Id = (uint)"ScoreboardPerMatch.DamageTaken".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
         new ColumnParams{Name = "HP Restored Per Match", Id = (uint)"ScoreboardPerMatch.HPRestored".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
         new ColumnParams{Name = "Time on Crystal Per Match", Id = (uint)"ScoreboardPerMatch.TimeOnCrystal".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Kills/Assists Per Match", Id = (uint)"ScoreboardPerMatch.KillsAndAssists".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
         new ColumnParams{Name = "Kills Per Min", Id = (uint)"ScoreboardPerMin.Kills".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
         new ColumnParams{Name = "Deaths Per Min", Id = (uint)"ScoreboardPerMin.Deaths".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
         new ColumnParams{Name = "Assists Per Min", Id = (uint)"ScoreboardPerMin.Assists".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
@@ -59,6 +61,7 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
         new ColumnParams{Name = "Damage Taken Per Min", Id = (uint)"ScoreboardPerMin.DamageTaken".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
         new ColumnParams{Name = "HP Restored Per Min", Id = (uint)"ScoreboardPerMin.HPRestored".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
         new ColumnParams{Name = "Time on Crystal Per Min", Id = (uint)"ScoreboardPerMin.TimeOnCrystal".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Kills/Assists Per Min", Id = (uint)"ScoreboardPerMin.KillsAndAssists".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
         new ColumnParams{Name = "Median Kill Contrib.", Id = (uint)"ScoreboardContrib.Kills".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
         new ColumnParams{Name = "Median Death Contrib.", Id = (uint)"ScoreboardContrib.Deaths".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
         new ColumnParams{Name = "Median Assist Contrib.", Id = (uint)"ScoreboardContrib.Assists".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
@@ -66,20 +69,22 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
         new ColumnParams{Name = "Median Damage Taken Contrib.", Id = (uint)"ScoreboardContrib.DamageTaken".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
         new ColumnParams{Name = "Median HP Restored Contrib.", Id = (uint)"ScoreboardContrib.HPRestored".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
         new ColumnParams{Name = "Median Time on Crystal Contrib.", Id = (uint)"ScoreboardContrib.TimeOnCrystalDouble".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "Median Kill/Assist Contrib.", Id = (uint)"ScoreboardContrib.KillsAndAssists".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
         new ColumnParams{Name = "Damage Dealt Per Kill/Assist", Id = (uint)"ScoreboardTotal.DamageDealtPerKA".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
         new ColumnParams{Name = "Damage Dealt Per Life", Id = (uint)"ScoreboardTotal.DamageDealtPerLife".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
         new ColumnParams{Name = "Damage Taken Per Life", Id = (uint)"ScoreboardTotal.DamageTakenPerLife".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
         new ColumnParams{Name = "HP Restored Per Life", Id = (uint)"ScoreboardTotal.HPRestoredPerLife".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{Name = "KDA Ratio", Id = (uint)"ScoreboardTotal.KDA".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
     };
 
     protected override string TableId => "###CCJobStatsTable";
 
     internal StatSourceFilter StatSourceFilter { get; private set; }
 
-    public CrystallineConflictJobList(Plugin plugin, CrystallineConflictList listModel, OtherPlayerFilter playerFilter) : base(plugin) {
-        ListModel = listModel;
-        StatSourceFilter = new(plugin, RefreshDataModel, plugin.Configuration.MatchWindowFilters.StatSourceFilter);
-        OtherPlayerFilter = playerFilter;
+    public CrystallineConflictJobList(Plugin plugin) : base(plugin) {
+        //ListModel = listModel;
+        StatSourceFilter = new(plugin, RefreshMainWindow, plugin.Configuration.MatchWindowFilters.StatSourceFilter);
+        //OtherPlayerFilter = playerFilter;
     }
 
     protected override void PreTableDraw() {
@@ -102,8 +107,8 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
             if(ImGui.Button($"{FontAwesomeIcon.Copy.ToIconString()}##--CopyCSV")) {
                 _plugin.DataQueue.QueueDataOperation(() => {
                     ListCSV = CSVHeader();
-                    foreach(var stat in StatsModel) {
-                        ListCSV += CSVRow(StatsModel, stat.Key);
+                    foreach(var stat in _plugin.CCStatsEngine.JobStats) {
+                        ListCSV += CSVRow(_plugin.CCStatsEngine.JobStats, stat.Key);
                     }
                     Task.Run(() => {
                         ImGui.SetClipboardText(ListCSV);
@@ -132,135 +137,145 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
         ImGui.TableNextColumn();
         ImGui.TextColored(ImGuiHelper.GetJobColor(item), $"{PlayerJobHelper.GetSubRoleFromJob(item)}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{StatsModel[item].StatsAll.Matches}");
+        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.JobStats[item].StatsAll.Matches}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{StatsModel[item].StatsAll.Wins}");
+        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.JobStats[item].StatsAll.Wins}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{StatsModel[item].StatsAll.Losses}");
+        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.JobStats[item].StatsAll.Losses}");
         ImGui.TableNextColumn();
-        var jobWinDiff = StatsModel[item].StatsAll.WinDiff;
+        var jobWinDiff = _plugin.CCStatsEngine.JobStats[item].StatsAll.WinDiff;
         var jobWinDiffColor = jobWinDiff > 0 ? ImGuiColors.HealerGreen : jobWinDiff < 0 ? ImGuiColors.DPSRed : ImGuiColors.DalamudWhite;
         ImGui.TextColored(jobWinDiffColor, $"{jobWinDiff}");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawPercentage(StatsModel[item].StatsAll.WinRate, jobWinDiffColor);
+        ImGuiHelper.DrawPercentage(_plugin.CCStatsEngine.JobStats[item].StatsAll.WinRate, jobWinDiffColor);
 
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{StatsModel[item].StatsPersonal.Matches}");
+        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.JobStats[item].StatsPersonal.Matches}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{StatsModel[item].StatsPersonal.Wins}");
+        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.JobStats[item].StatsPersonal.Wins}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{StatsModel[item].StatsPersonal.Losses}");
+        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.JobStats[item].StatsPersonal.Losses}");
         ImGui.TableNextColumn();
-        var personalWinDiff = StatsModel[item].StatsPersonal.WinDiff;
+        var personalWinDiff = _plugin.CCStatsEngine.JobStats[item].StatsPersonal.WinDiff;
         var personalWinDiffColor = personalWinDiff > 0 ? ImGuiColors.HealerGreen : personalWinDiff < 0 ? ImGuiColors.DPSRed : ImGuiColors.DalamudWhite;
         ImGui.TextColored(personalWinDiffColor, $"{personalWinDiff}");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawPercentage(StatsModel[item].StatsPersonal.WinRate, personalWinDiffColor);
+        ImGuiHelper.DrawPercentage(_plugin.CCStatsEngine.JobStats[item].StatsPersonal.WinRate, personalWinDiffColor);
 
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{StatsModel[item].StatsTeammate.Matches}");
+        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.JobStats[item].StatsTeammate.Matches}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{StatsModel[item].StatsTeammate.Wins}");
+        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.JobStats[item].StatsTeammate.Wins}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{StatsModel[item].StatsTeammate.Losses}");
+        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.JobStats[item].StatsTeammate.Losses}");
         ImGui.TableNextColumn();
-        var teammateWinDiff = StatsModel[item].StatsTeammate.WinDiff;
+        var teammateWinDiff = _plugin.CCStatsEngine.JobStats[item].StatsTeammate.WinDiff;
         var teammateWinDiffColor = teammateWinDiff > 0 ? ImGuiColors.HealerGreen : teammateWinDiff < 0 ? ImGuiColors.DPSRed : ImGuiColors.DalamudWhite;
         ImGui.TextColored(teammateWinDiffColor, $"{teammateWinDiff}");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawPercentage(StatsModel[item].StatsTeammate.WinRate, teammateWinDiffColor);
+        ImGuiHelper.DrawPercentage(_plugin.CCStatsEngine.JobStats[item].StatsTeammate.WinRate, teammateWinDiffColor);
 
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{StatsModel[item].StatsOpponent.Matches}");
+        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.JobStats[item].StatsOpponent.Matches}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{StatsModel[item].StatsOpponent.Wins}");
+        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.JobStats[item].StatsOpponent.Wins}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{StatsModel[item].StatsOpponent.Losses}");
+        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.JobStats[item].StatsOpponent.Losses}");
         ImGui.TableNextColumn();
-        var opponentWinDiff = StatsModel[item].StatsOpponent.WinDiff;
+        var opponentWinDiff = _plugin.CCStatsEngine.JobStats[item].StatsOpponent.WinDiff;
         var opponentWinDiffColor = opponentWinDiff > 0 ? ImGuiColors.HealerGreen : opponentWinDiff < 0 ? ImGuiColors.DPSRed : ImGuiColors.DalamudWhite;
         ImGui.TextColored(opponentWinDiffColor, $"{opponentWinDiff}");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawPercentage(StatsModel[item].StatsOpponent.WinRate, opponentWinDiffColor);
+        ImGuiHelper.DrawPercentage(_plugin.CCStatsEngine.JobStats[item].StatsOpponent.WinRate, opponentWinDiffColor);
 
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{StatsModel[item].ScoreboardTotal.Kills.ToString("N0")}");
+        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.Kills.ToString("N0")}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{StatsModel[item].ScoreboardTotal.Deaths.ToString("N0")}");
+        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.Deaths.ToString("N0")}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{StatsModel[item].ScoreboardTotal.Assists.ToString("N0")}");
+        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.Assists.ToString("N0")}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{StatsModel[item].ScoreboardTotal.DamageDealt.ToString("N0")}");
+        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.DamageDealt.ToString("N0")}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{StatsModel[item].ScoreboardTotal.DamageTaken.ToString("N0")}");
+        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.DamageTaken.ToString("N0")}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{StatsModel[item].ScoreboardTotal.HPRestored.ToString("N0")}");
+        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.HPRestored.ToString("N0")}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted(ImGuiHelper.GetTimeSpanString(StatsModel[item].ScoreboardTotal.TimeOnCrystal));
+        ImGui.TextUnformatted(ImGuiHelper.GetTimeSpanString(_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.TimeOnCrystal));
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.KillsAndAssists.ToString("N0")}");
 
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardPerMatch.Kills, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 1.0f, 4.5f, _plugin.Configuration.ColorScaleStats, "0.00");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMatch.Kills, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 1.0f, 4.5f, _plugin.Configuration.ColorScaleStats, "0.00");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardPerMatch.Deaths, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 1.5f, 3.5f, _plugin.Configuration.ColorScaleStats, "0.00");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMatch.Deaths, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 1.5f, 3.5f, _plugin.Configuration.ColorScaleStats, "0.00");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardPerMatch.Assists, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 5.0f, 8.0f, _plugin.Configuration.ColorScaleStats, "0.00");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMatch.Assists, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 5.0f, 7.5f, _plugin.Configuration.ColorScaleStats, "0.00");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardPerMatch.DamageDealt, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 400000f, 900000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMatch.DamageDealt, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 400000f, 850000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardPerMatch.DamageTaken, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 400000f, 900000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMatch.DamageTaken, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 400000f, 850000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardPerMatch.HPRestored, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 300000f, 1000000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMatch.HPRestored, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 350000f, 1000000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        var tcpa = StatsModel[item].ScoreboardPerMatch.TimeOnCrystal;
+        var tcpa = _plugin.CCStatsEngine.JobStats[item].ScoreboardPerMatch.TimeOnCrystal;
         if(_plugin.Configuration.ColorScaleStats) {
-            ImGui.TextColored(ImGuiHelper.ColorScale(ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 30f, 120f, (float)tcpa.TotalSeconds), ImGuiHelper.GetTimeSpanString(tcpa));
+            ImGui.TextColored(ImGuiHelper.ColorScale(ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 35f, 120f, (float)tcpa.TotalSeconds), ImGuiHelper.GetTimeSpanString(tcpa));
         } else {
             ImGui.TextUnformatted(ImGuiHelper.GetTimeSpanString(tcpa));
         }
+        ImGui.TableNextColumn();
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMatch.KillsAndAssists, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 6.0f, 10.0f, _plugin.Configuration.ColorScaleStats, "0.00");
 
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardPerMin.Kills, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.7f, _plugin.Configuration.ColorScaleStats, "0.00");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMin.Kills, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.7f, _plugin.Configuration.ColorScaleStats, "0.00");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardPerMin.Deaths, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 0.2f, 0.5f, _plugin.Configuration.ColorScaleStats, "0.00");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMin.Deaths, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 0.25f, 0.55f, _plugin.Configuration.ColorScaleStats, "0.00");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardPerMin.Assists, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.7f, 1.5f, _plugin.Configuration.ColorScaleStats, "0.00");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMin.Assists, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.75f, 1.5f, _plugin.Configuration.ColorScaleStats, "0.00");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardPerMin.DamageDealt, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 70000f, 150000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMin.DamageDealt, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 75000f, 140000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardPerMin.DamageTaken, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 70000f, 150000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMin.DamageTaken, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 75000f, 140000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardPerMin.HPRestored, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 50000f, 200000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMin.HPRestored, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 60000f, 185000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        var tcpm = StatsModel[item].ScoreboardPerMin.TimeOnCrystal;
+        var tcpm = _plugin.CCStatsEngine.JobStats[item].ScoreboardPerMin.TimeOnCrystal;
         if(_plugin.Configuration.ColorScaleStats) {
-            ImGui.TextColored(ImGuiHelper.ColorScale(ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 4f, 25f, (float)tcpm.TotalSeconds), ImGuiHelper.GetTimeSpanString(tcpm));
+            ImGui.TextColored(ImGuiHelper.ColorScale(ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 6f, 20f, (float)tcpm.TotalSeconds), ImGuiHelper.GetTimeSpanString(tcpm));
         } else {
             ImGui.TextUnformatted(ImGuiHelper.GetTimeSpanString(tcpm));
         }
+        ImGui.TableNextColumn();
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMin.KillsAndAssists, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 1.0f, 2.0f, _plugin.Configuration.ColorScaleStats, "0.00");
 
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardContrib.Kills, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardContrib.Kills, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardContrib.Deaths, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardContrib.Deaths, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardContrib.Assists, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardContrib.Assists, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardContrib.DamageDealt, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardContrib.DamageDealt, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardContrib.DamageTaken, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardContrib.DamageTaken, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardContrib.HPRestored, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardContrib.HPRestored, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)StatsModel[item].ScoreboardContrib.TimeOnCrystalDouble, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.3f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardContrib.TimeOnCrystalDouble, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+        ImGui.TableNextColumn();
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardContrib.KillsAndAssists, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
 
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale(StatsModel[item].ScoreboardTotal.DamageDealtPerKA, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 50000f, 100000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale(_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.DamageDealtPerKA, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 52000f, 100000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale(StatsModel[item].ScoreboardTotal.DamageDealtPerLife, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 200000f, 400000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale(_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.DamageDealtPerLife, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 190000f, 400000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale(StatsModel[item].ScoreboardTotal.DamageTakenPerLife, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 200000f, 400000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale(_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.DamageTakenPerLife, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 190000f, 400000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale(StatsModel[item].ScoreboardTotal.HPRestoredPerLife, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 100000f, 500000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale(_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.HPRestoredPerLife, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 120000f, 600000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGui.TableNextColumn();
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.KDA, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 2.25f, 6.25f, _plugin.Configuration.ColorScaleStats, "0.00");
     }
 
     public override void OpenFullEditDetail(Job item) {
@@ -271,156 +286,12 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
     }
 
     public override async Task RefreshDataModel() {
-        Dictionary<Job, CCPlayerJobStats> statsModel = new();
-        Dictionary<Job, List<CCScoreboardDouble>> teamContributions = new();
-        ListCSV = CSVHeader();
-        //Dictionary<Job, (CCPlayerJobStats, List<CCScoreboardDouble>)> data = new();
-        List<PlayerAlias> linkedPlayerAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(OtherPlayerFilter.PlayerNamesRaw);
+        TriggerSort = true;
+        await Task.CompletedTask;
+    }
 
-        var allJobs = Enum.GetValues(typeof(Job)).Cast<Job>();
-        foreach(var job in allJobs) {
-            //DataModel.Add(job);
-            statsModel.Add(job, new());
-            teamContributions.Add(job, new());
-            //data.Add(job, (new(), new()));
-        }
-
-        foreach(var match in ListModel.DataModel) {
-            foreach(var team in match.Teams) {
-                foreach(var player in team.Value.Players) {
-                    if(player.Job != null) {
-                        var job = (Job)player.Job;
-                        bool isLocalPlayer = player.Alias.Equals(match.LocalPlayer);
-                        bool isTeammate = !match.IsSpectated && !isLocalPlayer && team.Key == match.LocalPlayerTeam!.TeamName;
-
-                        if(StatSourceFilter.InheritFromPlayerFilter) {
-                            bool nameMatch = player.Alias.FullName.Contains(OtherPlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase);
-                            if(_plugin.Configuration.EnablePlayerLinking && !nameMatch) {
-                                nameMatch = linkedPlayerAliases.Contains(player.Alias);
-                            }
-                            bool sideMatch = OtherPlayerFilter.TeamStatus == TeamStatus.Any
-                                || OtherPlayerFilter.TeamStatus == TeamStatus.Teammate && isTeammate
-                                || OtherPlayerFilter.TeamStatus == TeamStatus.Opponent && !isTeammate && !isLocalPlayer;
-                            bool jobMatch = OtherPlayerFilter.AnyJob || OtherPlayerFilter.PlayerJob == player.Job;
-                            if(!nameMatch || !sideMatch || !jobMatch) {
-                                continue;
-                            }
-                        }
-
-                        if(!StatSourceFilter.FilterState[StatSource.LocalPlayer] && isLocalPlayer) {
-                            continue;
-                        } else if(!StatSourceFilter.FilterState[StatSource.Teammate] && isTeammate) {
-                            continue;
-                        } else if(!StatSourceFilter.FilterState[StatSource.Opponent] && !isTeammate && !isLocalPlayer) {
-                            continue;
-                        } else if(!StatSourceFilter.FilterState[StatSource.Spectated] && match.IsSpectated) {
-                            continue;
-                        }
-
-                        statsModel[job].StatsAll.Matches++;
-                        if(match.MatchWinner == team.Key) {
-                            statsModel[job].StatsAll.Wins++;
-                        } else if(match.MatchWinner != null) {
-                            statsModel[job].StatsAll.Losses++;
-                        }
-
-                        if(isLocalPlayer) {
-                            statsModel[job].StatsPersonal.Matches++;
-                            if(match.IsWin) {
-                                statsModel[job].StatsPersonal.Wins++;
-                            } else if(match.MatchWinner != null) {
-                                statsModel[job].StatsPersonal.Losses++;
-                            }
-                        }
-
-                        if(!match.IsSpectated) {
-                            if(isTeammate) {
-                                statsModel[job].StatsTeammate.Matches++;
-                                if(match.IsWin) {
-                                    statsModel[job].StatsTeammate.Wins++;
-                                } else if(match.MatchWinner != null) {
-                                    statsModel[job].StatsTeammate.Losses++;
-                                }
-                            } else if(!isLocalPlayer) {
-                                statsModel[job].StatsOpponent.Matches++;
-                                if(match.IsWin) {
-                                    statsModel[job].StatsOpponent.Wins++;
-                                } else if(match.MatchWinner != null) {
-                                    statsModel[job].StatsOpponent.Losses++;
-                                }
-                            }
-                        }
-
-                        if(match.PostMatch != null) {
-                            var playerTeamScoreboard = match.PostMatch.Teams.Where(x => x.Key == team.Key).FirstOrDefault().Value;
-                            var playerScoreboard = playerTeamScoreboard.PlayerStats.Where(x => x.Player?.Equals(player.Alias) ?? false).FirstOrDefault();
-                            if(playerScoreboard != null) {
-                                statsModel[job].ScoreboardTotal.MatchTime += match.PostMatch.MatchDuration;
-                                statsModel[job].ScoreboardTotal.Kills += (ulong)playerScoreboard.Kills;
-                                statsModel[job].ScoreboardTotal.Deaths += (ulong)playerScoreboard.Deaths;
-                                statsModel[job].ScoreboardTotal.Assists += (ulong)playerScoreboard.Assists;
-                                statsModel[job].ScoreboardTotal.DamageDealt += (ulong)playerScoreboard.DamageDealt;
-                                statsModel[job].ScoreboardTotal.DamageTaken += (ulong)playerScoreboard.DamageTaken;
-                                statsModel[job].ScoreboardTotal.HPRestored += (ulong)playerScoreboard.HPRestored;
-                                statsModel[job].ScoreboardTotal.TimeOnCrystal += playerScoreboard.TimeOnCrystal;
-
-                                teamContributions[job].Add(new() {
-                                    Kills = playerTeamScoreboard.TeamStats.Kills != 0 ? (double)playerScoreboard.Kills / playerTeamScoreboard.TeamStats.Kills : 0,
-                                    Deaths = playerTeamScoreboard.TeamStats.Deaths != 0 ? (double)playerScoreboard.Deaths / playerTeamScoreboard.TeamStats.Deaths : 0,
-                                    Assists = playerTeamScoreboard.TeamStats.Assists != 0 ? (double)playerScoreboard.Assists / playerTeamScoreboard.TeamStats.Assists : 0,
-                                    DamageDealt = playerTeamScoreboard.TeamStats.DamageDealt != 0 ? (double)playerScoreboard.DamageDealt / playerTeamScoreboard.TeamStats.DamageDealt : 0,
-                                    DamageTaken = playerTeamScoreboard.TeamStats.DamageTaken != 0 ? (double)playerScoreboard.DamageTaken / playerTeamScoreboard.TeamStats.DamageTaken : 0,
-                                    HPRestored = playerTeamScoreboard.TeamStats.HPRestored != 0 ? (double)playerScoreboard.HPRestored / playerTeamScoreboard.TeamStats.HPRestored : 0,
-                                    TimeOnCrystalDouble = playerTeamScoreboard.TeamStats.TimeOnCrystal.Ticks != 0 ? playerScoreboard.TimeOnCrystal / playerTeamScoreboard.TeamStats.TimeOnCrystal : 0,
-                                });
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        foreach(var jobStat in statsModel) {
-            var job = jobStat.Key;
-            var statMatches = teamContributions[job].Count;
-            //set average stats
-            if(statMatches > 0) {
-                jobStat.Value.ScoreboardPerMatch.Kills = (double)jobStat.Value.ScoreboardTotal.Kills / statMatches;
-                jobStat.Value.ScoreboardPerMatch.Deaths = (double)jobStat.Value.ScoreboardTotal.Deaths / statMatches;
-                jobStat.Value.ScoreboardPerMatch.Assists = (double)jobStat.Value.ScoreboardTotal.Assists / statMatches;
-                jobStat.Value.ScoreboardPerMatch.DamageDealt = (double)jobStat.Value.ScoreboardTotal.DamageDealt / statMatches;
-                jobStat.Value.ScoreboardPerMatch.DamageTaken = (double)jobStat.Value.ScoreboardTotal.DamageTaken / statMatches;
-                jobStat.Value.ScoreboardPerMatch.HPRestored = (double)jobStat.Value.ScoreboardTotal.HPRestored / statMatches;
-                jobStat.Value.ScoreboardPerMatch.TimeOnCrystal = jobStat.Value.ScoreboardTotal.TimeOnCrystal / statMatches;
-
-                var matchTime = jobStat.Value.ScoreboardTotal.MatchTime;
-                jobStat.Value.ScoreboardPerMin.Kills = jobStat.Value.ScoreboardTotal.Kills / matchTime.TotalMinutes;
-                jobStat.Value.ScoreboardPerMin.Deaths = jobStat.Value.ScoreboardTotal.Deaths / matchTime.TotalMinutes;
-                jobStat.Value.ScoreboardPerMin.Assists = jobStat.Value.ScoreboardTotal.Assists / matchTime.TotalMinutes;
-                jobStat.Value.ScoreboardPerMin.DamageDealt = jobStat.Value.ScoreboardTotal.DamageDealt / matchTime.TotalMinutes;
-                jobStat.Value.ScoreboardPerMin.DamageTaken = jobStat.Value.ScoreboardTotal.DamageTaken / matchTime.TotalMinutes;
-                jobStat.Value.ScoreboardPerMin.HPRestored = jobStat.Value.ScoreboardTotal.HPRestored / matchTime.TotalMinutes;
-                jobStat.Value.ScoreboardPerMin.TimeOnCrystal = jobStat.Value.ScoreboardTotal.TimeOnCrystal / matchTime.TotalMinutes;
-
-                jobStat.Value.ScoreboardContrib.Kills = teamContributions[job].OrderBy(x => x.Kills).ElementAt(statMatches / 2).Kills;
-                jobStat.Value.ScoreboardContrib.Deaths = teamContributions[job].OrderBy(x => x.Deaths).ElementAt(statMatches / 2).Deaths;
-                jobStat.Value.ScoreboardContrib.Assists = teamContributions[job].OrderBy(x => x.Assists).ElementAt(statMatches / 2).Assists;
-                jobStat.Value.ScoreboardContrib.DamageDealt = teamContributions[job].OrderBy(x => x.DamageDealt).ElementAt(statMatches / 2).DamageDealt;
-                jobStat.Value.ScoreboardContrib.DamageTaken = teamContributions[job].OrderBy(x => x.DamageTaken).ElementAt(statMatches / 2).DamageTaken;
-                jobStat.Value.ScoreboardContrib.HPRestored = teamContributions[job].OrderBy(x => x.HPRestored).ElementAt(statMatches / 2).HPRestored;
-                jobStat.Value.ScoreboardContrib.TimeOnCrystalDouble = teamContributions[job].OrderBy(x => x.TimeOnCrystalDouble).ElementAt(statMatches / 2).TimeOnCrystalDouble;
-            }
-            //ListCSV += CSVRow(statsModel, jobStat.Key);
-        }
-        try {
-            await RefreshLock.WaitAsync();
-            DataModel = statsModel.Keys.Where(x => x != Job.VPR && x != Job.PCT).ToList();
-            StatsModel = statsModel;
-            _plugin.Configuration.MatchWindowFilters.StatSourceFilter = StatSourceFilter;
-            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
-            TriggerSort = true;
-        } finally {
-            RefreshLock.Release();
-        }
+    private async Task RefreshMainWindow() {
+        await _plugin.WindowManager.Refresh();
     }
 
     private string CSVRow(Dictionary<Job, CCPlayerJobStats> model, Job key) {
@@ -456,7 +327,7 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
         } else {
             (var p1, var p2) = GetStatsPropertyFromId(columnId);
             if(p1 != null && p2 != null) {
-                comparator = (r) => p2.GetValue(p1.GetValue(StatsModel[r])) ?? 0;
+                comparator = (r) => p2.GetValue(p1.GetValue(_plugin.CCStatsEngine.JobStats[r])) ?? 0;
             }
         }
         DataModel = direction == ImGuiSortDirection.Ascending ? DataModel.OrderBy(comparator).ToList() : DataModel.OrderByDescending(comparator).ToList();

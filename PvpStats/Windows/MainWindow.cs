@@ -2,17 +2,13 @@ using Dalamud.Interface;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
-using Dalamud.Utility;
 using ImGuiNET;
 using PvpStats.Helpers;
-using PvpStats.Types.Match;
-using PvpStats.Types.Player;
 using PvpStats.Windows.Filter;
 using PvpStats.Windows.List;
 using PvpStats.Windows.Summary;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -59,8 +55,8 @@ internal class MainWindow : Window {
         ccMatches = new(plugin);
         ccSummary = new(plugin);
         ccRecords = new(plugin);
-        ccJobs = new(plugin, ccMatches, otherPlayerFilter);
-        ccPlayers = new(plugin, ccMatches, otherPlayerFilter);
+        ccJobs = new(plugin);
+        ccPlayers = new(plugin);
         ccProfile = new(plugin);
         ccRank = new(plugin);
         _plugin.DataQueue.QueueDataOperation(Refresh);
@@ -72,191 +68,13 @@ internal class MainWindow : Window {
 
     public async Task Refresh() {
         DateTime d0 = DateTime.Now;
-        var matches = _plugin.Storage.GetCCMatches().Query().Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
-        foreach(var filter in Filters) {
-            switch(filter.GetType()) {
-                case Type _ when filter.GetType() == typeof(MatchTypeFilter):
-                    var matchTypeFilter = (MatchTypeFilter)filter;
-                    matches = matches.Where(x => matchTypeFilter.FilterState[x.MatchType]).ToList();
-                    _plugin.Configuration.MatchWindowFilters.MatchTypeFilter = matchTypeFilter;
-                    break;
-                case Type _ when filter.GetType() == typeof(ArenaFilter):
-                    var arenaFilter = (ArenaFilter)filter;
-                    //include unknown maps under all
-                    matches = matches.Where(x => (x.Arena == null && arenaFilter.AllSelected) || arenaFilter.FilterState[(CrystallineConflictMap)x.Arena!]).ToList();
-                    _plugin.Configuration.MatchWindowFilters.ArenaFilter = arenaFilter;
-                    break;
-                case Type _ when filter.GetType() == typeof(TimeFilter):
-                    var timeFilter = (TimeFilter)filter;
-                    switch(timeFilter.StatRange) {
-                        case TimeRange.PastDay:
-                            matches = matches.Where(x => (DateTime.Now - x.DutyStartTime).TotalHours < 24).ToList();
-                            break;
-                        case TimeRange.PastWeek:
-                            matches = matches.Where(x => (DateTime.Now - x.DutyStartTime).TotalDays < 7).ToList();
-                            break;
-                        case TimeRange.ThisMonth:
-                            matches = matches.Where(x => x.DutyStartTime.Month == DateTime.Now.Month && x.DutyStartTime.Year == DateTime.Now.Year).ToList();
-                            break;
-                        case TimeRange.LastMonth:
-                            var lastMonth = DateTime.Now.AddMonths(-1);
-                            matches = matches.Where(x => x.DutyStartTime.Month == lastMonth.Month && x.DutyStartTime.Year == lastMonth.Year).ToList();
-                            break;
-                        case TimeRange.ThisYear:
-                            matches = matches.Where(x => x.DutyStartTime.Year == DateTime.Now.Year).ToList();
-                            break;
-                        case TimeRange.LastYear:
-                            matches = matches.Where(x => x.DutyStartTime.Year == DateTime.Now.AddYears(-1).Year).ToList();
-                            break;
-                        case TimeRange.Custom:
-                            matches = matches.Where(x => x.DutyStartTime > timeFilter.StartTime && x.DutyStartTime < timeFilter.EndTime).ToList();
-                            break;
-                        case TimeRange.Season:
-                            matches = matches.Where(x => x.DutyStartTime > ArenaSeason.Season[timeFilter.Season].StartDate && x.DutyStartTime < ArenaSeason.Season[timeFilter.Season].EndDate).ToList();
-                            break;
-                        case TimeRange.All:
-                        default:
-                            break;
-                    }
-                    _plugin.Configuration.MatchWindowFilters.TimeFilter = timeFilter;
-                    break;
-                case Type _ when filter.GetType() == typeof(LocalPlayerFilter):
-                    var localPlayerFilter = (LocalPlayerFilter)filter;
-                    if(localPlayerFilter.CurrentPlayerOnly && _plugin.ClientState.IsLoggedIn && _plugin.GameState.CurrentPlayer != null) {
-                        if(_plugin.Configuration.EnablePlayerLinking) {
-                            var linkedAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(_plugin.GameState.CurrentPlayer);
-                            matches = matches.Where(x => x.LocalPlayer != null && (x.LocalPlayer.Equals(_plugin.GameState.CurrentPlayer) || linkedAliases.Contains(x.LocalPlayer))).ToList();
-                        } else {
-                            matches = matches.Where(x => x.LocalPlayer != null && x.LocalPlayer.Equals(_plugin.GameState.CurrentPlayer)).ToList();
-                        }
-                    }
-                    _plugin.Configuration.MatchWindowFilters.LocalPlayerFilter = localPlayerFilter;
-                    break;
-                case Type _ when filter.GetType() == typeof(LocalPlayerJobFilter):
-                    var localPlayerJobFilter = (LocalPlayerJobFilter)filter;
-                    //_plugin.Log.Debug($"anyjob: {localPlayerJobFilter.AnyJob} role: {localPlayerJobFilter.JobRole} job: {localPlayerJobFilter.PlayerJob}");
-                    if(!localPlayerJobFilter.AnyJob) {
-                        if(localPlayerJobFilter.JobRole != null) {
-                            matches = matches.Where(x => x.LocalPlayer != null && x.LocalPlayerTeamMember != null && PlayerJobHelper.GetSubRoleFromJob(x.LocalPlayerTeamMember.Job) == localPlayerJobFilter.JobRole).ToList();
-                        } else {
-                            matches = matches.Where(x => x.LocalPlayer != null && x.LocalPlayerTeamMember != null && x.LocalPlayerTeamMember.Job == localPlayerJobFilter.PlayerJob).ToList();
-                        }
-                    }
-                    _plugin.Configuration.MatchWindowFilters.LocalPlayerJobFilter = localPlayerJobFilter;
-                    break;
-                case Type _ when filter.GetType() == typeof(OtherPlayerFilter):
-                    var otherPlayerFilter = (OtherPlayerFilter)filter;
-                    List<PlayerAlias> linkedPlayerAliases = new();
-                    if(!otherPlayerFilter.PlayerNamesRaw.IsNullOrEmpty() && _plugin.Configuration.EnablePlayerLinking) {
-                        linkedPlayerAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(otherPlayerFilter.PlayerNamesRaw);
-                    }
-                    matches = matches.Where(x => {
-                        foreach(var team in x.Teams) {
-                            if(otherPlayerFilter.TeamStatus == TeamStatus.Teammate && team.Key != x.LocalPlayerTeam?.TeamName) {
-                                continue;
-                            } else if(otherPlayerFilter.TeamStatus == TeamStatus.Opponent && team.Key == x.LocalPlayerTeam?.TeamName) {
-                                continue;
-                            }
-                            foreach(var player in team.Value.Players) {
-                                if(!otherPlayerFilter.AnyJob && player.Job != otherPlayerFilter.PlayerJob) {
-                                    continue;
-                                }
-                                if(_plugin.Configuration.EnablePlayerLinking) {
-                                    if(player.Alias.FullName.Contains(otherPlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase)
-                                    || linkedPlayerAliases.Any(x => x.Equals(player.Alias))) {
-                                        return true;
-                                    }
-                                } else {
-                                    if(player.Alias.FullName.Contains(otherPlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase)) {
-                                        return true;
-                                    }
-                                }
-                            }
-                        }
-                        return false;
-                    }).ToList();
-                    //_plugin.Configuration.MatchWindowFilters.OtherPlayerFilter = otherPlayerFilter;
-                    break;
-                case Type _ when filter.GetType() == typeof(ResultFilter):
-                    var resultFilter = (ResultFilter)filter;
-                    if(resultFilter.Result == MatchResult.Win) {
-                        matches = matches.Where(x => x.IsWin).ToList();
-                    } else if(resultFilter.Result == MatchResult.Loss) {
-                        matches = matches.Where(x => !x.IsWin && x.MatchWinner != null && !x.IsSpectated).ToList();
-                    } else if(resultFilter.Result == MatchResult.Other) {
-                        matches = matches.Where(x => x.IsSpectated || x.MatchWinner == null).ToList();
-                    }
-                    break;
-                case Type _ when filter.GetType() == typeof(BookmarkFilter):
-                    var bookmarkFilter = (BookmarkFilter)filter;
-                    if(bookmarkFilter.BookmarkedOnly) {
-                        matches = matches.Where(x => x.IsBookmarked).ToList();
-                    }
-                    //_plugin.Configuration.MatchWindowFilters.BookmarkFilter = bookmarkFilter;
-                    break;
-                case Type _ when filter.GetType() == typeof(MiscFilter):
-                    var miscFilter = (MiscFilter)filter;
-                    if(miscFilter.MustHaveStats) {
-                        matches = matches.Where(x => x.PostMatch is not null).ToList();
-                    }
-                    _plugin.Configuration.MatchWindowFilters.MiscFilter = miscFilter;
-                    break;
-            }
-        }
-        try {
-            await RefreshLock.WaitAsync();
-            //Task.WaitAll([
-            //    ccMatches.Refresh(matches),
-            //    ccSummary.Refresh(matches),
-            //    ccRecords.Refresh(matches),
-            //    ccPlayers.Refresh(new()),
-            //    ccJobs.Refresh(new()),
-            //    ccRank.Refresh(matches),
-            //]);
-#if DEBUG
-            DateTime d1 = DateTime.Now;
-            _plugin.Log.Debug($"Match filter + wait: {(d1 - d0).TotalMilliseconds}ms");
-#endif
-            await ccMatches.Refresh(matches);
-#if DEBUG
-            DateTime d2 = DateTime.Now;
-            _plugin.Log.Debug($"Matches refresh: {(d2 - d1).TotalMilliseconds}ms");
-#endif
-            await ccSummary.Refresh(matches);
-            //await _plugin.CCStatsEngine.Refresh(Filters, ccJobs.StatSourceFilter, ccPlayers.InheritFromPlayerFilter);
-#if DEBUG
-            DateTime d3 = DateTime.Now;
-            _plugin.Log.Debug($"Summary refresh: {(d3 - d2).TotalMilliseconds}ms");
-#endif
-            await ccRecords.Refresh(matches);
-#if DEBUG
-            DateTime d4 = DateTime.Now;
-            _plugin.Log.Debug($"Records refresh: {(d4 - d3).TotalMilliseconds}ms");
-#endif
-            await ccPlayers.Refresh(new());
-#if DEBUG
-            DateTime d5 = DateTime.Now;
-            _plugin.Log.Debug($"Players refresh: {(d5 - d4).TotalMilliseconds}ms");
-#endif
-            await ccJobs.Refresh(new());
-#if DEBUG
-            DateTime d6 = DateTime.Now;
-            _plugin.Log.Debug($"Jobs refresh: {(d6 - d5).TotalMilliseconds}ms");
-#endif
-            await ccRank.Refresh(matches);
-#if DEBUG
-            DateTime d7 = DateTime.Now;
-            _plugin.Log.Debug($"Rank refresh: {(d7 - d6).TotalMilliseconds}ms");
-#endif
-            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
-#if DEBUG
-            DateTime d8 = DateTime.Now;
-            _plugin.Log.Debug($"Config save: {(d8 - d7).TotalMilliseconds}ms");
-            _plugin.Log.Debug($"TOTAL: {(d8 - d0).TotalMilliseconds}ms");
-#endif
-        } finally {
-            RefreshLock.Release();
-        }
+        await _plugin.CCStatsEngine.Refresh(Filters, ccJobs.StatSourceFilter, ccPlayers.InheritFromPlayerFilter);
+        await ccMatches.Refresh(_plugin.CCStatsEngine.Matches);
+        await ccPlayers.Refresh(_plugin.CCStatsEngine.Players);
+        await ccJobs.Refresh(_plugin.CCStatsEngine.Jobs);
+        await ccRank.Refresh(_plugin.CCStatsEngine.Matches);
+        SaveFilters();
+        _plugin.Log.Debug($"TOTAL: {(DateTime.Now - d0).TotalMilliseconds}ms");
     }
 
     public override void PreDraw() {
@@ -380,6 +198,43 @@ internal class MainWindow : Window {
             }
             ImGui.EndTable();
         }
+    }
+
+    private void SaveFilters() {
+        foreach(var filter in Filters) {
+            switch(filter.GetType()) {
+                case Type _ when filter.GetType() == typeof(MatchTypeFilter):
+                    _plugin.Configuration.MatchWindowFilters.MatchTypeFilter = (MatchTypeFilter)filter;
+                    break;
+                case Type _ when filter.GetType() == typeof(ArenaFilter):
+                    //_plugin.Configuration.MatchWindowFilters.ArenaFilter = (ArenaFilter)filter;
+                    break;
+                case Type _ when filter.GetType() == typeof(TimeFilter):
+                    _plugin.Configuration.MatchWindowFilters.TimeFilter = (TimeFilter)filter;
+                    break;
+                case Type _ when filter.GetType() == typeof(LocalPlayerFilter):
+                    _plugin.Configuration.MatchWindowFilters.LocalPlayerFilter = (LocalPlayerFilter)filter;
+                    break;
+                case Type _ when filter.GetType() == typeof(LocalPlayerJobFilter):
+                    //_plugin.Configuration.MatchWindowFilters.LocalPlayerJobFilter = (LocalPlayerJobFilter)filter;
+                    break;
+                case Type _ when filter.GetType() == typeof(OtherPlayerFilter):
+                    //_plugin.Configuration.MatchWindowFilters.OtherPlayerFilter = (OtherPlayerFilter)filter;
+                    break;
+                case Type _ when filter.GetType() == typeof(ResultFilter):
+                    break;
+                case Type _ when filter.GetType() == typeof(BookmarkFilter):
+                    //_plugin.Configuration.MatchWindowFilters.BookmarkFilter = bookmarkFilter;
+                    break;
+                case Type _ when filter.GetType() == typeof(MiscFilter):
+                    _plugin.Configuration.MatchWindowFilters.MiscFilter = (MiscFilter)filter;
+                    break;
+            }
+        }
+        _plugin.Configuration.MatchWindowFilters.StatSourceFilter = ccJobs.StatSourceFilter;
+        _plugin.Configuration.MatchWindowFilters.MinMatches = ccPlayers.MinMatches;
+        _plugin.Configuration.MatchWindowFilters.PlayersInheritFromPlayerFilter = ccPlayers.InheritFromPlayerFilter;
+        _plugin.Configuration.Save();
     }
 
     private unsafe void Tab(string name, Action action) {

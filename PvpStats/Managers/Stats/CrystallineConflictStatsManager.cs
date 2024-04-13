@@ -288,8 +288,8 @@ internal class CrystallineConflictStatsManager {
                         if(playerStats.ContainsKey(linkedAlias)) {
                             anyMatch = true;
                             if(playerStats.ContainsKey(playerLink.CurrentAlias)) {
-                                playerStats[playerLink.CurrentAlias].StatsAll += playerStats[linkedAlias].StatsAll;
-                                playerTeamContributions[playerLink.CurrentAlias].Concat(playerTeamContributions[linkedAlias]);
+                                playerStats[playerLink.CurrentAlias] += playerStats[linkedAlias];
+                                playerTeamContributions[playerLink.CurrentAlias] = playerTeamContributions[playerLink.CurrentAlias].Concat(playerTeamContributions[linkedAlias]).ToList();
                                 foreach(var jobStat in playerJobStatsLookup[linkedAlias]) {
                                     if(!playerJobStatsLookup[playerLink.CurrentAlias].ContainsKey(jobStat.Key)) {
                                         playerJobStatsLookup[playerLink.CurrentAlias].Add(jobStat.Key, new() {
@@ -349,7 +349,7 @@ internal class CrystallineConflictStatsManager {
                             opponentJobStatsLookup.Remove(linkedAlias);
                         }
                         if(anyMatch) {
-                            _plugin.Log.Verbose($"Coalescing {linkedAlias} into {playerLink.CurrentAlias}...");
+                            _plugin.Log.Debug($"Coalescing {linkedAlias} into {playerLink.CurrentAlias}...");
                             if(activeLinks.ContainsKey(playerLink.CurrentAlias)) {
                                 activeLinks[playerLink.CurrentAlias].Add(linkedAlias);
                             } else {
@@ -360,40 +360,6 @@ internal class CrystallineConflictStatsManager {
                             }
                         }
                     }
-
-                    //if(!blocked && playerStats.ContainsKey(linkedAlias)) {
-                    //    _plugin.Log.Verbose($"Coalescing {linkedAlias} into {playerLink.CurrentAlias}...");
-                    //    if(playerStats.ContainsKey(playerLink.CurrentAlias)) {
-                    //        playerStats[playerLink.CurrentAlias].StatsAll += playerStats[linkedAlias].StatsAll;
-                    //        playerTeamContributions[playerLink.CurrentAlias].Concat(playerTeamContributions[linkedAlias]);
-                    //        foreach(var jobStat in playerJobStatsLookup[linkedAlias]) {
-                    //            if(!playerJobStatsLookup[playerLink.CurrentAlias].ContainsKey(jobStat.Key)) {
-                    //                playerJobStatsLookup[playerLink.CurrentAlias].Add(jobStat.Key, new() {
-                    //                    Matches = jobStat.Value.Matches,
-                    //                });
-                    //            } else {
-                    //                playerJobStatsLookup[playerLink.CurrentAlias][jobStat.Key].Matches += jobStat.Value.Matches;
-                    //            }
-                    //        }
-                    //    } else {
-                    //        playerStats.Add(playerLink.CurrentAlias, playerStats[linkedAlias]);
-                    //        playerTeamContributions.Add(playerLink.CurrentAlias, playerTeamContributions[linkedAlias]);
-                    //        playerJobStatsLookup.Add(playerLink.CurrentAlias, playerJobStatsLookup[linkedAlias]);
-                    //    }
-                    //    //remove
-                    //    playerStats.Remove(linkedAlias);
-                    //    playerTeamContributions.Remove(linkedAlias);
-                    //    playerJobStatsLookup.Remove(linkedAlias);
-
-                    //    if(activeLinks.ContainsKey(playerLink.CurrentAlias)) {
-                    //        activeLinks[playerLink.CurrentAlias].Add(linkedAlias);
-                    //    } else {
-                    //        activeLinks.Add(playerLink.CurrentAlias, new() { linkedAlias });
-                    //    }
-                    //    if(activeLinks.ContainsKey(linkedAlias)) {
-                    //        activeLinks[linkedAlias].Where(x => !x.Equals(playerLink.CurrentAlias)).ToList().ForEach(x => activeLinks[playerLink.CurrentAlias].Add(x));
-                    //    }
-                    //}
                 }
             };
 
@@ -441,6 +407,7 @@ internal class CrystallineConflictStatsManager {
             Matches = matches;
             Players = playerStats.Keys.ToList();
             PlayerStats = playerStats;
+            ActiveLinks = activeLinks;
             Jobs = jobStats.Keys.Where(x => x != Job.VPR && x != Job.PCT).ToList();
             JobStats = jobStats;
             LocalPlayerStats = localPlayerStats;
@@ -523,6 +490,8 @@ internal class CrystallineConflictStatsManager {
                     DamageTaken = playerTeamScoreboard.TeamStats.DamageTaken != 0 ? (double)playerScoreboard.DamageTaken / playerTeamScoreboard.TeamStats.DamageTaken : 0,
                     HPRestored = playerTeamScoreboard.TeamStats.HPRestored != 0 ? (double)playerScoreboard.HPRestored / playerTeamScoreboard.TeamStats.HPRestored : 0,
                     TimeOnCrystalDouble = playerTeamScoreboard.TeamStats.TimeOnCrystal.Ticks != 0 ? playerScoreboard.TimeOnCrystal / playerTeamScoreboard.TeamStats.TimeOnCrystal : 0,
+                    KillsAndAssists = (playerTeamScoreboard.TeamStats.Kills + playerTeamScoreboard.TeamStats.Assists) != 0
+                    ? (double)(playerScoreboard.Kills + playerScoreboard.Assists) / (playerTeamScoreboard.TeamStats.Assists + playerTeamScoreboard.TeamStats.Kills) : 0,
                 });
             }
         }
@@ -543,6 +512,7 @@ internal class CrystallineConflictStatsManager {
             stats.ScoreboardPerMatch.DamageTaken = (double)stats.ScoreboardTotal.DamageTaken / statMatches;
             stats.ScoreboardPerMatch.HPRestored = (double)stats.ScoreboardTotal.HPRestored / statMatches;
             stats.ScoreboardPerMatch.TimeOnCrystal = stats.ScoreboardTotal.TimeOnCrystal / statMatches;
+            stats.ScoreboardPerMatch.KillsAndAssists = (double)stats.ScoreboardTotal.KillsAndAssists / statMatches;
 
             var matchTime = stats.ScoreboardTotal.MatchTime;
             stats.ScoreboardPerMin.Kills = stats.ScoreboardTotal.Kills / matchTime.TotalMinutes;
@@ -552,6 +522,7 @@ internal class CrystallineConflictStatsManager {
             stats.ScoreboardPerMin.DamageTaken = stats.ScoreboardTotal.DamageTaken / matchTime.TotalMinutes;
             stats.ScoreboardPerMin.HPRestored = stats.ScoreboardTotal.HPRestored / matchTime.TotalMinutes;
             stats.ScoreboardPerMin.TimeOnCrystal = stats.ScoreboardTotal.TimeOnCrystal / matchTime.TotalMinutes;
+            stats.ScoreboardPerMin.KillsAndAssists = stats.ScoreboardTotal.KillsAndAssists / matchTime.TotalMinutes;
 
             stats.ScoreboardContrib.Kills = teamContributions.OrderBy(x => x.Kills).ElementAt(statMatches / 2).Kills;
             stats.ScoreboardContrib.Deaths = teamContributions.OrderBy(x => x.Deaths).ElementAt(statMatches / 2).Deaths;
@@ -560,6 +531,7 @@ internal class CrystallineConflictStatsManager {
             stats.ScoreboardContrib.DamageTaken = teamContributions.OrderBy(x => x.DamageTaken).ElementAt(statMatches / 2).DamageTaken;
             stats.ScoreboardContrib.HPRestored = teamContributions.OrderBy(x => x.HPRestored).ElementAt(statMatches / 2).HPRestored;
             stats.ScoreboardContrib.TimeOnCrystalDouble = teamContributions.OrderBy(x => x.TimeOnCrystalDouble).ElementAt(statMatches / 2).TimeOnCrystalDouble;
+            stats.ScoreboardContrib.KillsAndAssists = teamContributions.OrderBy(x => x.KillsAndAssists).ElementAt(statMatches / 2).KillsAndAssists;
         }
     }
 

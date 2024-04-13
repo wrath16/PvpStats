@@ -21,12 +21,6 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         new ColumnParams{Name = "Result", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 40f },
         new ColumnParams{Name = "RankAfter", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 125f, Priority = 3 },
     };
-    //protected override List<ColumnParams> Columns { get; set; } = new() {
-    //    new ColumnParams{Name = "time" },
-    //    new ColumnParams{Name = "map" },
-    //    new ColumnParams{Name = "queue" },
-    //    new ColumnParams{Name = "result" },
-    //};
 
     protected override ImGuiTableFlags TableFlags { get; set; } = ImGuiTableFlags.Hideable;
     protected override ImGuiWindowFlags ChildFlags { get; set; } = ImGuiWindowFlags.AlwaysVerticalScrollbar;

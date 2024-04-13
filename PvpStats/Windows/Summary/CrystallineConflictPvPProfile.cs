@@ -21,7 +21,7 @@ internal class CrystallineConflictPvPProfile {
 
     public unsafe void Draw() {
         var pvpProfile = PvPProfile.Instance();
-        ImGuiHelper.HelpMarker("Uses data from your PvP profile", false);
+        ImGuiHelper.HelpMarker("Uses game server-originating data from your PvP profile.", false);
         ImGui.TextColored(ImGuiColors.DalamudYellow, "Casual:");
         if(pvpProfile != null) {
             DrawTable(pvpProfile->CrystallineConflictCasualMatches, pvpProfile->CrystallineConflictCasualMatchesWon);

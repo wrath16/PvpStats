@@ -10,6 +10,7 @@ public class CCScoreboardDouble {
     public double HPRestored { get; set; }
     public TimeSpan TimeOnCrystal { get; set; }
     public double TimeOnCrystalDouble { get; set; }
+    public double KillsAndAssists { get; set; }
     public double DamageDealtPerKA => DamageDealt / (Kills + Assists);
     public double DamageDealtPerLife => DamageDealt / Deaths + 1;
     public double DamageTakenPerLife => DamageTaken / Deaths + 1;
