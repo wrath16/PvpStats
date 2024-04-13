@@ -1,5 +1,6 @@
 ﻿using Dalamud.Interface;
 using Dalamud.Interface.Colors;
+using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Utility;
 using ImGuiNET;
@@ -156,6 +157,7 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
     }
 
     public override void DrawListItem(PlayerAlias item) {
+        ImGui.SameLine(2f * ImGuiHelpers.GlobalScale);
         ImGui.TextUnformatted($"{item.Name}");
         if(_plugin.CCStatsEngine.ActiveLinks.ContainsKey(item)) {
             string tooltipText = "Including stats for:\n\n";

@@ -1,5 +1,6 @@
 ﻿using Dalamud.Interface;
 using Dalamud.Interface.Colors;
+using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PvpStats.Helpers;
@@ -39,9 +40,15 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
             }
         }
         ImGuiHelper.WrappedTooltip("Close all open match windows");
+        //ImGui.SameLine();
+        //using(var font = ImRaii.PushFont(UiBuilder.IconFont)) {
+        //    ImGuiHelper.RightAlignCursor(FontAwesomeIcon.Heart.ToIconString());
+        //}
+        //ImGuiHelper.DonateButton();
     }
 
     public override void DrawListItem(CrystallineConflictMatch item) {
+        ImGui.SameLine(0f * ImGuiHelpers.GlobalScale);
         if(item.IsBookmarked) {
             ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(ImGuiColors.DalamudYellow - new Vector4(0f, 0f, 0f, 0.7f)));
         }

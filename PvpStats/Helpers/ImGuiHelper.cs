@@ -1,10 +1,12 @@
 ﻿using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Numerics;
 using System.Threading.Tasks;
 
@@ -149,7 +151,7 @@ internal static class ImGuiHelper {
     internal static void DrawColorScale(float value, Vector4 colorMin, Vector4 colorMax, float minValue, float maxValue, bool colorEnabled, string format = "0.00", bool isPercent = false) {
         var outputString = isPercent ? string.Format(format, value) : value.ToString(format);
         if(colorEnabled) {
-            ImGui.TextColored(ImGuiHelper.ColorScale(colorMin, colorMax, minValue, maxValue, value), outputString);
+            ImGui.TextColored(ColorScale(colorMin, colorMax, minValue, maxValue, value), outputString);
         } else {
             ImGui.TextUnformatted(outputString);
         }
@@ -178,6 +180,23 @@ internal static class ImGuiHelper {
             ImGui.PopFont();
         }
         WrappedTooltip("Copy CSV to clipboard");
+    }
+
+    internal static void DonateButton() {
+        using(_ = ImRaii.PushFont(UiBuilder.IconFont)) {
+            var text = $"{FontAwesomeIcon.Star.ToIconString()}{FontAwesomeIcon.Copy.ToIconString()}";
+            using(_ = ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.DalamudRed)) {
+                if(ImGui.Button($"{FontAwesomeIcon.Heart.ToIconString()}##--Donate")) {
+                    Task.Run(() => {
+                        Process.Start(new ProcessStartInfo() {
+                            UseShellExecute = true,
+                            FileName = "https://ko-fi.com/samoxiv"
+                        });
+                    });
+                }
+            }
+        }
+        WrappedTooltip("Support the dev");
     }
 
     //internal static void IterateOverProps<T>(T item, int maxDepth, int depth = 0) {

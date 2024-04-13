@@ -133,6 +133,7 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
     }
 
     public override void DrawListItem(Job item) {
+        ImGui.SameLine(2f * ImGuiHelpers.GlobalScale);
         ImGui.TextUnformatted($"{PlayerJobHelper.GetNameFromJob(item)}");
         ImGui.TableNextColumn();
         ImGui.TextColored(ImGuiHelper.GetJobColor(item), $"{PlayerJobHelper.GetSubRoleFromJob(item)}");
