@@ -208,7 +208,7 @@ internal abstract class FilteredList<T> {
                 ImGui.EndPopup();
             }
 
-            ImGui.SameLine();
+            ImGui.SameLine(2f * ImGuiHelpers.GlobalScale);
             DrawListItem(item);
         }
     }

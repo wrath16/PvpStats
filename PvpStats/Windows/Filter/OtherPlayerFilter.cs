@@ -46,7 +46,7 @@ public class OtherPlayerFilter : DataFilter {
         }
 
         //refresh task
-        Task.Run(async() => {
+        Task.Run(async () => {
             PeriodicTimer periodicTimer = new(TimeSpan.FromMilliseconds(500));
             while(true) {
                 await periodicTimer.WaitForNextTickAsync();

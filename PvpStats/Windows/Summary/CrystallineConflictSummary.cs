@@ -338,7 +338,7 @@ internal class CrystallineConflictSummary {
     private void DrawArenaTable(Dictionary<CrystallineConflictMap, CCAggregateStats> arenaStats) {
         using(var table = ImRaii.Table($"ArenaTable", 4, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
             if(table) {
-                ImGui.TableSetupColumn("Arena");
+                ImGui.TableSetupColumn("");
                 ImGui.TableSetupColumn($"Matches", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 55f);
                 ImGui.TableSetupColumn($"Wins", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 55f);
                 ImGui.TableSetupColumn($"Win Rate", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 55f);
@@ -365,9 +365,9 @@ internal class CrystallineConflictSummary {
     }
 
     private void DrawJobTable(Dictionary<Job, CCAggregateStats> jobStats) {
-        using(var table = ImRaii.Table($"JobTable", 5, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
+        using(var table = ImRaii.Table($"JobTable", 5, ImGuiTableFlags.PadOuterX | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
             if(table) {
-                ImGui.TableSetupColumn("Job");
+                ImGui.TableSetupColumn("");
                 ImGui.TableSetupColumn($"Role", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 55f);
                 ImGui.TableSetupColumn($"Matches", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 55f);
                 ImGui.TableSetupColumn($"Wins", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 55f);
@@ -397,13 +397,24 @@ internal class CrystallineConflictSummary {
     }
 
     private void DrawPlayerTable(Dictionary<PlayerAlias, CCAggregateStats> playerStats) {
-        using(var table = ImRaii.Table($"PlayerTable", 4, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
+        using(var table = ImRaii.Table($"PlayerTable", 4, ImGuiTableFlags.PadOuterX | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
             if(table) {
-                ImGui.TableSetupColumn("Player");
+                ImGui.TableSetupColumn("");
                 ImGui.TableSetupColumn($"Favored\nJob", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 55f);
                 ImGui.TableSetupColumn($"Matches", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 55f);
                 ImGui.TableSetupColumn($"Wins", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 55f);
-                ImGui.TableHeadersRow();
+                //ImGui.TableHeadersRow();
+
+                ImGui.TableNextColumn();
+                ImGui.TableHeader("");
+                ImGui.TableNextColumn();
+                ImGui.TableHeader("Favored\nJob");
+                ImGui.TableNextColumn();
+                ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
+                ImGui.TableHeader("Matches");
+                ImGui.TableNextColumn();
+                ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
+                ImGui.TableHeader("Wins");
 
                 for(int i = 0; i < playerStats.Count && i < 5; i++) {
                     var player = playerStats.ElementAt(i);
@@ -424,7 +435,7 @@ internal class CrystallineConflictSummary {
     }
 
     private void DrawMatchStatsTable() {
-        using(var table = ImRaii.Table($"MatchStatsTable", 7, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
+        using(var table = ImRaii.Table($"MatchStatsTable", 7, ImGuiTableFlags.PadOuterX | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
             if(table) {
                 ImGui.TableSetupColumn("Kills");
                 ImGui.TableSetupColumn($"Deaths");
@@ -434,7 +445,23 @@ internal class CrystallineConflictSummary {
                 ImGui.TableSetupColumn($"HP\nRestored");
                 ImGui.TableSetupColumn("Time on\nCrystal");
 
-                ImGui.TableHeadersRow();
+                ImGui.TableNextColumn();
+                ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
+                ImGui.TableHeader("Kills");
+                ImGui.TableNextColumn();
+                ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
+                ImGui.TableHeader("Deaths");
+                ImGui.TableNextColumn();
+                ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
+                ImGui.TableHeader("Assists");
+                ImGui.TableNextColumn();
+                ImGui.TableHeader("Damage\nDealt");
+                ImGui.TableNextColumn();
+                ImGui.TableHeader("Damage\nTaken");
+                ImGui.TableNextColumn();
+                ImGui.TableHeader("HP\nRestored");
+                ImGui.TableNextColumn();
+                ImGui.TableHeader("Time on\nCrystal");
 
                 //per match
                 ImGui.TableNextColumn();
