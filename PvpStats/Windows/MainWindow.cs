@@ -134,8 +134,12 @@ internal class MainWindow : Window {
         ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(0, -5 * ImGui.GetIO().FontGlobalScale));
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
         if(ImGui.Button($"{(_collapseFilters ? (char)FontAwesomeIcon.CaretDown : (char)FontAwesomeIcon.CaretUp)}", new Vector2(-1, 10 * ImGui.GetIO().FontGlobalScale))) {
+            int direction = _collapseFilters ? 1 : -1;
             _collapseFilters = !_collapseFilters;
             _plugin.Configuration.CCWindowConfig.FiltersCollapsed = _collapseFilters;
+            if(_plugin.Configuration.CCWindowConfig.AdjustWindowHeightOnFilterCollapse) {
+                SetWindowSize(new Vector2(ImGui.GetWindowSize().X, ImGui.GetWindowSize().Y + direction * _plugin.Configuration.CCWindowConfig.FilterHeight));
+            }
         }
         ImGui.PopStyleVar(2);
         ImGui.PopFont();

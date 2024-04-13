@@ -7,4 +7,5 @@ public class WindowConfiguration {
     public bool FiltersCollapsed { get; set; } = false;
     public float FilterRatio { get; set; } = 3.2f;
     public uint FilterHeight { get; set; } = 250;
+    public bool AdjustWindowHeightOnFilterCollapse { get; set; } = false;
 }

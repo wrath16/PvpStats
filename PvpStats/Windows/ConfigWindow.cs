@@ -97,6 +97,12 @@ internal class ConfigWindow : Window {
             _plugin.Configuration.CCWindowConfig.FilterHeight = (uint)filterHeight;
             _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
+        bool filterHeightAdjust = _plugin.Configuration.CCWindowConfig.AdjustWindowHeightOnFilterCollapse;
+        if(ImGui.Checkbox("Offset window size when filters hidden", ref filterHeightAdjust)) {
+            _plugin.Configuration.CCWindowConfig.AdjustWindowHeightOnFilterCollapse = filterHeightAdjust;
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+        ImGuiHelper.HelpMarker("The height of the window will be offset by the height of the filter child whenever filters are shown or hidden.", true, true);
         bool minimize = _plugin.Configuration.MinimizeWindow;
         if(ImGui.Checkbox("Shrink window on collapse", ref minimize)) {
             _plugin.Configuration.MinimizeWindow = minimize;
