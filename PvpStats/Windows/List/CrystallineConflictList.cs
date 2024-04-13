@@ -27,8 +27,9 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
     protected override bool ContextMenu { get; set; } = true;
     protected override bool DynamicColumns { get; set; } = true;
 
-    public CrystallineConflictList(Plugin plugin) : base(plugin) {
+    public CrystallineConflictList(Plugin plugin) : base(plugin, plugin.CCStatsEngine.RefreshLock) {
     }
+
     protected override void PreChildDraw() {
         ImGuiHelper.CSVButton(ListCSV);
         ImGui.SameLine();

@@ -27,7 +27,7 @@ internal class MainWindow : Window {
     private CrystallineConflictRankGraph ccRank;
     private string _currentTab = "";
     internal List<DataFilter> Filters { get; private set; } = new();
-    internal SemaphoreSlim RefreshLock { get; init; } = new SemaphoreSlim(1, 1);
+    internal SemaphoreSlim RefreshLock { get; init; } = new SemaphoreSlim(1);
     private bool _collapseFilters;
 
     private bool _firstDraw, _lastWindowCollapsed, _windowCollapsed;
@@ -68,13 +68,18 @@ internal class MainWindow : Window {
 
     public async Task Refresh() {
         DateTime d0 = DateTime.Now;
-        await _plugin.CCStatsEngine.Refresh(Filters, ccJobs.StatSourceFilter, ccPlayers.InheritFromPlayerFilter);
-        await ccMatches.Refresh(_plugin.CCStatsEngine.Matches);
-        await ccPlayers.Refresh(_plugin.CCStatsEngine.Players);
-        await ccJobs.Refresh(_plugin.CCStatsEngine.Jobs);
-        await ccRank.Refresh(_plugin.CCStatsEngine.Matches);
+        try {
+            await RefreshLock.WaitAsync();
+            await _plugin.CCStatsEngine.Refresh(Filters, ccJobs.StatSourceFilter, ccPlayers.InheritFromPlayerFilter);
+            await ccMatches.Refresh(_plugin.CCStatsEngine.Matches);
+            await ccPlayers.Refresh(_plugin.CCStatsEngine.Players);
+            await ccJobs.Refresh(_plugin.CCStatsEngine.Jobs);
+            await ccRank.Refresh(_plugin.CCStatsEngine.Matches);
+        } finally {
+            RefreshLock.Release();
+        }
         SaveFilters();
-        _plugin.Log.Debug($"TOTAL: {(DateTime.Now - d0).TotalMilliseconds}ms");
+        _plugin.Log.Debug($"total refresh time: {(DateTime.Now - d0).TotalMilliseconds} ms");
     }
 
     public override void PreDraw() {
@@ -136,35 +141,35 @@ internal class MainWindow : Window {
         ImGui.PopFont();
         ImGuiHelper.WrappedTooltip($"{(_collapseFilters ? "Show filters" : "Hide filters")}");
 
-        if(ImGui.BeginTabBar("TabBar", ImGuiTabBarFlags.None)) {
-            //ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 6f);
-            if(_plugin.Configuration.ResizeWindowLeft) {
-                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 20f);
+        using(var tabBar = ImRaii.TabBar("TabBar", ImGuiTabBarFlags.None)) {
+            if(tabBar) {
+                if(_plugin.Configuration.ResizeWindowLeft) {
+                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 20f);
+                }
+                Tab("Matches", ccMatches.Draw);
+                Tab("Summary", () => {
+                    using(ImRaii.Child("SummaryChild")) {
+                        ccSummary.Draw();
+                    }
+                });
+                Tab("Records", () => {
+                    using(ImRaii.Child("RecordsChild")) {
+                        ccRecords.Draw();
+                    }
+                });
+                Tab("Jobs", ccJobs.Draw);
+                Tab("Players", ccPlayers.Draw);
+                Tab("Credit", () => {
+                    using(ImRaii.Child("CreditChild")) {
+                        ccRank.Draw();
+                    }
+                });
+                Tab("Profile", () => {
+                    using(ImRaii.Child("ProfileChild")) {
+                        ccProfile.Draw();
+                    }
+                });
             }
-            Tab("Matches", ccMatches.Draw);
-            Tab("Summary", () => {
-                using(ImRaii.Child("SummaryChild")) {
-                    ccSummary.Draw();
-                }
-            });
-            Tab("Records", () => {
-                using(ImRaii.Child("RecordsChild")) {
-                    ccRecords.Draw();
-                }
-            });
-            Tab("Jobs", ccJobs.Draw);
-            Tab("Players", ccPlayers.Draw);
-            Tab("Credit", () => {
-                using(ImRaii.Child("CreditChild")) {
-                    ccRank.Draw();
-                }
-            });
-            Tab("Profile", () => {
-                using(ImRaii.Child("ProfileChild")) {
-                    ccProfile.Draw();
-                }
-            });
-            ImGui.EndTabBar();
         }
     }
 
@@ -242,19 +247,23 @@ internal class MainWindow : Window {
         if(_plugin.Configuration.ResizeWindowLeft) {
             flags |= ImGuiTabItemFlags.Trailing;
         }
-        //convert to byte* this is stupid!
-        //byte[] nameBytes = Encoding.UTF8.GetBytes(name);
-        //var namePtr = &nameBytes;
-        //using(var tab = ImRaii.TabItem((byte*)&nameBytes, flags)) {
-        //    if(tab) {
-        //        ChangeTab(name);
-        //        action.Invoke();
-        //    }
-        //}
-        using(var tab = ImRaii.TabItem(name)) {
-            if(tab) {
-                ChangeTab(name);
+        using var tab = ImRaii.TabItem(name);
+        if(tab) {
+            ChangeTab(name);
+            //suppress errors and draw all tabs while a refresh is happening
+            bool refreshLockAcquired = RefreshLock.Wait(0);
+            try {
                 action.Invoke();
+            } catch {
+                //suppress all exceptions while a refresh is in progress
+                if(refreshLockAcquired) {
+                    _plugin.Log.Debug("draw error on refresh lock acquired.");
+                    throw;
+                }
+            } finally {
+                if(refreshLockAcquired) {
+                    RefreshLock.Release();
+                }
             }
         }
     }

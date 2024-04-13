@@ -3,7 +3,7 @@ using System.Reflection;
 
 namespace PvpStats.Windows.List;
 internal abstract class CCStatsList<T> : StatsList<T> {
-    public CCStatsList(Plugin plugin) : base(plugin) {
+    public CCStatsList(Plugin plugin) : base(plugin, plugin.CCStatsEngine.RefreshLock) {
     }
 
     //public Dictionary<T, CCPlayerJobStats> StatsModel { get; protected set; }

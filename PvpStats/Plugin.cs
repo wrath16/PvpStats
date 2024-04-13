@@ -105,9 +105,9 @@ public sealed class Plugin : IDalamudPlugin {
             AtkNodeService = new(this);
             PlayerLinksService = new(this);
             Localization = new(this);
+            CCStatsEngine = new(this);
             WindowManager = new(this);
             MigrationManager = new(this);
-            CCStatsEngine = new(this);
             try {
                 MatchManager = new(this);
             } catch(SignatureException e) {

@@ -139,7 +139,6 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
 
         ImGui.SameLine();
         ImGui.TextUnformatted($"Total players:   {DataModel.Count}");
-
     }
 
     protected override void PostColumnSetup() {
