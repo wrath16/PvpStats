@@ -69,8 +69,9 @@ internal class CrystallineConflictStatsManager {
         Dictionary<Job, CCAggregateStats> opponentJobStats = new();
         Dictionary<PlayerAlias, List<PlayerAlias>> activeLinks = new();
         Dictionary<CrystallineConflictMatch, List<(string, string)>> superlatives = new();
-        CrystallineConflictMatch? longestMatch = null, shortestMatch = null, closestMatch = null, closestWin = null, closestLoss = null,
-            mostKills = null, mostDeaths = null, mostAssists = null, mostDamageDealt = null, mostDamageTaken = null, mostHPRestored = null, mostTimeOnCrystal = null;
+        CrystallineConflictMatch? longestMatch = null, shortestMatch = null, highestLoserProg = null, lowestWinnerProg = null, closestWin = null, closestLoss = null,
+            mostKills = null, mostDeaths = null, mostAssists = null, mostDamageDealt = null, mostDamageTaken = null, mostHPRestored = null, mostTimeOnCrystal = null,
+            highestKillsPerMin = null, highestDeathsPerMin = null, highestAssistsPerMin = null, highestDamageDealtPerMin = null, highestDamageTakenPerMin = null, highestHPRestoredPerMin = null, highestTimeOnCrystalPerMin = null;
         int longestWinStreak = 0, longestLossStreak = 0, spectatedMatchCount = 0, currentWinStreak = 0, currentLossStreak = 0;
         TimeSpan totalMatchTime = TimeSpan.Zero;
 
@@ -90,7 +91,7 @@ internal class CrystallineConflictStatsManager {
             if(longestMatch == null) {
                 longestMatch = match;
                 shortestMatch = match;
-                closestMatch = match;
+                highestLoserProg = match;
             }
             if(longestMatch == null || match.MatchDuration > longestMatch.MatchDuration) {
                 longestMatch = match;
@@ -98,8 +99,11 @@ internal class CrystallineConflictStatsManager {
             if(shortestMatch == null || match.MatchDuration < shortestMatch.MatchDuration) {
                 shortestMatch = match;
             }
-            if(closestMatch == null || match.LoserProgress > closestMatch.LoserProgress) {
-                closestMatch = match;
+            if(highestLoserProg == null || match.LoserProgress > highestLoserProg.LoserProgress) {
+                highestLoserProg = match;
+            }
+            if(lowestWinnerProg == null || match.WinnerProgress < lowestWinnerProg.WinnerProgress) {
+                lowestWinnerProg = match;
             }
 
             if(match.IsSpectated) {
@@ -130,6 +134,30 @@ internal class CrystallineConflictStatsManager {
                 if(mostTimeOnCrystal == null || match.LocalPlayerStats?.TimeOnCrystal > mostTimeOnCrystal.LocalPlayerStats?.TimeOnCrystal) {
                     mostTimeOnCrystal = match;
                 }
+                if(match.MatchDuration != null && match.LocalPlayerStats != null) {
+                    if(highestKillsPerMin == null || (float)match.LocalPlayerStats?.Kills! / match.MatchDuration.Value.TotalMinutes > (float)highestKillsPerMin.LocalPlayerStats?.Kills! / highestKillsPerMin.MatchDuration!.Value.TotalMinutes) {
+                        highestKillsPerMin = match;
+                    }
+                    if(highestDeathsPerMin == null || (float)match.LocalPlayerStats?.Deaths! / match.MatchDuration.Value.TotalMinutes > (float)highestDeathsPerMin.LocalPlayerStats?.Deaths! / highestDeathsPerMin.MatchDuration!.Value.TotalMinutes) {
+                        highestDeathsPerMin = match;
+                    }
+                    if(highestAssistsPerMin == null || (float)match.LocalPlayerStats?.Assists! / match.MatchDuration.Value.TotalMinutes > (float)highestAssistsPerMin.LocalPlayerStats?.Assists! / highestAssistsPerMin.MatchDuration!.Value.TotalMinutes) {
+                        highestAssistsPerMin = match;
+                    }
+                    if(highestDamageDealtPerMin == null || (float)match.LocalPlayerStats?.DamageDealt! / match.MatchDuration.Value.TotalMinutes > (float)highestDamageDealtPerMin.LocalPlayerStats?.DamageDealt! / highestDamageDealtPerMin.MatchDuration!.Value.TotalMinutes) {
+                        highestDamageDealtPerMin = match;
+                    }
+                    if(highestDamageTakenPerMin == null || (float)match.LocalPlayerStats?.DamageTaken! / match.MatchDuration.Value.TotalMinutes > (float)highestDamageTakenPerMin.LocalPlayerStats?.DamageTaken! / highestDamageTakenPerMin.MatchDuration!.Value.TotalMinutes) {
+                        highestDamageTakenPerMin = match;
+                    }
+                    if(highestHPRestoredPerMin == null || (float)match.LocalPlayerStats?.HPRestored! / match.MatchDuration.Value.TotalMinutes > (float)highestHPRestoredPerMin.LocalPlayerStats?.HPRestored! / highestHPRestoredPerMin.MatchDuration!.Value.TotalMinutes) {
+                        highestHPRestoredPerMin = match;
+                    }
+                    if(highestTimeOnCrystalPerMin == null || match.LocalPlayerStats?.TimeOnCrystal / match.MatchDuration.Value.TotalMinutes > highestTimeOnCrystalPerMin.LocalPlayerStats?.TimeOnCrystal / highestTimeOnCrystalPerMin.MatchDuration!.Value.TotalMinutes) {
+                        highestTimeOnCrystalPerMin = match;
+                    }
+                }
+
                 if(match.IsWin && (closestWin == null || match.LoserProgress > closestWin.LoserProgress)) {
                     closestWin = match;
                 }
@@ -418,28 +446,27 @@ internal class CrystallineConflictStatsManager {
             OpponentJobStats = opponentJobStats.OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
             ArenaStats = arenaStats.OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
             AverageMatchDuration = matches.Count > 0 ? totalMatchTime / matches.Count : TimeSpan.Zero;
-            var addSuperlative = (CrystallineConflictMatch? match, string sup, string val) => {
-                if(match == null) return;
-                if(Superlatives.ContainsKey(match)) {
-                    Superlatives[match].Add((sup, val));
-                } else {
-                    //_plugin.Log.Debug($"adding superlative {sup} {val} to {match.Id.ToString()}");
-                    Superlatives.Add(match, new() { (sup, val) });
-                }
-            };
             Superlatives = new();
             if(longestMatch != null) {
-                addSuperlative(longestMatch, "Longest match", ImGuiHelper.GetTimeSpanString((TimeSpan)longestMatch!.MatchDuration));
-                addSuperlative(shortestMatch, "Shortest match", ImGuiHelper.GetTimeSpanString((TimeSpan)shortestMatch!.MatchDuration));
-                addSuperlative(closestMatch, "Closest match", closestMatch!.LoserProgress.ToString());
+                AddSuperlative(longestMatch, "Longest match", ImGuiHelper.GetTimeSpanString((TimeSpan)longestMatch!.MatchDuration));
+                AddSuperlative(shortestMatch, "Shortest match", ImGuiHelper.GetTimeSpanString((TimeSpan)shortestMatch!.MatchDuration));
+                AddSuperlative(highestLoserProg, "Highest loser progress", highestLoserProg!.LoserProgress.ToString());
+                AddSuperlative(lowestWinnerProg, "Lowest winner progress", lowestWinnerProg!.WinnerProgress.ToString());
                 if(mostKills != null) {
-                    addSuperlative(mostKills, "Most kills", mostKills!.LocalPlayerStats!.Kills.ToString());
-                    addSuperlative(mostDeaths, "Most deaths", mostDeaths!.LocalPlayerStats!.Deaths.ToString());
-                    addSuperlative(mostAssists, "Most assists", mostAssists!.LocalPlayerStats!.Assists.ToString());
-                    addSuperlative(mostDamageDealt, "Most damage dealt", mostDamageDealt!.LocalPlayerStats!.DamageDealt.ToString());
-                    addSuperlative(mostDamageTaken, "Most damage taken", mostDamageTaken!.LocalPlayerStats!.DamageTaken.ToString());
-                    addSuperlative(mostHPRestored, "Most HP restored", mostHPRestored!.LocalPlayerStats!.HPRestored.ToString());
-                    addSuperlative(mostTimeOnCrystal, "Longest time on crystal", ImGuiHelper.GetTimeSpanString(mostTimeOnCrystal!.LocalPlayerStats!.TimeOnCrystal));
+                    AddSuperlative(mostKills, "Most kills", mostKills!.LocalPlayerStats!.Kills.ToString());
+                    AddSuperlative(mostDeaths, "Most deaths", mostDeaths!.LocalPlayerStats!.Deaths.ToString());
+                    AddSuperlative(mostAssists, "Most assists", mostAssists!.LocalPlayerStats!.Assists.ToString());
+                    AddSuperlative(mostDamageDealt, "Most damage dealt", mostDamageDealt!.LocalPlayerStats!.DamageDealt.ToString());
+                    AddSuperlative(mostDamageTaken, "Most damage taken", mostDamageTaken!.LocalPlayerStats!.DamageTaken.ToString());
+                    AddSuperlative(mostHPRestored, "Most HP restored", mostHPRestored!.LocalPlayerStats!.HPRestored.ToString());
+                    AddSuperlative(mostTimeOnCrystal, "Longest time on crystal", ImGuiHelper.GetTimeSpanString(mostTimeOnCrystal!.LocalPlayerStats!.TimeOnCrystal));
+                    AddSuperlative(highestKillsPerMin, "Highest kills per min", (highestKillsPerMin!.LocalPlayerStats!.Kills / highestKillsPerMin!.MatchDuration.Value.TotalMinutes).ToString("0.00"));
+                    AddSuperlative(highestDeathsPerMin, "Highest deaths per min", (highestDeathsPerMin!.LocalPlayerStats!.Deaths / highestDeathsPerMin!.MatchDuration.Value.TotalMinutes).ToString("0.00"));
+                    AddSuperlative(highestAssistsPerMin, "Highest assists per min", (highestAssistsPerMin!.LocalPlayerStats!.Assists / highestAssistsPerMin!.MatchDuration.Value.TotalMinutes).ToString("0.00"));
+                    AddSuperlative(highestDamageDealtPerMin, "Highest damage dealt per min", (highestDamageDealtPerMin!.LocalPlayerStats!.DamageDealt / highestDamageDealtPerMin!.MatchDuration.Value.TotalMinutes).ToString("0"));
+                    AddSuperlative(highestDamageTakenPerMin, "Highest damage taken per min", (highestDamageTakenPerMin!.LocalPlayerStats!.DamageTaken / highestDamageTakenPerMin!.MatchDuration.Value.TotalMinutes).ToString("0"));
+                    AddSuperlative(highestHPRestoredPerMin, "Highest HP restored per min", (highestHPRestoredPerMin!.LocalPlayerStats!.HPRestored / highestHPRestoredPerMin!.MatchDuration.Value.TotalMinutes).ToString("0"));
+                    AddSuperlative(highestTimeOnCrystalPerMin, "Longest time on crystal per min", ImGuiHelper.GetTimeSpanString(highestTimeOnCrystalPerMin.LocalPlayerStats!.TimeOnCrystal / highestTimeOnCrystalPerMin!.MatchDuration.Value.TotalMinutes));
                 }
             }
             LongestWinStreak = longestWinStreak;
@@ -541,6 +568,16 @@ internal class CrystallineConflictStatsManager {
             stats.Wins++;
         } else if(match.IsLoss) {
             stats.Losses++;
+        }
+    }
+
+    private void AddSuperlative(CrystallineConflictMatch? match, string sup, string val) {
+        if(match == null) return;
+        if(Superlatives.TryGetValue(match, out List<(string, string)>? value)) {
+            value.Add((sup, val));
+        } else {
+            //_plugin.Log.Debug($"adding superlative {sup} {val} to {match.Id.ToString()}");
+            Superlatives.Add(match, new() { (sup, val) });
         }
     }
 
