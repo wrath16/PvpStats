@@ -480,6 +480,7 @@ internal class CrystallineConflictStatsManager {
         CrystallineConflictMatch match, CrystallineConflictTeam team, CrystallineConflictPlayer player) {
         bool isLocalPlayer = player.Alias.Equals(match.LocalPlayer);
         bool isTeammate = !match.IsSpectated && !isLocalPlayer && team.TeamName == match.LocalPlayerTeam!.TeamName;
+        bool isOpponent = !match.IsSpectated && !isLocalPlayer && !isTeammate;
 
         statsModel.StatsAll.Matches++;
         if(match.MatchWinner == team.TeamName) {
@@ -491,7 +492,7 @@ internal class CrystallineConflictStatsManager {
         if(!match.IsSpectated) {
             if(isTeammate) {
                 IncrementAggregateStats(statsModel.StatsTeammate, match);
-            } else {
+            } else if(isOpponent) {
                 IncrementAggregateStats(statsModel.StatsOpponent, match);
             }
         }
