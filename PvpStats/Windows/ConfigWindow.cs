@@ -182,6 +182,7 @@ internal class ConfigWindow : Window {
                 _plugin.Configuration.Colors = cfgSaved.Colors;
             });
         }
+        ImGuiHelper.HelpMarker("Colors will lock in after this window is closed or a non-color setting is changed.");
 
         using var table = ImRaii.Table("ColorSettingsTable", 3);
         if(!table) {
