@@ -4,6 +4,7 @@ using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using PvpStats.Helpers;
+using PvpStats.Settings;
 using PvpStats.Types.Player;
 using System.Collections.Generic;
 using System.Linq;
@@ -168,9 +169,18 @@ internal class ConfigWindow : Window {
     }
 
     private void DrawColorSettings() {
-        if(ImGui.Button("Reset to Default")) {
+        if(ImGui.Button("Reset to Defaults")) {
             _plugin.Configuration.Colors = new();
             _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+
+        ImGui.SameLine();
+
+        if(ImGui.Button("Revert Changes")) {
+            _plugin.DataQueue.QueueDataOperation(() => {
+                var cfgSaved = _plugin.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+                _plugin.Configuration.Colors = cfgSaved.Colors;
+            });
         }
 
         using var table = ImRaii.Table("ColorSettingsTable", 3);
@@ -185,13 +195,11 @@ internal class ConfigWindow : Window {
         var headerColor = _plugin.Configuration.Colors.Header;
         if(ImGui.ColorEdit4("Headers", ref headerColor, ImGuiColorEditFlags.NoInputs)) {
             _plugin.Configuration.Colors.Header = headerColor;
-            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
         ImGui.TableNextColumn();
         var favoriteColor = _plugin.Configuration.Colors.Favorite;
         if(ImGui.ColorEdit4("Favorites", ref favoriteColor, ImGuiColorEditFlags.NoInputs)) {
             _plugin.Configuration.Colors.Favorite = favoriteColor;
-            //_plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
         ImGui.TableNextRow();
         ImGui.TableNextRow();
@@ -199,19 +207,16 @@ internal class ConfigWindow : Window {
         var winColor = _plugin.Configuration.Colors.Win;
         if(ImGui.ColorEdit4("Wins", ref winColor, ImGuiColorEditFlags.NoInputs)) {
             _plugin.Configuration.Colors.Win = winColor;
-            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
         ImGui.TableNextColumn();
         var lossColor = _plugin.Configuration.Colors.Loss;
         if(ImGui.ColorEdit4("Losses", ref lossColor, ImGuiColorEditFlags.NoInputs)) {
             _plugin.Configuration.Colors.Loss = lossColor;
-            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
         ImGui.TableNextColumn();
         var otherColor = _plugin.Configuration.Colors.Other;
         if(ImGui.ColorEdit4("Draws", ref otherColor, ImGuiColorEditFlags.NoInputs)) {
             _plugin.Configuration.Colors.Other = otherColor;
-            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
         ImGui.TableNextRow();
         ImGui.TableNextRow();
@@ -219,19 +224,16 @@ internal class ConfigWindow : Window {
         var localPlayerColor = _plugin.Configuration.Colors.CCLocalPlayer;
         if(ImGui.ColorEdit4("Local Player", ref localPlayerColor, ImGuiColorEditFlags.NoInputs)) {
             _plugin.Configuration.Colors.CCLocalPlayer = localPlayerColor;
-            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
         ImGui.TableNextColumn();
         var playerTeamColor = _plugin.Configuration.Colors.CCPlayerTeam;
         if(ImGui.ColorEdit4("Player Team", ref playerTeamColor, ImGuiColorEditFlags.NoInputs)) {
             _plugin.Configuration.Colors.CCPlayerTeam = playerTeamColor;
-            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
         ImGui.TableNextColumn();
         var enemyTeamColor = _plugin.Configuration.Colors.CCEnemyTeam;
         if(ImGui.ColorEdit4("Enemy Team", ref enemyTeamColor, ImGuiColorEditFlags.NoInputs)) {
             _plugin.Configuration.Colors.CCEnemyTeam = enemyTeamColor;
-            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
         ImGui.TableNextRow();
         ImGui.TableNextRow();
@@ -239,31 +241,26 @@ internal class ConfigWindow : Window {
         var tankColor = _plugin.Configuration.Colors.Tank;
         if(ImGui.ColorEdit4("Tank", ref tankColor, ImGuiColorEditFlags.NoInputs)) {
             _plugin.Configuration.Colors.Tank = tankColor;
-            //_plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
         ImGui.TableNextColumn();
         var healerColor = _plugin.Configuration.Colors.Healer;
         if(ImGui.ColorEdit4("Healer", ref healerColor, ImGuiColorEditFlags.NoInputs)) {
             _plugin.Configuration.Colors.Healer = healerColor;
-            //_plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
         ImGui.TableNextColumn();
         var meleeColor = _plugin.Configuration.Colors.Melee;
         if(ImGui.ColorEdit4("Melee", ref meleeColor, ImGuiColorEditFlags.NoInputs)) {
             _plugin.Configuration.Colors.Melee = meleeColor;
-            //_plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
         ImGui.TableNextColumn();
         var rangedColor = _plugin.Configuration.Colors.Ranged;
         if(ImGui.ColorEdit4("Ranged", ref rangedColor, ImGuiColorEditFlags.NoInputs)) {
             _plugin.Configuration.Colors.Ranged = rangedColor;
-            //_plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
         ImGui.TableNextColumn();
         var casterColor = _plugin.Configuration.Colors.Caster;
         if(ImGui.ColorEdit4("Caster", ref casterColor, ImGuiColorEditFlags.NoInputs)) {
             _plugin.Configuration.Colors.Caster = casterColor;
-            //_plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
 
         ImGui.TableNextRow();
