@@ -112,13 +112,13 @@ internal class CrystallineConflictRankGraph {
                 ImPlot.PopStyleColor();
 
                 ImPlot.SetNextMarkerStyle(ImPlotMarker.None);
-                ImPlot.PushStyleColor(ImPlotCol.Line, ImGui.GetColorU32(ImGuiColors.DalamudRed));
+                ImPlot.PushStyleColor(ImPlotCol.Line, ImGui.GetColorU32(_plugin.Configuration.Colors.Loss));
                 ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, 10f);
                 ImPlot.PlotLine("Losses", ref xsLoss[0], ref ysLoss[0], xsLoss.Length, ImPlotLineFlags.Segments);
                 ImPlot.PopStyleColor();
 
                 ImPlot.SetNextMarkerStyle(ImPlotMarker.None);
-                ImPlot.PushStyleColor(ImPlotCol.Line, ImGui.GetColorU32(ImGuiColors.ParsedGreen));
+                ImPlot.PushStyleColor(ImPlotCol.Line, ImGui.GetColorU32(_plugin.Configuration.Colors.Win));
                 ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, 5f);
                 ImPlot.PlotLine("Wins", ref xsWin[0], ref ysWin[0], xsWin.Length, ImPlotLineFlags.Segments);
                 ImPlot.PopStyleColor();

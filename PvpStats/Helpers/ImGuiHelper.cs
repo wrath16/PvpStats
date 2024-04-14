@@ -3,7 +3,6 @@ using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
-using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -120,21 +119,21 @@ internal static class ImGuiHelper {
         return color.Lighten(1f);
     }
 
-    internal static Vector4 GetJobColor(Job? job) {
-        var role = PlayerJobHelper.GetSubRoleFromJob(job);
-        return role != null ? GetSubRoleColor((JobSubRole)role) : ImGuiColors.DalamudWhite;
-    }
+    //internal static Vector4 GetJobColor(Job? job) {
+    //    var role = PlayerJobHelper.GetSubRoleFromJob(job);
+    //    return role != null ? GetSubRoleColor((JobSubRole)role) : ImGuiColors.DalamudWhite;
+    //}
 
-    internal static Vector4 GetSubRoleColor(JobSubRole role) {
-        return role switch {
-            JobSubRole.TANK => ImGuiColors.TankBlue,
-            JobSubRole.HEALER => ImGuiColors.HealerGreen,
-            JobSubRole.MELEE => ImGuiColors.DPSRed,
-            JobSubRole.RANGED => ImGuiColors.DalamudOrange,
-            JobSubRole.CASTER => ImGuiColors.ParsedPink,
-            _ => ImGuiColors.DalamudWhite,
-        };
-    }
+    //internal static Vector4 GetSubRoleColor(JobSubRole role) {
+    //    return role switch {
+    //        JobSubRole.TANK => ImGuiColors.TankBlue,
+    //        JobSubRole.HEALER => ImGuiColors.HealerGreen,
+    //        JobSubRole.MELEE => ImGuiColors.DPSRed,
+    //        JobSubRole.RANGED => ImGuiColors.DalamudOrange,
+    //        JobSubRole.CASTER => ImGuiColors.ParsedPink,
+    //        _ => ImGuiColors.DalamudWhite,
+    //    };
+    //}
 
     internal static void DrawPercentage(double val, Vector4 color) {
         if(val is not double.NaN) {

@@ -170,7 +170,7 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
         ImGui.TableNextColumn();
         var job = _plugin.CCStatsEngine.PlayerStats[item].StatsAll.Job;
         if(job != null) {
-            ImGui.TextColored(ImGuiHelper.GetJobColor(job), $"{job}");
+            ImGui.TextColored(_plugin.Configuration.GetJobColor(job), $"{job}");
         }
         ImGui.TableNextColumn();
         ImGui.TextUnformatted($"{_plugin.CCStatsEngine.PlayerStats[item].StatsAll.Matches}");
@@ -180,7 +180,7 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
         ImGui.TextUnformatted($"{_plugin.CCStatsEngine.PlayerStats[item].StatsAll.Losses}");
         ImGui.TableNextColumn();
         var playerWinDiff = _plugin.CCStatsEngine.PlayerStats[item].StatsAll.WinDiff;
-        var playerWinDiffColor = playerWinDiff > 0 ? ImGuiColors.HealerGreen : playerWinDiff < 0 ? ImGuiColors.DPSRed : ImGuiColors.DalamudWhite;
+        var playerWinDiffColor = playerWinDiff > 0 ? _plugin.Configuration.Colors.Win : playerWinDiff < 0 ? _plugin.Configuration.Colors.Loss : ImGuiColors.DalamudWhite;
         ImGui.TextColored(playerWinDiffColor, $"{playerWinDiff}");
         ImGui.TableNextColumn();
         ImGui.TextColored(playerWinDiffColor, $"{string.Format("{0:P1}%", _plugin.CCStatsEngine.PlayerStats[item].StatsAll.WinRate)}");
@@ -191,7 +191,7 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
         ImGui.TextUnformatted($"{_plugin.CCStatsEngine.PlayerStats[item].StatsPersonal.Losses}");
         ImGui.TableNextColumn();
         var selfWinDiff = _plugin.CCStatsEngine.PlayerStats[item].StatsPersonal.WinDiff;
-        var selfAllWinDiffColor = selfWinDiff > 0 ? ImGuiColors.HealerGreen : selfWinDiff < 0 ? ImGuiColors.DPSRed : ImGuiColors.DalamudWhite;
+        var selfAllWinDiffColor = selfWinDiff > 0 ? _plugin.Configuration.Colors.Win : selfWinDiff < 0 ? _plugin.Configuration.Colors.Loss : ImGuiColors.DalamudWhite;
         ImGui.TextColored(selfAllWinDiffColor, $"{selfWinDiff}");
         ImGui.TableNextColumn();
         ImGui.TextColored(selfAllWinDiffColor, $"{string.Format("{0:P1}%", _plugin.CCStatsEngine.PlayerStats[item].StatsPersonal.WinRate)}");
@@ -204,7 +204,7 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
         ImGui.TextUnformatted($"{_plugin.CCStatsEngine.PlayerStats[item].StatsTeammate.Losses}");
         ImGui.TableNextColumn();
         var teammateWinDiff = _plugin.CCStatsEngine.PlayerStats[item].StatsTeammate.WinDiff;
-        var teammateWinDiffColor = teammateWinDiff > 0 ? ImGuiColors.HealerGreen : teammateWinDiff < 0 ? ImGuiColors.DPSRed : ImGuiColors.DalamudWhite;
+        var teammateWinDiffColor = teammateWinDiff > 0 ? _plugin.Configuration.Colors.Win : teammateWinDiff < 0 ? _plugin.Configuration.Colors.Loss : ImGuiColors.DalamudWhite;
         ImGui.TextColored(teammateWinDiffColor, $"{teammateWinDiff}");
         ImGui.TableNextColumn();
         ImGuiHelper.DrawPercentage(_plugin.CCStatsEngine.PlayerStats[item].StatsTeammate.WinRate, teammateWinDiffColor);
@@ -217,7 +217,7 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
         ImGui.TextUnformatted($"{_plugin.CCStatsEngine.PlayerStats[item].StatsOpponent.Losses}");
         ImGui.TableNextColumn();
         var opponentWinDiff = _plugin.CCStatsEngine.PlayerStats[item].StatsOpponent.WinDiff;
-        var opponentWinDiffColor = opponentWinDiff > 0 ? ImGuiColors.HealerGreen : opponentWinDiff < 0 ? ImGuiColors.DPSRed : ImGuiColors.DalamudWhite;
+        var opponentWinDiffColor = opponentWinDiff > 0 ? _plugin.Configuration.Colors.Win : opponentWinDiff < 0 ? _plugin.Configuration.Colors.Loss : ImGuiColors.DalamudWhite;
         ImGui.TextColored(opponentWinDiffColor, $"{opponentWinDiff}");
         ImGui.TableNextColumn();
         ImGuiHelper.DrawPercentage(_plugin.CCStatsEngine.PlayerStats[item].StatsOpponent.WinRate, opponentWinDiffColor);
@@ -240,76 +240,76 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
         ImGui.TextUnformatted($"{_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.KillsAndAssists.ToString("N0")}");
 
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.Kills, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 1.0f, 4.5f, _plugin.Configuration.ColorScaleStats, "0.00");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.Kills, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 1.0f, 4.5f, _plugin.Configuration.ColorScaleStats, "0.00");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.Deaths, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 1.5f, 3.5f, _plugin.Configuration.ColorScaleStats, "0.00");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.Deaths, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 1.5f, 3.5f, _plugin.Configuration.ColorScaleStats, "0.00");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.Assists, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 5.0f, 7.5f, _plugin.Configuration.ColorScaleStats, "0.00");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.Assists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 5.0f, 7.5f, _plugin.Configuration.ColorScaleStats, "0.00");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.DamageDealt, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 400000f, 850000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.DamageDealt, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 400000f, 850000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.DamageTaken, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 400000f, 850000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.DamageTaken, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 400000f, 850000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.HPRestored, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 350000f, 1000000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 350000f, 1000000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
         var tcpa = _plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.TimeOnCrystal;
         if(_plugin.Configuration.ColorScaleStats) {
-            ImGui.TextColored(ImGuiHelper.ColorScale(ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 35f, 120f, (float)tcpa.TotalSeconds), ImGuiHelper.GetTimeSpanString(tcpa));
+            ImGui.TextColored(ImGuiHelper.ColorScale(_plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 35f, 120f, (float)tcpa.TotalSeconds), ImGuiHelper.GetTimeSpanString(tcpa));
         } else {
             ImGui.TextUnformatted(ImGuiHelper.GetTimeSpanString(tcpa));
         }
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.KillsAndAssists, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 6.0f, 10.0f, _plugin.Configuration.ColorScaleStats, "0.00");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.KillsAndAssists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 6.0f, 10.0f, _plugin.Configuration.ColorScaleStats, "0.00");
 
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.Kills, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.1f, 0.7f, _plugin.Configuration.ColorScaleStats, "0.00");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.Kills, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.1f, 0.7f, _plugin.Configuration.ColorScaleStats, "0.00");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.Deaths, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 0.25f, 0.55f, _plugin.Configuration.ColorScaleStats, "0.00");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.Deaths, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 0.25f, 0.55f, _plugin.Configuration.ColorScaleStats, "0.00");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.Assists, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.75f, 1.5f, _plugin.Configuration.ColorScaleStats, "0.00");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.Assists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.75f, 1.5f, _plugin.Configuration.ColorScaleStats, "0.00");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.DamageDealt, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 75000f, 140000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.DamageDealt, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 75000f, 140000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.DamageTaken, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 75000f, 140000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.DamageTaken, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 75000f, 140000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.HPRestored, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 60000f, 185000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 60000f, 185000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
         var tcpm = _plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.TimeOnCrystal;
         if(_plugin.Configuration.ColorScaleStats) {
-            ImGui.TextColored(ImGuiHelper.ColorScale(ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 6f, 20f, (float)tcpm.TotalSeconds), ImGuiHelper.GetTimeSpanString(tcpm));
+            ImGui.TextColored(ImGuiHelper.ColorScale(_plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 6f, 20f, (float)tcpm.TotalSeconds), ImGuiHelper.GetTimeSpanString(tcpm));
         } else {
             ImGui.TextUnformatted(ImGuiHelper.GetTimeSpanString(tcpm));
         }
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.KillsAndAssists, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 1.0f, 2.0f, _plugin.Configuration.ColorScaleStats, "0.00");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.KillsAndAssists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 1.0f, 2.0f, _plugin.Configuration.ColorScaleStats, "0.00");
 
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.Kills, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.Kills, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.Deaths, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.Deaths, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.Assists, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.Assists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.DamageDealt, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.DamageDealt, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.DamageTaken, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.DamageTaken, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.HPRestored, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.TimeOnCrystalDouble, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.TimeOnCrystalDouble, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.KillsAndAssists, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.KillsAndAssists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
 
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.DamageDealtPerKA, ImGuiColors.HealerGreen, ImGuiColors.DPSRed, 52000f, 100000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.DamageDealtPerKA, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 52000f, 100000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.DamageDealtPerLife, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 190000f, 400000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.DamageDealtPerLife, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 190000f, 400000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.DamageTakenPerLife, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 190000f, 400000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.DamageTakenPerLife, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 190000f, 400000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.HPRestoredPerLife, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 120000f, 600000f, _plugin.Configuration.ColorScaleStats, "#");
+        ImGuiHelper.DrawColorScale(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.HPRestoredPerLife, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 120000f, 600000f, _plugin.Configuration.ColorScaleStats, "#");
         ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.KDA, ImGuiColors.DPSRed, ImGuiColors.HealerGreen, 2.25f, 6.25f, _plugin.Configuration.ColorScaleStats, "0.00");
+        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.KDA, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 2.25f, 6.25f, _plugin.Configuration.ColorScaleStats, "0.00");
     }
 
     //we don't need this

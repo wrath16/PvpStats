@@ -1,5 +1,4 @@
 ﻿using Dalamud.Interface;
-using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
@@ -26,8 +25,8 @@ internal class ConfigWindow : Window {
 
     public ConfigWindow(Plugin plugin) : base("PvP Tracker Settings") {
         SizeConstraints = new WindowSizeConstraints {
-            MinimumSize = new Vector2(300, 300),
-            MaximumSize = new Vector2(800, 800)
+            MinimumSize = new Vector2(500, 500),
+            MaximumSize = new Vector2(5000, 5000)
         };
         _plugin = plugin;
         _newManualLink = new();
@@ -58,6 +57,12 @@ internal class ConfigWindow : Window {
 
     public override void OnOpen() {
         _plugin.DataQueue.QueueDataOperation(Refresh);
+        base.OnOpen();
+    }
+
+    public override void OnClose() {
+        _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        base.OnClose();
     }
 
     public override void Draw() {
@@ -77,7 +82,7 @@ internal class ConfigWindow : Window {
     }
 
     private void DrawInterfaceSettings() {
-        ImGui.TextColored(ImGuiColors.DalamudYellow, "Tracker Window");
+        ImGui.TextColored(_plugin.Configuration.Colors.Header, "Tracker Window");
         //var filterRatio = _plugin.Configuration.FilterRatio;
         //ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
         //if(ImGui.SliderFloat("Filters height ratio", ref filterRatio, 2f, 5f)) {
@@ -131,7 +136,7 @@ internal class ConfigWindow : Window {
         }
         ImGui.Separator();
 
-        ImGui.TextColored(ImGuiColors.DalamudYellow, "Match Details Window");
+        ImGui.TextColored(_plugin.Configuration.Colors.Header, "Match Details Window");
 
         bool resizeableWindow = _plugin.Configuration.ResizeableMatchWindow;
         if(ImGui.Checkbox("Make window resizeable", ref resizeableWindow)) {
@@ -158,6 +163,130 @@ internal class ConfigWindow : Window {
         }
         ImGuiHelper.HelpMarker("Team stat rows will not be affected by sorting.", true, true);
         ImGui.Separator();
+        ImGui.TextColored(_plugin.Configuration.Colors.Header, "Colors");
+        DrawColorSettings();
+    }
+
+    private void DrawColorSettings() {
+        if(ImGui.Button("Reset to Default")) {
+            _plugin.Configuration.Colors = new();
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+
+        using var table = ImRaii.Table("ColorSettingsTable", 3);
+        if(!table) {
+            return;
+        }
+        ImGui.TableSetupColumn("c1");
+        ImGui.TableSetupColumn("c2");
+        ImGui.TableSetupColumn("c3");
+
+        ImGui.TableNextColumn();
+        var headerColor = _plugin.Configuration.Colors.Header;
+        if(ImGui.ColorEdit4("Headers", ref headerColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.Header = headerColor;
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+        ImGui.TableNextColumn();
+        var favoriteColor = _plugin.Configuration.Colors.Favorite;
+        if(ImGui.ColorEdit4("Favorites", ref favoriteColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.Favorite = favoriteColor;
+            //_plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+        ImGui.TableNextRow();
+        ImGui.TableNextRow();
+        ImGui.TableNextColumn();
+        var winColor = _plugin.Configuration.Colors.Win;
+        if(ImGui.ColorEdit4("Wins", ref winColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.Win = winColor;
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+        ImGui.TableNextColumn();
+        var lossColor = _plugin.Configuration.Colors.Loss;
+        if(ImGui.ColorEdit4("Losses", ref lossColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.Loss = lossColor;
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+        ImGui.TableNextColumn();
+        var otherColor = _plugin.Configuration.Colors.Other;
+        if(ImGui.ColorEdit4("Draws", ref otherColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.Other = otherColor;
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+        ImGui.TableNextRow();
+        ImGui.TableNextRow();
+        ImGui.TableNextColumn();
+        var localPlayerColor = _plugin.Configuration.Colors.CCLocalPlayer;
+        if(ImGui.ColorEdit4("Local Player", ref localPlayerColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.CCLocalPlayer = localPlayerColor;
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+        ImGui.TableNextColumn();
+        var playerTeamColor = _plugin.Configuration.Colors.CCPlayerTeam;
+        if(ImGui.ColorEdit4("Player Team", ref playerTeamColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.CCPlayerTeam = playerTeamColor;
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+        ImGui.TableNextColumn();
+        var enemyTeamColor = _plugin.Configuration.Colors.CCEnemyTeam;
+        if(ImGui.ColorEdit4("Enemy Team", ref enemyTeamColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.CCEnemyTeam = enemyTeamColor;
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+        ImGui.TableNextRow();
+        ImGui.TableNextRow();
+        ImGui.TableNextColumn();
+        var tankColor = _plugin.Configuration.Colors.Tank;
+        if(ImGui.ColorEdit4("Tank", ref tankColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.Tank = tankColor;
+            //_plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+        ImGui.TableNextColumn();
+        var healerColor = _plugin.Configuration.Colors.Healer;
+        if(ImGui.ColorEdit4("Healer", ref healerColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.Healer = healerColor;
+            //_plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+        ImGui.TableNextColumn();
+        var meleeColor = _plugin.Configuration.Colors.Melee;
+        if(ImGui.ColorEdit4("Melee", ref meleeColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.Melee = meleeColor;
+            //_plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+        ImGui.TableNextColumn();
+        var rangedColor = _plugin.Configuration.Colors.Ranged;
+        if(ImGui.ColorEdit4("Ranged", ref rangedColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.Ranged = rangedColor;
+            //_plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+        ImGui.TableNextColumn();
+        var casterColor = _plugin.Configuration.Colors.Caster;
+        if(ImGui.ColorEdit4("Caster", ref casterColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.Caster = casterColor;
+            //_plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+
+        ImGui.TableNextRow();
+        ImGui.TableNextRow();
+        ImGui.TableNextColumn();
+        var statHighColor = _plugin.Configuration.Colors.StatHigh;
+        if(ImGui.ColorEdit4("High stat", ref statHighColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.StatHigh = statHighColor;
+            //_plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+        ImGui.TableNextColumn();
+        var statLowColor = _plugin.Configuration.Colors.StatLow;
+        if(ImGui.ColorEdit4("Low stat", ref statLowColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.StatLow = statLowColor;
+            //_plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+    }
+
+    private void ColorPicker(string name, ref Vector4 prop) {
+        var color = prop;
+        if(ImGui.ColorEdit4("Headers", ref color, ImGuiColorEditFlags.NoInputs)) {
+            prop = color;
+        }
     }
 
     private void DrawPlayerLinkSettings() {

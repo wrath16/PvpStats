@@ -1,5 +1,4 @@
 ﻿using Dalamud.Interface;
-using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
@@ -27,11 +26,11 @@ internal class CrystallineConflictRecords {
                     ImGui.TableSetupColumn($"value", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 50f);
 
                     ImGui.TableNextColumn();
-                    ImGui.TextColored(ImGuiColors.DalamudYellow, "Longest win streak:");
+                    ImGui.TextColored(_plugin.Configuration.Colors.Header, "Longest win streak:");
                     ImGui.TableNextColumn();
                     ImGui.Text(_plugin.CCStatsEngine.LongestWinStreak.ToString());
                     ImGui.TableNextColumn();
-                    ImGui.TextColored(ImGuiColors.DalamudYellow, "Longest loss streak:");
+                    ImGui.TextColored(_plugin.Configuration.Colors.Header, "Longest loss streak:");
                     ImGui.TableNextColumn();
                     ImGui.Text(_plugin.CCStatsEngine.LongestLossStreak.ToString());
                 }
@@ -57,7 +56,7 @@ internal class CrystallineConflictRecords {
                 for(int i = 0; i < superlatives.Length; i++) {
                     ImGui.TableNextColumn();
                     ImGui.AlignTextToFramePadding();
-                    ImGui.TextColored(ImGuiColors.DalamudYellow, superlatives[i] + ":");
+                    ImGui.TextColored(_plugin.Configuration.Colors.Header, superlatives[i] + ":");
                     ImGui.TableNextColumn();
                     ImGui.Text(values[i]);
                     ImGui.TableNextColumn();
@@ -87,9 +86,9 @@ internal class CrystallineConflictRecords {
                 }
                 ImGui.TableNextColumn();
                 if(!match.IsSpectated) {
-                    ImGui.TextColored(ImGuiHelper.GetJobColor(match.LocalPlayerTeamMember!.Job), $"{match.LocalPlayerTeamMember!.Job}");
+                    ImGui.TextColored(_plugin.Configuration.GetJobColor(match.LocalPlayerTeamMember!.Job), $"{match.LocalPlayerTeamMember!.Job}");
                     ImGui.TableNextColumn();
-                    var color = match.IsWin ? ImGuiColors.HealerGreen : match.IsLoss ? ImGuiColors.DalamudRed : ImGuiColors.DalamudGrey;
+                    var color = match.IsWin ? _plugin.Configuration.Colors.Win : match.IsLoss ? _plugin.Configuration.Colors.Loss : _plugin.Configuration.Colors.Other;
                     var result = match.IsWin ? "WIN" : match.IsLoss ? "LOSS" : "???";
                     ImGui.TextColored(color, result);
                 } else {

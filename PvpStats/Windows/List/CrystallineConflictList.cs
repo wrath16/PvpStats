@@ -50,7 +50,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
     public override void DrawListItem(CrystallineConflictMatch item) {
         ImGui.SameLine(0f * ImGuiHelpers.GlobalScale);
         if(item.IsBookmarked) {
-            ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(ImGuiColors.DalamudYellow - new Vector4(0f, 0f, 0f, 0.7f)));
+            ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(_plugin.Configuration.Colors.Favorite - new Vector4(0f, 0f, 0f, 0.7f)));
         }
         ImGui.Text($"{item.DutyStartTime:MM/dd/yyyy HH:mm}");
         ImGui.TableNextColumn();
@@ -59,7 +59,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         }
         ImGui.TableNextColumn();
         if(!item.IsSpectated) {
-            ImGui.TextColored(ImGuiHelper.GetJobColor(item.LocalPlayerTeamMember!.Job), item.LocalPlayerTeamMember.Job.ToString());
+            ImGui.TextColored(_plugin.Configuration.GetJobColor(item.LocalPlayerTeamMember!.Job), item.LocalPlayerTeamMember.Job.ToString());
         }
         ImGui.TableNextColumn();
         ImGui.Text($"{item.MatchType}");
@@ -75,8 +75,8 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
             color = ImGuiColors.DalamudWhite;
             resultText = "N/A";
         } else {
-            color = isWin ? ImGuiColors.HealerGreen : ImGuiColors.DalamudRed;
-            color = noWinner ? ImGuiColors.DalamudGrey : color;
+            color = isWin ? _plugin.Configuration.Colors.Win : _plugin.Configuration.Colors.Loss;
+            color = noWinner ? _plugin.Configuration.Colors.Other : color;
             resultText = isWin ? "WIN" : "LOSS";
             resultText = noWinner ? "???" : resultText;
         }
