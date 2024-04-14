@@ -152,7 +152,7 @@ internal static class ImGuiHelper {
         if(colorEnabled) {
             ImGui.TextColored(ColorScale(colorMin, colorMax, minValue, maxValue, value), outputString);
         } else {
-            ImGui.TextUnformatted(outputString);
+            ImGui.Text(outputString);
         }
     }
 
