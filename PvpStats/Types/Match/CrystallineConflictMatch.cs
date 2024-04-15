@@ -79,17 +79,10 @@ public class CrystallineConflictMatch {
     }
 
     [BsonIgnore]
-    public List<CrystallineConflictPlayer> Players {
-        get {
-            List<CrystallineConflictPlayer> crystallineConflictPlayers = new();
-            foreach(var team in Teams) {
-                foreach(var player in team.Value.Players) {
-                    crystallineConflictPlayers.Add(player);
-                }
-            }
-            return crystallineConflictPlayers;
-        }
-    }
+    public List<CrystallineConflictPlayer> Players => Teams.SelectMany(x => {
+        x.Value.Players.ForEach(y => y.Team = x.Key);
+        return x.Value.Players;
+    }).ToList();
 
     [BsonIgnore]
     public CrystallineConflictPostMatchRow? LocalPlayerStats {

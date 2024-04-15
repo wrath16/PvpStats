@@ -436,7 +436,7 @@ internal class CrystallineConflictStatsManager {
             Players = playerStats.Keys.ToList();
             PlayerStats = playerStats;
             ActiveLinks = activeLinks;
-            Jobs = jobStats.Keys.Where(x => x != Job.VPR && x != Job.PCT).ToList();
+            Jobs = jobStats.Keys.Where(x => x != Job.VPR && x != Job.PIC).ToList();
             JobStats = jobStats;
             LocalPlayerStats = localPlayerStats;
             LocalPlayerJobStats = localPlayerJobStats.OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
@@ -687,6 +687,14 @@ internal class CrystallineConflictStatsManager {
                         return false;
                     }).ToList();
                     //_plugin.Configuration.MatchWindowFilters.OtherPlayerFilter = otherPlayerFilter;
+                    break;
+                case Type _ when filter.GetType() == typeof(TierFilter):
+                    var tierFilter = (TierFilter)filter;
+                    matches = matches.Where(x => {
+                        var highestPlayer = x.Players.OrderByDescending(y => y.Rank).First();
+                        return x.MatchType != CrystallineConflictMatchType.Ranked || highestPlayer.Rank == null
+                        || (highestPlayer.Rank >= tierFilter.TierLow && highestPlayer.Rank <= tierFilter.TierHigh) || (highestPlayer.Rank >= tierFilter.TierHigh && highestPlayer.Rank <= tierFilter.TierLow);
+                    }).ToList();
                     break;
                 case Type _ when filter.GetType() == typeof(ResultFilter):
                     var resultFilter = (ResultFilter)filter;

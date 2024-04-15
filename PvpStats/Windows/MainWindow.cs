@@ -42,6 +42,7 @@ internal class MainWindow : Window {
         _plugin = plugin;
         _collapseFilters = plugin.Configuration.CCWindowConfig.FiltersCollapsed;
         Filters.Add(new MatchTypeFilter(plugin, Refresh, _plugin.Configuration.MatchWindowFilters.MatchTypeFilter));
+        Filters.Add(new TierFilter(plugin, Refresh));
         Filters.Add(new ArenaFilter(plugin, Refresh, _plugin.Configuration.MatchWindowFilters.ArenaFilter));
         Filters.Add(new TimeFilter(plugin, Refresh, _plugin.Configuration.MatchWindowFilters.TimeFilter));
         Filters.Add(new LocalPlayerFilter(plugin, Refresh, _plugin.Configuration.MatchWindowFilters.LocalPlayerFilter));
