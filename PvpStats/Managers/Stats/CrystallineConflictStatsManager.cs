@@ -691,7 +691,13 @@ internal class CrystallineConflictStatsManager {
                 case Type _ when filter.GetType() == typeof(TierFilter):
                     var tierFilter = (TierFilter)filter;
                     matches = matches.Where(x => {
-                        var highestPlayer = x.Players.OrderByDescending(y => y.Rank).First();
+                        CrystallineConflictPlayer highestPlayer = new();
+                        try {
+                            highestPlayer = x.Players.OrderByDescending(y => y.Rank).First();
+                        } catch {
+                            //_plugin.Log.Error($"{x.Id} {x.DutyStartTime}");
+                            return true;
+                        }
                         return x.MatchType != CrystallineConflictMatchType.Ranked || highestPlayer.Rank == null
                         || (highestPlayer.Rank >= tierFilter.TierLow && highestPlayer.Rank <= tierFilter.TierHigh) || (highestPlayer.Rank >= tierFilter.TierHigh && highestPlayer.Rank <= tierFilter.TierLow);
                     }).ToList();
