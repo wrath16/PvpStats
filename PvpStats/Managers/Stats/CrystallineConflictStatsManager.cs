@@ -712,6 +712,14 @@ internal class CrystallineConflictStatsManager {
                         matches = matches.Where(x => x.IsSpectated || x.MatchWinner == null).ToList();
                     }
                     break;
+                case Type _ when filter.GetType() == typeof(DurationFilter):
+                    var durationFilter = (DurationFilter)filter;
+                    if(durationFilter.DirectionIndex == 0) {
+                        matches = matches.Where(x => x.MatchDuration is null || x.MatchDuration >= durationFilter.Duration).ToList();
+                    } else {
+                        matches = matches.Where(x => x.MatchDuration is null || x.MatchDuration <= durationFilter.Duration).ToList();
+                    }
+                    break;
                 case Type _ when filter.GetType() == typeof(BookmarkFilter):
                     var bookmarkFilter = (BookmarkFilter)filter;
                     if(bookmarkFilter.BookmarkedOnly) {
@@ -723,6 +731,9 @@ internal class CrystallineConflictStatsManager {
                     var miscFilter = (MiscFilter)filter;
                     if(miscFilter.MustHaveStats) {
                         matches = matches.Where(x => x.PostMatch is not null).ToList();
+                    }
+                    if(!miscFilter.IncludeSpectated) {
+                        matches = matches.Where(x => !x.IsSpectated).ToList();
                     }
                     //_plugin.Configuration.MatchWindowFilters.MiscFilter = miscFilter;
                     break;

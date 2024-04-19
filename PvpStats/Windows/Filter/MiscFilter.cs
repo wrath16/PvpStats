@@ -9,7 +9,7 @@ public class MiscFilter : DataFilter {
     public override string Name => "Misc";
 
     public bool MustHaveStats { get; set; }
-
+    public bool IncludeSpectated { get; set; } = true;
     public bool ShowDeleted { get; set; }
 
     public MiscFilter() { }
@@ -18,6 +18,7 @@ public class MiscFilter : DataFilter {
         if(filter is not null) {
             MustHaveStats = filter.MustHaveStats;
             ShowDeleted = filter.ShowDeleted;
+            IncludeSpectated = filter.IncludeSpectated;
         }
     }
 
@@ -32,6 +33,13 @@ public class MiscFilter : DataFilter {
         if(ImGui.Checkbox("Must have post-game stats", ref mustHaveStats)) {
             _plugin!.DataQueue.QueueDataOperation(async () => {
                 MustHaveStats = mustHaveStats;
+                await Refresh();
+            });
+        }
+        bool includeSpectated = IncludeSpectated;
+        if(ImGui.Checkbox("Include spectated matches", ref includeSpectated)) {
+            _plugin!.DataQueue.QueueDataOperation(async () => {
+                IncludeSpectated = includeSpectated;
                 await Refresh();
             });
         }

@@ -50,6 +50,7 @@ internal class MainWindow : Window {
         var otherPlayerFilter = new OtherPlayerFilter(plugin, Refresh);
         Filters.Add(otherPlayerFilter);
         Filters.Add(new ResultFilter(plugin, Refresh));
+        Filters.Add(new DurationFilter(plugin, Refresh));
         Filters.Add(new BookmarkFilter(plugin, Refresh));
         Filters.Add(new MiscFilter(plugin, Refresh, _plugin.Configuration.MatchWindowFilters.MiscFilter));
 
