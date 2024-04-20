@@ -52,8 +52,23 @@ internal class DataQueueService {
                 await DataLock.WaitAsync();
                 if(DataTaskQueue.TryDequeue(out (Task task, DateTime timestamp) nextTask)) {
                     LastTaskTime = nextTask.timestamp;
+                    //_plugin.Log.Debug($"next task type: {nextTask.task.GetType()}");
                     nextTask.task.Start();
                     await nextTask.task;
+                    if(nextTask.task.GetType().IsAssignableTo(typeof(Task<Task>))) {
+                        //_plugin.Log.Debug("await recursive task");
+                        var nestedTask = nextTask.task as Task<Task>;
+                        await nestedTask.Result;
+                    }
+                    //if(nextTask.task.GetType().IsAssignableTo(typeof(Task<Task>))) {
+                    //    _plugin.Log.Debug("starting async data task");
+                    //    var nestedTask = nextTask.task as Task<Task>;
+                    //    nestedTask.Start();
+                    //    await nestedTask.Result;
+                    //} else {
+                    //    nextTask.task.Start();
+                    //    await nextTask.task;
+                    //}
                 } else {
                     throw new Exception("Unable to dequeue task!");
                     //Log.Warning($"Unable to dequeue next task. Tasks remaining: {DataTaskQueue.Count}");
