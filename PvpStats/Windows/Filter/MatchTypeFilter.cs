@@ -40,13 +40,19 @@ public class MatchTypeFilter : DataFilter {
     internal override void Draw() {
         bool allSelected = AllSelected;
         if(ImGui.Checkbox($"Select All##{GetHashCode()}", ref allSelected)) {
-            _plugin!.DataQueue.QueueDataOperation(async () => {
+            RateLimitRefresh(() => {
                 foreach(var category in FilterState) {
                     FilterState[category.Key] = allSelected;
                 }
                 AllSelected = allSelected;
-                await Refresh();
             });
+            //_plugin!.DataQueue.QueueDataOperation(async () => {
+            //    foreach(var category in FilterState) {
+            //        FilterState[category.Key] = allSelected;
+            //    }
+            //    AllSelected = allSelected;
+            //    await Refresh();
+            //});
         }
 
         ImGui.BeginTable("matchTypeFilterTable", 2);
@@ -58,10 +64,16 @@ public class MatchTypeFilter : DataFilter {
             ImGui.TableNextColumn();
             bool filterState = category.Value;
             if(ImGui.Checkbox($"{category.Key}##{GetHashCode()}", ref filterState)) {
-                _plugin!.DataQueue.QueueDataOperation(async () => {
+                //if(CurrentRefresh is null || CurrentRefresh.Result.IsCompleted) {
+                //    CurrentRefresh = _plugin!.DataQueue.QueueDataOperation(async () => {
+                //        FilterState[category.Key] = filterState;
+                //        UpdateAllSelected();
+                //        await Refresh();
+                //    });
+                //}
+                RateLimitRefresh(() => {
                     FilterState[category.Key] = filterState;
                     UpdateAllSelected();
-                    await Refresh();
                 });
             }
         }

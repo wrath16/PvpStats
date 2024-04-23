@@ -9,6 +9,7 @@ using PvpStats.Windows.List;
 using PvpStats.Windows.Summary;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,6 +33,9 @@ internal class MainWindow : Window {
 
     private bool _firstDraw, _lastWindowCollapsed, _windowCollapsed;
     private Vector2 _lastWindowSize, _lastWindowPosition, _savedWindowSize;
+
+    private int _drawCycles;
+    private float _longestDraw ,_longestPreDraw;
 
     internal MainWindow(Plugin plugin) : base("Crystalline Conflict Tracker") {
         SizeConstraints = new WindowSizeConstraints {
@@ -69,19 +73,30 @@ internal class MainWindow : Window {
     }
 
     public async Task Refresh() {
-        DateTime d0 = DateTime.Now;
+        Stopwatch s0 = new();
+        s0.Start();
         try {
             await RefreshLock.WaitAsync();
             await _plugin.CCStatsEngine.Refresh(Filters, ccJobs.StatSourceFilter, ccPlayers.InheritFromPlayerFilter);
-            await ccMatches.Refresh(_plugin.CCStatsEngine.Matches);
-            await ccPlayers.Refresh(_plugin.CCStatsEngine.Players);
-            await ccJobs.Refresh(_plugin.CCStatsEngine.Jobs);
-            await ccRank.Refresh(_plugin.CCStatsEngine.Matches);
-        } finally {
-            RefreshLock.Release();
+            Stopwatch s1 = new();
+            s1.Start();
+            Task.WaitAll([
+                ccMatches.Refresh(_plugin.CCStatsEngine.Matches),
+                ccPlayers.Refresh(_plugin.CCStatsEngine.Players),
+                ccJobs.Refresh(_plugin.CCStatsEngine.Jobs),
+                ccRank.Refresh(_plugin.CCStatsEngine.Matches),
+            ]);
+            _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"all window modules", s1.ElapsedMilliseconds.ToString()));
+            s1.Restart();
+            SaveFilters();
+        } catch {
+            _plugin.Log.Error("Refresh on cc stats window failed.");
+            throw;
         }
-        SaveFilters();
-        _plugin.Log.Debug($"total refresh time: {(DateTime.Now - d0).TotalMilliseconds} ms");
+        finally {
+            RefreshLock.Release();
+            _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"total refresh time", s0.ElapsedMilliseconds.ToString()));
+        }
     }
 
     public override void PreDraw() {
@@ -107,6 +122,9 @@ internal class MainWindow : Window {
     }
 
     public override void Draw() {
+        Stopwatch s1 = new();
+        s1.Start();
+
         if(!ImGui.IsWindowCollapsed()) {
             _firstDraw = true;
         }
@@ -177,6 +195,17 @@ internal class MainWindow : Window {
                 });
             }
         }
+        s1.Stop();
+        if(_drawCycles % 5000 == 0) {
+            _drawCycles = 0;
+            if(s1.ElapsedMilliseconds > _longestDraw) {
+                _longestDraw = s1.ElapsedMilliseconds;
+            }
+#if DEBUG
+            _plugin.Log.Debug($"longest draw: {_longestDraw}");
+#endif
+        }
+        _drawCycles++;
     }
 
     private void DrawFiltersTable() {
@@ -212,6 +241,8 @@ internal class MainWindow : Window {
     }
 
     private void SaveFilters() {
+        Stopwatch s0 = new();
+        s0.Start();
         foreach(var filter in Filters) {
             switch(filter.GetType()) {
                 case Type _ when filter.GetType() == typeof(MatchTypeFilter):
@@ -246,6 +277,7 @@ internal class MainWindow : Window {
         _plugin.Configuration.MatchWindowFilters.MinMatches = ccPlayers.MinMatches;
         _plugin.Configuration.MatchWindowFilters.PlayersInheritFromPlayerFilter = ccPlayers.InheritFromPlayerFilter;
         _plugin.Configuration.Save();
+        _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"save filters", s0.ElapsedMilliseconds.ToString()));
     }
 
     private unsafe void Tab(string name, Action action) {

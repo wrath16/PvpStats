@@ -27,8 +27,12 @@ internal class StorageService {
 
         //create indices
         var ccMatchCollection = GetCCMatches();
+        ccMatchCollection.EnsureIndex(m => m.IsCompleted);
+        ccMatchCollection.EnsureIndex(m => m.IsDeleted);
         ccMatchCollection.EnsureIndex(m => m.DutyStartTime);
         ccMatchCollection.EnsureIndex(m => m.MatchType);
+        ccMatchCollection.EnsureIndex(m => m.Arena);
+        ccMatchCollection.EnsureIndex(m => m.IsBookmarked);
     }
 
     public void Dispose() {
@@ -91,11 +95,11 @@ internal class StorageService {
         try {
             await _dbLock.WaitAsync();
             action.Invoke();
-            if(toSave) {
-                await _plugin.WindowManager.Refresh();
-            }
         } finally {
             _dbLock.Release();
+        }
+        if(toSave) {
+            await _plugin.WindowManager.Refresh();
         }
     }
 }

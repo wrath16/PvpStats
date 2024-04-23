@@ -18,10 +18,10 @@ internal class WindowManager : IDisposable {
 
     private WindowSystem WindowSystem;
     private Plugin _plugin;
-    private MainWindow MainWindow;
-    private ConfigWindow ConfigWindow;
+    internal MainWindow CCTrackerWindow { get; private set; }
+    internal ConfigWindow ConfigWindow { get; private set; }
 #if DEBUG
-    private DebugWindow? DebugWindow;
+    internal DebugWindow? DebugWindow { get; private set; }
 #endif
 
     internal readonly Dictionary<Job, IDalamudTextureWrap> JobIcons = new();
@@ -39,9 +39,9 @@ internal class WindowManager : IDisposable {
             JobIcons.Add(icon.Key, _plugin.TextureProvider.GetIcon(icon.Value));
         }
 
-        MainWindow = new(plugin);
+        CCTrackerWindow = new(plugin);
         ConfigWindow = new(plugin);
-        WindowSystem.AddWindow(MainWindow);
+        WindowSystem.AddWindow(CCTrackerWindow);
         WindowSystem.AddWindow(ConfigWindow);
 
 #if DEBUG
@@ -62,6 +62,7 @@ internal class WindowManager : IDisposable {
         WindowSystem.RemoveAllWindows();
         _plugin.PluginInterface.UiBuilder.Draw -= DrawUI;
         _plugin.PluginInterface.UiBuilder.OpenConfigUi -= OpenConfigWindow;
+        CCBannerImage.Dispose();
 
         _plugin.ClientState.Login -= OnLogin;
     }
@@ -84,7 +85,7 @@ internal class WindowManager : IDisposable {
     }
 
     internal void OpenMainWindow() {
-        MainWindow.IsOpen = true;
+        CCTrackerWindow.IsOpen = true;
     }
 
     internal void OpenConfigWindow() {
@@ -137,6 +138,6 @@ internal class WindowManager : IDisposable {
     public async Task Refresh() {
         _plugin.Log.Debug("refreshing windows...");
         await ConfigWindow.Refresh();
-        await MainWindow.Refresh();
+        await CCTrackerWindow.Refresh();
     }
 }

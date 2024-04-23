@@ -102,10 +102,21 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
 
         int minMatches = (int)MinMatches;
         ImGuiHelper.SetDynamicWidth(150f, 250f, 3f);
+        //these should really be interlocked with window refresh
         if(ImGui.SliderInt("Min. matches", ref minMatches, 1, 100)) {
             MinMatches = (uint)minMatches;
             _plugin.Configuration.MatchWindowFilters.MinMatches = MinMatches;
             ApplyQuickFilters(MinMatches, PlayerQuickSearch);
+            //_plugin.DataQueue.QueueDataOperation(async() => {
+            //    try {
+            //        await Interlock.WaitAsync();
+            //        MinMatches = (uint)minMatches;
+            //        _plugin.Configuration.MatchWindowFilters.MinMatches = MinMatches;
+            //        ApplyQuickFilters(MinMatches, PlayerQuickSearch);
+            //    } finally {
+            //        Interlock.Release();
+            //    }
+            //});
         }
         ImGui.SameLine();
         string quickSearch = PlayerQuickSearch;

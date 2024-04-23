@@ -10,6 +10,8 @@ public abstract class DataFilter {
     [JsonIgnore]
     public virtual string? HelpMessage { get; }
     private Func<Task>? RefreshData { get; init; }
+    [JsonIgnore]
+    protected Task<Task>? CurrentRefresh { get; set; }
 
     [JsonConstructor]
     public DataFilter() {
@@ -26,6 +28,16 @@ public abstract class DataFilter {
             throw new InvalidOperationException("No refresh action initialized!");
         }
         await RefreshData();
+    }
+
+    //must be invoked at point of input!
+    protected void RateLimitRefresh(Action action) {
+        if(CurrentRefresh is null || CurrentRefresh.Result.IsCompleted) {
+            CurrentRefresh = _plugin!.DataQueue.QueueDataOperation(async () => {
+                action.Invoke();
+                await Refresh();
+            });
+        }
     }
 
     internal abstract void Draw();

@@ -148,25 +148,12 @@ public sealed class Plugin : IDalamudPlugin {
         CommandManager.RemoveHandler(CCStatsCommandName);
         CommandManager.RemoveHandler(ConfigCommandName);
 
-        if(MatchManager != null) {
-            MatchManager.Dispose();
-        }
-        if(WindowManager != null) {
-            WindowManager.Dispose();
-        }
-        if(Storage != null) {
-            Storage.Dispose();
-        }
-        if(DataQueue != null) {
-            DataQueue.Dispose();
-        }
-        if(GameState != null) {
-            GameState.Dispose();
-        }
-
-        if(Configuration != null) {
-            Configuration.Save();
-        }
+        MatchManager?.Dispose();
+        WindowManager?.Dispose();
+        Storage?.Dispose();
+        DataQueue?.Dispose();
+        GameState?.Dispose();
+        Configuration?.Save();
     }
 
     private void OnCommand(string command, string args) {

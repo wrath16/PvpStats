@@ -190,7 +190,7 @@ internal class MatchManager : IDisposable {
             _plugin.Log.Debug(teamName);
             for(int i = 0; i < 5; i++) {
                 int offset = i * 16 + 6;
-                uint[] rankIdChain = new uint[] { 1, (uint)(13 + i), 2, 9 };
+                uint[] rankIdChain = [1, (uint)(13 + i), 2, 9];
                 if(offset >= addon->AtkValuesCount) {
                     break;
                 }
@@ -379,7 +379,7 @@ internal class MatchManager : IDisposable {
         }
 
         //add players who left match. omit ones with incomplete name as a failsafe
-        foreach(var introPlayer in _currentMatch.IntroPlayerInfo.Where(x => !x.Value.Alias.FullName.Contains("."))) {
+        foreach(var introPlayer in _currentMatch.IntroPlayerInfo.Where(x => !x.Value.Alias.FullName.Contains('.'))) {
             bool isFound = false;
             foreach(var team in _currentMatch.Teams) {
                 foreach(var player in team.Value.Players) {
