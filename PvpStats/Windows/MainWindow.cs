@@ -95,7 +95,7 @@ internal class MainWindow : Window {
         }
         finally {
             RefreshLock.Release();
-            _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"total refresh time", s0.ElapsedMilliseconds.ToString()));
+            _plugin.Log.Information(string.Format("{0,-25}: {1,4} ms", $"CC tracker refresh time", s0.ElapsedMilliseconds.ToString()));
         }
     }
 

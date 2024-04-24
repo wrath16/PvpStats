@@ -24,7 +24,7 @@ internal class MigrationManager {
         foreach(var match in matches) {
             match.MatchType = MatchHelper.GetMatchType(match.DutyId);
         }
-        await _plugin.Storage.UpdateCCMatches(matches);
+        await _plugin.DataCache.UpdateCCMatches(matches);
     }
 
     internal async Task BulkUpdateValidatePlayerCount() {
@@ -55,6 +55,7 @@ internal class MigrationManager {
                 }
             }
         }
-        await _plugin.Storage.UpdateCCMatches(matches);
+        //await _plugin.Storage.UpdateCCMatches(matches);
+        await _plugin.DataCache.UpdateCCMatches(matches);
     }
 }

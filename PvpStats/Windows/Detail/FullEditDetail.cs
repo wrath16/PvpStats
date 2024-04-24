@@ -49,7 +49,8 @@ internal class FullEditDetail<T> : Window {
                 var returnValue = LiteDB.JsonSerializer.Deserialize(_dataString);
                 var x = BsonMapper.Global.Deserialize<CrystallineConflictMatch>(returnValue);
                 //make this generic for type
-                await _plugin.Storage.UpdateCCMatch(x);
+                await _plugin.DataCache.UpdateCCMatch(x);
+                await _plugin.WindowManager.Refresh();
             });
             //using(var reader = new StreamReader(_dataString)) {
             //    var returnValue = LiteDB.JsonSerializer.Deserialize(_dataString);

@@ -42,45 +42,45 @@ internal class StorageService {
         return Database.GetCollection<CrystallineConflictMatch>(CCTable);
     }
 
-    internal async Task AddCCMatch(CrystallineConflictMatch match, bool toSave = true) {
+    internal async Task AddCCMatch(CrystallineConflictMatch match) {
         LogUpdate(match.Id.ToString());
-        await WriteToDatabase(() => GetCCMatches().Insert(match), toSave);
+        await WriteToDatabase(() => GetCCMatches().Insert(match));
     }
 
-    internal async Task AddCCMatches(IEnumerable<CrystallineConflictMatch> matches, bool toSave = true) {
+    internal async Task AddCCMatches(IEnumerable<CrystallineConflictMatch> matches) {
         LogUpdate(null, matches.Count());
-        await WriteToDatabase(() => GetCCMatches().Insert(matches.Where(m => m.Id != null)), toSave);
+        await WriteToDatabase(() => GetCCMatches().Insert(matches.Where(m => m.Id != null)));
     }
 
-    internal async Task UpdateCCMatch(CrystallineConflictMatch match, bool toSave = true) {
+    internal async Task UpdateCCMatch(CrystallineConflictMatch match) {
         LogUpdate(match.Id.ToString());
-        await WriteToDatabase(() => GetCCMatches().Update(match), toSave);
+        await WriteToDatabase(() => GetCCMatches().Update(match));
     }
 
-    internal async Task UpdateCCMatches(IEnumerable<CrystallineConflictMatch> matches, bool toSave = true) {
+    internal async Task UpdateCCMatches(IEnumerable<CrystallineConflictMatch> matches) {
         LogUpdate(null, matches.Count());
-        await WriteToDatabase(() => GetCCMatches().Update(matches.Where(m => m.Id != null)), toSave);
+        await WriteToDatabase(() => GetCCMatches().Update(matches.Where(m => m.Id != null)));
     }
 
     internal ILiteCollection<PlayerAliasLink> GetAutoLinks() {
         return Database.GetCollection<PlayerAliasLink>(AutoPlayerLinksTable);
     }
 
-    internal async Task SetAutoLinks(IEnumerable<PlayerAliasLink> links, bool toSave = false) {
+    internal async Task SetAutoLinks(IEnumerable<PlayerAliasLink> links) {
         LogUpdate(null, links.Count());
         _plugin.Storage.GetAutoLinks().DeleteAll();
-        await WriteToDatabase(() => GetAutoLinks().Insert(links.Where(x => x.Id != null)), toSave);
+        await WriteToDatabase(() => GetAutoLinks().Insert(links.Where(x => x.Id != null)));
     }
 
     internal ILiteCollection<PlayerAliasLink> GetManualLinks() {
         return Database.GetCollection<PlayerAliasLink>(ManualPlayerLinksTable);
     }
 
-    internal async Task SetManualLinks(IEnumerable<PlayerAliasLink> links, bool toSave = false) {
+    internal async Task SetManualLinks(IEnumerable<PlayerAliasLink> links) {
         LogUpdate(null, links.Count());
         //kind of hacky
         GetManualLinks().DeleteAll();
-        await WriteToDatabase(() => GetManualLinks().Insert(links.Where(x => x.Id != null)), toSave);
+        await WriteToDatabase(() => GetManualLinks().Insert(links.Where(x => x.Id != null)));
     }
 
     private void LogUpdate(string? id = null, int count = 0) {
@@ -91,15 +91,12 @@ internal class StorageService {
             writeMethod?.Name, $"{callingMethod?.DeclaringType?.ToString() ?? ""}.{callingMethod?.Name ?? ""}", id != null ? $"ID: {id}" : "", count != 0 ? $"Count: {count}" : ""));
     }
 
-    private async Task WriteToDatabase(Func<object> action, bool toSave = true) {
+    private async Task WriteToDatabase(Func<object> action) {
         try {
             await _dbLock.WaitAsync();
             action.Invoke();
         } finally {
             _dbLock.Release();
-        }
-        if(toSave) {
-            await _plugin.WindowManager.Refresh();
         }
     }
 }

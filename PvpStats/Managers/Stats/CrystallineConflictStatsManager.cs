@@ -340,8 +340,8 @@ internal class CrystallineConflictStatsManager {
         _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"local player stats", localPlayerWatch.ElapsedMilliseconds.ToString()));
         _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"summary stats loop", aggregateStatsWatch.ElapsedMilliseconds.ToString()));
         _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"player/job stats loop", playerJobWatch.ElapsedMilliseconds.ToString()));
-        _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"team player loop", teamPlayerWatch.ElapsedMilliseconds.ToString()));
-        _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"cc match loop", s1.ElapsedMilliseconds.ToString()));
+        _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"team player loop total", teamPlayerWatch.ElapsedMilliseconds.ToString()));
+        _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"cc match loop total", s1.ElapsedMilliseconds.ToString()));
         s1.Restart();
 
         //player linking
@@ -635,7 +635,8 @@ internal class CrystallineConflictStatsManager {
     private List<CrystallineConflictMatch> FilterMatches(List<DataFilter> filters) {
         Stopwatch s1 = new();
         s1.Start();
-        var matches = _plugin.Storage.GetCCMatches().Query().Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
+        //var matches = _plugin.Storage.GetCCMatches().Query().Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
+        var matches = _plugin.DataCache.CCMatches.Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
         _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", "CC match retrieval", s1.ElapsedMilliseconds.ToString()));
         s1.Restart();
         foreach(var filter in filters) {

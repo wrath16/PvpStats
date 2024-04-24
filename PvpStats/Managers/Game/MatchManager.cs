@@ -83,7 +83,7 @@ internal class MatchManager : IDisposable {
                 };
                 _plugin.Log.Information($"starting new match on {_currentMatch.Arena}");
                 _plugin.DataQueue.QueueDataOperation(async () => {
-                    await _plugin.Storage.AddCCMatch(_currentMatch, false);
+                    await _plugin.DataCache.AddCCMatch(_currentMatch);
                 });
             });
         } catch(Exception e) {
@@ -104,7 +104,8 @@ internal class MatchManager : IDisposable {
         }
         _plugin.DataQueue.QueueDataOperation(async () => {
             if(ProcessMatchResults(resultsPacket)) {
-                await _plugin.Storage.UpdateCCMatch(_currentMatch!);
+                await _plugin.DataCache.UpdateCCMatch(_currentMatch!);
+                await _plugin.WindowManager.Refresh();
             }
         });
         _ccMatchEndHook.Original(p1, p2, p3, p4);
@@ -256,7 +257,7 @@ internal class MatchManager : IDisposable {
             foreach(var player in team.Players) {
                 _currentMatch!.IntroPlayerInfo.Add(player.Alias, player);
             }
-            await _plugin.Storage.UpdateCCMatch(_currentMatch!);
+            await _plugin.DataCache.UpdateCCMatch(_currentMatch!);
             _plugin.Log.Debug("");
         });
     }

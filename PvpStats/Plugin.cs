@@ -49,6 +49,7 @@ public sealed class Plugin : IDalamudPlugin {
     internal DataQueueService DataQueue { get; init; }
     internal LocalizationService Localization { get; init; }
     internal StorageService Storage { get; init; }
+    internal DataCacheService DataCache { get; init; }
     internal GameStateService GameState { get; init; }
     internal AtkNodeService AtkNodeService { get; init; }
     internal PlayerLinkService PlayerLinksService { get; init; }
@@ -100,6 +101,7 @@ public sealed class Plugin : IDalamudPlugin {
 
             DataQueue = new(this);
             Storage = new(this, $"{PluginInterface.GetPluginConfigDirectory()}\\{DatabaseName}");
+            DataCache = new(this);
             Functions = new(this);
             GameState = new(this);
             AtkNodeService = new(this);
@@ -169,4 +171,8 @@ public sealed class Plugin : IDalamudPlugin {
         WindowManager.OpenDebugWindow();
     }
 #endif
+
+    private void Initialize() {
+
+    }
 }
