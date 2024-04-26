@@ -14,7 +14,7 @@ public class DurationFilter : DataFilter {
     public override string Name => "Duration";
     public int DirectionIndex { get; set; } = 0;
     public TimeSpan Duration { get; set; } = TimeSpan.Zero;
-    private readonly List<string> _combo = ["≥", "≤"];
+    private readonly List<string> _combo = ["≥", "＜"];
     private string _lastDuration = "";
 
     public DurationFilter() { }

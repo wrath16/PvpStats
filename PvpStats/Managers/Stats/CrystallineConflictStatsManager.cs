@@ -775,7 +775,7 @@ internal class CrystallineConflictStatsManager {
                         if(durationFilter.DirectionIndex == 0) {
                             matches = matches.Where(x => x.MatchDuration is null || x.MatchDuration >= durationFilter.Duration).ToList();
                         } else {
-                            matches = matches.Where(x => x.MatchDuration is null || x.MatchDuration <= durationFilter.Duration).ToList();
+                            matches = matches.Where(x => x.MatchDuration is null || x.MatchDuration < durationFilter.Duration).ToList();
                         }
                         break;
                     case Type _ when filter.GetType() == typeof(BookmarkFilter):
