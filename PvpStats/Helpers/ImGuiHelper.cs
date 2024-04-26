@@ -1,9 +1,11 @@
 ﻿using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
-using PvpStats.Types.Player;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Numerics;
 using System.Threading.Tasks;
 
@@ -117,21 +119,21 @@ internal static class ImGuiHelper {
         return color.Lighten(1f);
     }
 
-    internal static Vector4 GetJobColor(Job? job) {
-        var role = PlayerJobHelper.GetSubRoleFromJob(job);
-        return role != null ? GetSubRoleColor((JobSubRole)role) : ImGuiColors.DalamudWhite;
-    }
+    //internal static Vector4 GetJobColor(Job? job) {
+    //    var role = PlayerJobHelper.GetSubRoleFromJob(job);
+    //    return role != null ? GetSubRoleColor((JobSubRole)role) : ImGuiColors.DalamudWhite;
+    //}
 
-    internal static Vector4 GetSubRoleColor(JobSubRole role) {
-        return role switch {
-            JobSubRole.TANK => ImGuiColors.TankBlue,
-            JobSubRole.HEALER => ImGuiColors.HealerGreen,
-            JobSubRole.MELEE => ImGuiColors.DPSRed,
-            JobSubRole.RANGED => ImGuiColors.DalamudOrange,
-            JobSubRole.CASTER => ImGuiColors.ParsedPink,
-            _ => ImGuiColors.DalamudWhite,
-        };
-    }
+    //internal static Vector4 GetSubRoleColor(JobSubRole role) {
+    //    return role switch {
+    //        JobSubRole.TANK => ImGuiColors.TankBlue,
+    //        JobSubRole.HEALER => ImGuiColors.HealerGreen,
+    //        JobSubRole.MELEE => ImGuiColors.DPSRed,
+    //        JobSubRole.RANGED => ImGuiColors.DalamudOrange,
+    //        JobSubRole.CASTER => ImGuiColors.ParsedPink,
+    //        _ => ImGuiColors.DalamudWhite,
+    //    };
+    //}
 
     internal static void DrawPercentage(double val, Vector4 color) {
         if(val is not double.NaN) {
@@ -148,9 +150,9 @@ internal static class ImGuiHelper {
     internal static void DrawColorScale(float value, Vector4 colorMin, Vector4 colorMax, float minValue, float maxValue, bool colorEnabled, string format = "0.00", bool isPercent = false) {
         var outputString = isPercent ? string.Format(format, value) : value.ToString(format);
         if(colorEnabled) {
-            ImGui.TextColored(ImGuiHelper.ColorScale(colorMin, colorMax, minValue, maxValue, value), outputString);
+            ImGui.TextColored(ColorScale(colorMin, colorMax, minValue, maxValue, value), outputString);
         } else {
-            ImGui.TextUnformatted(outputString);
+            ImGui.Text(outputString);
         }
     }
 
@@ -179,6 +181,23 @@ internal static class ImGuiHelper {
         WrappedTooltip("Copy CSV to clipboard");
     }
 
+    internal static void DonateButton() {
+        using(_ = ImRaii.PushFont(UiBuilder.IconFont)) {
+            var text = $"{FontAwesomeIcon.Star.ToIconString()}{FontAwesomeIcon.Copy.ToIconString()}";
+            using(_ = ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.DalamudRed)) {
+                if(ImGui.Button($"{FontAwesomeIcon.Heart.ToIconString()}##--Donate")) {
+                    Task.Run(() => {
+                        Process.Start(new ProcessStartInfo() {
+                            UseShellExecute = true,
+                            FileName = "https://ko-fi.com/samoxiv"
+                        });
+                    });
+                }
+            }
+        }
+        WrappedTooltip("Support the dev");
+    }
+
     //internal static void IterateOverProps<T>(T item, int maxDepth, int depth = 0) {
     //    var props = typeof(T).GetProperties();
     //    foreach(var prop in props) {
@@ -188,4 +207,31 @@ internal static class ImGuiHelper {
     //        }
     //    }
     //}
+
+    internal static void FormattedCollapsibleHeader((string, float)[] columns, Action action) {
+        List<string> formattedText = new();
+        foreach(var column in columns) {
+            float targetWidth = column.Item2 * ImGuiHelpers.GlobalScale;
+            string text = column.Item1;
+            while(ImGui.CalcTextSize(text).X < targetWidth) {
+                text += " ";
+            }
+            formattedText.Add(text);
+        }
+
+        var headerText = "";
+        for(int i = 0; i < columns.Length; i++) {
+            headerText += "{" + i + "} ";
+        }
+        if(ImGui.CollapsingHeader(string.Format(headerText, formattedText.ToArray()))) {
+            action.Invoke();
+        }
+    }
+
+    internal static void SetDynamicWidth(float minWidth, float maxWidth, float factor) {
+        float width = ImGui.GetContentRegionAvail().X / factor;
+        minWidth = minWidth * ImGuiHelpers.GlobalScale;
+        maxWidth = maxWidth * ImGuiHelpers.GlobalScale;
+        ImGui.SetNextItemWidth(width < minWidth ? minWidth : width > maxWidth ? maxWidth : width);
+    }
 }

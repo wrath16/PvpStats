@@ -27,7 +27,7 @@ internal static class PlayerJobHelper {
         { Job.BLM, "Black Mage" },
         { Job.SMN, "Summoner" },
         { Job.RDM, "Red Mage" },
-        { Job.PCT, "Pictomancer" },
+        { Job.PIC, "Pictomancer" },
     };
 
     internal static Dictionary<JobRole, string> JobRoleName = new Dictionary<JobRole, string>() {
@@ -148,7 +148,7 @@ internal static class PlayerJobHelper {
             case Job.BLM:
             case Job.SMN:
             case Job.RDM:
-            case Job.PCT:
+            case Job.PIC:
                 return JobSubRole.CASTER;
             default:
                 return null;

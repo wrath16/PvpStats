@@ -1,5 +1,6 @@
 ﻿using Dalamud.Interface;
 using Dalamud.Interface.Colors;
+using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PvpStats.Helpers;
@@ -7,6 +8,7 @@ using PvpStats.Types.Match;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
 internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> {
@@ -20,20 +22,15 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         new ColumnParams{Name = "Result", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 40f },
         new ColumnParams{Name = "RankAfter", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 125f, Priority = 3 },
     };
-    //protected override List<ColumnParams> Columns { get; set; } = new() {
-    //    new ColumnParams{Name = "time" },
-    //    new ColumnParams{Name = "map" },
-    //    new ColumnParams{Name = "queue" },
-    //    new ColumnParams{Name = "result" },
-    //};
 
     protected override ImGuiTableFlags TableFlags { get; set; } = ImGuiTableFlags.Hideable;
     protected override ImGuiWindowFlags ChildFlags { get; set; } = ImGuiWindowFlags.AlwaysVerticalScrollbar;
     protected override bool ContextMenu { get; set; } = true;
     protected override bool DynamicColumns { get; set; } = true;
 
-    public CrystallineConflictList(Plugin plugin) : base(plugin) {
+    public CrystallineConflictList(Plugin plugin) : base(plugin, plugin.CCStatsEngine.RefreshLock) {
     }
+
     protected override void PreChildDraw() {
         ImGuiHelper.CSVButton(ListCSV);
         ImGui.SameLine();
@@ -43,11 +40,17 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
             }
         }
         ImGuiHelper.WrappedTooltip("Close all open match windows");
+        //ImGui.SameLine();
+        //using(var font = ImRaii.PushFont(UiBuilder.IconFont)) {
+        //    ImGuiHelper.RightAlignCursor(FontAwesomeIcon.Heart.ToIconString());
+        //}
+        //ImGuiHelper.DonateButton();
     }
 
     public override void DrawListItem(CrystallineConflictMatch item) {
+        ImGui.SameLine(0f * ImGuiHelpers.GlobalScale);
         if(item.IsBookmarked) {
-            ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(ImGuiColors.DalamudYellow - new Vector4(0f, 0f, 0f, 0.7f)));
+            ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(_plugin.Configuration.Colors.Favorite - new Vector4(0f, 0f, 0f, 0.7f)));
         }
         ImGui.Text($"{item.DutyStartTime:MM/dd/yyyy HH:mm}");
         ImGui.TableNextColumn();
@@ -56,7 +59,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         }
         ImGui.TableNextColumn();
         if(!item.IsSpectated) {
-            ImGui.TextColored(ImGuiHelper.GetJobColor(item.LocalPlayerTeamMember!.Job), item.LocalPlayerTeamMember.Job.ToString());
+            ImGui.TextColored(_plugin.Configuration.GetJobColor(item.LocalPlayerTeamMember!.Job), item.LocalPlayerTeamMember.Job.ToString());
         }
         ImGui.TableNextColumn();
         ImGui.Text($"{item.MatchType}");
@@ -72,8 +75,8 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
             color = ImGuiColors.DalamudWhite;
             resultText = "N/A";
         } else {
-            color = isWin ? ImGuiColors.HealerGreen : ImGuiColors.DalamudRed;
-            color = noWinner ? ImGuiColors.DalamudGrey : color;
+            color = isWin ? _plugin.Configuration.Colors.Win : _plugin.Configuration.Colors.Loss;
+            color = noWinner ? _plugin.Configuration.Colors.Other : color;
             resultText = isWin ? "WIN" : "LOSS";
             resultText = noWinner ? "???" : resultText;
         }
@@ -86,7 +89,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         //ImGui.TableNextRow();
     }
 
-    public override void RefreshDataModel() {
+    public async override Task RefreshDataModel() {
         //#if DEBUG
         //        DataModel = _plugin.Storage.GetCCMatches().Query().Where(m => !m.IsDeleted).OrderByDescending(m => m.DutyStartTime).ToList();
         //#else
@@ -95,6 +98,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         foreach(var match in DataModel) {
             ListCSV += CSVRow(match);
         }
+        await Task.CompletedTask;
     }
 
     public override void OpenItemDetail(CrystallineConflictMatch item) {
@@ -113,8 +117,8 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         bool isBookmarked = item.IsBookmarked;
         if(ImGui.MenuItem($"Favorite##{item!.GetHashCode()}--AddBookmark", null, isBookmarked)) {
             item.IsBookmarked = !item.IsBookmarked;
-            _plugin.DataQueue.QueueDataOperation(() => {
-                _plugin.Storage.UpdateCCMatch(item, false);
+            _plugin.DataQueue.QueueDataOperation(async () => {
+                await _plugin.Storage.UpdateCCMatch(item, false);
             });
         }
 
@@ -129,7 +133,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         string csv = "";
         csv += match.DutyStartTime + ",";
         csv += (match.Arena != null ? MatchHelper.GetArenaName((CrystallineConflictMap)match.Arena) : "") + ",";
-        csv += (!match.IsSpectated ? match.LocalPlayerTeamMember.Job : "") + ",";
+        csv += (!match.IsSpectated ? match.LocalPlayerTeamMember!.Job : "") + ",";
         csv += match.MatchType + ",";
         csv += match.MatchDuration + ",";
         csv += (match.IsWin ? "WIN" : match.MatchWinner != null ? "LOSS" : "???") + ",";

@@ -1,14 +1,18 @@
 ﻿using LiteDB;
 using PvpStats.Types.Match;
+using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace PvpStats.Services;
 internal class StorageService {
     private const string CCTable = "ccmatch";
+    private const string AutoPlayerLinksTable = "playerlinks_auto";
+    private const string ManualPlayerLinksTable = "playerlinks_manual";
 
     private Plugin _plugin;
     private SemaphoreSlim _dbLock = new SemaphoreSlim(1, 1);
@@ -34,25 +38,45 @@ internal class StorageService {
         return Database.GetCollection<CrystallineConflictMatch>(CCTable);
     }
 
-    internal void AddCCMatch(CrystallineConflictMatch match, bool toSave = true) {
+    internal async Task AddCCMatch(CrystallineConflictMatch match, bool toSave = true) {
         LogUpdate(match.Id.ToString());
-        WriteToDatabase(() => GetCCMatches().Insert(match), toSave);
+        await WriteToDatabase(() => GetCCMatches().Insert(match), toSave);
     }
 
-    internal void AddCCMatches(IEnumerable<CrystallineConflictMatch> matches, bool toSave = true) {
+    internal async Task AddCCMatches(IEnumerable<CrystallineConflictMatch> matches, bool toSave = true) {
         LogUpdate(null, matches.Count());
-        WriteToDatabase(() => GetCCMatches().Insert(matches.Where(m => m.Id != null)), toSave);
-
+        await WriteToDatabase(() => GetCCMatches().Insert(matches.Where(m => m.Id != null)), toSave);
     }
 
-    internal void UpdateCCMatch(CrystallineConflictMatch match, bool toSave = true) {
+    internal async Task UpdateCCMatch(CrystallineConflictMatch match, bool toSave = true) {
         LogUpdate(match.Id.ToString());
-        WriteToDatabase(() => GetCCMatches().Update(match), toSave);
+        await WriteToDatabase(() => GetCCMatches().Update(match), toSave);
     }
 
-    internal void UpdateCCMatches(IEnumerable<CrystallineConflictMatch> matches, bool toSave = true) {
+    internal async Task UpdateCCMatches(IEnumerable<CrystallineConflictMatch> matches, bool toSave = true) {
         LogUpdate(null, matches.Count());
-        WriteToDatabase(() => GetCCMatches().Update(matches.Where(m => m.Id != null)), toSave);
+        await WriteToDatabase(() => GetCCMatches().Update(matches.Where(m => m.Id != null)), toSave);
+    }
+
+    internal ILiteCollection<PlayerAliasLink> GetAutoLinks() {
+        return Database.GetCollection<PlayerAliasLink>(AutoPlayerLinksTable);
+    }
+
+    internal async Task SetAutoLinks(IEnumerable<PlayerAliasLink> links, bool toSave = false) {
+        LogUpdate(null, links.Count());
+        _plugin.Storage.GetAutoLinks().DeleteAll();
+        await WriteToDatabase(() => GetAutoLinks().Insert(links.Where(x => x.Id != null)), toSave);
+    }
+
+    internal ILiteCollection<PlayerAliasLink> GetManualLinks() {
+        return Database.GetCollection<PlayerAliasLink>(ManualPlayerLinksTable);
+    }
+
+    internal async Task SetManualLinks(IEnumerable<PlayerAliasLink> links, bool toSave = false) {
+        LogUpdate(null, links.Count());
+        //kind of hacky
+        GetManualLinks().DeleteAll();
+        await WriteToDatabase(() => GetManualLinks().Insert(links.Where(x => x.Id != null)), toSave);
     }
 
     private void LogUpdate(string? id = null, int count = 0) {
@@ -63,26 +87,12 @@ internal class StorageService {
             writeMethod?.Name, $"{callingMethod?.DeclaringType?.ToString() ?? ""}.{callingMethod?.Name ?? ""}", id != null ? $"ID: {id}" : "", count != 0 ? $"Count: {count}" : ""));
     }
 
-    ////all writes are asynchronous for performance reasons
-    //private Task AsyncWriteToDatabase(Func<object> action, bool toSave = true) {
-    //    return Task.Run(async () => {
-    //        try {
-    //            await _dbLock.WaitAsync();
-    //            action.Invoke();
-    //        }
-    //        finally {
-    //            _dbLock.Release();
-    //        }
-    //    });
-    //}
-
-    //synchronous write
-    private void WriteToDatabase(Func<object> action, bool toSave = true) {
+    private async Task WriteToDatabase(Func<object> action, bool toSave = true) {
         try {
-            _dbLock.Wait();
+            await _dbLock.WaitAsync();
             action.Invoke();
             if(toSave) {
-                _plugin.WindowManager.Refresh();
+                await _plugin.WindowManager.Refresh();
             }
         } finally {
             _dbLock.Release();
