@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Filter;
 public class ArenaFilter : DataFilter {
@@ -17,7 +18,7 @@ public class ArenaFilter : DataFilter {
 
     public ArenaFilter() { }
 
-    internal ArenaFilter(Plugin plugin, Action action, ArenaFilter? filter = null) : base(plugin, action) {
+    internal ArenaFilter(Plugin plugin, Func<Task> action, ArenaFilter? filter = null) : base(plugin, action) {
         FilterState = new();
         _range = new() {
             "All",
@@ -50,7 +51,7 @@ public class ArenaFilter : DataFilter {
         //bool allSelected = AllSelected;
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2);
         if(ImGui.Combo($"##arenaRangeCombo", ref currentIndex, _range.ToArray(), _range.Count)) {
-            _plugin!.DataQueue.QueueDataOperation(() => {
+            _plugin!.DataQueue.QueueDataOperation(async () => {
                 CurrentIndex = currentIndex;
                 if(currentIndex == 0) {
                     foreach(var item in FilterState) {
@@ -65,7 +66,7 @@ public class ArenaFilter : DataFilter {
                     FilterState[selectedMap] = true;
                 }
                 UpdateAllSelected();
-                Refresh();
+                await Refresh();
             });
         }
     }

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Summary;
 internal class CrystallineConflictRankGraph {
@@ -22,7 +23,7 @@ internal class CrystallineConflictRankGraph {
         _plugin = plugin;
     }
 
-    public void Refresh(List<CrystallineConflictMatch> matches) {
+    public async Task Refresh(List<CrystallineConflictMatch> matches) {
         List<(DateTime, int)> rankData = new();
         List<(DateTime, int)> winData = new();
         List<(DateTime, int)> lossData = new();
@@ -52,7 +53,7 @@ internal class CrystallineConflictRankGraph {
         //}
         //_plugin.Log.Debug($"min cred: {PlayerRank.MinRank.TotalCredit}");
         try {
-            _refreshLock.WaitAsync();
+            await _refreshLock.WaitAsync();
             RankData = rankData;
             WinData = winData;
             LossData = lossData;
@@ -111,13 +112,13 @@ internal class CrystallineConflictRankGraph {
                 ImPlot.PopStyleColor();
 
                 ImPlot.SetNextMarkerStyle(ImPlotMarker.None);
-                ImPlot.PushStyleColor(ImPlotCol.Line, ImGui.GetColorU32(ImGuiColors.DalamudRed));
-                ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, 8f);
+                ImPlot.PushStyleColor(ImPlotCol.Line, ImGui.GetColorU32(_plugin.Configuration.Colors.Loss));
+                ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, 10f);
                 ImPlot.PlotLine("Losses", ref xsLoss[0], ref ysLoss[0], xsLoss.Length, ImPlotLineFlags.Segments);
                 ImPlot.PopStyleColor();
 
                 ImPlot.SetNextMarkerStyle(ImPlotMarker.None);
-                ImPlot.PushStyleColor(ImPlotCol.Line, ImGui.GetColorU32(ImGuiColors.ParsedGreen));
+                ImPlot.PushStyleColor(ImPlotCol.Line, ImGui.GetColorU32(_plugin.Configuration.Colors.Win));
                 ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, 5f);
                 ImPlot.PlotLine("Wins", ref xsWin[0], ref ysWin[0], xsWin.Length, ImPlotLineFlags.Segments);
                 ImPlot.PopStyleColor();

@@ -1,4 +1,5 @@
 ﻿using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using LiteDB;
 using PvpStats.Helpers;
@@ -8,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
 
@@ -22,6 +24,10 @@ public struct ColumnParams {
 internal abstract class FilteredList<T> {
 
     protected SemaphoreSlim RefreshLock = new SemaphoreSlim(1);
+    protected SemaphoreSlim? Interlock;
+    private bool _refreshLockAcquired;
+    private bool _interlockAcquired;
+
     protected Plugin _plugin;
 
     public const int PageSize = 100;
@@ -41,21 +47,30 @@ internal abstract class FilteredList<T> {
     protected virtual bool ContextMenu { get; set; } = false;
     protected virtual bool DynamicColumns { get; set; } = false;
 
-    public abstract void RefreshDataModel();
     public abstract void DrawListItem(T item);
     public abstract void OpenItemDetail(T item);
     public abstract void OpenFullEditDetail(T item);
 
-    public FilteredList(Plugin plugin) {
+    public FilteredList(Plugin plugin, SemaphoreSlim? interlock = null) {
         _plugin = plugin;
+        Interlock = interlock;
         GoToPage();
     }
 
-    internal void Refresh(List<T> dataModel) {
-        DataModel = dataModel;
-        ListCSV = CSVHeader();
-        RefreshDataModel();
-        GoToPage();
+    internal async Task Refresh(List<T> dataModel) {
+        try {
+            await RefreshLock.WaitAsync();
+            DataModel = dataModel;
+            ListCSV = CSVHeader();
+            await RefreshDataModel();
+            GoToPage();
+        } finally {
+            RefreshLock.Release();
+        }
+    }
+
+    public virtual async Task RefreshDataModel() {
+        await Task.CompletedTask;
     }
 
     public void GoToPage(int? pageNumber = null) {
@@ -65,17 +80,24 @@ internal abstract class FilteredList<T> {
     }
 
     public void Draw() {
-        if(!RefreshLock.Wait(0)) {
-            return;
-        }
+        //if(!RefreshLock.Wait(0) || Interlock != null && !Interlock.Wait(0)) {
+        //    _plugin.Log.Debug("not drawing due to refresh lock!");
+        //    return;
+        //}
+        //if(!AcquireLocks()) {
+        //    _plugin.Log.Debug("not all locks acquired!");
+        //    ReleaseLocks();
+        //    return;
+        //}
 
         try {
             PreChildDraw();
-            if(ImGui.BeginChild(TableId, new Vector2(0, -(25 + ImGui.GetStyle().ItemSpacing.Y) * ImGuiHelpers.GlobalScale), true, ChildFlags)) {
-                PreTableDraw();
-                DrawTable();
+            using(var child = ImRaii.Child(TableId, new Vector2(0, -(25 + ImGui.GetStyle().ItemSpacing.Y) * ImGuiHelpers.GlobalScale), true, ChildFlags)) {
+                if(child) {
+                    PreTableDraw();
+                    DrawTable();
+                }
             }
-            ImGui.EndChild();
 
             ImGui.Text("");
             if(PageNumber > 0) {
@@ -99,7 +121,22 @@ internal abstract class FilteredList<T> {
                 }
             }
         } finally {
+            ReleaseLocks();
+        }
+    }
+
+    private bool AcquireLocks() {
+        _refreshLockAcquired = RefreshLock.Wait(0);
+        _interlockAcquired = Interlock != null && Interlock.Wait(0);
+        return _refreshLockAcquired && (Interlock == null || _interlockAcquired);
+    }
+
+    private void ReleaseLocks() {
+        if(_refreshLockAcquired) {
             RefreshLock.Release();
+        }
+        if(_interlockAcquired) {
+            Interlock?.Release();
         }
     }
 
@@ -120,61 +157,57 @@ internal abstract class FilteredList<T> {
     }
 
     private void DrawTable() {
-        if(ImGui.BeginTable(TableId, Columns.Count, TableFlags)) {
-            try {
-                //setup columns
-                foreach(var column in Columns) {
-                    ImGui.TableSetupColumn(column.Name, column.Flags, column.Width * ImGuiHelpers.GlobalScale, column.Id);
+        using var table = ImRaii.Table(TableId, Columns.Count, TableFlags);
+        if(!table) {
+            return;
+        }
+        //setup columns
+        foreach(var column in Columns) {
+            ImGui.TableSetupColumn(column.Name, column.Flags, column.Width * ImGuiHelpers.GlobalScale, column.Id);
+        }
+        var clipper = new ListClipper(CurrentPage.Count, Columns.Count, true);
+        PostColumnSetup();
+        if(ShowHeader) {
+            //ImGui.TableSetupScrollFreeze(1, 1);
+            //ImGui.TableHeadersRow();
+            foreach(var i in clipper.Columns) {
+                var column = Columns[i];
+                ImGui.TableNextColumn();
+                //var tableHeader = ImGuiHelper.WrappedString(column.Name, 80f);
+                var tableHeader = ImGuiHelper.WrappedString(column.Name, 2);
+                //ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 1f);
+                //this is stupid!
+                if(ImGui.GetColumnIndex() == 0) {
+                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 4f * ImGuiHelpers.GlobalScale);
                 }
-                var clipper = new ListClipper(CurrentPage.Count, Columns.Count, true);
-                PostColumnSetup();
-                if(ShowHeader) {
-                    //ImGui.TableSetupScrollFreeze(1, 1);
-                    //ImGui.TableHeadersRow();
-                    foreach(var i in clipper.Columns) {
-                        var column = Columns[i];
-                        ImGui.TableNextColumn();
-                        //var tableHeader = ImGuiHelper.WrappedString(column.Name, 80f);
-                        var tableHeader = ImGuiHelper.WrappedString(column.Name, 2);
-                        //ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 1f);
-                        //this is stupid!
-                        if(ImGui.GetColumnIndex() == 0) {
-                            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 4f * ImGuiHelpers.GlobalScale);
-                        }
-                        //ImGuiHelper.CenterAlignCursor(tableHeader);
-                        ImGui.TableHeader(tableHeader);
-                    }
-                }
-                //ImGui.TableNextRow();
-                //must also set table flags to hideable for this to work
-                if(DynamicColumns) {
-                    int prioLevel = GetLowestPrio();
-                    for(int i = 0; i < Columns.Count; i++) {
-                        if(Columns[i].Priority > prioLevel) {
-                            ImGui.TableSetColumnEnabled(i, false);
-                        } else {
-                            ImGui.TableSetColumnEnabled(i, true);
-                        }
-                    }
-                }
-
-                foreach(var i in clipper.Rows) {
-                    var item = CurrentPage[i];
-                    ImGui.TableNextColumn();
-                    if(ImGui.Selectable($"##{item!.GetHashCode()}-selectable", false, ImGuiSelectableFlags.SpanAllColumns)) {
-                        OpenItemDetail(item);
-                    }
-                    if(ContextMenu && ImGui.BeginPopupContextItem($"##{item!.GetHashCode()}--ContextMenu", ImGuiPopupFlags.MouseButtonRight)) {
-                        ContextMenuItems(item);
-                        ImGui.EndPopup();
-                    }
-
-                    ImGui.SameLine();
-                    DrawListItem(item);
-                }
-            } finally {
-                ImGui.EndTable();
+                //ImGuiHelper.CenterAlignCursor(tableHeader);
+                ImGui.TableHeader(tableHeader);
             }
+        }
+        //ImGui.TableNextRow();
+        //must also set table flags to hideable for this to work
+        if(DynamicColumns) {
+            int prioLevel = GetLowestPrio();
+            for(int i = 0; i < Columns.Count; i++) {
+                if(Columns[i].Priority > prioLevel) {
+                    ImGui.TableSetColumnEnabled(i, false);
+                } else {
+                    ImGui.TableSetColumnEnabled(i, true);
+                }
+            }
+        }
+
+        foreach(var i in clipper.Rows) {
+            var item = CurrentPage[i];
+            ImGui.TableNextColumn();
+            if(ImGui.Selectable($"##{item!.GetHashCode()}-selectable", false, ImGuiSelectableFlags.SpanAllColumns)) {
+                OpenItemDetail(item);
+            }
+            if(ContextMenu && ImGui.BeginPopupContextItem($"##{item!.GetHashCode()}--ContextMenu", ImGuiPopupFlags.MouseButtonRight)) {
+                ContextMenuItems(item);
+                ImGui.EndPopup();
+            }
+            DrawListItem(item);
         }
     }
 

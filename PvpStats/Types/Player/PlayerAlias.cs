@@ -2,9 +2,10 @@
 using LiteDB;
 using PvpStats.Types.Match;
 using System;
+using System.Text.RegularExpressions;
 
 namespace PvpStats.Types.Player;
-public class PlayerAlias : IEquatable<PlayerAlias>, IEquatable<CrystallineConflictPlayer>, IEquatable<string> {
+public class PlayerAlias : IEquatable<PlayerAlias>, IEquatable<CrystallineConflictPlayer>, IEquatable<string>, IComparable<PlayerAlias> {
     public string Name { get; set; } = "";
     public string HomeWorld { get; set; } = "";
     //[BsonId]
@@ -12,14 +13,24 @@ public class PlayerAlias : IEquatable<PlayerAlias>, IEquatable<CrystallineConfli
 
     public static explicit operator PlayerAlias(string s) {
         s = s.Trim();
-        var splitString = s.Split(" ");
-        if(splitString is null || splitString.Length != 3) {
-            throw new ArgumentException("Cannot convert string to player alias!");
+        var homeWorld = Regex.Match(s, @"\b[\S]+$").Value.Trim();
+        var playerName = Regex.Match(s, @".*(?=\s[\S]+$)").Value.Trim();
+        if(homeWorld.IsNullOrEmpty() || playerName.IsNullOrEmpty()) {
+            return new PlayerAlias(s, "");
         }
-        return new PlayerAlias(splitString[0] + " " + splitString[1], splitString[2]);
+        return new PlayerAlias(playerName, homeWorld);
     }
 
     public static implicit operator string(PlayerAlias p) => $"{p.Name} {p.HomeWorld}";
+
+    public static bool IsPlayersAlias(string s) {
+        try {
+            PlayerAlias alias = (PlayerAlias)s;
+            return true;
+        } catch(ArgumentException) {
+            return false;
+        }
+    }
 
     [BsonIgnore]
     public string FirstName {
@@ -81,5 +92,9 @@ public class PlayerAlias : IEquatable<PlayerAlias>, IEquatable<CrystallineConfli
 
     public override int GetHashCode() {
         return string.GetHashCode(FullName);
+    }
+
+    public int CompareTo(PlayerAlias? other) {
+        return FullName.CompareTo(other?.FullName);
     }
 }

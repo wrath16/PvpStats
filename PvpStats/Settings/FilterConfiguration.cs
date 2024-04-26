@@ -11,5 +11,7 @@ public class FilterConfiguration {
     public MiscFilter? MiscFilter { get; set; }
     public StatSourceFilter? StatSourceFilter { get; set; }
 
+    //player tab
     public uint MinMatches { get; set; } = 1;
+    public bool PlayersInheritFromPlayerFilter { get; set; } = true;
 }
