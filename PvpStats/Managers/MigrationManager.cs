@@ -10,13 +10,10 @@ internal class MigrationManager {
 
     public MigrationManager(Plugin plugin) {
         _plugin = plugin;
-
-        _plugin.DataQueue.QueueDataOperation(async () => await BulkUpdateMatchTypes());
-        _plugin.DataQueue.QueueDataOperation(async () => await BulkUpdateValidatePlayerCount());
     }
 
     internal async Task BulkUpdateMatchTypes() {
-        var matches = _plugin.Storage.GetCCMatches().Query().Where(x => x.MatchType == Types.Match.CrystallineConflictMatchType.Unknown).ToList();
+        var matches = _plugin.DataCache.CCMatches.Where(x => x.MatchType == Types.Match.CrystallineConflictMatchType.Unknown);
         if(!matches.Any()) {
             return;
         }
@@ -28,7 +25,7 @@ internal class MigrationManager {
     }
 
     internal async Task BulkUpdateValidatePlayerCount() {
-        var matches = _plugin.Storage.GetCCMatches().Query().ToList()
+        var matches = _plugin.DataCache.CCMatches
             .Where(x => x.PostMatch != null && x.Teams.Count == 2 && (x.Teams.ElementAt(0).Value.Players.Count > 5 || x.Teams.ElementAt(1).Value.Players.Count > 5)).ToList();
         if(!matches.Any()) {
             return;

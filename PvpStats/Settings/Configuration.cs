@@ -12,7 +12,7 @@ namespace PvpStats.Settings;
 public class Configuration : IPluginConfiguration {
     public static readonly int CurrentVersion = 0;
     public int Version { get; set; } = CurrentVersion;
-    public bool? EnableDatabaseCaching { get; set; }
+    public bool? EnableDBCachingCC { get; set; }
     public bool EnablePlayerLinking { get; set; } = true;
     public bool EnableAutoPlayerLinking { get; set; } = true;
     public bool EnableManualPlayerLinking { get; set; } = true;

@@ -35,7 +35,7 @@ internal class MainWindow : Window {
     private Vector2 _lastWindowSize, _lastWindowPosition, _savedWindowSize;
 
     private int _drawCycles;
-    private float _longestDraw ,_longestPreDraw;
+    private float _longestDraw, _longestPreDraw;
 
     internal MainWindow(Plugin plugin) : base("Crystalline Conflict Tracker") {
         SizeConstraints = new WindowSizeConstraints {
@@ -65,7 +65,7 @@ internal class MainWindow : Window {
         ccPlayers = new(plugin);
         ccProfile = new(plugin);
         ccRank = new(plugin);
-        _plugin.DataQueue.QueueDataOperation(Refresh);
+        //_plugin.DataQueue.QueueDataOperation(Refresh);
     }
 
     public override void OnClose() {
@@ -92,8 +92,7 @@ internal class MainWindow : Window {
         } catch {
             _plugin.Log.Error("Refresh on cc stats window failed.");
             throw;
-        }
-        finally {
+        } finally {
             RefreshLock.Release();
             _plugin.Log.Information(string.Format("{0,-25}: {1,4} ms", $"CC tracker refresh time", s0.ElapsedMilliseconds.ToString()));
         }

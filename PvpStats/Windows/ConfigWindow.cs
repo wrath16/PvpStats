@@ -68,34 +68,27 @@ internal class ConfigWindow : Window {
 
     public override void Draw() {
         //_plugin.Log.Verbose("draw config");
-        if(ImGui.BeginTabBar("SettingsTabBar")) {
-            if(ImGui.BeginTabItem("Interface")) {
-                DrawInterfaceSettings();
-                ImGui.EndTabItem();
+        using(var tabBar = ImRaii.TabBar("SettingsTabBar")) {
+            using(var tab = ImRaii.TabItem("Interface")) {
+                if(tab) {
+                    DrawInterfaceSettings();
+                }
             }
-            if(ImGui.BeginTabItem("Player Links")) {
-                DrawPlayerLinkSettings();
-                ImGui.EndTabItem();
+            using(var tab = ImRaii.TabItem("Player Links")) {
+                if(tab) {
+                    DrawPlayerLinkSettings();
+                }
             }
-            ImGui.EndTabBar();
+            using(var tab = ImRaii.TabItem("Performance")) {
+                if(tab) {
+                    DrawPerformanceSettings();
+                }
+            }
         }
-        //_plugin.Log.Verbose("draw config end");
     }
 
     private void DrawInterfaceSettings() {
         ImGui.TextColored(_plugin.Configuration.Colors.Header, "Tracker Window");
-        //var filterRatio = _plugin.Configuration.FilterRatio;
-        //ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
-        //if(ImGui.SliderFloat("Filters height ratio", ref filterRatio, 2f, 5f)) {
-        //    _plugin.Configuration.FilterRatio = filterRatio;
-        //    _plugin.Configuration.Save();
-        //}
-        //ImGuiHelper.HelpMarker("Controls the denominator of the ratio of the window that will be occupied by the filters child.");
-        //var sizeToFit = _plugin.Configuration.SizeFiltersToFit;
-        //if(ImGui.Checkbox("Size to fit", ref sizeToFit)) {
-        //    _plugin.Configuration.SizeFiltersToFit = sizeToFit;
-        //    _plugin.Configuration.Save();
-        //}
 
         var filterHeight = (int)_plugin.Configuration.CCWindowConfig.FilterHeight;
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
@@ -472,5 +465,21 @@ internal class ConfigWindow : Window {
             }
         }
         ImGuiHelper.WrappedTooltip(isNew ? "Add Link" : "Remove");
+    }
+
+    private void DrawPerformanceSettings() {
+        bool enableCachingCC = _plugin.Configuration.EnableDBCachingCC ?? true;
+        if(ImGui.Checkbox("Enable match caching", ref enableCachingCC)) {
+            _plugin.Configuration.EnableDBCachingCC = enableCachingCC;
+            _plugin.DataQueue.QueueDataOperation(() => {
+                if(enableCachingCC) {
+                    _plugin.DataCache.EnableCaching();
+                } else {
+                    _plugin.DataCache.DisableCaching();
+                }
+                _plugin.Configuration.Save();
+            });
+        }
+        ImGuiHelper.HelpMarker("Will cache your entire match history in memory. Can help with refresh performance at the cost of increased memory usage.", true, true);
     }
 }

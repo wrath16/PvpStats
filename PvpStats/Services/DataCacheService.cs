@@ -11,21 +11,19 @@ internal class DataCacheService {
     private List<CrystallineConflictMatch> _ccMatches = [];
 
     internal bool CachingEnabled { get; private set; }
-    internal ReadOnlyCollection<CrystallineConflictMatch> CCMatches { get {
+    internal ReadOnlyCollection<CrystallineConflictMatch> CCMatches {
+        get {
             if(CachingEnabled) {
                 return _ccMatches.AsReadOnly();
             } else {
                 return _storage.GetCCMatches().Query().ToList().AsReadOnly();
             }
         }
-    } 
+    }
 
     internal DataCacheService(Plugin plugin) {
         _plugin = plugin;
         _storage = plugin.Storage;
-
-        //temp
-        EnableCaching();
     }
 
     internal void EnableCaching() {

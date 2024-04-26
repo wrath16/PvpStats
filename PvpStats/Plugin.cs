@@ -10,6 +10,7 @@ using PvpStats.Managers.Stats;
 using PvpStats.Services;
 using PvpStats.Settings;
 using System;
+using System.Threading.Tasks;
 
 namespace PvpStats;
 
@@ -129,9 +130,9 @@ public sealed class Plugin : IDalamudPlugin {
             });
             DebugMode = true;
 #endif
+            DataQueue.QueueDataOperation(Initialize);
             //PluginInterface.UiBuilder.OpenConfigUi += WindowManager.OpenConfigWindow;
-
-            Log.Debug("PvP Stats has started.");
+            //Log.Debug("PvP Stats has started.");
         } catch(Exception e) {
             //remove handlers and release database if we fail to start
             Log!.Error($"Failed to initialize plugin constructor: {e.Message}");
@@ -172,7 +173,13 @@ public sealed class Plugin : IDalamudPlugin {
     }
 #endif
 
-    private void Initialize() {
-
+    private async Task Initialize() {
+        if(Configuration.EnableDBCachingCC ?? true) {
+            DataCache.EnableCaching();
+        }
+        await MigrationManager.BulkUpdateMatchTypes();
+        await MigrationManager.BulkUpdateValidatePlayerCount();
+        await WindowManager.Refresh();
+        Log.Information("PvP Tracker initialized.");
     }
 }
