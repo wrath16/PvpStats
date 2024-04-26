@@ -59,7 +59,7 @@ internal class DataQueueService {
                     //Log.Warning($"Unable to dequeue next task. Tasks remaining: {DataTaskQueue.Count}");
                 }
             } catch(Exception e) {
-                _plugin.Log.Error($"Exception in data task: {e.GetType().Name} {e.Message}");
+                _plugin.Log.Error($"Exception in data task: {e.Message}");
                 _plugin.Log.Error(e.StackTrace ?? "");
             } finally {
                 DataLock.Release();

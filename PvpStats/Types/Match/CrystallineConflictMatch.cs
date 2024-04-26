@@ -79,12 +79,6 @@ public class CrystallineConflictMatch {
     }
 
     [BsonIgnore]
-    public List<CrystallineConflictPlayer> Players => Teams.SelectMany(x => {
-        x.Value.Players.ForEach(y => y.Team = x.Key);
-        return x.Value.Players;
-    }).ToList();
-
-    [BsonIgnore]
     public CrystallineConflictPostMatchRow? LocalPlayerStats {
         get {
             if(IsSpectated || PostMatch == null) return null;

@@ -4,7 +4,6 @@ using ImGuiNET;
 using PvpStats.Helpers;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Filter;
 
@@ -31,7 +30,7 @@ public class StatSourceFilter : DataFilter {
 
     public StatSourceFilter() { }
 
-    internal StatSourceFilter(Plugin plugin, Func<Task> action, StatSourceFilter? filter = null) : base(plugin, action) {
+    internal StatSourceFilter(Plugin plugin, Action action, StatSourceFilter? filter = null) : base(plugin, action) {
         FilterState = new() {
                 {StatSource.LocalPlayer, true },
                 {StatSource.Teammate, true },
@@ -66,20 +65,20 @@ public class StatSourceFilter : DataFilter {
             ImGui.TableNextColumn();
             bool allSelected = AllSelected;
             if(ImGui.Checkbox($"Select All##{GetHashCode()}", ref allSelected)) {
-                _plugin!.DataQueue.QueueDataOperation(async () => {
+                _plugin!.DataQueue.QueueDataOperation(() => {
                     foreach(var category in FilterState) {
                         FilterState[category.Key] = allSelected;
                     }
                     AllSelected = allSelected;
-                    await Refresh();
+                    Refresh();
                 });
             }
             ImGui.TableNextColumn();
             bool inheritFromPlayerFilter = InheritFromPlayerFilter;
             if(ImGui.Checkbox($"Inherit from player filter##{GetHashCode()}", ref inheritFromPlayerFilter)) {
-                _plugin!.DataQueue.QueueDataOperation(async () => {
+                _plugin!.DataQueue.QueueDataOperation(() => {
                     InheritFromPlayerFilter = inheritFromPlayerFilter;
-                    await Refresh();
+                    Refresh();
                 });
             }
             ImGuiHelper.HelpMarker("Will only include stats for players who match all conditions of the player filter.");
@@ -89,10 +88,10 @@ public class StatSourceFilter : DataFilter {
                 ImGui.TableNextColumn();
                 bool filterState = category.Value;
                 if(ImGui.Checkbox($"{FilterNames[category.Key]}##{GetHashCode()}", ref filterState)) {
-                    _plugin!.DataQueue.QueueDataOperation(async () => {
+                    _plugin!.DataQueue.QueueDataOperation(() => {
                         FilterState[category.Key] = filterState;
                         UpdateAllSelected();
-                        await Refresh();
+                        Refresh();
                     });
                 }
             }

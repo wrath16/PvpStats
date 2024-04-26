@@ -1,10 +1,9 @@
 ﻿using ImGuiNET;
 using System;
-using System.Threading;
 
 namespace PvpStats.Windows.List;
 internal class StatsList<T> : FilteredList<T> {
-    public StatsList(Plugin plugin, SemaphoreSlim? interlock = null) : base(plugin, interlock) {
+    public StatsList(Plugin plugin) : base(plugin) {
     }
 
     protected override ImGuiTableFlags TableFlags { get; set; } = ImGuiTableFlags.Reorderable | ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable
@@ -22,5 +21,8 @@ internal class StatsList<T> : FilteredList<T> {
     }
 
     public override void OpenItemDetail(T item) {
+    }
+
+    public override void RefreshDataModel() {
     }
 }

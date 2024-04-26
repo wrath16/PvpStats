@@ -177,11 +177,11 @@ internal class CrystallineConflictMatchDetail : Window {
             color = noWinner ? ImGuiColors.DalamudGrey : color;
             string resultText = "";
             if(_dataModel.IsSpectated && _dataModel.MatchWinner is not null) {
-                color = _dataModel.MatchWinner == CrystallineConflictTeamName.Astra ? _plugin.Configuration.Colors.CCPlayerTeam : _plugin.Configuration.Colors.CCEnemyTeam;
+                color = _dataModel.MatchWinner == CrystallineConflictTeamName.Astra ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
                 resultText = MatchHelper.GetTeamName((CrystallineConflictTeamName)_dataModel.MatchWinner) + " WINS";
             } else {
-                color = isWin ? _plugin.Configuration.Colors.Win : _plugin.Configuration.Colors.Loss;
-                color = noWinner ? _plugin.Configuration.Colors.Other : color;
+                color = isWin ? ImGuiColors.HealerGreen : ImGuiColors.DalamudRed;
+                color = noWinner ? ImGuiColors.DalamudGrey : color;
                 resultText = isWin ? "WIN" : "LOSS";
                 resultText = noWinner ? "UNKNOWN" : resultText;
             }
@@ -249,8 +249,8 @@ internal class CrystallineConflictMatchDetail : Window {
                         ImGui.AlignTextToFramePadding();
                         ImGui.Text(rank0);
                         ImGui.TableNextColumn();
-                        var playerColor0 = _dataModel.LocalPlayerTeam is not null && firstTeam.TeamName == _dataModel.LocalPlayerTeam.TeamName ? _plugin.Configuration.Colors.CCPlayerTeam : _plugin.Configuration.Colors.CCEnemyTeam;
-                        playerColor0 = _dataModel.LocalPlayer is not null && _dataModel.LocalPlayer.Equals(player0) ? _plugin.Configuration.Colors.CCLocalPlayer : playerColor0;
+                        var playerColor0 = _dataModel.LocalPlayerTeam is not null && firstTeam.TeamName == _dataModel.LocalPlayerTeam.TeamName ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
+                        playerColor0 = _dataModel.LocalPlayer is not null && _dataModel.LocalPlayer.Equals(player0) ? ImGuiColors.DalamudYellow : playerColor0;
                         if(_dataModel.IsSpectated) {
                             playerColor0 = firstTeam.TeamName == CrystallineConflictTeamName.Astra ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
                         }
@@ -276,8 +276,8 @@ internal class CrystallineConflictMatchDetail : Window {
                             ImGui.Image(_plugin.WindowManager.JobIcons[(Job)player1.Job].ImGuiHandle, new Vector2(24, 24));
                         }
                         ImGui.TableNextColumn();
-                        var playerColor1 = _dataModel.LocalPlayerTeam is not null && secondTeam.TeamName == _dataModel.LocalPlayerTeam.TeamName ? _plugin.Configuration.Colors.CCPlayerTeam : _plugin.Configuration.Colors.CCEnemyTeam;
-                        playerColor1 = _dataModel.LocalPlayer is not null && _dataModel.LocalPlayer.Equals(player1) ? _plugin.Configuration.Colors.CCLocalPlayer : playerColor1;
+                        var playerColor1 = _dataModel.LocalPlayerTeam is not null && secondTeam.TeamName == _dataModel.LocalPlayerTeam.TeamName ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
+                        playerColor1 = _dataModel.LocalPlayer is not null && _dataModel.LocalPlayer.Equals(player1) ? ImGuiColors.DalamudYellow : playerColor1;
                         if(_dataModel.IsSpectated) {
                             playerColor1 = secondTeam.TeamName == CrystallineConflictTeamName.Astra ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
                         }
@@ -344,12 +344,12 @@ internal class CrystallineConflictMatchDetail : Window {
 
         using(_ = ImRaii.PushFont(UiBuilder.IconFont)) {
             var text = $"{FontAwesomeIcon.Star.ToIconString()}{FontAwesomeIcon.Copy.ToIconString()}";
-            var color = _dataModel.IsBookmarked ? _plugin.Configuration.Colors.Favorite : ImGuiColors.DalamudWhite;
+            var color = _dataModel.IsBookmarked ? ImGuiColors.DalamudYellow : ImGuiColors.DalamudWhite;
             using(_ = ImRaii.PushColor(ImGuiCol.Text, color)) {
                 if(ImGui.Button($"{FontAwesomeIcon.Star.ToIconString()}##--FavoriteMatch")) {
                     _dataModel.IsBookmarked = !_dataModel.IsBookmarked;
-                    _plugin.DataQueue.QueueDataOperation(async () => {
-                        await _plugin.Storage.UpdateCCMatch(_dataModel);
+                    _plugin.DataQueue.QueueDataOperation(() => {
+                        _plugin.Storage.UpdateCCMatch(_dataModel);
                     });
                 }
             }
@@ -426,19 +426,19 @@ internal class CrystallineConflictMatchDetail : Window {
                 var rowColor = new Vector4(0, 0, 0, 0);
                 switch((isPlayer, isPlayerTeam)) {
                     case (true, true):
-                        rowColor = _plugin.Configuration.Colors.CCPlayerTeam - new Vector4(0f, 0f, 0f, 0.7f);
+                        rowColor = ImGuiColors.TankBlue - new Vector4(0f, 0f, 0f, 0.7f);
                         break;
                     case (true, false):
-                        rowColor = _plugin.Configuration.Colors.CCEnemyTeam - new Vector4(0f, 0f, 0f, 0.7f);
+                        rowColor = ImGuiColors.DPSRed - new Vector4(0f, 0f, 0f, 0.7f);
                         break;
                     case (false, true):
-                        rowColor = _plugin.Configuration.Colors.CCPlayerTeam - new Vector4(0f, 0f, 0f, 0.3f);
+                        rowColor = ImGuiColors.TankBlue - new Vector4(0f, 0f, 0f, 0.3f);
                         break;
                     case (false, false):
-                        rowColor = _plugin.Configuration.Colors.CCEnemyTeam - new Vector4(0f, 0f, 0f, 0.3f);
+                        rowColor = ImGuiColors.DPSRed - new Vector4(0f, 0f, 0f, 0.3f);
                         break;
                 }
-                var textColor = _dataModel.LocalPlayer is not null && _dataModel.LocalPlayer.Equals(row.Player) ? _plugin.Configuration.Colors.CCLocalPlayer : ImGuiColors.DalamudWhite;
+                var textColor = _dataModel.LocalPlayer is not null && _dataModel.LocalPlayer.Equals(row.Player) ? ImGuiColors.DalamudYellow : ImGuiColors.DalamudWhite;
                 ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(rowColor));
                 if(isPlayer) {
                     ImGui.TextColored(textColor, $" {row.Player?.Name} ");

@@ -9,14 +9,4 @@ public class CCPlayerJobStats {
     public CCScoreboardDouble ScoreboardPerMatch { get; set; } = new();
     public CCScoreboardDouble ScoreboardPerMin { get; set; } = new();
     public CCScoreboardDouble ScoreboardContrib { get; set; } = new();
-
-    public static CCPlayerJobStats operator +(CCPlayerJobStats a, CCPlayerJobStats b) {
-        return new CCPlayerJobStats() {
-            StatsAll = a.StatsAll + b.StatsAll,
-            StatsPersonal = a.StatsPersonal + b.StatsPersonal,
-            StatsTeammate = a.StatsTeammate + b.StatsTeammate,
-            StatsOpponent = a.StatsOpponent + b.StatsOpponent,
-            ScoreboardTotal = a.ScoreboardTotal + b.ScoreboardTotal,
-        };
-    }
 }

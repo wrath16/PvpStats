@@ -4,7 +4,6 @@ using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Filter;
 public class LocalPlayerJobFilter : DataFilter {
@@ -19,7 +18,7 @@ public class LocalPlayerJobFilter : DataFilter {
 
     public LocalPlayerJobFilter() { }
 
-    internal LocalPlayerJobFilter(Plugin plugin, Func<Task> action, LocalPlayerJobFilter? filter = null) : base(plugin, action) {
+    internal LocalPlayerJobFilter(Plugin plugin, Action action, LocalPlayerJobFilter? filter = null) : base(plugin, action) {
         var allJobs = Enum.GetValues(typeof(Job)).Cast<Job>();
         var allRoles = Enum.GetValues(typeof(JobSubRole)).Cast<JobSubRole>();
         _roleCount = allRoles.Count();
@@ -43,7 +42,7 @@ public class LocalPlayerJobFilter : DataFilter {
 
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
         if(ImGui.Combo("###LocalPlayerJobCombo", ref jobIndex, _jobCombo.ToArray(), _jobCombo.Count)) {
-            _plugin!.DataQueue.QueueDataOperation(async () => {
+            _plugin!.DataQueue.QueueDataOperation(() => {
                 if(jobIndex == 0) {
                     AnyJob = true;
                     JobRole = null;
@@ -55,7 +54,7 @@ public class LocalPlayerJobFilter : DataFilter {
                     JobRole = null;
                     PlayerJob = (Job)jobIndex - _roleCount - 1;
                 }
-                await Refresh();
+                Refresh();
             });
         }
     }

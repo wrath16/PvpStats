@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace PvpStats.Types.Match;
 
-public class PlayerRank : IComparable<PlayerRank> {
+public class PlayerRank {
     public static readonly Dictionary<ArenaTier, int> RisersPerTier = new() {
         { ArenaTier.None, 1 },
         { ArenaTier.Bronze, 3 },
@@ -48,7 +48,10 @@ public class PlayerRank : IComparable<PlayerRank> {
             if(Tier == ArenaTier.Crystal && Credit != null) {
                 return (int)Credit;
             }
-            return (MaxRank.TotalStars - TotalStars) * -100;
+            PlayerRank maxRank = new() {
+                Tier = ArenaTier.Crystal,
+            };
+            return (maxRank.TotalStars - TotalStars) * -100;
         }
     }
 
@@ -71,26 +74,6 @@ public class PlayerRank : IComparable<PlayerRank> {
             Tier = tier,
             Riser = riser
         };
-    }
-
-    public int CompareTo(PlayerRank? other) {
-        return TotalCredit - (other ?? MinRank).TotalCredit;
-    }
-
-    public static bool operator >=(PlayerRank a, PlayerRank b) {
-        return a.TotalCredit >= b.TotalCredit;
-    }
-
-    public static bool operator <=(PlayerRank a, PlayerRank b) {
-        return a.TotalCredit <= b.TotalCredit;
-    }
-
-    public static bool operator >=(PlayerRank a, ArenaTier b) {
-        return a.Tier >= b;
-    }
-
-    public static bool operator <=(PlayerRank a, ArenaTier b) {
-        return a.Tier <= b;
     }
 
     //public static implicit operator string(PlayerRank p) {

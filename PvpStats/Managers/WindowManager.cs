@@ -68,10 +68,7 @@ internal class WindowManager : IDisposable {
 
     private void OnLogin() {
         Task.Delay(3000).ContinueWith((t) => {
-            _plugin.DataQueue.QueueDataOperation(async () => {
-                _plugin.PlayerLinksService.BuildAutoLinksCache();
-                await Refresh();
-            });
+            _plugin.DataQueue.QueueDataOperation(Refresh);
         });
     }
 
@@ -134,9 +131,8 @@ internal class WindowManager : IDisposable {
         }
     }
 
-    public async Task Refresh() {
+    public void Refresh() {
         _plugin.Log.Debug("refreshing windows...");
-        await ConfigWindow.Refresh();
-        await MainWindow.Refresh();
+        MainWindow.Refresh();
     }
 }

@@ -2,7 +2,6 @@
 using PvpStats.Types.Match;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace PvpStats.Managers;
 internal class MigrationManager {
@@ -11,11 +10,11 @@ internal class MigrationManager {
     public MigrationManager(Plugin plugin) {
         _plugin = plugin;
 
-        _plugin.DataQueue.QueueDataOperation(async () => await BulkUpdateMatchTypes());
-        _plugin.DataQueue.QueueDataOperation(async () => await BulkUpdateValidatePlayerCount());
+        _plugin.DataQueue.QueueDataOperation(BulkUpdateMatchTypes);
+        _plugin.DataQueue.QueueDataOperation(BulkUpdateValidatePlayerCount);
     }
 
-    internal async Task BulkUpdateMatchTypes() {
+    internal void BulkUpdateMatchTypes() {
         var matches = _plugin.Storage.GetCCMatches().Query().Where(x => x.MatchType == Types.Match.CrystallineConflictMatchType.Unknown).ToList();
         if(!matches.Any()) {
             return;
@@ -24,10 +23,10 @@ internal class MigrationManager {
         foreach(var match in matches) {
             match.MatchType = MatchHelper.GetMatchType(match.DutyId);
         }
-        await _plugin.Storage.UpdateCCMatches(matches);
+        _plugin.Storage.UpdateCCMatches(matches);
     }
 
-    internal async Task BulkUpdateValidatePlayerCount() {
+    internal void BulkUpdateValidatePlayerCount() {
         var matches = _plugin.Storage.GetCCMatches().Query().ToList()
             .Where(x => x.PostMatch != null && x.Teams.Count == 2 && (x.Teams.ElementAt(0).Value.Players.Count > 5 || x.Teams.ElementAt(1).Value.Players.Count > 5)).ToList();
         if(!matches.Any()) {
@@ -55,6 +54,6 @@ internal class MigrationManager {
                 }
             }
         }
-        await _plugin.Storage.UpdateCCMatches(matches);
+        _plugin.Storage.UpdateCCMatches(matches);
     }
 }

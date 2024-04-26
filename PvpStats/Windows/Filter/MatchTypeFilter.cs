@@ -3,7 +3,6 @@ using ImGuiNET;
 using PvpStats.Types.Match;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Filter;
 public class MatchTypeFilter : DataFilter {
@@ -14,7 +13,7 @@ public class MatchTypeFilter : DataFilter {
 
     public MatchTypeFilter() { }
 
-    internal MatchTypeFilter(Plugin plugin, Func<Task> action, MatchTypeFilter? filter = null) : base(plugin, action) {
+    internal MatchTypeFilter(Plugin plugin, Action action, MatchTypeFilter? filter = null) : base(plugin, action) {
         FilterState = new() {
                 {CrystallineConflictMatchType.Casual, true },
                 {CrystallineConflictMatchType.Ranked, true },
@@ -40,12 +39,12 @@ public class MatchTypeFilter : DataFilter {
     internal override void Draw() {
         bool allSelected = AllSelected;
         if(ImGui.Checkbox($"Select All##{GetHashCode()}", ref allSelected)) {
-            _plugin!.DataQueue.QueueDataOperation(async () => {
+            _plugin!.DataQueue.QueueDataOperation(() => {
                 foreach(var category in FilterState) {
                     FilterState[category.Key] = allSelected;
                 }
                 AllSelected = allSelected;
-                await Refresh();
+                Refresh();
             });
         }
 
@@ -58,10 +57,10 @@ public class MatchTypeFilter : DataFilter {
             ImGui.TableNextColumn();
             bool filterState = category.Value;
             if(ImGui.Checkbox($"{category.Key}##{GetHashCode()}", ref filterState)) {
-                _plugin!.DataQueue.QueueDataOperation(async () => {
+                _plugin!.DataQueue.QueueDataOperation(() => {
                     FilterState[category.Key] = filterState;
                     UpdateAllSelected();
-                    await Refresh();
+                    Refresh();
                 });
             }
         }

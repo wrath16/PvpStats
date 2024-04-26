@@ -1,6 +1,5 @@
 ﻿using ImGuiNET;
 using System;
-using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Filter;
 public class LocalPlayerFilter : DataFilter {
@@ -10,7 +9,7 @@ public class LocalPlayerFilter : DataFilter {
     public bool CurrentPlayerOnly { get; set; }
     public LocalPlayerFilter() { }
 
-    internal LocalPlayerFilter(Plugin plugin, Func<Task> action, LocalPlayerFilter? filter = null) : base(plugin, action) {
+    internal LocalPlayerFilter(Plugin plugin, Action action, LocalPlayerFilter? filter = null) : base(plugin, action) {
         if(filter is not null) {
             CurrentPlayerOnly = filter.CurrentPlayerOnly;
         }
@@ -19,9 +18,9 @@ public class LocalPlayerFilter : DataFilter {
     internal override void Draw() {
         bool currentPlayerOnly = CurrentPlayerOnly;
         if(ImGui.Checkbox("Current player only", ref currentPlayerOnly)) {
-            _plugin!.DataQueue.QueueDataOperation(async () => {
+            _plugin!.DataQueue.QueueDataOperation(() => {
                 CurrentPlayerOnly = currentPlayerOnly;
-                await Refresh();
+                Refresh();
             });
         }
     }

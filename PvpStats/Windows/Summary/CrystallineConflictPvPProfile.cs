@@ -1,4 +1,5 @@
-﻿using Dalamud.Interface.Utility;
+﻿using Dalamud.Interface.Colors;
+using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using ImGuiNET;
@@ -20,13 +21,13 @@ internal class CrystallineConflictPvPProfile {
 
     public unsafe void Draw() {
         var pvpProfile = PvPProfile.Instance();
-        ImGuiHelper.HelpMarker("Uses game server-originating data from your PvP profile.", false);
-        ImGui.TextColored(_plugin.Configuration.Colors.Header, "Casual:");
+        ImGuiHelper.HelpMarker("Uses data from your PvP profile", false);
+        ImGui.TextColored(ImGuiColors.DalamudYellow, "Casual:");
         if(pvpProfile != null) {
             DrawTable(pvpProfile->CrystallineConflictCasualMatches, pvpProfile->CrystallineConflictCasualMatchesWon);
         }
         ImGui.Separator();
-        ImGui.TextColored(_plugin.Configuration.Colors.Header, "Current Ranked Season:");
+        ImGui.TextColored(ImGuiColors.DalamudYellow, "Current Ranked Season:");
         if(pvpProfile != null) {
             DrawTable(pvpProfile->CrystallineConflictRankedMatches, pvpProfile->CrystallineConflictRankedMatchesWon);
             ImGui.NewLine();

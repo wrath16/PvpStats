@@ -21,7 +21,7 @@ public enum Job {
     BLM,
     SMN,
     RDM,
-    PIC
+    PCT
 }
 
 public enum JobRole {

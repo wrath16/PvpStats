@@ -1,7 +1,6 @@
 ﻿using Dalamud.Interface.Utility;
 using ImGuiNET;
 using System;
-using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Filter;
 public class MiscFilter : DataFilter {
@@ -14,7 +13,7 @@ public class MiscFilter : DataFilter {
 
     public MiscFilter() { }
 
-    internal MiscFilter(Plugin plugin, Func<Task> action, MiscFilter? filter = null) : base(plugin, action) {
+    internal MiscFilter(Plugin plugin, Action action, MiscFilter? filter = null) : base(plugin, action) {
         if(filter is not null) {
             MustHaveStats = filter.MustHaveStats;
             ShowDeleted = filter.ShowDeleted;
@@ -30,9 +29,9 @@ public class MiscFilter : DataFilter {
         ImGui.TableNextColumn();
         bool mustHaveStats = MustHaveStats;
         if(ImGui.Checkbox("Must have post-game stats", ref mustHaveStats)) {
-            _plugin!.DataQueue.QueueDataOperation(async () => {
+            _plugin!.DataQueue.QueueDataOperation(() => {
                 MustHaveStats = mustHaveStats;
-                await Refresh();
+                Refresh();
             });
         }
         //bool showDeleted = ShowDeleted;

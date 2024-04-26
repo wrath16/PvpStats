@@ -1,14 +1,16 @@
 ﻿using PvpStats.Types.Display;
+using PvpStats.Windows.Filter;
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace PvpStats.Windows.List;
-internal abstract class CCStatsList<T> : StatsList<T> {
-    public CCStatsList(Plugin plugin) : base(plugin, plugin.CCStatsEngine.RefreshLock) {
+internal class CCStatsList<T> : StatsList<T> {
+    public CCStatsList(Plugin plugin) : base(plugin) {
     }
 
-    //public Dictionary<T, CCPlayerJobStats> StatsModel { get; protected set; }
-    //protected CrystallineConflictList ListModel { get; init; }
-    //protected OtherPlayerFilter? OtherPlayerFilter { get; init; }
+    public Dictionary<T, CCPlayerJobStats> StatsModel { get; protected set; }
+    protected CrystallineConflictList ListModel { get; init; }
+    protected OtherPlayerFilter? OtherPlayerFilter { get; init; }
 
     protected (PropertyInfo?, PropertyInfo?) GetStatsPropertyFromId(uint columnId) {
         var props = typeof(CCPlayerJobStats).GetProperties();
