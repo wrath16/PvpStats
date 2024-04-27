@@ -40,11 +40,11 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
             }
         }
         ImGuiHelper.WrappedTooltip("Close all open match windows");
-        //ImGui.SameLine();
-        //using(var font = ImRaii.PushFont(UiBuilder.IconFont)) {
-        //    ImGuiHelper.RightAlignCursor(FontAwesomeIcon.Heart.ToIconString());
-        //}
-        //ImGuiHelper.DonateButton();
+        ImGui.SameLine();
+        using(var font = ImRaii.PushFont(UiBuilder.IconFont)) {
+            ImGuiHelper.RightAlignCursor(FontAwesomeIcon.Heart.ToIconString());
+        }
+        ImGuiHelper.DonateButton();
     }
 
     public override void DrawListItem(CrystallineConflictMatch item) {
@@ -59,7 +59,9 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         }
         ImGui.TableNextColumn();
         if(!item.IsSpectated) {
-            ImGui.TextColored(_plugin.Configuration.GetJobColor(item.LocalPlayerTeamMember!.Job), item.LocalPlayerTeamMember.Job.ToString());
+            var localPlayerJob = item.LocalPlayerTeamMember!.Job;
+            ImGuiHelper.CenterAlignCursor(localPlayerJob.ToString() ?? "");
+            ImGui.TextColored(_plugin.Configuration.GetJobColor(localPlayerJob), localPlayerJob.ToString());
         }
         ImGui.TableNextColumn();
         ImGui.Text($"{item.MatchType}");
@@ -69,8 +71,8 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         bool noWinner = item.MatchWinner is null;
         bool isWin = item.MatchWinner == item.LocalPlayerTeam?.TeamName;
         bool isSpectated = item.LocalPlayerTeam is null;
-        var color = ImGuiColors.DalamudWhite;
-        string resultText = "";
+        Vector4 color;
+        string resultText;
         if(isSpectated) {
             color = ImGuiColors.DalamudWhite;
             resultText = "N/A";
@@ -80,6 +82,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
             resultText = isWin ? "WIN" : "LOSS";
             resultText = noWinner ? "???" : resultText;
         }
+        ImGuiHelper.CenterAlignCursor(resultText);
         ImGui.TextColored(color, resultText);
         ImGui.TableNextColumn();
         if(item.MatchType == CrystallineConflictMatchType.Ranked) {
