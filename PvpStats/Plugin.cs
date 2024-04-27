@@ -151,6 +151,7 @@ public sealed class Plugin : IDalamudPlugin {
         CommandManager.RemoveHandler(CCStatsCommandName);
         CommandManager.RemoveHandler(ConfigCommandName);
 
+        Functions?.Dispose();
         MatchManager?.Dispose();
         WindowManager?.Dispose();
         Storage?.Dispose();

@@ -206,7 +206,7 @@ internal unsafe class DebugWindow : Window {
 
             if(ImGui.BeginTabItem("Network Messages")) {
                 if(_plugin.MatchManager is not null) {
-                    ImGui.Text($"Current match count: {_plugin.MatchManager._opcodeMatchCount}");
+                    ImGui.Text($"Current match count: {_plugin.Functions._opcodeMatchCount}");
 
                     if(ImGui.BeginTable("opcodetable", 2)) {
 
@@ -215,7 +215,7 @@ internal unsafe class DebugWindow : Window {
                         ImGui.TableNextColumn();
                         ImGui.Text("Count");
 
-                        foreach(var opcode in _plugin.MatchManager._opCodeCount) {
+                        foreach(var opcode in _plugin.Functions._opCodeCount) {
 
                             ImGui.TableNextColumn();
                             ImGui.Text($"{opcode.Key}");

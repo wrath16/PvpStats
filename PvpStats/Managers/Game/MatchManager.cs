@@ -1,9 +1,7 @@
-﻿using Dalamud;
-using Dalamud.Game.Addon.Lifecycle;
+﻿using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
-using Dalamud.Game.Network;
 using Dalamud.Hooking;
 using Dalamud.Utility;
 using Dalamud.Utility.Signatures;
@@ -17,18 +15,13 @@ using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace PvpStats.Managers.Game;
 internal class MatchManager : IDisposable {
 
     private Plugin _plugin;
     private CrystallineConflictMatch? _currentMatch;
-
-    //debug variables
-    internal Dictionary<ushort, uint> _opCodeCount = new();
-    internal int _opcodeMatchCount = 0;
-    private DateTime _lastSortTime;
-    private bool _qPopped = false;
 
     //p1 = director
     //p2 = results packet
@@ -42,13 +35,13 @@ internal class MatchManager : IDisposable {
     [Signature("E8 ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 03 48 8D 8B ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 83 ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 83 ?? ?? ?? ?? 48 8D 05", DetourName = nameof(CCDirectorCtorDetour))]
     private readonly Hook<CCDirectorCtorDelegate> _ccDirectorCtorHook;
 
+    private static readonly Regex TierRegex = new(@"\D+", RegexOptions.IgnoreCase);
+    private static readonly Regex RiserRegex = new(@"\d+", RegexOptions.IgnoreCase);
+
     public MatchManager(Plugin plugin) {
         _plugin = plugin;
 
         _plugin.ClientState.TerritoryChanged += OnTerritoryChanged;
-#if DEBUG
-        _plugin.GameNetwork.NetworkMessage += OnNetworkMessage;
-#endif
         _plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "PvPMKSIntroduction", OnPvPIntro);
         _plugin.InteropProvider.InitializeFromAttributes(this);
         _plugin.Log.Debug($"cc director .ctor address: 0x{_ccDirectorCtorHook!.Address.ToString("X2")}");
@@ -59,9 +52,6 @@ internal class MatchManager : IDisposable {
 
     public void Dispose() {
         _plugin.ClientState.TerritoryChanged -= OnTerritoryChanged;
-#if DEBUG
-        _plugin.GameNetwork.NetworkMessage -= OnNetworkMessage;
-#endif
         _plugin.AddonLifecycle.UnregisterListener(OnPvPIntro);
         _ccMatchEndHook.Dispose();
         _ccDirectorCtorHook.Dispose();
@@ -85,6 +75,16 @@ internal class MatchManager : IDisposable {
                 _plugin.DataQueue.QueueDataOperation(async () => {
                     await _plugin.DataCache.AddCCMatch(_currentMatch);
                 });
+
+#if DEBUG
+                //_plugin.Functions.FindValue<byte>(0, p1, 0x500, 0, true);
+                //_plugin.Log.Debug("p1");
+                //_plugin.Functions.FindValue("", p1, 0x1000, 0, true);
+                //_plugin.Log.Debug("p2");
+                //_plugin.Functions.FindValue("", p2, 0x1000, 0, true);
+                //_plugin.Log.Debug("p3");
+                //_plugin.Functions.FindValue("", p3, 0x1000, 0, true);
+#endif
             });
         } catch(Exception e) {
             //suppress all exceptions so game doesn't crash if something fails here
@@ -111,58 +111,12 @@ internal class MatchManager : IDisposable {
         _ccMatchEndHook.Original(p1, p2, p3, p4);
     }
 
-    private unsafe void OnNetworkMessage(nint dataPtr, ushort opCode, uint sourceActorId, uint targetActorId, NetworkMessageDirection direction) {
-        if(direction != NetworkMessageDirection.ZoneDown) {
-            return;
-        }
-
-        if(_opCodeCount.ContainsKey(opCode)) {
-            _opCodeCount[opCode]++;
-        } else {
-            _opCodeCount.Add(opCode, 1);
-        }
-
-        if(opCode != 845 && opCode != 813 && opCode != 649 && opCode != 717 && opCode != 920 && opCode != 898 && opCode != 316 && opCode != 769 && opCode != 810
-            && opCode != 507 && opCode != 973 && opCode != 234 && opCode != 702 && opCode != 421 && opCode != 244 && opCode != 116 && opCode != 297 && opCode != 493
-            && opCode != 857 && opCode != 444 && opCode != 550 && opCode != 658 && opCode != 636 && opCode != 132 && opCode != 230 && opCode != 660
-            && opCode != 565 && opCode != 258 && opCode != 390 && opCode != 221 && opCode != 167 && opCode != 849) {
-            _plugin.Log.Verbose($"OPCODE: {opCode} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
-            //_plugin.Functions.PrintAllChars(dataPtr, 0x2000, 8);
-            //_plugin.Functions.PrintAllStrings(dataPtr, 0x500);
-
-            if(_qPopped) {
-                //_plugin.Functions.CreateByteDump(dataPtr, 0x1000, opCode.ToString());
-                //_plugin.Functions.PrintAllChars(dataPtr, 0x2000);
-            }
-
-            //IntPtr myName = dataPtr + 0x4C;
-            //if (AtkNodeHelper.ReadString((byte*)myName).Equals("Sarah Montcroix", StringComparison.OrdinalIgnoreCase)) {
-            //    _plugin.Log.Verbose("name found a 0x4C!");
-            //}
-        }
-
-        if(opCode == 556) {
-            _plugin.Log.Debug("q popped");
-            _qPopped = true;
-        }
-
-        ////643 has promise...
-        //if (opCode == 945 || opCode == 560) {
-        //    _plugin.Functions.FindValue<string>("", dataPtr, 0x500, 0, true);
-        //}
-
-        if(DateTime.Now - _lastSortTime > TimeSpan.FromSeconds(60)) {
-            _lastSortTime = DateTime.Now;
-            _opCodeCount = _opCodeCount.OrderBy(x => x.Value).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-        }
-    }
-
     private void OnTerritoryChanged(ushort territoryId) {
         var dutyId = _plugin.GameState.GetCurrentDutyId();
         _plugin.Log.Debug($"Territory changed: {territoryId}, Current duty: {dutyId}");
         if(IsMatchInProgress()) {
             _plugin.DataQueue.QueueDataOperation(() => {
-                _opcodeMatchCount++;
+                _plugin.Functions._opcodeMatchCount++;
                 _currentMatch = null;
                 //_plugin.WindowManager.Refresh();
             });
@@ -175,7 +129,7 @@ internal class MatchManager : IDisposable {
             _plugin.Log.Warning("no match in progress on pvp intro!");
             return;
         }
-        _qPopped = false;
+        _plugin.Functions._qPopped = false;
         _plugin.Log.Debug("Pvp intro post setup");
 
         CrystallineConflictTeam team = new();
@@ -183,10 +137,8 @@ internal class MatchManager : IDisposable {
             var addon = (AtkUnitBase*)args.Addon;
             //team name
             string teamName = AtkNodeService.ConvertAtkValueToString(addon->AtkValues[4]);
-            string translatedTeamName = _plugin.Localization.TranslateDataTableEntry<Addon>(teamName, "Text", ClientLanguage.English);
-            team.TeamName = MatchHelper.GetTeamName(translatedTeamName);
-
-            //_plugin.GameState.PrintAllPlayerObjects();
+            var teamAddonIds = _plugin.Localization.GetRowId<Addon>(teamName, "Text");
+            team.TeamName = teamAddonIds.Contains(14423) ? CrystallineConflictTeamName.Astra : teamAddonIds.Contains(14424) ? CrystallineConflictTeamName.Umbra : CrystallineConflictTeamName.Unknown;
 
             _plugin.Log.Debug(teamName);
             for(int i = 0; i < 5; i++) {
@@ -195,15 +147,21 @@ internal class MatchManager : IDisposable {
                 if(offset >= addon->AtkValuesCount) {
                     break;
                 }
-                string player = AtkNodeService.ConvertAtkValueToString(addon->AtkValues[offset]);
-                string world = AtkNodeService.ConvertAtkValueToString(addon->AtkValues[offset + 6]);
-                string job = AtkNodeService.ConvertAtkValueToString(addon->AtkValues[offset + 5]);
-                //JP uses English names...
-                string translatedJob = _plugin.Localization.TranslateDataTableEntry<ClassJob>(job, "Name", ClientLanguage.English,
-                    _plugin.ClientState.ClientLanguage == ClientLanguage.Japanese ? ClientLanguage.English : _plugin.ClientState.ClientLanguage);
-                string rank = "";
-                string? translatedRank = null;
+                string playerRaw = AtkNodeService.ConvertAtkValueToString(addon->AtkValues[offset]);
+                string worldRaw = AtkNodeService.ConvertAtkValueToString(addon->AtkValues[offset + 6]);
 
+                string jobRaw = AtkNodeService.ConvertAtkValueToString(addon->AtkValues[offset + 5]).Trim();
+                uint? jobId = _plugin.Localization.GetRowId<ClassJob>(jobRaw, "Name").FirstOrDefault();
+                //JP uses English names...
+                jobId ??= _plugin.Localization.GetRowId<ClassJob>(jobRaw, "NameEnglish").FirstOrDefault();
+                string translatedJob = "";
+                if(jobId != null) {
+                    translatedJob = _plugin.DataManager.GetExcelSheet<ClassJob>().GetRow((uint)jobId).NameEnglish;
+                }
+                Job? job = PlayerJobHelper.GetJobFromName(translatedJob);
+
+                string rankRaw = "";
+                PlayerRank? rank = null;
                 //have to read rank from nodes -_-
                 var rankNode = AtkNodeService.GetNodeByIDChain(addon, rankIdChain);
                 if(rankNode == null || rankNode->Type != NodeType.Text || rankNode->GetAsAtkTextNode()->NodeText.ToString().IsNullOrEmpty()) {
@@ -211,43 +169,47 @@ internal class MatchManager : IDisposable {
                     rankNode = AtkNodeService.GetNodeByIDChain(addon, rankIdChain);
                 }
                 if(rankNode != null && rankNode->Type == NodeType.Text) {
-                    rank = rankNode->GetAsAtkTextNode()->NodeText.ToString();
-                    if(!rank.IsNullOrEmpty()) {
+                    rankRaw = rankNode->GetAsAtkTextNode()->NodeText.ToString();
+                    if(!rankRaw.IsNullOrEmpty()) {
+                        rank = new();
                         //set ranked as fallback
                         //_currentMatch!.MatchType = CrystallineConflictMatchType.Ranked;
+                        string tierString = TierRegex.Match(rankRaw).Value.Trim();
+                        var addonId = _plugin.Localization.GetRowId<Addon>(tierString, "Text").FirstOrDefault(x => x >= 14894 && x <= 14899);
+                        if(addonId != null) {
+                            rank.Tier = (ArenaTier)addonId - 14893;
+                        }
 
-                        //don't need to translate for Japanese
-                        if(_plugin.ClientState.ClientLanguage != ClientLanguage.Japanese) {
-                            translatedRank = _plugin.Localization.TranslateRankString(rank, ClientLanguage.English);
-                        } else {
-                            translatedRank = rank;
+                        string riserString = RiserRegex.Match(rankRaw).Value.Trim();
+                        if(int.TryParse(riserString, out int riser)) {
+                            rank.Riser = riser;
                         }
                     }
                 }
 
                 //abbreviated names
-                if(player.Contains(".")) {
+                if(playerRaw.Contains('.')) {
                     _currentMatch!.NeedsPlayerNameValidation = true;
                     foreach(PlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
                         //_plugin.Log.Debug($"name: {pc.Name} homeworld {pc.HomeWorld.GameData.Name.ToString()} job: {pc.ClassJob.GameData.NameEnglish}");
-                        bool homeWorldMatch = world.Equals(pc.HomeWorld.GameData?.Name.ToString(), StringComparison.OrdinalIgnoreCase);
+                        bool homeWorldMatch = worldRaw.Equals(pc.HomeWorld.GameData?.Name.ToString(), StringComparison.OrdinalIgnoreCase);
                         bool jobMatch = pc.ClassJob.GameData?.NameEnglish.ToString().Equals(translatedJob, StringComparison.OrdinalIgnoreCase) ?? false;
-                        bool nameMatch = PlayerJobHelper.IsAbbreviatedAliasMatch(player, pc.Name.ToString());
+                        bool nameMatch = PlayerJobHelper.IsAbbreviatedAliasMatch(playerRaw, pc.Name.ToString());
                         //_plugin.Log.Debug($"homeworld match:{homeWorldMatch} jobMatch:{jobMatch} nameMatch: {nameMatch}");
                         if(homeWorldMatch && jobMatch && nameMatch) {
-                            _plugin.Log.Debug($"validated player: {player} is {pc.Name.ToString()}");
-                            player = pc.Name.ToString();
+                            _plugin.Log.Debug($"validated player: {playerRaw} is {pc.Name.ToString()}");
+                            playerRaw = pc.Name.ToString();
                             break;
                         }
                     }
                 }
 
-                _plugin.Log.Debug(string.Format("player: {0,-25} {1,-15} job: {2,-15} rank: {3,-10}", player, world, job, rank));
+                _plugin.Log.Debug(string.Format("player: {0,-25} {1,-15} job: {2,-15} rank: {3,-10}", playerRaw, worldRaw, jobRaw, rankRaw));
 
                 team.Players.Add(new() {
-                    Alias = (PlayerAlias)$"{player} {world}",
-                    Job = (Job)PlayerJobHelper.GetJobFromName(translatedJob)!,
-                    Rank = translatedRank != null ? (PlayerRank)translatedRank : null,
+                    Alias = (PlayerAlias)$"{playerRaw} {worldRaw}",
+                    Job = job,
+                    Rank = rank,
                     Team = team.TeamName
                 });
             }
@@ -420,7 +382,7 @@ internal class MatchManager : IDisposable {
                     postMatch.MatchWinner = CrystallineConflictTeamName.Umbra;
                     break;
                 default:
-                    _plugin.Log.Warning("Unable to determine winner...draw?");
+                    _plugin.Log.Warning($"Unable to determine winner...draw? {resultsPacket.Result}");
                     postMatch.MatchWinner = CrystallineConflictTeamName.Unknown;
                     break;
             }
@@ -433,7 +395,7 @@ internal class MatchManager : IDisposable {
                     postMatch.MatchWinner = _currentMatch.Teams.First(x => x.Value.TeamName != _currentMatch.LocalPlayerTeam!.TeamName).Value.TeamName;
                     break;
                 default:
-                    _plugin.Log.Warning("Unable to determine winner...draw?");
+                    _plugin.Log.Warning($"Unable to determine winner...draw? {resultsPacket.Result}");
                     postMatch.MatchWinner = CrystallineConflictTeamName.Unknown;
                     break;
             }
@@ -449,4 +411,5 @@ internal class MatchManager : IDisposable {
         //await _plugin.Storage.UpdateCCMatch(_currentMatch);
         return true;
     }
+
 }

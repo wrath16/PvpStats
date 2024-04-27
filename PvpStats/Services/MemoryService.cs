@@ -1,16 +1,70 @@
+using Dalamud.Game.Network;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace PvpStats.Services;
 
-internal unsafe class MemoryService {
+internal unsafe class MemoryService : IDisposable {
     private Plugin _plugin;
+
+    //debug fields
+    internal Dictionary<ushort, uint> _opCodeCount = new();
+    internal int _opcodeMatchCount = 0;
+    private DateTime _lastSortTime;
+    internal bool _qPopped = false;
 
     internal MemoryService(Plugin plugin) {
         _plugin = plugin;
+
+#if DEBUG
+        _plugin.GameNetwork.NetworkMessage += OnNetworkMessage;
+#endif
+    }
+
+    public void Dispose() {
+#if DEBUG
+        _plugin.GameNetwork.NetworkMessage -= OnNetworkMessage;
+#endif
+    }
+
+    private unsafe void OnNetworkMessage(nint dataPtr, ushort opCode, uint sourceActorId, uint targetActorId, NetworkMessageDirection direction) {
+        if(direction != NetworkMessageDirection.ZoneDown) {
+            return;
+        }
+
+        if(_opCodeCount.ContainsKey(opCode)) {
+            _opCodeCount[opCode]++;
+        } else {
+            _opCodeCount.Add(opCode, 1);
+        }
+
+        if(opCode != 845 && opCode != 813 && opCode != 649 && opCode != 717 && opCode != 920 && opCode != 898 && opCode != 316 && opCode != 769 && opCode != 810
+            && opCode != 507 && opCode != 973 && opCode != 234 && opCode != 702 && opCode != 421 && opCode != 244 && opCode != 116 && opCode != 297 && opCode != 493
+            && opCode != 857 && opCode != 444 && opCode != 550 && opCode != 658 && opCode != 636 && opCode != 132 && opCode != 230 && opCode != 660
+            && opCode != 565 && opCode != 258 && opCode != 390 && opCode != 221 && opCode != 167 && opCode != 849) {
+            _plugin.Log.Verbose($"OPCODE: {opCode} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
+            //_plugin.Functions.PrintAllChars(dataPtr, 0x2000, 8);
+            //_plugin.Functions.PrintAllStrings(dataPtr, 0x500);
+        }
+
+        if(opCode == 556) {
+            _plugin.Log.Debug("q popped");
+            _qPopped = true;
+        }
+
+        ////643 has promise...
+        //if (opCode == 945 || opCode == 560) {
+        //    _plugin.Functions.FindValue<string>("", dataPtr, 0x500, 0, true);
+        //}
+
+        if(DateTime.Now - _lastSortTime > TimeSpan.FromSeconds(60)) {
+            _lastSortTime = DateTime.Now;
+            _opCodeCount = _opCodeCount.OrderBy(x => x.Value).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        }
     }
 
     internal void CreateByteDump(nint ptr, int length, string name) {

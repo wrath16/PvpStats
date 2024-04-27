@@ -15,6 +15,9 @@ public class PlayerAlias : IEquatable<PlayerAlias>, IEquatable<CrystallineConfli
         s = s.Trim();
         var homeWorld = Regex.Match(s, @"\b[\S]+$").Value.Trim();
         var playerName = Regex.Match(s, @".*(?=\s[\S]+$)").Value.Trim();
+        if(s.IsNullOrEmpty()) {
+            throw new InvalidCastException("Cannot convert empty string to player alias!");
+        }
         if(homeWorld.IsNullOrEmpty() || playerName.IsNullOrEmpty()) {
             return new PlayerAlias(s, "");
         }
