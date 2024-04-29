@@ -74,6 +74,7 @@ internal class CrystallineConflictMatchDetail : Window {
                 }
             }
         }
+        SortByColumn(0, ImGuiSortDirection.Ascending);
         _csv = BuildCSV();
     }
 
@@ -455,11 +456,12 @@ internal class CrystallineConflictMatchDetail : Window {
             var props = typeof(CCScoreboardDouble).GetProperties();
             foreach(var prop in props) {
                 var propId2 = prop.Name.GetHashCode();
-                if((uint)propId2 == columnId) {
+                if((uint)"TimeOnCrystal".GetHashCode() == columnId) {
+                    comparator = (r) => r.Value.Item2.TimeOnCrystalDouble;
+                    break;
+                } else if((uint)propId2 == columnId) {
                     comparator = (r) => prop.GetValue(r.Value.Item2) ?? 0;
                     break;
-                } else if("TimeOnCrystal".GetHashCode() == columnId) {
-                    comparator = (r) => r.Value.Item2.TimeOnCrystalDouble;
                 }
             }
         }
