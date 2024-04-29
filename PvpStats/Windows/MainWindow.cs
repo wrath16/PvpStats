@@ -148,20 +148,20 @@ internal class MainWindow : Window {
             DrawFiltersTable();
             ImGui.EndChild();
         }
-        //I copied this code from Item Search xD
-        ImGui.PushFont(UiBuilder.IconFont);
-        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(0, -5 * ImGui.GetIO().FontGlobalScale));
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
-        if(ImGui.Button($"{(_collapseFilters ? (char)FontAwesomeIcon.CaretDown : (char)FontAwesomeIcon.CaretUp)}", new Vector2(-1, 10 * ImGui.GetIO().FontGlobalScale))) {
-            int direction = _collapseFilters ? 1 : -1;
-            _collapseFilters = !_collapseFilters;
-            _plugin.Configuration.CCWindowConfig.FiltersCollapsed = _collapseFilters;
-            if(_plugin.Configuration.CCWindowConfig.AdjustWindowHeightOnFilterCollapse) {
-                SetWindowSize(new Vector2(ImGui.GetWindowSize().X, ImGui.GetWindowSize().Y + direction * _plugin.Configuration.CCWindowConfig.FilterHeight));
+        //I copied this from Item Search xD
+        using(var font = ImRaii.PushFont(UiBuilder.IconFont)) {
+            using(var style1 = ImRaii.PushStyle(ImGuiStyleVar.FramePadding, new Vector2(0, -5 * ImGui.GetIO().FontGlobalScale)).Push(ImGuiStyleVar.WindowPadding, Vector2.Zero)) {
+                if(ImGui.Button($"{(_collapseFilters ? (char)FontAwesomeIcon.CaretDown : (char)FontAwesomeIcon.CaretUp)}", new Vector2(-1, 10 * ImGuiHelpers.GlobalScale))) {
+                    int direction = _collapseFilters ? 1 : -1;
+                    _collapseFilters = !_collapseFilters;
+                    _plugin.Configuration.CCWindowConfig.FiltersCollapsed = _collapseFilters;
+                    if(_plugin.Configuration.CCWindowConfig.AdjustWindowHeightOnFilterCollapse) {
+                        SetWindowSize(new Vector2(ImGui.GetWindowSize().X, ImGui.GetWindowSize().Y + direction * _plugin.Configuration.CCWindowConfig.FilterHeight));
+                    }
+                }
             }
         }
-        ImGui.PopStyleVar(2);
-        ImGui.PopFont();
+
         ImGuiHelper.WrappedTooltip($"{(_collapseFilters ? "Show filters" : "Hide filters")}");
 
         using(var tabBar = ImRaii.TabBar("TabBar", ImGuiTabBarFlags.None)) {

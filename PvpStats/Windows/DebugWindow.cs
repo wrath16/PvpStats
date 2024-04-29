@@ -32,7 +32,7 @@ internal unsafe class DebugWindow : Window {
         PositionCondition = ImGuiCond.Always;
         SizeConstraints = new WindowSizeConstraints {
             MinimumSize = new Vector2(200, 200),
-            MaximumSize = new Vector2(500, 500)
+            MaximumSize = new Vector2(2000, 2000)
         };
         _plugin = plugin;
     }
@@ -206,6 +206,10 @@ internal unsafe class DebugWindow : Window {
 
             if(ImGui.BeginTabItem("Network Messages")) {
                 if(_plugin.MatchManager is not null) {
+                    if(ImGui.Button("Clear opcodes")) {
+                        _plugin.Functions._opCodeCount = new();
+                    }
+
                     ImGui.Text($"Current match count: {_plugin.Functions._opcodeMatchCount}");
 
                     if(ImGui.BeginTable("opcodetable", 2)) {
