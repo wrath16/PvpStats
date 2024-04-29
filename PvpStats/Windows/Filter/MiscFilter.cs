@@ -1,4 +1,5 @@
 ﻿using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using System;
 using System.Threading.Tasks;
@@ -23,7 +24,7 @@ public class MiscFilter : DataFilter {
     }
 
     internal override void Draw() {
-        ImGui.BeginTable("miscFilterTable", 3, ImGuiTableFlags.NoClip);
+        using var table = ImRaii.Table("miscFilterTable", 3, ImGuiTableFlags.NoClip);
         ImGui.TableSetupColumn($"c1", ImGuiTableColumnFlags.WidthFixed, float.Min(ImGui.GetContentRegionAvail().X / 3, ImGuiHelpers.GlobalScale * 350f));
         ImGui.TableSetupColumn($"c2", ImGuiTableColumnFlags.WidthFixed, float.Min(ImGui.GetContentRegionAvail().X / 3, ImGuiHelpers.GlobalScale * 350f));
         ImGui.TableSetupColumn($"c3", ImGuiTableColumnFlags.WidthFixed, float.Min(ImGui.GetContentRegionAvail().X / 3, ImGuiHelpers.GlobalScale * 350f));
@@ -50,6 +51,5 @@ public class MiscFilter : DataFilter {
         //        Refresh();
         //    });
         //}
-        ImGui.EndTable();
     }
 }

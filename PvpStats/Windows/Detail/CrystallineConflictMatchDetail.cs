@@ -297,7 +297,7 @@ internal class CrystallineConflictMatchDetail : Window {
             }
             //ImGuiHelpers.CenterCursorForText(text);
             ImGuiHelper.CenterAlignCursor(text);
-            ImGui.SetCursorPosX(ImGui.GetCursorPosX() - ((ImGui.GetStyle().FramePadding.X - 3f) * 2.5f  + 9f * (functionCount - 1)));
+            ImGui.SetCursorPosX(ImGui.GetCursorPosX() - ((ImGui.GetStyle().FramePadding.X - 3f) * 2.5f + 9f * (functionCount - 1)));
         }
 
         using(_ = ImRaii.PushFont(UiBuilder.IconFont)) {

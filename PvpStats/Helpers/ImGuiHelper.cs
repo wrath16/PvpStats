@@ -42,9 +42,8 @@ internal static class ImGuiHelper {
 
     internal static void WrappedTooltip(string text, float width = 400f) {
         if(ImGui.IsItemHovered()) {
-            ImGui.BeginTooltip();
+            using var tooltip = ImRaii.Tooltip();
             ImGui.Text(WrappedString(text, width));
-            ImGui.EndTooltip();
         }
     }
 

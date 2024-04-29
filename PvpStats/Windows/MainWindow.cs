@@ -142,22 +142,23 @@ internal class MainWindow : Window {
         _lastWindowSize = ImGui.GetWindowSize();
         _lastWindowPosition = ImGui.GetWindowPos();
 
-        if(!_collapseFilters && ImGui.BeginChild("FilterChild",
+        if(!_collapseFilters) {
+            using var child = ImRaii.Child("FilterChild",
             new Vector2(ImGui.GetContentRegionAvail().X, _plugin.Configuration.CCWindowConfig.FilterHeight),
-            true, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.AlwaysVerticalScrollbar)) {
-            DrawFiltersTable();
-            ImGui.EndChild();
+            true, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.AlwaysVerticalScrollbar);
+            if(child) {
+                DrawFiltersTable();
+            }
         }
         //I copied this from Item Search xD
         using(var font = ImRaii.PushFont(UiBuilder.IconFont)) {
-            using(var style1 = ImRaii.PushStyle(ImGuiStyleVar.FramePadding, new Vector2(0, -5 * ImGui.GetIO().FontGlobalScale)).Push(ImGuiStyleVar.WindowPadding, Vector2.Zero)) {
-                if(ImGui.Button($"{(_collapseFilters ? (char)FontAwesomeIcon.CaretDown : (char)FontAwesomeIcon.CaretUp)}", new Vector2(-1, 10 * ImGuiHelpers.GlobalScale))) {
-                    int direction = _collapseFilters ? 1 : -1;
-                    _collapseFilters = !_collapseFilters;
-                    _plugin.Configuration.CCWindowConfig.FiltersCollapsed = _collapseFilters;
-                    if(_plugin.Configuration.CCWindowConfig.AdjustWindowHeightOnFilterCollapse) {
-                        SetWindowSize(new Vector2(ImGui.GetWindowSize().X, ImGui.GetWindowSize().Y + direction * _plugin.Configuration.CCWindowConfig.FilterHeight));
-                    }
+            using var style1 = ImRaii.PushStyle(ImGuiStyleVar.FramePadding, new Vector2(0, -5 * ImGuiHelpers.GlobalScale)).Push(ImGuiStyleVar.WindowPadding, Vector2.Zero);
+            if(ImGui.Button($"{(_collapseFilters ? (char)FontAwesomeIcon.CaretDown : (char)FontAwesomeIcon.CaretUp)}", new Vector2(-1, 10 * ImGuiHelpers.GlobalScale))) {
+                int direction = _collapseFilters ? 1 : -1;
+                _collapseFilters = !_collapseFilters;
+                _plugin.Configuration.CCWindowConfig.FiltersCollapsed = _collapseFilters;
+                if(_plugin.Configuration.CCWindowConfig.AdjustWindowHeightOnFilterCollapse) {
+                    SetWindowSize(new Vector2(ImGui.GetWindowSize().X, ImGui.GetWindowSize().Y + direction * _plugin.Configuration.CCWindowConfig.FilterHeight));
                 }
             }
         }
@@ -208,34 +209,33 @@ internal class MainWindow : Window {
     }
 
     private void DrawFiltersTable() {
-        if(ImGui.BeginTable("FilterTable", 2, ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.BordersInnerH)) {
-            ImGui.TableSetupColumn("filterName", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 110f);
-            ImGui.TableSetupColumn($"filters", ImGuiTableColumnFlags.WidthStretch);
-            //ImGui.TableNextRow();
-            foreach(var filter in Filters) {
-                //ImGui.PushStyleVar(ImGuiStyleVar.CellPadding, 4);
-                ImGui.TableNextColumn();
+        using var table = ImRaii.Table("FilterTable", 2, ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.BordersInnerH);
+        if(!table) return;
+        ImGui.TableSetupColumn("filterName", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 110f);
+        ImGui.TableSetupColumn($"filters", ImGuiTableColumnFlags.WidthStretch);
+        //ImGui.TableNextRow();
+        foreach(var filter in Filters) {
+            //ImGui.PushStyleVar(ImGuiStyleVar.CellPadding, 4);
+            ImGui.TableNextColumn();
 
-                if(filter.HelpMessage != null) {
-                    ImGui.AlignTextToFramePadding();
-                    ImGuiHelper.HelpMarker(filter.HelpMessage, false);
-                    ImGui.SameLine();
-                }
-                //ImGui.GetStyle().FramePadding.X = ImGui.GetStyle().FramePadding.X - 2f;
-                string nameText = $"{filter.Name}:";
-                ImGuiHelper.RightAlignCursor(nameText);
+            if(filter.HelpMessage != null) {
                 ImGui.AlignTextToFramePadding();
-                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + float.Max(0, 16f - 4f * ImGuiHelpers.GlobalScale));
-                ImGui.Text($"{nameText}");
-                //ImGui.PopStyleVar();
-                //ImGui.GetStyle().FramePadding.X = ImGui.GetStyle().FramePadding.X + 2f;
-                ImGui.TableNextColumn();
-                //if (filter.GetType() == typeof(TimeFilter)) {
-                //    ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
-                //}
-                filter.Draw();
+                ImGuiHelper.HelpMarker(filter.HelpMessage, false);
+                ImGui.SameLine();
             }
-            ImGui.EndTable();
+            //ImGui.GetStyle().FramePadding.X = ImGui.GetStyle().FramePadding.X - 2f;
+            string nameText = $"{filter.Name}:";
+            ImGuiHelper.RightAlignCursor(nameText);
+            ImGui.AlignTextToFramePadding();
+            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + float.Max(0, 16f - 4f * ImGuiHelpers.GlobalScale));
+            ImGui.Text($"{nameText}");
+            //ImGui.PopStyleVar();
+            //ImGui.GetStyle().FramePadding.X = ImGui.GetStyle().FramePadding.X + 2f;
+            ImGui.TableNextColumn();
+            //if (filter.GetType() == typeof(TimeFilter)) {
+            //    ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
+            //}
+            filter.Draw();
         }
     }
 
