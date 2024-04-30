@@ -43,6 +43,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         ImGui.SameLine();
         using(var font = ImRaii.PushFont(UiBuilder.IconFont)) {
             ImGuiHelper.RightAlignCursor(FontAwesomeIcon.Heart.ToIconString());
+            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetStyle().ItemSpacing.X);
         }
         ImGuiHelper.DonateButton();
     }
