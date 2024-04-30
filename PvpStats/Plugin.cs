@@ -42,7 +42,7 @@ public sealed class Plugin : IDalamudPlugin {
     internal IGameInteropProvider InteropProvider { get; init; }
     internal ISigScanner SigScanner { get; init; }
 
-    internal MatchManager? MatchManager { get; init; }
+    internal CrystallineConflictMatchManager? MatchManager { get; init; }
     internal WindowManager WindowManager { get; init; }
     internal MigrationManager MigrationManager { get; init; }
     internal CrystallineConflictStatsManager CCStatsEngine { get; init; }

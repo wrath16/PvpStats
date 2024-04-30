@@ -18,7 +18,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace PvpStats.Managers.Game;
-internal class MatchManager : IDisposable {
+internal class CrystallineConflictMatchManager : IDisposable {
 
     private Plugin _plugin;
     private CrystallineConflictMatch? _currentMatch;
@@ -38,7 +38,7 @@ internal class MatchManager : IDisposable {
     private static readonly Regex TierRegex = new(@"\D+", RegexOptions.IgnoreCase);
     private static readonly Regex RiserRegex = new(@"\d+", RegexOptions.IgnoreCase);
 
-    public MatchManager(Plugin plugin) {
+    public CrystallineConflictMatchManager(Plugin plugin) {
         _plugin = plugin;
 
         _plugin.ClientState.TerritoryChanged += OnTerritoryChanged;
