@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 namespace PvpStats.Services;
 internal class StorageService {
     private const string CCTable = "ccmatch";
+    private const string FLTable = "flmatch";
+    private const string RWTable = "rwmatch";
     private const string AutoPlayerLinksTable = "playerlinks_auto";
     private const string ManualPlayerLinksTable = "playerlinks_manual";
 
@@ -60,6 +62,30 @@ internal class StorageService {
     internal async Task UpdateCCMatches(IEnumerable<CrystallineConflictMatch> matches) {
         LogUpdate(null, matches.Count());
         await WriteToDatabase(() => GetCCMatches().Update(matches.Where(m => m.Id != null)));
+    }
+
+    internal ILiteCollection<FrontlineMatch> GetFLMatches() {
+        return Database.GetCollection<FrontlineMatch>(FLTable);
+    }
+
+    internal async Task AddFLMatch(FrontlineMatch match) {
+        LogUpdate(match.Id.ToString());
+        await WriteToDatabase(() => GetFLMatches().Insert(match));
+    }
+
+    internal async Task AddFLMatches(IEnumerable<FrontlineMatch> matches) {
+        LogUpdate(null, matches.Count());
+        await WriteToDatabase(() => GetFLMatches().Insert(matches.Where(m => m.Id != null)));
+    }
+
+    internal async Task UpdateFLMatch(FrontlineMatch match) {
+        LogUpdate(match.Id.ToString());
+        await WriteToDatabase(() => GetFLMatches().Update(match));
+    }
+
+    internal async Task UpdateFLMatches(IEnumerable<FrontlineMatch> matches) {
+        LogUpdate(null, matches.Count());
+        await WriteToDatabase(() => GetFLMatches().Update(matches.Where(m => m.Id != null)));
     }
 
     internal ILiteCollection<PlayerAliasLink> GetAutoLinks() {

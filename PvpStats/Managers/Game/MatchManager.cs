@@ -1,10 +1,6 @@
 ﻿using Dalamud.Hooking;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PvpStats.Managers.Game;
 internal abstract class MatchManager : IDisposable {
@@ -25,7 +21,7 @@ internal abstract class MatchManager : IDisposable {
         //var hookFields = this.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance).Where(x => x.FieldType.IsAssignableTo(typeof(IDalamudHook))).Count();
 
         //var hookField = this.GetType().GetField("_flMatchEndHook", BindingFlags.NonPublic | BindingFlags.Instance);
-        
+
         //Plugin.Log.Debug($"match end found?: {hookField?.Name}");
         //Plugin.Log.Debug($"match end type: {hookField?.FieldType}");
 

@@ -6,10 +6,6 @@ using PvpStats.Services;
 using PvpStats.Types.ClientStruct;
 using PvpStats.Types.Player;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PvpStats.Managers.Game;
 internal class FrontlineMatchManager : MatchManager {
@@ -66,12 +62,11 @@ internal class FrontlineMatchManager : MatchManager {
         FrontlineResultsPacket resultsPacket = *(FrontlineResultsPacket*)(p2);
 
         var printTeamStats = (FrontlineResultsPacket.TeamStat team, string name) => {
-            Plugin.Log.Debug($"{name}\nPlace {team.Place}\nOvooPoints {team.OvooPoints}\nKillPoints {team.EnemyKillPoints}\nDeathLosses {team.KOPointLosses}\nUnknown1 {team.Unknown1}\nUnknown2 {team.Unknown2}\nTotalRating {team.TotalPoints}");
+            Plugin.Log.Debug($"{name}\nPlace {team.Place}\nOvooPoints {team.OccupationPoints}\nKillPoints {team.EnemyKillPoints}\nDeathLosses {team.KOPointLosses}\nUnknown1 {team.Unknown1}\nUnknown2 {team.Unknown2}\nTotalRating {team.TotalPoints}");
         };
         printTeamStats(resultsPacket.MaelStats, "Maelstrom");
         printTeamStats(resultsPacket.AdderStats, "Adders");
         printTeamStats(resultsPacket.FlameStats, "Flames");
-
 
         _flMatchEndHook.Original(p1, p2);
     }
@@ -84,8 +79,8 @@ internal class FrontlineMatchManager : MatchManager {
         var playerName = (PlayerAlias)$"{MemoryService.ReadString(resultsPacket.PlayerName, 32)} {Plugin.DataManager.GetExcelSheet<World>()?.GetRow(resultsPacket.WorldId)?.Name}";
         var team = resultsPacket.Team == 0 ? "Maelstrom" : resultsPacket.Team == 1 ? "Adders" : "Flames";
         var job = PlayerJobHelper.GetJobFromName(Plugin.DataManager.GetExcelSheet<ClassJob>()?.GetRow(resultsPacket.ClassJobId)?.NameEnglish ?? "");
-        Plugin.Log.Debug(string.Format("{0,-32} {1,-15} {2,-10} {3,-8} {4,-8} {5,-8} {6,-8} {7,-15} {8,-15} {9,-15} {10,-15} {11,-15} {12,-15}", "NAME", "TEAM", "ALLIANCE", "JOB", "KILLS", "DEATHS", "ASSISTS", "DAMAGE DEALT", "DAMAGE OTHER", "DAMAGE TAKEN", "HP RESTORED", "??? 1", "??? 2"));
-        Plugin.Log.Debug(string.Format("{0,-32} {1,-15} {2,-10} {3,-8} {4,-8} {5,-8} {6,-8} {7,-15} {8,-15} {9,-15} {10,-15} {11,-15} {12,-15}", playerName, team, resultsPacket.Alliance, job, resultsPacket.Kills, resultsPacket.Deaths, resultsPacket.Assists, resultsPacket.DamageDealt, resultsPacket.DamageToOther, resultsPacket.DamageTaken, resultsPacket.HPRestored, resultsPacket.Unknown1, resultsPacket.Unknown2));
+        Plugin.Log.Debug(string.Format("{0,-32} {1,-15} {2,-10} {3,-8} {4,-8} {5,-8} {6,-8} {7,-15} {8,-15} {9,-15} {10,-15} {11,-15} {12,-15} {13,-15}", "NAME", "TEAM", "ALLIANCE", "JOB", "KILLS", "DEATHS", "ASSISTS", "DAMAGE DEALT", "DAMAGE OTHER", "DAMAGE TAKEN", "HP RESTORED", "HP RECEIVED", "??? 2", "OCCUPATIONS"));
+        Plugin.Log.Debug(string.Format("{0,-32} {1,-15} {2,-10} {3,-8} {4,-8} {5,-8} {6,-8} {7,-15} {8,-15} {9,-15} {10,-15} {11,-15} {12,-15} {13,-15}", playerName, team, resultsPacket.Alliance, job, resultsPacket.Kills, resultsPacket.Deaths, resultsPacket.Assists, resultsPacket.DamageDealt, resultsPacket.DamageToOther, resultsPacket.DamageTaken, resultsPacket.HPRestored, resultsPacket.Unknown1, resultsPacket.Unknown2, resultsPacket.Occupations));
         _flPlayerPayloadHook.Original(p1);
     }
 }

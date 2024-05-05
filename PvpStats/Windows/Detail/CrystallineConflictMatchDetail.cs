@@ -307,7 +307,7 @@ internal class CrystallineConflictMatchDetail : Window {
                 if(ImGui.Button($"{FontAwesomeIcon.Star.ToIconString()}##--FavoriteMatch")) {
                     _dataModel.IsBookmarked = !_dataModel.IsBookmarked;
                     _plugin.DataQueue.QueueDataOperation(async () => {
-                        await _plugin.DataCache.UpdateCCMatch(_dataModel);
+                        await _plugin.CCCache.UpdateMatch(_dataModel);
                     });
                 }
             }

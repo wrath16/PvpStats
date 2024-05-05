@@ -473,9 +473,9 @@ internal class ConfigWindow : Window {
             _plugin.Configuration.EnableDBCachingCC = enableCachingCC;
             _plugin.DataQueue.QueueDataOperation(() => {
                 if(enableCachingCC) {
-                    _plugin.DataCache.EnableCaching();
+                    _plugin.CCCache.EnableCaching();
                 } else {
-                    _plugin.DataCache.DisableCaching();
+                    _plugin.CCCache.DisableCaching();
                 }
                 _plugin.Configuration.Save();
             });

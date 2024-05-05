@@ -8,6 +8,7 @@ using PvpStats.Managers;
 using PvpStats.Managers.Game;
 using PvpStats.Managers.Stats;
 using PvpStats.Services;
+using PvpStats.Services.DataCache;
 using PvpStats.Settings;
 using System;
 using System.Threading.Tasks;
@@ -51,7 +52,8 @@ public sealed class Plugin : IDalamudPlugin {
     internal DataQueueService DataQueue { get; init; }
     internal LocalizationService Localization { get; init; }
     internal StorageService Storage { get; init; }
-    internal DataCacheService DataCache { get; init; }
+    internal CCMatchCacheService CCCache { get; init; }
+    internal FLMatchCacheService FLCache { get; init; }
     internal GameStateService GameState { get; init; }
     internal AtkNodeService AtkNodeService { get; init; }
     internal PlayerLinkService PlayerLinksService { get; init; }
@@ -103,7 +105,8 @@ public sealed class Plugin : IDalamudPlugin {
 
             DataQueue = new(this);
             Storage = new(this, $"{PluginInterface.GetPluginConfigDirectory()}\\{DatabaseName}");
-            DataCache = new(this);
+            CCCache = new(this);
+            FLCache = new(this);
             Functions = new(this);
             GameState = new(this);
             AtkNodeService = new(this);
@@ -184,10 +187,10 @@ public sealed class Plugin : IDalamudPlugin {
 
     private async Task Initialize() {
         if(Configuration.EnableDBCachingCC ?? true) {
-            DataCache.EnableCaching();
+            CCCache.EnableCaching();
         }
-        await MigrationManager.BulkUpdateMatchTypes();
-        await MigrationManager.BulkUpdateValidatePlayerCount();
+        await MigrationManager.BulkUpdateCCMatchTypes();
+        await MigrationManager.BulkCCUpdateValidatePlayerCount();
         await WindowManager.Refresh();
         Log.Information("PvP Tracker initialized.");
     }

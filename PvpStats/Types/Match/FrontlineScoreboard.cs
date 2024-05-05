@@ -6,5 +6,5 @@ internal class FrontlineScoreboard : PvpScoreboard {
     public long DamageToOther { get; set; }
     [BsonIgnore]
     public long DamageToPCs => DamageDealt - DamageToOther;
-    public long HealingReceived { get; set; }
+    public long Special1 { get; set; } //believed to be healing received
 }

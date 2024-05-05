@@ -1,25 +1,12 @@
 ﻿using LiteDB;
-using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace PvpStats.Types.Match;
 
-public class CrystallineConflictMatch {
+public class CrystallineConflictMatch : PvpMatch {
 
-    [BsonId]
-    public ObjectId Id { get; init; }
-    public int Version { get; init; } = 0;
-    public bool IsCompleted { get; set; }
-    public bool IsDeleted { get; set; }
-    public bool IsBookmarked { get; set; }
-
-    public DateTime DutyStartTime { get; init; }
-    public DateTime? MatchStartTime { get; set; }
-    public DateTime? MatchEndTime { get; set; }
-    [BsonIgnore]
-    public TimeSpan? MatchDuration => MatchEndTime - MatchStartTime;
     public CrystallineConflictTeamName? MatchWinner { get; set; }
     public CrystallineConflictTeamName? OvertimeAdvantage { get; set; }
 
@@ -27,12 +14,8 @@ public class CrystallineConflictMatch {
     //should this be id only?
     //public PvpDuty Duty { get; set; }
     public CrystallineConflictMap? Arena { get; set; }
-    public uint DutyId { get; set; }
-    public uint TerritoryId { get; set; }
 
     public bool NeedsPlayerNameValidation { get; set; }
-    public PlayerAlias? LocalPlayer { get; set; }
-    public string? DataCenter { get; set; }
     //public CrystallineConflictTeam? FirstTeam { get; set; }
     //public CrystallineConflictTeam? SecondTeam { get; set; }
     public Dictionary<CrystallineConflictTeamName, CrystallineConflictTeam> Teams { get; set; } = new();
@@ -43,8 +26,6 @@ public class CrystallineConflictMatch {
 
     //if this is PlayerAlias will not deserialize-_-
     public Dictionary<string, CrystallineConflictPlayer> IntroPlayerInfo { get; set; } = new();
-
-    public List<ChatMessage> ChatLog { get; set; } = new();
 
     //stats results...
     public CrystallineConflictPostMatch? PostMatch { get; set; }
@@ -136,9 +117,5 @@ public class CrystallineConflictMatch {
     public CrystallineConflictMatch() {
         Id = new();
         DutyStartTime = DateTime.Now;
-    }
-
-    public override int GetHashCode() {
-        return Id.GetHashCode();
     }
 }

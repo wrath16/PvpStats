@@ -636,7 +636,7 @@ internal class CrystallineConflictStatsManager {
         Stopwatch s1 = new();
         s1.Start();
         //var matches = _plugin.Storage.GetCCMatches().Query().Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
-        var matches = _plugin.DataCache.CCMatches.Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
+        var matches = _plugin.CCCache.Matches.Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
         _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", "CC match retrieval", s1.ElapsedMilliseconds.ToString()));
         s1.Restart();
         foreach(var filter in filters) {

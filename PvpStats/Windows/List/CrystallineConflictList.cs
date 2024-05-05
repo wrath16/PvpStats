@@ -122,7 +122,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         if(ImGui.MenuItem($"Favorite##{item!.GetHashCode()}--AddBookmark", null, isBookmarked)) {
             item.IsBookmarked = !item.IsBookmarked;
             _plugin.DataQueue.QueueDataOperation(async () => {
-                await _plugin.DataCache.UpdateCCMatch(item);
+                await _plugin.CCCache.UpdateMatch(item);
             });
         }
 

@@ -12,8 +12,8 @@ internal class MigrationManager {
         _plugin = plugin;
     }
 
-    internal async Task BulkUpdateMatchTypes() {
-        var matches = _plugin.DataCache.CCMatches.Where(x => x.MatchType == Types.Match.CrystallineConflictMatchType.Unknown);
+    internal async Task BulkUpdateCCMatchTypes() {
+        var matches = _plugin.CCCache.Matches.Where(x => x.MatchType == Types.Match.CrystallineConflictMatchType.Unknown);
         if(!matches.Any()) {
             return;
         }
@@ -21,11 +21,11 @@ internal class MigrationManager {
         foreach(var match in matches) {
             match.MatchType = MatchHelper.GetMatchType(match.DutyId);
         }
-        await _plugin.DataCache.UpdateCCMatches(matches);
+        await _plugin.CCCache.UpdateMatches(matches);
     }
 
-    internal async Task BulkUpdateValidatePlayerCount() {
-        var matches = _plugin.DataCache.CCMatches
+    internal async Task BulkCCUpdateValidatePlayerCount() {
+        var matches = _plugin.CCCache.Matches
             .Where(x => x.PostMatch != null && x.Teams.Count == 2 && (x.Teams.ElementAt(0).Value.Players.Count > 5 || x.Teams.ElementAt(1).Value.Players.Count > 5)).ToList();
         if(!matches.Any()) {
             return;
@@ -53,6 +53,6 @@ internal class MigrationManager {
             }
         }
         //await _plugin.Storage.UpdateCCMatches(matches);
-        await _plugin.DataCache.UpdateCCMatches(matches);
+        await _plugin.CCCache.UpdateMatches(matches);
     }
 }

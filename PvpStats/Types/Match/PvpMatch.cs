@@ -22,7 +22,7 @@ public class PvpMatch {
     public string? DataCenter { get; set; }
 
     public PvpMatch() {
-        Id = new ();
+        Id = new();
         DutyStartTime = DateTime.Now;
     }
 

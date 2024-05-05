@@ -73,7 +73,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 };
                 _plugin.Log.Information($"starting new match on {_currentMatch.Arena}");
                 _plugin.DataQueue.QueueDataOperation(async () => {
-                    await _plugin.DataCache.AddCCMatch(_currentMatch);
+                    await _plugin.CCCache.AddMatch(_currentMatch);
                 });
 
 #if DEBUG
@@ -104,7 +104,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
         }
         _plugin.DataQueue.QueueDataOperation(async () => {
             if(ProcessMatchResults(resultsPacket)) {
-                await _plugin.DataCache.UpdateCCMatch(_currentMatch!);
+                await _plugin.CCCache.UpdateMatch(_currentMatch!);
                 await _plugin.WindowManager.Refresh();
             }
         });
@@ -219,7 +219,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
             foreach(var player in team.Players) {
                 _currentMatch!.IntroPlayerInfo.Add(player.Alias, player);
             }
-            await _plugin.DataCache.UpdateCCMatch(_currentMatch!);
+            await _plugin.CCCache.UpdateMatch(_currentMatch!);
             _plugin.Log.Debug("");
         });
     }

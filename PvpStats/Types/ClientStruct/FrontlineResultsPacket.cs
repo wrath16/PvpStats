@@ -42,7 +42,7 @@ public unsafe struct FrontlineResultsPacket {
     public struct TeamStat {
         //0,1,2
         [FieldOffset(0x00)] public ushort Place;
-        [FieldOffset(0x02)] public ushort OvooPoints;
+        [FieldOffset(0x02)] public ushort OccupationPoints;     //ovoos, tomeliths
         [FieldOffset(0x04)] public ushort EnemyKillPoints;
         [FieldOffset(0x06)] public ushort Unknown1;
         [FieldOffset(0x08)] public ushort Unknown2;
@@ -57,7 +57,7 @@ public unsafe struct FrontlinePlayerResultsPacket {
     [FieldOffset(0x04)] public uint DamageToOther;
     [FieldOffset(0x08)] public uint DamageTaken;
     [FieldOffset(0x0C)] public uint HPRestored;
-    [FieldOffset(0x10)] public uint HPReceived;                 //assumed
+    [FieldOffset(0x10)] public uint Unknown1;                   //believed to be HP received
     [FieldOffset(0x14)] public uint Occupations;
     [FieldOffset(0x18)] public ushort Unknown2;
     [FieldOffset(0x1A)] public ushort WorldId;

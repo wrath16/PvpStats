@@ -5,7 +5,7 @@ using System.Linq;
 namespace PvpStats.Types.Match;
 internal class FrontlineMatch : PvpMatch {
 
-    FrontlineMap? Arena {  get; set; }
+    FrontlineMap? Arena { get; set; }
 
     public Dictionary<FrontlinePlayer, FrontlineScoreboard> Players { get; set; } = new();
     public Dictionary<FrontlineTeamName, FrontlineTeamStats> Teams { get; set; } = new();

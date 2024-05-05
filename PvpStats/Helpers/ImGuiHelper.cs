@@ -2,7 +2,6 @@
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
-using Dalamud.Logging;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;

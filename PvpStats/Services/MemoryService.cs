@@ -1,16 +1,11 @@
 using Dalamud.Game.Network;
-using FFXIVClientStructs.FFXIV.Client.Game.UI;
-using Lumina.Excel.GeneratedSheets2;
-using PvpStats.Helpers;
 using PvpStats.Types.ClientStruct;
-using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Xml.Linq;
 
 namespace PvpStats.Services;
 
@@ -23,8 +18,52 @@ internal unsafe class MemoryService : IDisposable {
     private DateTime _lastSortTime;
     internal bool _qPopped = false;
 
-    private ushort[] _blacklistedOpcodes = [949,819,273,241,337,458,397,110,193,378,913,993,799,246,
-        402,768,836,210,788,295,367,194,577,401,482,701,780,365,579,737,653,487,494,690,172,862,117,396,171,291,888,941,726,183,501,370];
+    private ushort[] _blacklistedOpcodes = [949,
+        819,
+        273,
+        241,
+        337,
+        458,
+        397,
+        110,
+        193,
+        378,
+        913,
+        993,
+        799,
+        246,
+        402,
+        768,
+        836,
+        210,
+        788,
+        295,
+        367,
+        194,
+        577,
+        401,
+        482,
+        701,
+        780,
+        365,
+        579,
+        737,
+        653,
+        487,
+        494,
+        690,
+        172,
+        862,
+        117,
+        396,
+        171,
+        291,
+        888,
+        941,
+        726,
+        183,
+        501,
+        370];
 
     internal MemoryService(Plugin plugin) {
         _plugin = plugin;
@@ -56,7 +95,7 @@ internal unsafe class MemoryService : IDisposable {
             //_plugin.Functions.PrintAllChars(dataPtr, 0x2000, 8);
             //_plugin.Functions.PrintAllStrings(dataPtr, 0x500);
         }
-        
+
         //770...
         //235...
         //347 = cc packet
@@ -69,7 +108,7 @@ internal unsafe class MemoryService : IDisposable {
             //};
 
             var printTeamStats = (FrontlineResultsPacket.TeamStat team, string name) => {
-                _plugin.Log.Debug($"{name}\nPlace {team.Place}\nOvooPoints {team.OvooPoints}\nKillPoints {team.EnemyKillPoints}\nDeathLosses {team.KOPointLosses}\nUnknown1 {team.Unknown1}\nUnknown2 {team.Unknown2}\nTotalRating {team.TotalPoints}");
+                _plugin.Log.Debug($"{name}\nPlace {team.Place}\nOvooPoints {team.OccupationPoints}\nKillPoints {team.EnemyKillPoints}\nDeathLosses {team.KOPointLosses}\nUnknown1 {team.Unknown1}\nUnknown2 {team.Unknown2}\nTotalRating {team.TotalPoints}");
             };
 
             //printTeamStats(resultsPacket.MaelStats, "Maelstrom");
