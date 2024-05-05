@@ -8,18 +8,18 @@ internal class FLMatchCacheService : MatchCacheService<FrontlineMatch> {
     }
 
     protected override IEnumerable<FrontlineMatch> GetFromStorage() {
-        return _plugin.Storage.GetFLMatches().Query().ToList();
+        return Plugin.Storage.GetFLMatches().Query().ToList();
     }
 
     protected override async Task AddToStorage(FrontlineMatch match) {
-        await _plugin.Storage.AddFLMatch(match);
+        await Plugin.Storage.AddFLMatch(match);
     }
 
     protected override async Task UpdateToStorage(FrontlineMatch match) {
-        await _plugin.Storage.UpdateFLMatch(match);
+        await Plugin.Storage.UpdateFLMatch(match);
     }
 
     protected override async Task UpdateManyToStorage(IEnumerable<FrontlineMatch> matches) {
-        await _plugin.Storage.UpdateFLMatches(matches);
+        await Plugin.Storage.UpdateFLMatches(matches);
     }
 }

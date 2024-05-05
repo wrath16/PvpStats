@@ -21,6 +21,8 @@ public sealed class Plugin : IDalamudPlugin {
     internal const string DatabaseName = "data.db";
 
     private const string CCStatsCommandName = "/ccstats";
+    private const string FLStatsCommandName = "/flstats";
+    private const string RWStatsCommandName = "/rwstats";
     private const string DebugCommandName = "/pvpstatsdebug";
     private const string ConfigCommandName = "/pvpstatsconfig";
 
@@ -126,7 +128,7 @@ public sealed class Plugin : IDalamudPlugin {
                 Log.Error($"failed to initialize fl match manager: {e.Message}");
             }
 
-            CommandManager.AddHandler(CCStatsCommandName, new CommandInfo(OnCommand) {
+            CommandManager.AddHandler(CCStatsCommandName, new CommandInfo(OnCCCommand) {
                 HelpMessage = "Opens Crystalline Conflict tracker."
             });
             CommandManager.AddHandler(ConfigCommandName, new CommandInfo(OnConfigCommand) {
@@ -171,7 +173,7 @@ public sealed class Plugin : IDalamudPlugin {
         Configuration?.Save();
     }
 
-    private void OnCommand(string command, string args) {
+    private void OnCCCommand(string command, string args) {
         WindowManager.OpenMainWindow();
     }
 

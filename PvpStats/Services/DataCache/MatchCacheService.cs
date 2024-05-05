@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace PvpStats.Services.DataCache;
 internal abstract class MatchCacheService<T> where T : PvpMatch {
-    protected readonly Plugin _plugin;
+    protected readonly Plugin Plugin;
     //private readonly StorageService _storage;
     private List<T> _matches = [];
 
@@ -28,7 +28,7 @@ internal abstract class MatchCacheService<T> where T : PvpMatch {
     protected abstract Task UpdateManyToStorage(IEnumerable<T> matches);
 
     internal MatchCacheService(Plugin plugin) {
-        _plugin = plugin;
+        Plugin = plugin;
     }
 
     internal void EnableCaching() {

@@ -1,9 +1,10 @@
 ﻿using LiteDB;
 using PvpStats.Types.Player;
 using System;
+using System.Collections.Generic;
 
 namespace PvpStats.Types.Match;
-public class PvpMatch {
+public abstract class PvpMatch {
     [BsonId]
     public ObjectId Id { get; init; }
     public int Version { get; init; }
@@ -16,6 +17,7 @@ public class PvpMatch {
     [BsonIgnore]
     public TimeSpan? MatchDuration => MatchEndTime - MatchStartTime;
     public PlayerAlias? LocalPlayer { get; set; }
+    //public abstract List<PlayerAlias> Players { get; set; }
 
     public uint DutyId { get; set; }
     public uint TerritoryId { get; set; }

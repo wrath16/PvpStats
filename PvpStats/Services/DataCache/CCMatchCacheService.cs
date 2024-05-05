@@ -9,18 +9,18 @@ internal class CCMatchCacheService : MatchCacheService<CrystallineConflictMatch>
     }
 
     protected override IEnumerable<CrystallineConflictMatch> GetFromStorage() {
-        return _plugin.Storage.GetCCMatches().Query().ToList();
+        return Plugin.Storage.GetCCMatches().Query().ToList();
     }
 
     protected override async Task AddToStorage(CrystallineConflictMatch match) {
-        await _plugin.Storage.AddCCMatch(match);
+        await Plugin.Storage.AddCCMatch(match);
     }
 
     protected override async Task UpdateToStorage(CrystallineConflictMatch match) {
-        await _plugin.Storage.UpdateCCMatch(match);
+        await Plugin.Storage.UpdateCCMatch(match);
     }
 
     protected override async Task UpdateManyToStorage(IEnumerable<CrystallineConflictMatch> matches) {
-        await _plugin.Storage.UpdateCCMatches(matches);
+        await Plugin.Storage.UpdateCCMatches(matches);
     }
 }
