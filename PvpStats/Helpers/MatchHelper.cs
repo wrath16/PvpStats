@@ -147,6 +147,41 @@ public static class MatchHelper {
         }
     }
 
+    public static FrontlineMap? GetFrontlineMap(uint dutyId) {
+        switch(dutyId) {
+            case 127:
+                return FrontlineMap.BorderlandRuins;
+            case 130:
+                return FrontlineMap.SealRock;
+            case 180:
+                return FrontlineMap.FieldsOfGlory;
+            case 701:
+                return FrontlineMap.OnsalHakair;
+            default:
+                return null;
+        }
+    }
+
+    public static string GetFrontlineArenaName(FrontlineMap map) {
+        return map switch {
+            FrontlineMap.BorderlandRuins => "The Borderland Ruins",
+            FrontlineMap.SealRock => "Seal Rock",
+            FrontlineMap.FieldsOfGlory => "The Fields of Glory",
+            FrontlineMap.OnsalHakair => "Onsal Hakair",
+            _ => "Unknown",
+        };
+    }
+
+    public static string GetFrontlineArenaType(FrontlineMap map) {
+        return map switch {
+            FrontlineMap.BorderlandRuins => "Secure",
+            FrontlineMap.SealRock => "Seize",
+            FrontlineMap.FieldsOfGlory => "Shatter",
+            FrontlineMap.OnsalHakair => "Danshig Naadam",
+            _ => "Unknown",
+        };
+    }
+
     public static readonly Regex CreditBeforeRegex = new Regex(@"^\d+(?= →)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
     public static readonly Regex StarBeforeRegex = new Regex(@"(?<=^\w*\s*\d*\s*)★*(?=☆*\s*→)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
     public static readonly Regex RiserBeforeRegex = new Regex(@"(?<=^\w*\s?)\d*(?=\s?(★|☆)* →)", RegexOptions.IgnoreCase | RegexOptions.Multiline);

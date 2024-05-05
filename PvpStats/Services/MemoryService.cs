@@ -1,10 +1,16 @@
 using Dalamud.Game.Network;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using Lumina.Excel.GeneratedSheets2;
+using PvpStats.Helpers;
+using PvpStats.Types.ClientStruct;
+using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Xml.Linq;
 
 namespace PvpStats.Services;
 
@@ -16,6 +22,9 @@ internal unsafe class MemoryService : IDisposable {
     internal int _opcodeMatchCount = 0;
     private DateTime _lastSortTime;
     internal bool _qPopped = false;
+
+    private ushort[] _blacklistedOpcodes = [949,819,273,241,337,458,397,110,193,378,913,993,799,246,
+        402,768,836,210,788,295,367,194,577,401,482,701,780,365,579,737,653,487,494,690,172,862,117,396,171,291,888,941,726,183,501,370];
 
     internal MemoryService(Plugin plugin) {
         _plugin = plugin;
@@ -42,18 +51,64 @@ internal unsafe class MemoryService : IDisposable {
             _opCodeCount.Add(opCode, 1);
         }
 
-        if(opCode != 845 && opCode != 813 && opCode != 649 && opCode != 717 && opCode != 920 && opCode != 898 && opCode != 316 && opCode != 769 && opCode != 810
-            && opCode != 507 && opCode != 973 && opCode != 234 && opCode != 702 && opCode != 421 && opCode != 244 && opCode != 116 && opCode != 297 && opCode != 493
-            && opCode != 857 && opCode != 444 && opCode != 550 && opCode != 658 && opCode != 636 && opCode != 132 && opCode != 230 && opCode != 660
-            && opCode != 565 && opCode != 258 && opCode != 390 && opCode != 221 && opCode != 167 && opCode != 849) {
-            _plugin.Log.Verbose($"OPCODE: {opCode} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
+        if(!_blacklistedOpcodes.Contains(opCode)) {
+            _plugin.Log.Verbose($"OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
             //_plugin.Functions.PrintAllChars(dataPtr, 0x2000, 8);
             //_plugin.Functions.PrintAllStrings(dataPtr, 0x500);
         }
+        
+        //770...
+        //235...
+        //347 = cc packet
+        if(opCode == 235) {
+            _plugin.Log.Debug("235 occurred!");
 
-        if(opCode == 556) {
-            _plugin.Log.Debug("q popped");
-            _qPopped = true;
+            FrontlineResultsPacket resultsPacket = *(FrontlineResultsPacket*)(dataPtr);
+            //var printTeamStats = (FrontlineTeamResultsPacket.FrontlineTeamStat team, string name) => {
+            //    _plugin.Log.Debug($"{name}\nUnknown1 {team.Unknown1}\nStat1 {team.Stat1}\nTotalScore {team.TotalScore}\nStat2 {team.Stat2}\nUnknown2 {team.Unknown2}\nUnknown3 {team.Unknown3}\nStat3 {team.Stat3}");
+            //};
+
+            var printTeamStats = (FrontlineResultsPacket.TeamStat team, string name) => {
+                _plugin.Log.Debug($"{name}\nPlace {team.Place}\nOvooPoints {team.OvooPoints}\nKillPoints {team.EnemyKillPoints}\nDeathLosses {team.KOPointLosses}\nUnknown1 {team.Unknown1}\nUnknown2 {team.Unknown2}\nTotalRating {team.TotalPoints}");
+            };
+
+            //printTeamStats(resultsPacket.MaelStats, "Maelstrom");
+            //printTeamStats(resultsPacket.AdderStats, "Adders");
+            //printTeamStats(resultsPacket.FlameStats, "Flames");
+            FindValue<ushort>(0, dataPtr, 0x300, 0, true);
+
+            //try {
+            //    FindValue<byte>(0, dataPtr, 0x2000, 0, true);
+            //} catch {
+            //}
+            //try {
+            //    FindValue<int>(0, dataPtr, 0x2000, 0, true);
+            //} catch {
+            //}
+            //try {
+            //    FindValue<short>(0, dataPtr, 0x2000, 0, true);
+            //} catch {
+            //}
+            //try {
+            //    FindValue<string>("", dataPtr, 0x2000, 0, true);
+            //} catch {
+            //}
+
+            //PrintAllChars(dataPtr, 0x2000, 8);
+        }
+
+        if(opCode == 552) {
+            //player payload
+            //FrontlinePlayerResultsPacket resultsPacket = *(FrontlinePlayerResultsPacket*)(dataPtr);
+            //var playerName = (PlayerAlias)$"{MemoryService.ReadString(resultsPacket.PlayerName, 32)} {_plugin.DataManager.GetExcelSheet<World>()?.GetRow(resultsPacket.WorldId)?.Name}";
+            //var team = resultsPacket.Team == 0 ? "Maelstrom" : resultsPacket.Team == 1 ? "Adders" : "Flames";
+            //var job = PlayerJobHelper.GetJobFromName(_plugin.DataManager.GetExcelSheet<ClassJob>()?.GetRow(resultsPacket.ClassJobId)?.NameEnglish ?? "");
+            //_plugin.Log.Debug(string.Format("{0,-32} {1,-15} {2,-10} {3,-8} {4,-8} {5,-8} {6,-8} {7,-15} {8,-15} {9,-15} {10,-15} {11,-15} {12,-15}", "NAME", "TEAM", "ALLIANCE", "JOB", "KILLS", "DEATHS", "ASSISTS", "DAMAGE DEALT", "DAMAGE OTHER", "DAMAGE TAKEN", "HP RESTORED", "??? 1", "??? 2"));
+            //_plugin.Log.Debug(string.Format("{0,-32} {1,-15} {2,-10} {3,-8} {4,-8} {5,-8} {6,-8} {7,-15} {8,-15} {9,-15} {10,-15} {11,-15} {12,-15}", playerName, team, resultsPacket.Alliance, job, resultsPacket.Kills, resultsPacket.Deaths, resultsPacket.Assists, resultsPacket.DamageDealt, resultsPacket.DamageToOther, resultsPacket.DamageTaken, resultsPacket.HPRestored, resultsPacket.Unknown1, resultsPacket.Unknown2));
+
+            //FindValue<byte>(0, dataPtr, 0x50, 0, true);
+            FindValue<ushort>(0, dataPtr, 0x40, 0, true);
+            //FindValue<uint>(0, dataPtr, 0x50, 0, true);
         }
 
         ////643 has promise...
@@ -179,7 +234,7 @@ internal unsafe class MemoryService : IDisposable {
                                         matchingCursors.Add(cursor);
                                     }
                                 } else {
-                                    _plugin.Log.Debug($"offset: 0x{(cursor + offset).ToString("X2")} Byte {output}");
+                                    _plugin.Log.Debug($"offset: 0x{(cursor + offset).ToString("X2")} Byte {output:X2}");
                                 }
                                 cursor += sizeof(byte);
                             }

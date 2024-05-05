@@ -42,7 +42,8 @@ public sealed class Plugin : IDalamudPlugin {
     internal IGameInteropProvider InteropProvider { get; init; }
     internal ISigScanner SigScanner { get; init; }
 
-    internal CrystallineConflictMatchManager? MatchManager { get; init; }
+    internal CrystallineConflictMatchManager? CCMatchManager { get; init; }
+    internal FrontlineMatchManager? FLMatchManager { get; init; }
     internal WindowManager WindowManager { get; init; }
     internal MigrationManager MigrationManager { get; init; }
     internal CrystallineConflictStatsManager CCStatsEngine { get; init; }
@@ -112,9 +113,14 @@ public sealed class Plugin : IDalamudPlugin {
             WindowManager = new(this);
             MigrationManager = new(this);
             try {
-                MatchManager = new(this);
+                CCMatchManager = new(this);
             } catch(SignatureException e) {
-                Log.Error($"failed to initialize match manager: {e.Message}");
+                Log.Error($"failed to initialize cc match manager: {e.Message}");
+            }
+            try {
+                FLMatchManager = new(this);
+            } catch(SignatureException e) {
+                Log.Error($"failed to initialize fl match manager: {e.Message}");
             }
 
             CommandManager.AddHandler(CCStatsCommandName, new CommandInfo(OnCommand) {
@@ -152,11 +158,13 @@ public sealed class Plugin : IDalamudPlugin {
         CommandManager.RemoveHandler(ConfigCommandName);
 
         Functions?.Dispose();
-        MatchManager?.Dispose();
+        CCMatchManager?.Dispose();
+        FLMatchManager?.Dispose();
         WindowManager?.Dispose();
         Storage?.Dispose();
         DataQueue?.Dispose();
         GameState?.Dispose();
+
         Configuration?.Save();
     }
 

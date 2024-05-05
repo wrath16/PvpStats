@@ -45,3 +45,16 @@ public enum ArenaTier {
 //    Draw,
 //    Unknown,
 //}
+
+public enum FrontlineMap {
+    BorderlandRuins,
+    SealRock,
+    FieldsOfGlory,
+    OnsalHakair,
+}
+
+public enum FrontlineTeamName {
+    Maelstrom,
+    Adders,
+    Flames
+}

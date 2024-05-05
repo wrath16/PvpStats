@@ -2,6 +2,7 @@
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
+using Dalamud.Logging;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
@@ -21,7 +22,6 @@ internal static class ImGuiHelper {
     }
 
     internal static void CenterAlignCursor(string text) {
-        var size = ImGui.CalcTextSize(text);
         var posX = ImGui.GetCursorPosX() + (ImGui.GetColumnWidth() - ImGui.CalcTextSize(text).X) / 2f;
         ImGui.SetCursorPosX(posX);
     }

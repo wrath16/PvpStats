@@ -163,7 +163,7 @@ internal unsafe class DebugWindow : Window {
 
             using(var tab = ImRaii.TabItem("Network Messages")) {
                 if(tab) {
-                    if(_plugin.MatchManager is not null) {
+                    if(_plugin.CCMatchManager is not null) {
                         if(ImGui.Button("Clear opcodes")) {
                             _plugin.Functions._opCodeCount = new();
                         }
