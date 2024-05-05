@@ -6,6 +6,7 @@ using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using PvpStats.Windows;
 using PvpStats.Windows.Detail;
+using PvpStats.Windows.Tracker;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -18,7 +19,7 @@ internal class WindowManager : IDisposable {
 
     private WindowSystem WindowSystem;
     private Plugin _plugin;
-    internal MainWindow CCTrackerWindow { get; private set; }
+    internal CCTrackerWindow CCTrackerWindow { get; private set; }
     internal ConfigWindow ConfigWindow { get; private set; }
 #if DEBUG
     internal DebugWindow? DebugWindow { get; private set; }
@@ -84,7 +85,7 @@ internal class WindowManager : IDisposable {
         WindowSystem.RemoveWindow(window);
     }
 
-    internal void OpenMainWindow() {
+    internal void OpenCCWindow() {
         CCTrackerWindow.IsOpen = true;
     }
 

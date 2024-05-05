@@ -7,6 +7,7 @@ using PvpStats.Helpers;
 using PvpStats.Types.Display;
 using PvpStats.Types.Player;
 using PvpStats.Windows.Filter;
+using PvpStats.Windows.Tracker;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -81,9 +82,10 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
 
     internal StatSourceFilter StatSourceFilter { get; private set; }
 
-    public CrystallineConflictJobList(Plugin plugin) : base(plugin) {
+    public CrystallineConflictJobList(Plugin plugin, CCTrackerWindow window) : base(plugin, window) {
         //ListModel = listModel;
-        StatSourceFilter = new(plugin, RefreshMainWindow, plugin.Configuration.MatchWindowFilters.StatSourceFilter);
+        StatSourceFilter = new StatSourceFilter(plugin, window.Refresh, plugin.Configuration.CCWindowConfig.JobStatFilters.StatSourceFilter);
+        window.JobStatFilters.Add(StatSourceFilter);
         //OtherPlayerFilter = playerFilter;
     }
 

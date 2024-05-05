@@ -1,9 +1,14 @@
 ﻿using PvpStats.Types.Display;
+using PvpStats.Windows.Tracker;
 using System.Reflection;
 
 namespace PvpStats.Windows.List;
 internal abstract class CCStatsList<T> : StatsList<T> {
-    public CCStatsList(Plugin plugin) : base(plugin, null) {
+
+    protected CCTrackerWindow Window;
+
+    public CCStatsList(Plugin plugin, CCTrackerWindow window) : base(plugin, null) {
+        Window = window;
     }
 
     //public Dictionary<T, CCPlayerJobStats> StatsModel { get; protected set; }

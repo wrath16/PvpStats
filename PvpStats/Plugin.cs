@@ -102,7 +102,12 @@ public sealed class Plugin : IDalamudPlugin {
             InteropProvider = interopProvider;
             SigScanner = sigScanner;
 
-            Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+            try {
+                Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+            } catch(Exception e) {
+                Configuration = new();
+                Log.Error(e, "Error in configuration setup.");
+            }
             Configuration.Initialize(this);
 
             DataQueue = new(this);
@@ -174,7 +179,7 @@ public sealed class Plugin : IDalamudPlugin {
     }
 
     private void OnCCCommand(string command, string args) {
-        WindowManager.OpenMainWindow();
+        WindowManager.OpenCCWindow();
     }
 
     private void OnConfigCommand(string command, string args) {

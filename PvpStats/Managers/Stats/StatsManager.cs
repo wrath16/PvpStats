@@ -38,10 +38,9 @@ internal abstract class StatsManager<T> where T : PvpMatch {
         List<T> filteredMatches = new(matches);
         foreach(var filter in filters) {
             var filterType = filter.GetType();
-            //Plugin.Log.Debug($"Filter type: {filterType.Name} This type: {}");
             var method = GetType().GetMethods(BindingFlags.Instance | BindingFlags.NonPublic).Where(x => x.GetParameters().Length > 0 && x.GetParameters()[0].ParameterType == filterType).FirstOrDefault();
             if(method is null) {
-                Plugin.Log.Error($"No method found for filter type {filterType}");
+                Plugin.Log.Error($"No method found for filter type {filterType.Name}");
                 continue;
             }
             try {

@@ -27,11 +27,10 @@ public class Configuration : IPluginConfiguration {
     public bool MinimizeWindow { get; set; } = true;
     public bool MinimizeDirectionLeft { get; set; } = false;
     public bool ResizeWindowLeft { get; set; } = false;
+    public bool AdjustWindowHeightOnFilterCollapse { get; set; } = false;
     public bool ColorScaleStats { get; set; } = true;
     public WindowConfiguration CCWindowConfig { get; set; } = new();
     public WindowConfiguration FLWindowConfig { get; set; } = new();
-    public FilterConfiguration MatchWindowFilters { get; set; } = new();
-    public FilterConfiguration FLWindowFilters { get; set; } = new();
     public ColorConfiguration Colors { get; set; } = new();
 
     [NonSerialized]
