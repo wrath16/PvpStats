@@ -1,7 +1,6 @@
 ﻿using LiteDB;
 using PvpStats.Types.Player;
 using System;
-using System.Collections.Generic;
 
 namespace PvpStats.Types.Match;
 public abstract class PvpMatch {

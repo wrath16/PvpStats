@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace PvpStats.Managers.Stats;
 internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
 
-    internal FrontlineStatsManager(Plugin plugin) : base(plugin, plugin.FLCache) { 
+    internal FrontlineStatsManager(Plugin plugin) : base(plugin, plugin.FLCache) {
     }
 
     public override async Task Refresh(List<DataFilter> matchFilters, List<DataFilter> jobStatFilters, List<DataFilter> playerStatFilters) {

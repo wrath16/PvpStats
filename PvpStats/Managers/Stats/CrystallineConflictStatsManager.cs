@@ -8,19 +8,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace PvpStats.Managers.Stats;
-internal class CrystallineConflictStatsManager {
-
-    private readonly Plugin _plugin;
-    internal protected SemaphoreSlim RefreshLock { get; private set; } = new SemaphoreSlim(1);
-
-    //internal List<DataFilter> Filters { get; private set; } = new();
-
-    //matches
-    internal List<CrystallineConflictMatch> Matches { get; private set; } = new();
+internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflictMatch> {
 
     //summary
     internal CCPlayerJobStats LocalPlayerStats { get; private set; } = new();
@@ -42,12 +33,10 @@ internal class CrystallineConflictStatsManager {
     internal Dictionary<Job, CCPlayerJobStats> JobStats { get; private set; } = new();
 
     //players
-    internal List<PlayerAlias> Players { get; private set; } = new();
     internal Dictionary<PlayerAlias, CCPlayerJobStats> PlayerStats { get; private set; } = new();
     internal Dictionary<PlayerAlias, List<PlayerAlias>> ActiveLinks { get; private set; } = new();
 
-    internal CrystallineConflictStatsManager(Plugin plugin) {
-        _plugin = plugin;
+    internal CrystallineConflictStatsManager(Plugin plugin) : base(plugin, plugin.CCCache) {
     }
 
     internal async Task Refresh(List<DataFilter> matchFilters, StatSourceFilter jobStatSourceFilter, bool playerStatSourceInherit) {
@@ -78,16 +67,24 @@ internal class CrystallineConflictStatsManager {
         int longestWinStreak = 0, longestLossStreak = 0, spectatedMatchCount = 0, currentWinStreak = 0, currentLossStreak = 0;
         TimeSpan totalMatchTime = TimeSpan.Zero;
 
-        var matches = FilterMatches(matchFilters);
+        Stopwatch s1 = new();
+        s1.Start();
+        //var matches = Plugin.Storage.GetCCMatches().Query().Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
+        var matches = Plugin.CCCache.Matches.Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
+        Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", "CC match retrieval", s1.ElapsedMilliseconds.ToString()));
+        s1.Restart();
+        matches = FilterMatches(matchFilters, matches);
+        Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"total filters", s1.ElapsedMilliseconds.ToString()));
+        s1.Restart();
+
         var playerFilter = (OtherPlayerFilter)matchFilters.First(x => x.GetType() == typeof(OtherPlayerFilter));
-        var linkedPlayerAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(playerFilter.PlayerNamesRaw);
+        var linkedPlayerAliases = Plugin.PlayerLinksService.GetAllLinkedAliases(playerFilter.PlayerNamesRaw);
         var allJobs = Enum.GetValues(typeof(Job)).Cast<Job>();
         foreach(var job in allJobs) {
             jobStats.Add(job, new());
             jobTeamContributions.Add(job, new());
         }
-        Stopwatch s1 = new();
-        s1.Start();
+        s1.Restart();
 
         Stopwatch recordsWatch = new();
         Stopwatch arenaWatch = new();
@@ -232,7 +229,7 @@ internal class CrystallineConflictStatsManager {
                     bool jobStatsEligible = true;
                     bool playerStatsEligible = true;
                     bool nameMatch = player.Alias.FullName.Contains(playerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase);
-                    if(_plugin.Configuration.EnablePlayerLinking && !nameMatch) {
+                    if(Plugin.Configuration.EnablePlayerLinking && !nameMatch) {
                         nameMatch = linkedPlayerAliases.Contains(player.Alias);
                     }
                     bool sideMatch = playerFilter.TeamStatus == TeamStatus.Any
@@ -335,19 +332,19 @@ internal class CrystallineConflictStatsManager {
             }
             teamPlayerWatch.Stop();
         }
-        _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"records", recordsWatch.ElapsedMilliseconds.ToString()));
-        _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"arena stats", arenaWatch.ElapsedMilliseconds.ToString()));
-        _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"local player stats", localPlayerWatch.ElapsedMilliseconds.ToString()));
-        _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"summary stats loop", aggregateStatsWatch.ElapsedMilliseconds.ToString()));
-        _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"player/job stats loop", playerJobWatch.ElapsedMilliseconds.ToString()));
-        _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"team player loop total", teamPlayerWatch.ElapsedMilliseconds.ToString()));
-        _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"cc match loop total", s1.ElapsedMilliseconds.ToString()));
+        Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"records", recordsWatch.ElapsedMilliseconds.ToString()));
+        Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"arena stats", arenaWatch.ElapsedMilliseconds.ToString()));
+        Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"local player stats", localPlayerWatch.ElapsedMilliseconds.ToString()));
+        Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"summary stats loop", aggregateStatsWatch.ElapsedMilliseconds.ToString()));
+        Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"player/job stats loop", playerJobWatch.ElapsedMilliseconds.ToString()));
+        Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"team player loop total", teamPlayerWatch.ElapsedMilliseconds.ToString()));
+        Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"cc match loop total", s1.ElapsedMilliseconds.ToString()));
         s1.Restart();
 
         //player linking
-        if(_plugin.Configuration.EnablePlayerLinking) {
-            //var manualLinks = _plugin.Storage.GetManualLinks().Query().ToList();
-            var unLinks = _plugin.PlayerLinksService.ManualPlayerLinksCache.Where(x => x.IsUnlink).ToList();
+        if(Plugin.Configuration.EnablePlayerLinking) {
+            //var manualLinks = Plugin.Storage.GetManualLinks().Query().ToList();
+            var unLinks = Plugin.PlayerLinksService.ManualPlayerLinksCache.Where(x => x.IsUnlink).ToList();
             var checkPlayerLink = (PlayerAliasLink playerLink) => {
                 if(playerLink.IsUnlink) return;
                 if(playerLink.CurrentAlias is null) return;
@@ -419,7 +416,7 @@ internal class CrystallineConflictStatsManager {
                             opponentJobStatsLookup.Remove(linkedAlias);
                         }
                         if(anyMatch) {
-                            _plugin.Log.Debug($"Coalescing {linkedAlias} into {playerLink.CurrentAlias}...");
+                            Plugin.Log.Debug($"Coalescing {linkedAlias} into {playerLink.CurrentAlias}...");
                             if(activeLinks.ContainsKey(playerLink.CurrentAlias)) {
                                 activeLinks[playerLink.CurrentAlias].Add(linkedAlias);
                             } else {
@@ -434,41 +431,41 @@ internal class CrystallineConflictStatsManager {
             };
 
             //auto links
-            if(_plugin.Configuration.EnableAutoPlayerLinking) {
-                foreach(var playerLink in _plugin.PlayerLinksService.AutoPlayerLinksCache) {
+            if(Plugin.Configuration.EnableAutoPlayerLinking) {
+                foreach(var playerLink in Plugin.PlayerLinksService.AutoPlayerLinksCache) {
                     try {
                         checkPlayerLink(playerLink);
                     } catch(Exception e) {
-                        _plugin.Log.Error($"Unable to add player link: {e.GetType()} {e.Message}\n {e.StackTrace}");
+                        Plugin.Log.Error($"Unable to add player link: {e.GetType()} {e.Message}\n {e.StackTrace}");
                     }
                 }
             }
 
             //manual links
-            if(_plugin.Configuration.EnableManualPlayerLinking) {
-                foreach(var playerLink in _plugin.PlayerLinksService.ManualPlayerLinksCache) {
+            if(Plugin.Configuration.EnableManualPlayerLinking) {
+                foreach(var playerLink in Plugin.PlayerLinksService.ManualPlayerLinksCache) {
                     try {
                         checkPlayerLink(playerLink);
                     } catch(Exception e) {
-                        _plugin.Log.Error($"Unable to add player link: {e.GetType()} {e.Message}\n {e.StackTrace}");
+                        Plugin.Log.Error($"Unable to add player link: {e.GetType()} {e.Message}\n {e.StackTrace}");
                     }
                 }
             }
-            _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"player linking", s1.ElapsedMilliseconds.ToString()));
+            Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"player linking", s1.ElapsedMilliseconds.ToString()));
             s1.Restart();
         }
 
         foreach(var jobStat in jobStats) {
             SetScoreboardStats(jobStat.Value, jobTeamContributions[jobStat.Key]);
         }
-        _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"job scoreboards", s1.ElapsedMilliseconds.ToString()));
+        Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"job scoreboards", s1.ElapsedMilliseconds.ToString()));
         s1.Restart();
 
         foreach(var playerStat in playerStats) {
             playerStat.Value.StatsAll.Job = playerJobStatsLookup[playerStat.Key].OrderByDescending(x => x.Value.Matches).FirstOrDefault().Key;
             SetScoreboardStats(playerStat.Value, playerTeamContributions[playerStat.Key]);
         }
-        _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"player scoreboards", s1.ElapsedMilliseconds.ToString()));
+        Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"player scoreboards", s1.ElapsedMilliseconds.ToString()));
         s1.Restart();
 
         SetScoreboardStats(localPlayerStats, localPlayerTeamContributions);
@@ -523,7 +520,7 @@ internal class CrystallineConflictStatsManager {
         } finally {
             RefreshLock.Release();
         }
-        _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"total stats refresh", s0.ElapsedMilliseconds.ToString()));
+        Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"total stats refresh", s0.ElapsedMilliseconds.ToString()));
     }
 
     internal void AddPlayerJobStat(CCPlayerJobStats statsModel, List<CCScoreboardDouble> teamContributions,
@@ -627,182 +624,105 @@ internal class CrystallineConflictStatsManager {
         if(Superlatives.TryGetValue(match, out List<(string, string)>? value)) {
             value.Add((sup, val));
         } else {
-            //_plugin.Log.Debug($"adding superlative {sup} {val} to {match.Id.ToString()}");
+            //Plugin.Log.Debug($"adding superlative {sup} {val} to {match.Id.ToString()}");
             Superlatives.Add(match, new() { (sup, val) });
         }
     }
 
-    private List<CrystallineConflictMatch> FilterMatches(List<DataFilter> filters) {
-        Stopwatch s1 = new();
-        s1.Start();
-        //var matches = _plugin.Storage.GetCCMatches().Query().Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
-        var matches = _plugin.CCCache.Matches.Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
-        _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", "CC match retrieval", s1.ElapsedMilliseconds.ToString()));
-        s1.Restart();
-        foreach(var filter in filters) {
-            try {
-                Stopwatch s2 = new();
-                s2.Start();
-                switch(filter.GetType()) {
-                    case Type _ when filter.GetType() == typeof(MatchTypeFilter):
-                        var matchTypeFilter = (MatchTypeFilter)filter;
-                        matches = matches.Where(x => matchTypeFilter.FilterState[x.MatchType]).ToList();
-                        //_plugin.Configuration.MatchWindowFilters.MatchTypeFilter = matchTypeFilter;
-                        break;
-                    case Type _ when filter.GetType() == typeof(ArenaFilter):
-                        var arenaFilter = (ArenaFilter)filter;
-                        //include unknown maps under all
-                        matches = matches.Where(x => (x.Arena == null && arenaFilter.AllSelected) || arenaFilter.FilterState[(CrystallineConflictMap)x.Arena!]).ToList();
-                        //_plugin.Configuration.MatchWindowFilters.ArenaFilter = arenaFilter;
-                        break;
-                    case Type _ when filter.GetType() == typeof(TimeFilter):
-                        var timeFilter = (TimeFilter)filter;
-                        switch(timeFilter.StatRange) {
-                            case TimeRange.PastDay:
-                                matches = matches.Where(x => (DateTime.Now - x.DutyStartTime).TotalHours < 24).ToList();
-                                break;
-                            case TimeRange.PastWeek:
-                                matches = matches.Where(x => (DateTime.Now - x.DutyStartTime).TotalDays < 7).ToList();
-                                break;
-                            case TimeRange.ThisMonth:
-                                matches = matches.Where(x => x.DutyStartTime.Month == DateTime.Now.Month && x.DutyStartTime.Year == DateTime.Now.Year).ToList();
-                                break;
-                            case TimeRange.LastMonth:
-                                var lastMonth = DateTime.Now.AddMonths(-1);
-                                matches = matches.Where(x => x.DutyStartTime.Month == lastMonth.Month && x.DutyStartTime.Year == lastMonth.Year).ToList();
-                                break;
-                            case TimeRange.ThisYear:
-                                matches = matches.Where(x => x.DutyStartTime.Year == DateTime.Now.Year).ToList();
-                                break;
-                            case TimeRange.LastYear:
-                                matches = matches.Where(x => x.DutyStartTime.Year == DateTime.Now.AddYears(-1).Year).ToList();
-                                break;
-                            case TimeRange.Custom:
-                                matches = matches.Where(x => x.DutyStartTime > timeFilter.StartTime && x.DutyStartTime < timeFilter.EndTime).ToList();
-                                break;
-                            case TimeRange.Season:
-                                matches = matches.Where(x => x.DutyStartTime > ArenaSeason.Season[timeFilter.Season].StartDate && x.DutyStartTime < ArenaSeason.Season[timeFilter.Season].EndDate).ToList();
-                                break;
-                            case TimeRange.All:
-                            default:
-                                break;
-                        }
-                        //_plugin.Configuration.MatchWindowFilters.TimeFilter = timeFilter;
-                        break;
-                    case Type _ when filter.GetType() == typeof(LocalPlayerFilter):
-                        var localPlayerFilter = (LocalPlayerFilter)filter;
-                        if(localPlayerFilter.CurrentPlayerOnly && _plugin.ClientState.IsLoggedIn && _plugin.GameState.CurrentPlayer != null) {
-                            if(_plugin.Configuration.EnablePlayerLinking) {
-                                var linkedAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(_plugin.GameState.CurrentPlayer);
-                                matches = matches.Where(x => x.LocalPlayer != null && (x.LocalPlayer.Equals(_plugin.GameState.CurrentPlayer) || linkedAliases.Contains(x.LocalPlayer))).ToList();
-                            } else {
-                                matches = matches.Where(x => x.LocalPlayer != null && x.LocalPlayer.Equals(_plugin.GameState.CurrentPlayer)).ToList();
-                            }
-                        }
-                        //_plugin.Configuration.MatchWindowFilters.LocalPlayerFilter = localPlayerFilter;
-                        break;
-                    case Type _ when filter.GetType() == typeof(LocalPlayerJobFilter):
-                        var localPlayerJobFilter = (LocalPlayerJobFilter)filter;
-                        //_plugin.Log.Debug($"anyjob: {localPlayerJobFilter.AnyJob} role: {localPlayerJobFilter.JobRole} job: {localPlayerJobFilter.PlayerJob}");
-                        if(!localPlayerJobFilter.AnyJob) {
-                            if(localPlayerJobFilter.JobRole != null) {
-                                matches = matches.Where(x => x.LocalPlayer != null && x.LocalPlayerTeamMember != null && PlayerJobHelper.GetSubRoleFromJob(x.LocalPlayerTeamMember.Job) == localPlayerJobFilter.JobRole).ToList();
-                            } else {
-                                matches = matches.Where(x => x.LocalPlayer != null && x.LocalPlayerTeamMember != null && x.LocalPlayerTeamMember.Job == localPlayerJobFilter.PlayerJob).ToList();
-                            }
-                        }
-                        //_plugin.Configuration.MatchWindowFilters.LocalPlayerJobFilter = localPlayerJobFilter;
-                        break;
-                    case Type _ when filter.GetType() == typeof(OtherPlayerFilter):
-                        var otherPlayerFilter = (OtherPlayerFilter)filter;
-                        List<PlayerAlias> linkedPlayerAliases = new();
-                        if(!otherPlayerFilter.PlayerNamesRaw.IsNullOrEmpty() && _plugin.Configuration.EnablePlayerLinking) {
-                            linkedPlayerAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(otherPlayerFilter.PlayerNamesRaw);
-                        }
-                        matches = matches.Where(x => {
-                            foreach(var team in x.Teams) {
-                                if(otherPlayerFilter.TeamStatus == TeamStatus.Teammate && team.Key != x.LocalPlayerTeam?.TeamName) {
-                                    continue;
-                                } else if(otherPlayerFilter.TeamStatus == TeamStatus.Opponent && team.Key == x.LocalPlayerTeam?.TeamName) {
-                                    continue;
-                                }
-                                foreach(var player in team.Value.Players) {
-                                    if(!otherPlayerFilter.AnyJob && player.Job != otherPlayerFilter.PlayerJob) {
-                                        continue;
-                                    }
-                                    if(_plugin.Configuration.EnablePlayerLinking) {
-                                        if(player.Alias.FullName.Contains(otherPlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase)
-                                        || linkedPlayerAliases.Any(x => x.Equals(player.Alias))) {
-                                            return true;
-                                        }
-                                    } else {
-                                        if(player.Alias.FullName.Contains(otherPlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase)) {
-                                            return true;
-                                        }
-                                    }
-                                }
-                            }
-                            return false;
-                        }).ToList();
-                        //_plugin.Configuration.MatchWindowFilters.OtherPlayerFilter = otherPlayerFilter;
-                        break;
-                    case Type _ when filter.GetType() == typeof(TierFilter):
-                        var tierFilter = (TierFilter)filter;
-                        matches = matches.Where(x => {
-                            CrystallineConflictPlayer highestPlayer = new();
-                            try {
-                                highestPlayer = x.Players.OrderByDescending(y => y.Rank).First();
-                            } catch {
-                                //_plugin.Log.Error($"{x.Id} {x.DutyStartTime}");
-                                return true;
-                            }
-                            return x.MatchType != CrystallineConflictMatchType.Ranked || highestPlayer.Rank == null
-                            || (highestPlayer.Rank >= tierFilter.TierLow && highestPlayer.Rank <= tierFilter.TierHigh) || (highestPlayer.Rank >= tierFilter.TierHigh && highestPlayer.Rank <= tierFilter.TierLow);
-                        }).ToList();
-                        break;
-                    case Type _ when filter.GetType() == typeof(ResultFilter):
-                        var resultFilter = (ResultFilter)filter;
-                        if(resultFilter.Result == MatchResult.Win) {
-                            matches = matches.Where(x => x.IsWin).ToList();
-                        } else if(resultFilter.Result == MatchResult.Loss) {
-                            matches = matches.Where(x => !x.IsWin && x.MatchWinner != null && !x.IsSpectated).ToList();
-                        } else if(resultFilter.Result == MatchResult.Other) {
-                            matches = matches.Where(x => x.IsSpectated || x.MatchWinner == null).ToList();
-                        }
-                        break;
-                    case Type _ when filter.GetType() == typeof(DurationFilter):
-                        var durationFilter = (DurationFilter)filter;
-                        if(durationFilter.DirectionIndex == 0) {
-                            matches = matches.Where(x => x.MatchDuration is null || x.MatchDuration >= durationFilter.Duration).ToList();
-                        } else {
-                            matches = matches.Where(x => x.MatchDuration is null || x.MatchDuration < durationFilter.Duration).ToList();
-                        }
-                        break;
-                    case Type _ when filter.GetType() == typeof(BookmarkFilter):
-                        var bookmarkFilter = (BookmarkFilter)filter;
-                        if(bookmarkFilter.BookmarkedOnly) {
-                            matches = matches.Where(x => x.IsBookmarked).ToList();
-                        }
-                        //_plugin.Configuration.MatchWindowFilters.BookmarkFilter = bookmarkFilter;
-                        break;
-                    case Type _ when filter.GetType() == typeof(MiscFilter):
-                        var miscFilter = (MiscFilter)filter;
-                        if(miscFilter.MustHaveStats) {
-                            matches = matches.Where(x => x.PostMatch is not null).ToList();
-                        }
-                        if(!miscFilter.IncludeSpectated) {
-                            matches = matches.Where(x => !x.IsSpectated).ToList();
-                        }
-                        //_plugin.Configuration.MatchWindowFilters.MiscFilter = miscFilter;
-                        break;
-                }
-                _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"filter {filter.Name}", s2.ElapsedMilliseconds.ToString()));
-            } catch(Exception e) {
-                //catch exceptions to keep filtering going
-                _plugin.Log.Error($"failed to apply filter: {filter.Name}\n{e.Message}");
+    protected List<CrystallineConflictMatch> ApplyFilter(MatchTypeFilter filter, List<CrystallineConflictMatch> matches) {
+        List<CrystallineConflictMatch> filteredMatches = new(matches);
+        filteredMatches = filteredMatches.Where(x => filter.FilterState[x.MatchType]).ToList();
+        return filteredMatches;
+    }
+
+    protected List<CrystallineConflictMatch> ApplyFilter(ArenaFilter filter, List<CrystallineConflictMatch> matches) {
+        List<CrystallineConflictMatch> filteredMatches = new(matches);
+        filteredMatches = filteredMatches.Where(x => (x.Arena == null && filter.AllSelected) || filter.FilterState[(CrystallineConflictMap)x.Arena!]).ToList();
+        return filteredMatches;
+    }
+
+    protected List<CrystallineConflictMatch> ApplyFilter(LocalPlayerJobFilter filter, List<CrystallineConflictMatch> matches) {
+        List<CrystallineConflictMatch> filteredMatches = new(matches);
+        if(!filter.AnyJob) {
+            if(filter.JobRole != null) {
+                filteredMatches = filteredMatches.Where(x => x.LocalPlayer != null && x.LocalPlayerTeamMember != null && PlayerJobHelper.GetSubRoleFromJob(x.LocalPlayerTeamMember.Job) == filter.JobRole).ToList();
+            } else {
+                filteredMatches = filteredMatches.Where(x => x.LocalPlayer != null && x.LocalPlayerTeamMember != null && x.LocalPlayerTeamMember.Job == filter.PlayerJob).ToList();
             }
         }
-        _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"total filters", s1.ElapsedMilliseconds.ToString()));
-        return matches;
+        return filteredMatches;
+    }
+
+    protected List<CrystallineConflictMatch> ApplyFilter(OtherPlayerFilter filter, List<CrystallineConflictMatch> matches) {
+        List<CrystallineConflictMatch> filteredMatches = new(matches);
+        List<PlayerAlias> linkedPlayerAliases = new();
+        if(!filter.PlayerNamesRaw.IsNullOrEmpty() && Plugin.Configuration.EnablePlayerLinking) {
+            linkedPlayerAliases = Plugin.PlayerLinksService.GetAllLinkedAliases(filter.PlayerNamesRaw);
+        }
+        filteredMatches = filteredMatches.Where(x => {
+            foreach(var team in x.Teams) {
+                if(filter.TeamStatus == TeamStatus.Teammate && team.Key != x.LocalPlayerTeam?.TeamName) {
+                    continue;
+                } else if(filter.TeamStatus == TeamStatus.Opponent && team.Key == x.LocalPlayerTeam?.TeamName) {
+                    continue;
+                }
+                foreach(var player in team.Value.Players) {
+                    if(!filter.AnyJob && player.Job != filter.PlayerJob) {
+                        continue;
+                    }
+                    if(Plugin.Configuration.EnablePlayerLinking) {
+                        if(player.Alias.FullName.Contains(filter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase)
+                        || linkedPlayerAliases.Any(x => x.Equals(player.Alias))) {
+                            return true;
+                        }
+                    } else {
+                        if(player.Alias.FullName.Contains(filter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }).ToList();
+        return filteredMatches;
+    }
+
+    protected List<CrystallineConflictMatch> ApplyFilter(TierFilter filter, List<CrystallineConflictMatch> matches) {
+        List<CrystallineConflictMatch> filteredMatches = new(matches);
+        filteredMatches = filteredMatches.Where(x => {
+            CrystallineConflictPlayer highestPlayer = new();
+            try {
+                highestPlayer = x.Players.OrderByDescending(y => y.Rank).First();
+            } catch {
+                //Plugin.Log.Error($"{x.Id} {x.DutyStartTime}");
+                return true;
+            }
+            return x.MatchType != CrystallineConflictMatchType.Ranked || highestPlayer.Rank == null
+            || (highestPlayer.Rank >= filter.TierLow && highestPlayer.Rank <= filter.TierHigh) || (highestPlayer.Rank >= filter.TierHigh && highestPlayer.Rank <= filter.TierLow);
+        }).ToList();
+        return filteredMatches;
+    }
+
+    protected List<CrystallineConflictMatch> ApplyFilter(ResultFilter filter, List<CrystallineConflictMatch> matches) {
+        List<CrystallineConflictMatch> filteredMatches = new(matches);
+        if(filter.Result == MatchResult.Win) {
+            filteredMatches = filteredMatches.Where(x => x.IsWin).ToList();
+        } else if(filter.Result == MatchResult.Loss) {
+            filteredMatches = filteredMatches.Where(x => !x.IsWin && x.MatchWinner != null && !x.IsSpectated).ToList();
+        } else if(filter.Result == MatchResult.Other) {
+            filteredMatches = filteredMatches.Where(x => x.IsSpectated || x.MatchWinner == null).ToList();
+        }
+        return filteredMatches;
+    }
+
+    protected List<CrystallineConflictMatch> ApplyFilter(MiscFilter filter, List<CrystallineConflictMatch> matches) {
+        List<CrystallineConflictMatch> filteredMatches = new(matches);
+        if(filter.MustHaveStats) {
+            filteredMatches = filteredMatches.Where(x => x.PostMatch is not null).ToList();
+        }
+        if(!filter.IncludeSpectated) {
+            filteredMatches = filteredMatches.Where(x => !x.IsSpectated).ToList();
+        }
+        return filteredMatches;
     }
 }

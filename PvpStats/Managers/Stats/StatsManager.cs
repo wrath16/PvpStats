@@ -5,14 +5,15 @@ using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace PvpStats.Managers.Stats;
-internal abstract class StatsManager<T> where T: PvpMatch {
+internal abstract class StatsManager<T> where T : PvpMatch {
     protected readonly Plugin Plugin;
     protected readonly MatchCacheService<T> MatchCache;
-    protected SemaphoreSlim RefreshLock { get; private set; } = new SemaphoreSlim(1);
+    internal SemaphoreSlim RefreshLock { get; private set; } = new SemaphoreSlim(1);
 
     public List<T> Matches { get; protected set; } = new();
     public List<PlayerAlias> Players { get; protected set; } = new();
@@ -37,12 +38,17 @@ internal abstract class StatsManager<T> where T: PvpMatch {
         List<T> filteredMatches = new(matches);
         foreach(var filter in filters) {
             var filterType = filter.GetType();
-            var method = GetType().GetMethods().Where(x => x.GetParameters().Length > 0 && x.GetParameters()[0].ParameterType == filterType).FirstOrDefault();
+            //Plugin.Log.Debug($"Filter type: {filterType.Name} This type: {}");
+            var method = GetType().GetMethods(BindingFlags.Instance | BindingFlags.NonPublic).Where(x => x.GetParameters().Length > 0 && x.GetParameters()[0].ParameterType == filterType).FirstOrDefault();
             if(method is null) {
                 Plugin.Log.Error($"No method found for filter type {filterType}");
                 continue;
             }
-            filteredMatches = (List<T>)method.Invoke(this, new object[] { filter, matches })!;
+            try {
+                filteredMatches = (List<T>)method.Invoke(this, new object[] { filter, filteredMatches })!;
+            } catch(Exception e) {
+                Plugin.Log.Error(e, $"failed to apply filter: {filter.Name}");
+            }
         }
         return filteredMatches;
     }
