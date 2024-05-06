@@ -468,8 +468,11 @@ internal class ConfigWindow : Window {
     }
 
     private void DrawPerformanceSettings() {
+        ImGui.TextColored(_plugin.Configuration.Colors.Header, "Match Caching");
+        ImGuiHelper.HelpMarker("Enabling these options will cache your entire match history in memory. Can help with refresh performance at the cost of increased memory usage.", true);
+
         bool enableCachingCC = _plugin.Configuration.EnableDBCachingCC ?? true;
-        if(ImGui.Checkbox("Enable match caching", ref enableCachingCC)) {
+        if(ImGui.Checkbox("Crystalline Conflict", ref enableCachingCC)) {
             _plugin.Configuration.EnableDBCachingCC = enableCachingCC;
             _plugin.DataQueue.QueueDataOperation(() => {
                 if(enableCachingCC) {
@@ -480,6 +483,18 @@ internal class ConfigWindow : Window {
                 _plugin.Configuration.Save();
             });
         }
-        ImGuiHelper.HelpMarker("Will cache your entire match history in memory. Can help with refresh performance at the cost of increased memory usage.", true, true);
+        bool enableCachingFL = _plugin.Configuration.EnableDBCachingFL ?? true;
+        if(ImGui.Checkbox("Frontline", ref enableCachingFL)) {
+            _plugin.Configuration.EnableDBCachingFL = enableCachingFL;
+            _plugin.DataQueue.QueueDataOperation(() => {
+                if(enableCachingFL) {
+                    _plugin.FLCache.EnableCaching();
+                } else {
+                    _plugin.FLCache.DisableCaching();
+                }
+                _plugin.Configuration.Save();
+            });
+        }
+
     }
 }

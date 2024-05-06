@@ -1,8 +1,9 @@
 ﻿namespace PvpStats.Types.Match;
-public class FrontlineTeamStats {
+public class FrontlineTeamScoreboard {
     public int? Placement { get; set; } = null;
     public int TotalPoints { get; set; }
     public int KillPoints { get; set; }
     public int DeathPointLosses { get; set; }
-    public int OvooPoints { get; set; }
+    public int OccupationPoints { get; set; }
+    public int TargetablePoints { get; set; }
 }

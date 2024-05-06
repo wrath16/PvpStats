@@ -136,6 +136,9 @@ public sealed class Plugin : IDalamudPlugin {
             CommandManager.AddHandler(CCStatsCommandName, new CommandInfo(OnCCCommand) {
                 HelpMessage = "Opens Crystalline Conflict tracker."
             });
+            CommandManager.AddHandler(FLStatsCommandName, new CommandInfo(OnFLCommand) {
+                HelpMessage = "Opens Frontline tracker."
+            });
             CommandManager.AddHandler(ConfigCommandName, new CommandInfo(OnConfigCommand) {
                 HelpMessage = "Opens config window."
             });
@@ -165,6 +168,7 @@ public sealed class Plugin : IDalamudPlugin {
 #endif
 
         CommandManager.RemoveHandler(CCStatsCommandName);
+        CommandManager.RemoveHandler(FLStatsCommandName);
         CommandManager.RemoveHandler(ConfigCommandName);
 
         Functions?.Dispose();
@@ -180,6 +184,10 @@ public sealed class Plugin : IDalamudPlugin {
 
     private void OnCCCommand(string command, string args) {
         WindowManager.OpenCCWindow();
+    }
+
+    private void OnFLCommand(string command, string args) {
+        WindowManager.OpenFLWindow();
     }
 
     private void OnConfigCommand(string command, string args) {

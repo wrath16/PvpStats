@@ -1,3 +1,4 @@
+using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PvpStats.Windows.Filter;
@@ -10,7 +11,7 @@ namespace PvpStats.Windows.Tracker;
 
 internal class CCTrackerWindow : TrackerWindow {
 
-    private CrystallineConflictList ccMatches;
+    private CrystallineConflictMatchList ccMatches;
     private CrystallineConflictSummary ccSummary;
     private CrystallineConflictRecords ccRecords;
     private CrystallineConflictPlayerList ccPlayers;
@@ -84,7 +85,7 @@ internal class CCTrackerWindow : TrackerWindow {
         using(var tabBar = ImRaii.TabBar("TabBar", ImGuiTabBarFlags.None)) {
             if(tabBar) {
                 if(Plugin.Configuration.ResizeWindowLeft) {
-                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 20f);
+                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 20f * ImGuiHelpers.GlobalScale);
                 }
                 Tab("Matches", ccMatches.Draw);
                 Tab("Summary", () => {

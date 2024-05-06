@@ -92,9 +92,9 @@ internal abstract class StatsManager<T> where T : PvpMatch {
         if(filter.CurrentPlayerOnly && Plugin.ClientState.IsLoggedIn && Plugin.GameState.CurrentPlayer != null) {
             if(Plugin.Configuration.EnablePlayerLinking) {
                 var linkedAliases = Plugin.PlayerLinksService.GetAllLinkedAliases(Plugin.GameState.CurrentPlayer);
-                matches = matches.Where(x => x.LocalPlayer != null && (x.LocalPlayer.Equals(Plugin.GameState.CurrentPlayer) || linkedAliases.Contains(x.LocalPlayer))).ToList();
+                filteredMatches = filteredMatches.Where(x => x.LocalPlayer != null && (x.LocalPlayer.Equals(Plugin.GameState.CurrentPlayer) || linkedAliases.Contains(x.LocalPlayer))).ToList();
             } else {
-                matches = matches.Where(x => x.LocalPlayer != null && x.LocalPlayer.Equals(Plugin.GameState.CurrentPlayer)).ToList();
+                filteredMatches = filteredMatches.Where(x => x.LocalPlayer != null && x.LocalPlayer.Equals(Plugin.GameState.CurrentPlayer)).ToList();
             }
         }
         return filteredMatches;

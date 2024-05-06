@@ -16,6 +16,8 @@ public abstract class PvpMatch {
     [BsonIgnore]
     public TimeSpan? MatchDuration => MatchEndTime - MatchStartTime;
     public PlayerAlias? LocalPlayer { get; set; }
+    //[BsonIgnore]
+    //public abstract PvpPlayer? LocalPlayerTeamMember { get; set; }
     //public abstract List<PlayerAlias> Players { get; set; }
 
     public uint DutyId { get; set; }

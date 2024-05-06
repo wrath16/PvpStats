@@ -2,6 +2,7 @@
 using Dalamud.Interface.Windowing;
 using LiteDB;
 using PvpStats.Helpers;
+using PvpStats.Services.DataCache;
 using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using PvpStats.Windows;
@@ -20,6 +21,7 @@ internal class WindowManager : IDisposable {
     private WindowSystem WindowSystem;
     private Plugin _plugin;
     internal CCTrackerWindow CCTrackerWindow { get; private set; }
+    internal FLTrackerWindow FLTrackerWindow { get; private set; }
     internal ConfigWindow ConfigWindow { get; private set; }
 #if DEBUG
     internal DebugWindow? DebugWindow { get; private set; }
@@ -41,8 +43,10 @@ internal class WindowManager : IDisposable {
         }
 
         CCTrackerWindow = new(plugin);
+        FLTrackerWindow = new(plugin);
         ConfigWindow = new(plugin);
         WindowSystem.AddWindow(CCTrackerWindow);
+        WindowSystem.AddWindow(FLTrackerWindow);
         WindowSystem.AddWindow(ConfigWindow);
 
 #if DEBUG
@@ -71,7 +75,7 @@ internal class WindowManager : IDisposable {
     private void OnLogin() {
         Task.Delay(3000).ContinueWith((t) => {
             _plugin.DataQueue.QueueDataOperation(async () => {
-                _plugin.PlayerLinksService.BuildAutoLinksCache();
+                await _plugin.PlayerLinksService.BuildAutoLinksCache();
                 await Refresh();
             });
         });
@@ -87,6 +91,10 @@ internal class WindowManager : IDisposable {
 
     internal void OpenCCWindow() {
         CCTrackerWindow.IsOpen = true;
+    }
+
+    internal void OpenFLWindow() {
+        FLTrackerWindow.IsOpen = true;
     }
 
     internal void OpenConfigWindow() {
@@ -122,7 +130,7 @@ internal class WindowManager : IDisposable {
         }
     }
 
-    internal void OpenFullEditWindow(CrystallineConflictMatch match) {
+    internal void OpenFullEditWindow<T>(T match) where T : PvpMatch {
         var windowName = $"Full Edit: {match.GetHashCode()}";
         var window = WindowSystem.Windows.Where(w => w.WindowName == windowName).FirstOrDefault();
         if(window is not null) {
@@ -130,7 +138,19 @@ internal class WindowManager : IDisposable {
             window.IsOpen = true;
         } else {
             _plugin.Log.Debug($"Opening full edit details for...{match.DutyStartTime}");
-            var itemDetail = new FullEditDetail<CrystallineConflictMatch>(_plugin, match);
+            var matchType = typeof(T);
+            MatchCacheService<T>? matchCache = null;
+            switch(matchType) {
+                case Type _ when matchType == typeof(CrystallineConflictMatch):
+                    matchCache = _plugin.CCCache as MatchCacheService<T>;
+                    break;
+                case Type _ when matchType == typeof(FrontlineMatch):
+                    matchCache = _plugin.FLCache as MatchCacheService<T>;
+                    break;
+                default:
+                    break;
+            }
+            var itemDetail = new FullEditDetail<T>(_plugin, matchCache, match);
             itemDetail.IsOpen = true;
             _plugin.WindowManager.AddWindow(itemDetail);
         }
@@ -138,7 +158,7 @@ internal class WindowManager : IDisposable {
 
     public async Task Refresh() {
         _plugin.Log.Debug("refreshing windows...");
-        await ConfigWindow.Refresh();
-        await CCTrackerWindow.Refresh();
+        Task.WaitAll(ConfigWindow.Refresh(), CCTrackerWindow.Refresh(), FLTrackerWindow.Refresh());
+        await Task.CompletedTask;
     }
 }

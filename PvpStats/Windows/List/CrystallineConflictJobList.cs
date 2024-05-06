@@ -293,9 +293,9 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
         await Task.CompletedTask;
     }
 
-    private async Task RefreshMainWindow() {
-        await _plugin.WindowManager.Refresh();
-    }
+    //private async Task RefreshMainWindow() {
+    //    await _plugin.WindowManager.Refresh();
+    //}
 
     private string CSVRow(Dictionary<Job, CCPlayerJobStats> model, Job key) {
         string csv = "";

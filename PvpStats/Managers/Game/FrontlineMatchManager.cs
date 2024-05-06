@@ -62,7 +62,7 @@ internal class FrontlineMatchManager : MatchManager {
         FrontlineResultsPacket resultsPacket = *(FrontlineResultsPacket*)(p2);
 
         var printTeamStats = (FrontlineResultsPacket.TeamStat team, string name) => {
-            Plugin.Log.Debug($"{name}\nPlace {team.Place}\nOvooPoints {team.OccupationPoints}\nKillPoints {team.EnemyKillPoints}\nDeathLosses {team.KOPointLosses}\nUnknown1 {team.Unknown1}\nUnknown2 {team.Unknown2}\nTotalRating {team.TotalPoints}");
+            Plugin.Log.Debug($"{name}\nPlace {team.Place}\nOvooPoints {team.OccupationPoints}\nKillPoints {team.EnemyKillPoints}\nDeathLosses {team.KOPointLosses}\nUnknown1 {team.Unknown1}\nIcePoints {team.IcePoints}\nTotalRating {team.TotalPoints}");
         };
         printTeamStats(resultsPacket.MaelStats, "Maelstrom");
         printTeamStats(resultsPacket.AdderStats, "Adders");

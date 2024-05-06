@@ -179,6 +179,15 @@ internal static class ImGuiHelper {
         WrappedTooltip("Copy CSV to clipboard");
     }
 
+    internal static void CSVButton(Action action) {
+        using(_ = ImRaii.PushFont(UiBuilder.IconFont)) {
+            if(ImGui.Button($"{FontAwesomeIcon.Copy.ToIconString()}##--CopyCSV")) {
+                action.Invoke();
+            }
+        }
+        WrappedTooltip("Copy CSV to clipboard");
+    }
+
     internal static void DonateButton() {
         using(_ = ImRaii.PushFont(UiBuilder.IconFont)) {
             var text = $"{FontAwesomeIcon.Star.ToIconString()}{FontAwesomeIcon.Copy.ToIconString()}";

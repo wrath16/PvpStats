@@ -8,7 +8,10 @@ internal class FrontlineMatch : PvpMatch {
     FrontlineMap? Arena { get; set; }
 
     public Dictionary<FrontlinePlayer, FrontlineScoreboard> Players { get; set; } = new();
-    public Dictionary<FrontlineTeamName, FrontlineTeamStats> Teams { get; set; } = new();
+    public Dictionary<FrontlineTeamName, FrontlineTeamScoreboard> Teams { get; set; } = new();
+
+    [BsonIgnore]
+    public FrontlinePlayer? LocalPlayerTeamMember => Players.FirstOrDefault(x => x.Key.Name.Equals(LocalPlayer)).Key;
 
     [BsonIgnore]
     public FrontlineTeamName? LocalPlayerTeam => Players.First(x => x.Key.Name.Equals(LocalPlayer)).Key.Team;
