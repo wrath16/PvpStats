@@ -20,4 +20,10 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
             RefreshLock.Release();
         }
     }
+
+    protected List<FrontlineMatch> ApplyFilter(FrontlineArenaFilter filter, List<FrontlineMatch> matches) {
+        List<FrontlineMatch> filteredMatches = new(matches);
+        filteredMatches = filteredMatches.Where(x => (x.Arena == null && filter.AllSelected) || filter.FilterState[(FrontlineMap)x.Arena!]).ToList();
+        return filteredMatches;
+    }
 }

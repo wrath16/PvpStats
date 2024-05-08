@@ -80,4 +80,10 @@ internal class CrystallineConflictMatchList : MatchList<CrystallineConflictMatch
         csv += "\n";
         return csv;
     }
+
+    //public override void OpenItemDetail(CrystallineConflictMatch item) {
+    //    _plugin.DataQueue.QueueDataOperation(() => {
+    //        _plugin.WindowManager.OpenMatchDetailsWindow(item);
+    //    });
+    //}
 }

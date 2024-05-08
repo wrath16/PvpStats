@@ -64,8 +64,8 @@ internal class DataQueueService {
                     throw new InvalidOperationException("Unable to dequeue task!");
                 }
             } catch(Exception e) {
-                _plugin.Log.Error($"Exception in data task: {e.GetType().Name} {e.Message}");
-                _plugin.Log.Error(e.StackTrace ?? "");
+                _plugin.Log.Error(e, $"Exception in data task.");
+                //_plugin.Log.Error(e.StackTrace ?? "");
             } finally {
                 DataLock.Release();
             }

@@ -162,7 +162,7 @@ public static class MatchHelper {
         }
     }
 
-    public static string GetFrontlineArenaName(FrontlineMap map) {
+    public static string GetFrontlineArenaName(FrontlineMap? map) {
         return map switch {
             FrontlineMap.BorderlandRuins => "The Borderland Ruins",
             FrontlineMap.SealRock => "Seal Rock",
@@ -180,6 +180,15 @@ public static class MatchHelper {
             FrontlineMap.OnsalHakair => "Danshig Naadam",
             _ => "Unknown",
         };
+    }
+
+    public static string GetTeamName(FrontlineTeamName team) {
+        switch(team) {
+            case FrontlineTeamName.Maelstrom: return "Maelstrom";
+            case FrontlineTeamName.Adders: return "Order of the Twin Adder";
+            case FrontlineTeamName.Flames: return "Immortal Flames";
+            default: return "Unknown";
+        }
     }
 
     public static readonly Regex CreditBeforeRegex = new Regex(@"^\d+(?= →)", RegexOptions.IgnoreCase | RegexOptions.Multiline);

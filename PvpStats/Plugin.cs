@@ -50,6 +50,7 @@ public sealed class Plugin : IDalamudPlugin {
     internal WindowManager WindowManager { get; init; }
     internal MigrationManager MigrationManager { get; init; }
     internal CrystallineConflictStatsManager CCStatsEngine { get; init; }
+    internal FrontlineStatsManager FLStatsEngine { get; init; }
 
     internal DataQueueService DataQueue { get; init; }
     internal LocalizationService Localization { get; init; }
@@ -120,6 +121,7 @@ public sealed class Plugin : IDalamudPlugin {
             PlayerLinksService = new(this);
             Localization = new(this);
             CCStatsEngine = new(this);
+            FLStatsEngine = new(this);
             WindowManager = new(this);
             MigrationManager = new(this);
             try {
@@ -206,7 +208,7 @@ public sealed class Plugin : IDalamudPlugin {
         }
         await MigrationManager.BulkUpdateCCMatchTypes();
         await MigrationManager.BulkCCUpdateValidatePlayerCount();
-        await WindowManager.Refresh();
+        await WindowManager.RefreshAll();
         Log.Information("PvP Tracker initialized.");
     }
 }

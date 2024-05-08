@@ -62,8 +62,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
         try {
             var dutyId = _plugin.GameState.GetCurrentDutyId();
             var territoryId = _plugin.ClientState.TerritoryType;
-            _plugin.Log.Debug($"Current duty: {dutyId}");
-            _plugin.Log.Debug($"Current territory: {territoryId}");
+            _plugin.Log.Debug($"Current duty: {dutyId} Current territory: {territoryId}");
             _plugin.DataQueue.QueueDataOperation(() => {
                 _currentMatch = new() {
                     DutyId = dutyId,
@@ -105,7 +104,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
         _plugin.DataQueue.QueueDataOperation(async () => {
             if(ProcessMatchResults(resultsPacket)) {
                 await _plugin.CCCache.UpdateMatch(_currentMatch!);
-                await _plugin.WindowManager.Refresh();
+                await _plugin.WindowManager.RefreshCCWindow();
             }
         });
         _ccMatchEndHook.Original(p1, p2, p3, p4);
@@ -239,7 +238,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
             return false;
         }
 
-        _plugin.Log.Information("Match has ended.");
+        _plugin.Log.Information("CC match has ended.");
 
         CrystallineConflictPostMatch postMatch = new();
         _currentMatch.LocalPlayer ??= _plugin.GameState.CurrentPlayer;

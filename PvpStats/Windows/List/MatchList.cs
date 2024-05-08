@@ -56,7 +56,7 @@ internal abstract class MatchList<T> : FilteredList<T> where T : PvpMatch {
 
     public override void OpenItemDetail(T item) {
         _plugin.DataQueue.QueueDataOperation(() => {
-            //_plugin.WindowManager.OpenMatchDetailsWindow(item);
+            _plugin.WindowManager.OpenMatchDetailsWindow(item);
         });
     }
 

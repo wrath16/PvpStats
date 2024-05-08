@@ -1,16 +1,19 @@
 ﻿using Dalamud.Hooking;
+using PvpStats.Types.Match;
 using System;
 using System.Collections.Generic;
 
 namespace PvpStats.Managers.Game;
-internal abstract class MatchManager : IDisposable {
+internal abstract class MatchManager<T> : IDisposable where T : PvpMatch {
     protected readonly Plugin Plugin;
+    protected virtual T? CurrentMatch { get; set; }
 
     protected List<(string fieldName, Hook<Delegate>)> Hooks = new();
 
     internal MatchManager(Plugin plugin) {
         Plugin = plugin;
         plugin.InteropProvider.InitializeFromAttributes(this);
+        plugin.ClientState.TerritoryChanged += OnTerritoryChanged;
 
         //get all hooks
         //Hooks = this.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance).Where(x => x.FieldType.IsAssignableTo(typeof(IDalamudHook))).Select(x => (x.Name,(Hook<Delegate>)x.GetValue(this)!)).ToList();
@@ -31,6 +34,7 @@ internal abstract class MatchManager : IDisposable {
 
     public virtual void Dispose() {
         Hooks.ForEach(x => DisposeHook(x.Item1, x.Item2));
+        Plugin.ClientState.TerritoryChanged -= OnTerritoryChanged;
     }
 
     private void EnableHook(string name, IDalamudHook hook) {
@@ -42,5 +46,21 @@ internal abstract class MatchManager : IDisposable {
     private void DisposeHook(string name, IDalamudHook hook) {
         //Plugin.Log.Debug($"disabling {name} at address: 0x{hook.Address:X2}");
         hook.Dispose();
+    }
+
+    private void OnTerritoryChanged(ushort territoryId) {
+        var dutyId = Plugin.GameState.GetCurrentDutyId();
+        Plugin.Log.Debug($"Territory changed: {territoryId}, Current duty: {dutyId}");
+        if(IsMatchInProgress()) {
+            Plugin.DataQueue.QueueDataOperation(() => {
+                Plugin.Functions._opcodeMatchCount++;
+                CurrentMatch = null;
+                //Plugin.WindowManager.Refresh();
+            });
+        }
+    }
+
+    public bool IsMatchInProgress() {
+        return CurrentMatch != null;
     }
 }

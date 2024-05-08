@@ -27,6 +27,11 @@ internal class StorageService {
         //set mapper properties
         BsonMapper.Global.EmptyStringToNull = false;
 
+        //BsonMapper.Global.RegisterType(
+        //    serialize: key => key.FullName,
+        //    deserialize: bson => (PlayerAlias)bson.AsString
+        //);
+
         //create indices
         var ccMatchCollection = GetCCMatches();
         ccMatchCollection.EnsureIndex(m => m.IsCompleted);

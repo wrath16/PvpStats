@@ -41,7 +41,7 @@ public unsafe struct FrontlineResultsPacket {
     [StructLayout(LayoutKind.Explicit, Size = 0x0E)]
     public struct TeamStat {
         //0,1,2
-        [FieldOffset(0x00)] public ushort Place;
+        [FieldOffset(0x00)] public ushort Placement;
         [FieldOffset(0x02)] public ushort OccupationPoints;     //ovoos, tomeliths
         [FieldOffset(0x04)] public ushort EnemyKillPoints;
         [FieldOffset(0x06)] public ushort Unknown1;

@@ -56,7 +56,7 @@ internal class FullEditDetail<T> : Window where T : PvpMatch {
                 if(_matchCache != null) {
                     await _matchCache.UpdateMatch(x);
                 }
-                await _plugin.WindowManager.Refresh();
+                await _plugin.WindowManager.RefreshAll();
                 IsOpen = false;
             });
         }

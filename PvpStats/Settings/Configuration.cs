@@ -1,6 +1,7 @@
 using Dalamud.Configuration;
 using Dalamud.Interface.Colors;
 using PvpStats.Helpers;
+using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using System;
 using System.Numerics;
@@ -62,6 +63,15 @@ public class Configuration : IPluginConfiguration {
             JobSubRole.MELEE => Colors.Melee,
             JobSubRole.RANGED => Colors.Ranged,
             JobSubRole.CASTER => Colors.Caster,
+            _ => ImGuiColors.DalamudWhite,
+        };
+    }
+
+    public Vector4 GetFrontlineTeamColor(FrontlineTeamName? team) {
+        return team switch {
+            FrontlineTeamName.Maelstrom => Colors.Maelstrom,
+            FrontlineTeamName.Adders => Colors.Adders,
+            FrontlineTeamName.Flames => Colors.Flames,
             _ => ImGuiColors.DalamudWhite,
         };
     }

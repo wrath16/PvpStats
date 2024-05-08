@@ -76,7 +76,7 @@ internal class WindowManager : IDisposable {
         Task.Delay(3000).ContinueWith((t) => {
             _plugin.DataQueue.QueueDataOperation(async () => {
                 await _plugin.PlayerLinksService.BuildAutoLinksCache();
-                await Refresh();
+                await RefreshAll();
             });
         });
     }
@@ -109,7 +109,21 @@ internal class WindowManager : IDisposable {
     }
 #endif
 
-    internal void OpenMatchDetailsWindow(CrystallineConflictMatch match) {
+    //internal void OpenMatchDetailsWindow(CrystallineConflictMatch match) {
+    //    var windowName = $"Match Details: {match.Id}";
+    //    var window = WindowSystem.Windows.Where(w => w.WindowName == windowName).FirstOrDefault();
+    //    if(window is not null) {
+    //        window.BringToFront();
+    //        window.IsOpen = true;
+    //    } else {
+    //        _plugin.Log.Debug($"Opening item detail for...{match.DutyStartTime}");
+    //        var itemDetail = new CrystallineConflictMatchDetail(_plugin, match);
+    //        itemDetail.IsOpen = true;
+    //        _plugin.WindowManager.AddWindow(itemDetail);
+    //    }
+    //}
+
+    internal void OpenMatchDetailsWindow(PvpMatch match) {
         var windowName = $"Match Details: {match.Id}";
         var window = WindowSystem.Windows.Where(w => w.WindowName == windowName).FirstOrDefault();
         if(window is not null) {
@@ -117,9 +131,19 @@ internal class WindowManager : IDisposable {
             window.IsOpen = true;
         } else {
             _plugin.Log.Debug($"Opening item detail for...{match.DutyStartTime}");
-            var itemDetail = new CrystallineConflictMatchDetail(_plugin, match);
-            itemDetail.IsOpen = true;
-            _plugin.WindowManager.AddWindow(itemDetail);
+            if(match.GetType() == typeof(CrystallineConflictMatch)) {
+                var itemDetail = new CrystallineConflictMatchDetail(_plugin, match as CrystallineConflictMatch);
+                itemDetail.IsOpen = true;
+                _plugin.WindowManager.AddWindow(itemDetail);
+            } else if(match.GetType() == typeof(FrontlineMatch)) {
+                var itemDetail = new FrontlineMatchDetail(_plugin, match as FrontlineMatch);
+                itemDetail.IsOpen = true;
+                _plugin.WindowManager.AddWindow(itemDetail);
+            }
+
+            //var itemDetail = new CrystallineConflictMatchDetail(_plugin, match);
+            //itemDetail.IsOpen = true;
+            //_plugin.WindowManager.AddWindow(itemDetail);
         }
     }
 
@@ -156,9 +180,21 @@ internal class WindowManager : IDisposable {
         }
     }
 
-    public async Task Refresh() {
+    public async Task RefreshAll() {
         _plugin.Log.Debug("refreshing windows...");
-        Task.WaitAll(ConfigWindow.Refresh(), CCTrackerWindow.Refresh(), FLTrackerWindow.Refresh());
+        Task.WaitAll(ConfigWindow.Refresh(), RefreshCCWindow(), RefreshFLWindow());
         await Task.CompletedTask;
+    }
+
+    public async Task RefreshConfigWindow() {
+        await ConfigWindow.Refresh();
+    }
+
+    public async Task RefreshCCWindow() {
+        await CCTrackerWindow.Refresh();
+    }
+
+    public async Task RefreshFLWindow() {
+        await FLTrackerWindow.Refresh();
     }
 }

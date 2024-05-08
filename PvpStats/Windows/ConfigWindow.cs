@@ -286,7 +286,7 @@ internal class ConfigWindow : Window {
             _plugin.DataQueue.QueueDataOperation(async () => {
                 _plugin.Configuration.EnablePlayerLinking = playerLinking;
                 _plugin.Configuration.Save();
-                await _plugin.WindowManager.Refresh();
+                await _plugin.WindowManager.RefreshAll();
             });
         }
         ImGuiHelper.HelpMarker("Enable combining of player stats with different aliases linked with the same unique character or player.");
@@ -295,7 +295,7 @@ internal class ConfigWindow : Window {
             _plugin.DataQueue.QueueDataOperation(async () => {
                 _plugin.Configuration.EnableAutoPlayerLinking = autoLinking;
                 _plugin.Configuration.Save();
-                await _plugin.WindowManager.Refresh();
+                await _plugin.WindowManager.RefreshAll();
             });
         }
         ImGuiHelper.HelpMarker("Use name change data from PlayerTrack to create player links.\n\n" +
@@ -305,7 +305,7 @@ internal class ConfigWindow : Window {
             _plugin.DataQueue.QueueDataOperation(async () => {
                 _plugin.Configuration.EnableManualPlayerLinking = manualLinking;
                 _plugin.Configuration.Save();
-                await _plugin.WindowManager.Refresh();
+                await _plugin.WindowManager.RefreshAll();
             });
         }
         ImGuiHelper.HelpMarker("Use the manual tab to create player links by hand or to track" +
@@ -316,7 +316,7 @@ internal class ConfigWindow : Window {
                     if(ImGui.Button("Update Now")) {
                         _plugin.DataQueue.QueueDataOperation(async () => {
                             await _plugin.PlayerLinksService.BuildAutoLinksCache();
-                            await _plugin.WindowManager.Refresh();
+                            await _plugin.WindowManager.RefreshAll();
                         });
                     }
                     DrawAutoPlayerLinkSettings();
@@ -369,7 +369,7 @@ internal class ConfigWindow : Window {
                 //_plugin.Storage.SetManualLinks(ManualLinks, false);
                 await _plugin.PlayerLinksService.SaveManualLinksCache(ManualLinks);
                 if(_plugin.Configuration.EnablePlayerLinking && _plugin.Configuration.EnableManualPlayerLinking) {
-                    await _plugin.WindowManager.Refresh();
+                    await _plugin.WindowManager.RefreshAll();
                 }
             }).ContinueWith((t) => {
                 _saveOpacity = 1f;

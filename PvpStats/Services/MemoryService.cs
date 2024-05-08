@@ -108,7 +108,7 @@ internal unsafe class MemoryService : IDisposable {
             //};
 
             var printTeamStats = (FrontlineResultsPacket.TeamStat team, string name) => {
-                _plugin.Log.Debug($"{name}\nPlace {team.Place}\nOvooPoints {team.OccupationPoints}\nKillPoints {team.EnemyKillPoints}\nDeathLosses {team.KOPointLosses}\nUnknown1 {team.Unknown1}\nUnknown2 {team.IcePoints}\nTotalRating {team.TotalPoints}");
+                _plugin.Log.Debug($"{name}\nPlace {team.Placement}\nOvooPoints {team.OccupationPoints}\nKillPoints {team.EnemyKillPoints}\nDeathLosses {team.KOPointLosses}\nUnknown1 {team.Unknown1}\nUnknown2 {team.IcePoints}\nTotalRating {team.TotalPoints}");
             };
 
             //printTeamStats(resultsPacket.MaelStats, "Maelstrom");
