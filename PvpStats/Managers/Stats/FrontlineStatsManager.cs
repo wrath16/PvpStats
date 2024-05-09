@@ -11,7 +11,7 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
     }
 
     public override async Task Refresh(List<DataFilter> matchFilters, List<DataFilter> jobStatFilters, List<DataFilter> playerStatFilters) {
-        var matches = MatchCache.Matches.Where(x => !x.IsDeleted && x.IsCompleted).ToList();
+        var matches = MatchCache.Matches.Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
         matches = FilterMatches(matchFilters, matches);
         try {
             await RefreshLock.WaitAsync();

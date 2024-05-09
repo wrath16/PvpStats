@@ -2,7 +2,7 @@
 using System;
 
 namespace PvpStats.Types.Match;
-public class PvpPlayer : IEquatable<PvpPlayer>{
+public class PvpPlayer : IEquatable<PvpPlayer> {
     public PlayerAlias Name { get; set; }
     public Job? Job { get; set; }
     public uint? ClassJobId { get; set; }

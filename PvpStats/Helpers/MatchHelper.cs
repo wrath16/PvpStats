@@ -172,7 +172,7 @@ public static class MatchHelper {
         };
     }
 
-    public static string GetFrontlineArenaType(FrontlineMap map) {
+    public static string GetFrontlineArenaType(FrontlineMap? map) {
         return map switch {
             FrontlineMap.BorderlandRuins => "Secure",
             FrontlineMap.SealRock => "Seize",

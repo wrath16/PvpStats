@@ -1,6 +1,5 @@
 ﻿using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
-using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Lumina.Excel.GeneratedSheets2;
 using PvpStats.Helpers;
 using PvpStats.Services;
@@ -8,7 +7,6 @@ using PvpStats.Types.ClientStruct;
 using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace PvpStats.Managers.Game;

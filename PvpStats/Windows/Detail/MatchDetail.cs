@@ -1,11 +1,11 @@
-﻿using Dalamud.Interface.Colors;
+﻿using Dalamud.Interface;
+using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
-using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using PvpStats.Helpers;
-using PvpStats.Types.Match;
 using PvpStats.Services.DataCache;
+using PvpStats.Types.Match;
 using System.Numerics;
 
 namespace PvpStats.Windows.Detail;
@@ -32,9 +32,9 @@ internal abstract class MatchDetail<T> : Window where T : PvpMatch {
             MaximumSize = new Vector2(5000, 5000)
         };
         Flags |= ImGuiWindowFlags.NoSavedSettings;
-        if(!plugin.Configuration.ResizeableMatchWindow) {
-            Flags |= ImGuiWindowFlags.AlwaysAutoResize;
-        }
+        //if(!plugin.Configuration.ResizeableMatchWindow) {
+        //    Flags |= ImGuiWindowFlags.AlwaysAutoResize;
+        //}
     }
 
     protected abstract string BuildCSV();
