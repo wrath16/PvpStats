@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace PvpStats.Types.ClientStruct;
 
-[StructLayout(LayoutKind.Explicit, Size = 0x254)]
+[StructLayout(LayoutKind.Explicit, Size = 0x310)]
 public unsafe struct CrystallineConflictResultsPacket {
     //in seconds
     [FieldOffset(0x00)] public ushort MatchLength;
@@ -26,9 +26,9 @@ public unsafe struct CrystallineConflictResultsPacket {
     [FieldOffset(0x2C)] public uint UmbraProgress;
 
     [FixedSizeArray<CrystallineConflictPlayer>(10)]
-    [FieldOffset(0x38)] public fixed byte Player[0x36 * 10];
+    [FieldOffset(0x38)] public fixed byte Player[0x48 * 10];
 
-    [StructLayout(LayoutKind.Explicit, Size = 0x36)]
+    [StructLayout(LayoutKind.Explicit, Size = 0x48)]
     public struct CrystallineConflictPlayer {
         [FieldOffset(0x00)] public uint DamageDealt;
         [FieldOffset(0x04)] public uint DamageTaken;
