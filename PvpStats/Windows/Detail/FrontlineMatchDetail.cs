@@ -16,7 +16,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
     public FrontlineMatchDetail(Plugin plugin, FrontlineMatch match) : base(plugin, plugin.FLCache, match) {
         //Flags -= ImGuiWindowFlags.AlwaysAutoResize;
         SizeConstraints = new WindowSizeConstraints {
-            MinimumSize = new Vector2(900, 400),
+            MinimumSize = new Vector2(880, 800),
             MaximumSize = new Vector2(5000, 5000)
         };
     }
@@ -58,7 +58,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
                 //string resultText = Match.Result != null ? ImGuiHelper.AddOrdinal((int)Match.Result).ToUpper() : "???";
                 //ImGuiHelpers.CenterCursorForText(resultText);
                 //ImGui.TextColored(color, resultText);
-                DrawPlacement(Match.Result);
+                DrawPlacement(Match.Result, true);
                 ImGui.TableNextColumn();
                 if(Match.MatchDuration != null) {
                     string durationText = ImGuiHelper.GetTimeSpanString((TimeSpan)Match.MatchDuration);
@@ -68,16 +68,14 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
             }
         }
         //DrawTeamStatsTable();
+        //ImGui.SetNextItemWidth(ImGui.GetContentRegionMax().X);
         using(var table = ImRaii.Table("teamstats", 4, ImGuiTableFlags.None)) {
             if(table) {
-                ImGui.TableSetupColumn("descriptions", ImGuiTableColumnFlags.WidthFixed, 200f * ImGuiHelpers.GlobalScale);
-                ImGui.TableSetupColumn("team1", ImGuiTableColumnFlags.WidthFixed, 150f * ImGuiHelpers.GlobalScale);
-                ImGui.TableSetupColumn("team2", ImGuiTableColumnFlags.WidthFixed, 150f * ImGuiHelpers.GlobalScale);
-                ImGui.TableSetupColumn("team3", ImGuiTableColumnFlags.WidthFixed, 150f * ImGuiHelpers.GlobalScale);
-                //ImGui.TableSetupColumn("descriptions", ImGuiTableColumnFlags.WidthFixed, ImGui.GetContentRegionAvail().X / 4);
-                //ImGui.TableSetupColumn("team1", ImGuiTableColumnFlags.WidthFixed, ImGui.GetContentRegionAvail().X / 4);
-                //ImGui.TableSetupColumn("team2", ImGuiTableColumnFlags.WidthFixed, ImGui.GetContentRegionAvail().X / 4);
-                //ImGui.TableSetupColumn("team3", ImGuiTableColumnFlags.WidthFixed, ImGui.GetContentRegionAvail().X / 4);
+                ImGui.TableSetupColumn("descriptions", ImGuiTableColumnFlags.WidthFixed, 175f * ImGuiHelpers.GlobalScale);
+                var columnWidth = (ImGui.GetContentRegionMax().X / 2 - (175f * ImGuiHelpers.GlobalScale + ImGui.GetStyle().CellPadding.X * 4 + ImGui.GetStyle().WindowPadding.X / 2)) * 2 / 3;
+                ImGui.TableSetupColumn("team1", ImGuiTableColumnFlags.WidthFixed, columnWidth);
+                ImGui.TableSetupColumn("team2", ImGuiTableColumnFlags.WidthFixed, columnWidth);
+                ImGui.TableSetupColumn("team3", ImGuiTableColumnFlags.WidthFixed, columnWidth);
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
                 using(var rowDescTable = ImRaii.Table("rowDescTable", 1, ImGuiTableFlags.None)) {
@@ -226,14 +224,18 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         ImGui.TextColored(color, text);
     }
 
-    private void DrawPlacement(int? placement) {
+    private void DrawPlacement(int? placement, bool windowCenter = false) {
         var color = placement switch {
             0 => Plugin.Configuration.Colors.Win,
             2 => Plugin.Configuration.Colors.Loss,
             _ => Plugin.Configuration.Colors.Other,
         };
         string resultText = placement != null ? ImGuiHelper.AddOrdinal((int)placement + 1).ToUpper() : "???";
-        ImGuiHelper.CenterAlignCursor(resultText);
+        if(windowCenter) {
+            ImGuiHelpers.CenterCursorForText(resultText);
+        } else {
+            ImGuiHelper.CenterAlignCursor(resultText);
+        }
         ImGui.TextColored(color, resultText);
     }
 
@@ -285,11 +287,15 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
 
         ImGui.TableNextColumn();
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
+        //ImGuiHelper.CenterAlignCursor("Name");
         ImGui.TableHeader("Name");
         ImGui.TableNextColumn();
-        ImGui.TableHeader("Home\nWorld");
+        //ImGuiHelper.CenterAlignCursor("Home World");
+        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
+        ImGui.TableHeader("Home World");
         ImGui.TableNextColumn();
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
+        //ImGuiHelper.CenterAlignCursor("Job");
         ImGui.TableHeader("Job");
         ImGui.TableNextColumn();
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
@@ -314,7 +320,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         ImGui.TableHeader("HP\nRestored");
         ImGui.TableNextColumn();
         ImGui.TableHeader("");
-        ImGuiHelper.HelpMarker("Not sure what this is.");
+        ImGuiHelper.HelpMarker("Not sure what this is. It's related to healing.");
         if(Match.Arena == FrontlineMap.SealRock) {
             ImGui.TableNextColumn();
             ImGui.TableHeader("Occup-\nations");
@@ -350,6 +356,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
             ImGui.TableNextColumn();
             ImGui.TextColored(textColor, $"{player.Name.HomeWorld}");
             ImGui.TableNextColumn();
+            //ImGuiHelper.CenterAlignCursor(player.Job?.ToString() ?? "");
             ImGui.TextColored(textColor, $"{player.Job}");
             ImGui.TableNextColumn();
             ImGui.TextColored(textColor, $"{row.Value.Kills}");
@@ -400,7 +407,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         if(!table) return;
         var team = Match.Teams[teamName];
 
-        ImGui.TableSetupColumn("c1", ImGuiTableColumnFlags.WidthFixed, 150f * ImGuiHelpers.GlobalScale);
+        ImGui.TableSetupColumn("c1", ImGuiTableColumnFlags.WidthFixed, ImGui.GetContentRegionAvail().X);
 
         ImGui.TableNextColumn();
         DrawTeamName(teamName);
