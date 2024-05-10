@@ -6,7 +6,7 @@
   "InternalName": "PvpStats",
   "RepoUrl": "https://github.com/wrath16/PvpStats",
   "ApplicableVersion": "any",
-  "Changelog": "Add FL tracking.",
+  "Changelog": "* Initial release for Frontline tracking.",
   "Tags": [
     "pvp",
     "statistics"
