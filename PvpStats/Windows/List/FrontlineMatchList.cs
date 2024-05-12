@@ -60,6 +60,14 @@ internal class FrontlineMatchList : MatchList<FrontlineMatch> {
     }
 
     protected override string CSVRow(FrontlineMatch match) {
-        return "";
+        string csv = "";
+        csv += match.DutyStartTime + ",";
+        csv += (match.Arena != null ? MatchHelper.GetFrontlineArenaName((FrontlineMap)match.Arena) : "") + ",";
+        csv += match.LocalPlayerTeamMember?.Job + ",";
+        csv += match.LocalPlayerTeam + ",";
+        csv += match.MatchDuration + ",";
+        csv += match.Result + ",";
+        csv += "\n";
+        return csv;
     }
 }

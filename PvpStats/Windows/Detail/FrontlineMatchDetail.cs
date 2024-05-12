@@ -3,6 +3,7 @@ using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PvpStats.Helpers;
+using PvpStats.Types.Display;
 using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using System;
@@ -19,6 +20,8 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
             MinimumSize = new Vector2(880, 800),
             MaximumSize = new Vector2(5000, 5000)
         };
+
+        CSV = BuildCSV();
     }
 
     public override void Draw() {
@@ -494,6 +497,34 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
     }
 
     protected override string BuildCSV() {
-        throw new NotImplementedException();
+        string csv = "";
+
+        //header
+        csv += "Id,Start Time,Arena,Duration,\n";
+        csv += Match.Id + "," + Match.DutyStartTime + ","
+            + (Match.Arena != null ? MatchHelper.GetFrontlineArenaName((FrontlineMap)Match.Arena!) : "") + ","
+            + Match.MatchDuration + ","
+            + "\n";
+
+        //team stats
+        csv += "\n\n\n";
+        csv += "Team,Placement,Total Points,Occupation Points,NPC Points,Kill Points,Death Point Losses\n";
+        foreach(var team in Match.Teams) {
+            csv += team.Key + "," + team.Value.Placement + "," + team.Value.TotalPoints + "," + team.Value.OccupationPoints + "," + team.Value.TargetablePoints + ","
+            + team.Value.KillPoints + "," + team.Value.DeathPointLosses + ","
+            + "\n";
+        }
+
+        //player stats
+        csv += "\n\n\n";
+        csv += "Name,Home World,Job,Kills,Deaths,Assists,Damage Dealt,Damage to PCs,Damage To Other,Damage Taken, HP Restored,Special,Occupations\n";
+        foreach(var player in  Match.Players) {
+            var scoreboard = Match.PlayerScoreboards[player.Name];
+            csv += player.Name.Name + "," + player.Name.HomeWorld + "," + player.Job + "," + scoreboard.Kills + "," + scoreboard.Deaths + "," + scoreboard.Assists + ","
+                + scoreboard.DamageDealt + "," + scoreboard.DamageToPCs + "," + scoreboard.DamageToOther + "," + scoreboard.DamageTaken + "," + scoreboard.HPRestored + ","
+                + scoreboard.Special1 + "," + scoreboard.Occupations + ","
+                + "\n";
+        }
+        return csv;
     }
 }

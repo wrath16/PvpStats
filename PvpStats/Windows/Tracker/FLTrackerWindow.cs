@@ -3,6 +3,7 @@ using ImGuiNET;
 using PvpStats.Windows.Filter;
 using PvpStats.Windows.List;
 using System.Diagnostics;
+using System.Numerics;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Tracker;
@@ -11,6 +12,11 @@ internal class FLTrackerWindow : TrackerWindow {
     private FrontlineMatchList _matchList;
 
     public FLTrackerWindow(Plugin plugin) : base(plugin, plugin.Configuration.FLWindowConfig, "Frontline Tracker") {
+        SizeConstraints = new WindowSizeConstraints {
+            MinimumSize = new Vector2(435, 400),
+            MaximumSize = new Vector2(5000, 5000)
+        };
+
         MatchFilters.Add(new FrontlineArenaFilter(plugin, Refresh));
         MatchFilters.Add(new TimeFilter(plugin, Refresh, plugin.Configuration.CCWindowConfig.MatchFilters.TimeFilter));
         MatchFilters.Add(new LocalPlayerFilter(plugin, Refresh, plugin.Configuration.CCWindowConfig.MatchFilters.LocalPlayerFilter));
