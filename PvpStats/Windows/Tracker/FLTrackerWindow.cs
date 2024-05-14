@@ -2,6 +2,7 @@
 using ImGuiNET;
 using PvpStats.Windows.Filter;
 using PvpStats.Windows.List;
+using PvpStats.Windows.Summary;
 using System.Diagnostics;
 using System.Numerics;
 using System.Threading.Tasks;
@@ -10,6 +11,7 @@ namespace PvpStats.Windows.Tracker;
 internal class FLTrackerWindow : TrackerWindow {
 
     private FrontlineMatchList _matchList;
+    private FrontlinePvPProfile _profile;
 
     public FLTrackerWindow(Plugin plugin) : base(plugin, plugin.Configuration.FLWindowConfig, "Frontline Tracker") {
         SizeConstraints = new WindowSizeConstraints {
@@ -26,6 +28,7 @@ internal class FLTrackerWindow : TrackerWindow {
         MatchFilters.Add(new BookmarkFilter(plugin, Refresh));
 
         _matchList = new(plugin);
+        _profile = new(plugin);
     }
 
     public override void DrawInternal() {
@@ -34,6 +37,11 @@ internal class FLTrackerWindow : TrackerWindow {
         using(var tabBar = ImRaii.TabBar("TabBar", ImGuiTabBarFlags.None)) {
             if(tabBar) {
                 Tab("Matches", _matchList.Draw);
+                Tab("Profile", () => {
+                    using(ImRaii.Child("ProfileChild")) {
+                        _profile.Draw();
+                    }
+                });
             }
         }
     }
