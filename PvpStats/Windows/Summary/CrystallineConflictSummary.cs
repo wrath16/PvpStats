@@ -6,7 +6,6 @@ using PvpStats.Helpers;
 using PvpStats.Types.Display;
 using PvpStats.Types.Match;
 using PvpStats.Types.Player;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -16,15 +15,6 @@ internal class CrystallineConflictSummary {
 
     private Plugin _plugin;
     internal protected SemaphoreSlim RefreshLock { get; private set; } = new SemaphoreSlim(1);
-
-    internal CCPlayerJobStats LocalPlayerStats { get; private set; } = new();
-    internal Dictionary<Job, CCAggregateStats> LocalPlayerJobStats { get; private set; } = new();
-    internal Dictionary<CrystallineConflictMap, CCAggregateStats> ArenaStats { get; private set; } = new();
-    internal Dictionary<PlayerAlias, CCAggregateStats> TeammateStats { get; private set; } = new();
-    internal Dictionary<PlayerAlias, CCAggregateStats> OpponentStats { get; private set; } = new();
-    internal Dictionary<Job, CCAggregateStats> TeammateJobStats { get; private set; } = new();
-    internal Dictionary<Job, CCAggregateStats> OpponentJobStats { get; private set; } = new();
-    internal TimeSpan AverageMatchDuration { get; private set; } = new();
 
     public CrystallineConflictSummary(Plugin plugin) {
         _plugin = plugin;

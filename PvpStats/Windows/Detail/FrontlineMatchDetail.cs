@@ -16,7 +16,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
     public FrontlineMatchDetail(Plugin plugin, FrontlineMatch match) : base(plugin, plugin.FLCache, match) {
         //Flags -= ImGuiWindowFlags.AlwaysAutoResize;
         SizeConstraints = new WindowSizeConstraints {
-            MinimumSize = new Vector2(880, 800),
+            MinimumSize = new Vector2(900, 800),
             MaximumSize = new Vector2(5000, 5000)
         };
 
@@ -73,8 +73,8 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         //ImGui.SetNextItemWidth(ImGui.GetContentRegionMax().X);
         using(var table = ImRaii.Table("teamstats", 4, ImGuiTableFlags.None)) {
             if(table) {
-                ImGui.TableSetupColumn("descriptions", ImGuiTableColumnFlags.WidthFixed, 175f * ImGuiHelpers.GlobalScale);
-                var columnWidth = (ImGui.GetContentRegionMax().X / 2 - (175f * ImGuiHelpers.GlobalScale + ImGui.GetStyle().CellPadding.X * 4 + ImGui.GetStyle().WindowPadding.X / 2)) * 2 / 3;
+                ImGui.TableSetupColumn("descriptions", ImGuiTableColumnFlags.WidthFixed, 190f * ImGuiHelpers.GlobalScale);
+                var columnWidth = (ImGui.GetContentRegionMax().X / 2 - (190f * ImGuiHelpers.GlobalScale + ImGui.GetStyle().CellPadding.X * 4 + ImGui.GetStyle().WindowPadding.X / 2)) * 2 / 3;
                 ImGui.TableSetupColumn("team1", ImGuiTableColumnFlags.WidthFixed, columnWidth);
                 ImGui.TableSetupColumn("team2", ImGuiTableColumnFlags.WidthFixed, columnWidth);
                 ImGui.TableSetupColumn("team3", ImGuiTableColumnFlags.WidthFixed, columnWidth);
@@ -517,7 +517,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         //player stats
         csv += "\n\n\n";
         csv += "Name,Home World,Job,Kills,Deaths,Assists,Damage Dealt,Damage to PCs,Damage To Other,Damage Taken, HP Restored,Special,Occupations\n";
-        foreach(var player in  Match.Players) {
+        foreach(var player in Match.Players) {
             var scoreboard = Match.PlayerScoreboards[player.Name];
             csv += player.Name.Name + "," + player.Name.HomeWorld + "," + player.Job + "," + scoreboard.Kills + "," + scoreboard.Deaths + "," + scoreboard.Assists + ","
                 + scoreboard.DamageDealt + "," + scoreboard.DamageToPCs + "," + scoreboard.DamageToOther + "," + scoreboard.DamageTaken + "," + scoreboard.HPRestored + ","
