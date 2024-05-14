@@ -13,10 +13,6 @@ internal class FrontlinePvPProfile {
         _plugin = plugin;
     }
 
-    public void Refresh() {
-
-    }
-
     public unsafe void Draw() {
         var pvpProfile = PvPProfile.Instance();
         ImGuiHelper.HelpMarker("Uses game server-originating data from your PvP profile.", false);
@@ -32,6 +28,8 @@ internal class FrontlinePvPProfile {
     }
 
     private void DrawTable(uint matches, uint firstPlace, uint secondPlace, uint thirdPlace) {
+        var averagePlace = matches > 0 ? (double)(firstPlace + secondPlace * 2 + thirdPlace * 3) / matches : 0d;
+
         using(var table = ImRaii.Table($"t1###{matches.GetHashCode()}", 3, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
             if(table) {
                 ImGui.TableSetupColumn("description", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 158f);
@@ -41,35 +39,43 @@ internal class FrontlinePvPProfile {
                 ImGui.TableNextColumn();
                 ImGui.Text("Matches: ");
                 ImGui.TableNextColumn();
-                ImGui.Text($"{matches.ToString("N0")}");
+                ImGui.Text($"{matches:N0}");
                 ImGui.TableNextColumn();
 
                 ImGui.TableNextColumn();
-                ImGui.Text("1st Place: ");
+                ImGui.Text("First places: ");
                 ImGui.TableNextColumn();
-                ImGui.Text($"{firstPlace.ToString("N0")}");
+                ImGui.Text($"{firstPlace:N0}");
                 ImGui.TableNextColumn();
                 if(matches > 0) {
                     ImGui.Text($"{string.Format("{0:P}%", (double)firstPlace / (matches))}");
                 }
 
                 ImGui.TableNextColumn();
-                ImGui.Text("2nd Place: ");
+                ImGui.Text("Second places: ");
                 ImGui.TableNextColumn();
-                ImGui.Text($"{secondPlace.ToString("N0")}");
+                ImGui.Text($"{secondPlace:N0}");
                 ImGui.TableNextColumn();
                 if(matches > 0) {
                     ImGui.Text($"{string.Format("{0:P}%", (double)secondPlace / (matches))}");
                 }
 
                 ImGui.TableNextColumn();
-                ImGui.Text("3rd Place: ");
+                ImGui.Text("Third places: ");
                 ImGui.TableNextColumn();
-                ImGui.Text($"{thirdPlace.ToString("N0")}");
+                ImGui.Text($"{thirdPlace:N0}");
                 ImGui.TableNextColumn();
                 if(matches > 0) {
                     ImGui.Text($"{string.Format("{0:P}%", (double)thirdPlace / (matches))}");
                 }
+
+                ImGui.TableNextColumn();
+                ImGui.TableNextColumn();
+                ImGui.TableNextColumn();
+                ImGui.TableNextColumn();
+                ImGui.Text("Average place: ");
+                ImGui.TableNextColumn();
+                ImGuiHelper.DrawColorScale((float)averagePlace, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 1.5f, 2.5f, _plugin.Configuration.ColorScaleStats, "0.00");
             }
         }
     }
