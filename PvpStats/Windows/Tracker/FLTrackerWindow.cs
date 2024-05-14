@@ -20,8 +20,8 @@ internal class FLTrackerWindow : TrackerWindow {
         };
 
         MatchFilters.Add(new FrontlineArenaFilter(plugin, Refresh));
-        MatchFilters.Add(new TimeFilter(plugin, Refresh, plugin.Configuration.CCWindowConfig.MatchFilters.TimeFilter));
-        MatchFilters.Add(new LocalPlayerFilter(plugin, Refresh, plugin.Configuration.CCWindowConfig.MatchFilters.LocalPlayerFilter));
+        MatchFilters.Add(new TimeFilter(plugin, Refresh, plugin.Configuration.FLWindowConfig.MatchFilters.TimeFilter));
+        MatchFilters.Add(new LocalPlayerFilter(plugin, Refresh, plugin.Configuration.FLWindowConfig.MatchFilters.LocalPlayerFilter));
         MatchFilters.Add(new LocalPlayerJobFilter(plugin, Refresh));
         MatchFilters.Add(new OtherPlayerFilter(plugin, Refresh));
         MatchFilters.Add(new DurationFilter(plugin, Refresh));
