@@ -232,6 +232,23 @@ internal class ConfigWindow : Window {
         ImGui.TableNextRow();
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
+        var maelstromColor = _plugin.Configuration.Colors.Maelstrom;
+        if(ImGui.ColorEdit4("Maelstrom", ref maelstromColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.Maelstrom = maelstromColor;
+        }
+        ImGui.TableNextColumn();
+        var addersColor = _plugin.Configuration.Colors.Adders;
+        if(ImGui.ColorEdit4("Adders", ref addersColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.Adders = addersColor;
+        }
+        ImGui.TableNextColumn();
+        var flamesColor = _plugin.Configuration.Colors.Flames;
+        if(ImGui.ColorEdit4("Immortal Flames", ref flamesColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.Flames = flamesColor;
+        }
+        ImGui.TableNextRow();
+        ImGui.TableNextRow();
+        ImGui.TableNextColumn();
         var tankColor = _plugin.Configuration.Colors.Tank;
         if(ImGui.ColorEdit4("Tank", ref tankColor, ImGuiColorEditFlags.NoInputs)) {
             _plugin.Configuration.Colors.Tank = tankColor;
