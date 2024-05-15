@@ -1,8 +1,10 @@
 ﻿using Dalamud.Interface.Colors;
+using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PvpStats.Helpers;
+using PvpStats.Types.Display;
 using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using System;
@@ -13,6 +15,8 @@ using System.Numerics;
 namespace PvpStats.Windows.Detail;
 internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
 
+    Dictionary<PlayerAlias, FLScoreboardDouble> _playerContributions = [];
+
     public FrontlineMatchDetail(Plugin plugin, FrontlineMatch match) : base(plugin, plugin.FLCache, match) {
         //Flags -= ImGuiWindowFlags.AlwaysAutoResize;
         SizeConstraints = new WindowSizeConstraints {
@@ -21,6 +25,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         };
 
         CSV = BuildCSV();
+        _playerContributions = match.GetPlayerContributions();
     }
 
     public override void Draw() {
@@ -111,7 +116,10 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
                 }
             }
         }
-
+        ImGuiComponents.ToggleButton("##showPercentages", ref ShowPercentages);
+        ImGui.SameLine();
+        ImGui.Text("Show team contributions");
+        ImGuiHelper.HelpMarker("Right-click table header to show and hide columns including extra metrics.");
         DrawPlayerStatsTable();
     }
 
@@ -361,29 +369,29 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
             //ImGuiHelper.CenterAlignCursor(player.Job?.ToString() ?? "");
             ImGui.TextColored(textColor, $"{player.Job}");
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{row.Value.Kills}");
+            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions[player.Name].Kills) : row.Value.Kills)}");
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{row.Value.Deaths}");
+            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions[player.Name].Deaths) : row.Value.Deaths)}");
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{row.Value.Assists}");
+            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions[player.Name].Assists) : row.Value.Assists)}");
 
             if(Match.Arena == FrontlineMap.FieldsOfGlory) {
                 ImGui.TableNextColumn();
-                ImGui.TextColored(textColor, $"{row.Value.DamageToPCs}");
+                ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions[player.Name].DamageToPCs) : row.Value.DamageToPCs)}");
                 ImGui.TableNextColumn();
-                ImGui.TextColored(textColor, $"{row.Value.DamageToOther}");
+                ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions[player.Name].DamageToOther) : row.Value.DamageToOther)}");
             }
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{row.Value.DamageDealt}");
+            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions[player.Name].DamageDealt) : row.Value.DamageDealt)}");
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{row.Value.DamageTaken}");
+            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions[player.Name].DamageTaken) : row.Value.DamageTaken)}");
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{row.Value.HPRestored}");
+            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions[player.Name].HPRestored) : row.Value.HPRestored)}");
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{row.Value.Special1}");
+            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions[player.Name].Special1) : row.Value.Special1)}");
             if(Match.Arena == FrontlineMap.SealRock) {
                 ImGui.TableNextColumn();
-                ImGui.TextColored(textColor, $"{row.Value.Occupations}");
+                ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions[player.Name].Occupations) : row.Value.Occupations)}");
             }
             ImGui.TableNextColumn();
             ImGui.TextColored(textColor, $"{row.Value.DamageDealtPerKA}");
@@ -471,14 +479,28 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         } else if(columnId == 2) {
             comparator = (r) => Match.Players.First(x => x.Name.Equals(r.Key)).Job ?? 0;
         } else {
-            //var props = typeof(PvpScoreboard).GetProperties().Concat(typeof(FrontlineScoreboard).GetProperties());
-            var props = typeof(FrontlineScoreboard).GetProperties();
-            foreach(var prop in props) {
-                var propId = prop.Name.GetHashCode();
-                if((uint)propId == columnId) {
-                    Plugin.Log.Debug($"sorting by {prop.Name}");
-                    comparator = (r) => prop.GetValue(r.Value) ?? 0;
-                    break;
+            bool propFound = false;
+            if(ShowPercentages) {
+                var props = typeof(FLScoreboardDouble).GetProperties();
+                foreach(var prop in props) {
+                    var propId = prop.Name.GetHashCode();
+                    if((uint)propId == columnId) {
+                        Plugin.Log.Debug($"sorting by {prop.Name}");
+                        comparator = (r) => prop.GetValue(_playerContributions[(PlayerAlias)r.Key]) ?? 0;
+                        propFound = true;
+                        break;
+                    }
+                }
+            }
+            if(!propFound) {
+                var props = typeof(FrontlineScoreboard).GetProperties();
+                foreach(var prop in props) {
+                    var propId = prop.Name.GetHashCode();
+                    if((uint)propId == columnId) {
+                        Plugin.Log.Debug($"sorting by {prop.Name}");
+                        comparator = (r) => prop.GetValue(r.Value) ?? 0;
+                        break;
+                    }
                 }
             }
         }

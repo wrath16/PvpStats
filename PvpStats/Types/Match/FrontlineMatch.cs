@@ -1,4 +1,6 @@
 ﻿using LiteDB;
+using PvpStats.Types.Display;
+using PvpStats.Types.Player;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -24,5 +26,30 @@ internal class FrontlineMatch : PvpMatch {
 
     public FrontlineMatch() : base() {
         Version = 0;
+    }
+
+    public Dictionary<FrontlineTeamName, FrontlineScoreboard> GetTeamScoreboards() {
+        Dictionary<FrontlineTeamName, FrontlineScoreboard> scoreboards = [];
+        foreach(var team in Teams) {
+            scoreboards.Add(team.Key, new());
+        }
+        foreach(var player in Players) {
+            var team = player.Team;
+            var scoreboard = PlayerScoreboards[player.Name];
+            scoreboards[team] += scoreboard;
+            scoreboards[team].Size++;
+        }
+        return scoreboards;
+    }
+
+    public Dictionary<PlayerAlias, FLScoreboardDouble> GetPlayerContributions() {
+        var teamScoreboards = GetTeamScoreboards();
+        Dictionary<PlayerAlias, FLScoreboardDouble> contributions = [];
+        foreach(var player in Players) {
+            var scoreboard = PlayerScoreboards[player.Name];
+            var team = player.Team;
+            contributions.Add(player.Name, new(scoreboard, teamScoreboards[team]));
+        }
+        return contributions;
     }
 }

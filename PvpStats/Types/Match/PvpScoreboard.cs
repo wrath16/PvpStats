@@ -21,4 +21,15 @@ internal class PvpScoreboard {
     public long HPRestoredPerLife => HPRestored / (Deaths + Size);
     [BsonIgnore]
     public double KDA => (double)KillsAndAssists / long.Max(Deaths, 1);
+
+    public static PvpScoreboard operator +(PvpScoreboard a, PvpScoreboard b) {
+        return new PvpScoreboard() {
+            Kills = a.Kills + b.Kills,
+            Deaths = a.Deaths + b.Deaths,
+            Assists = a.Assists + b.Assists,
+            DamageDealt = a.DamageDealt + b.DamageDealt,
+            DamageTaken = a.DamageTaken + b.DamageTaken,
+            HPRestored = a.HPRestored + b.HPRestored,
+        };
+    }
 }

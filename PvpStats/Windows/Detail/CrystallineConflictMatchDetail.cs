@@ -442,26 +442,32 @@ internal class CrystallineConflictMatchDetail : Window {
             comparator = (r) => (r.Key.Player is not null ? r.Key.Player.Name : r.Key.Team.ToString()) ?? "";
         } else if(columnId == 1) {
             comparator = (r) => r.Key.Job ?? 0;
-        } else if(!_showPercentages) {
-            var props = typeof(CCScoreboard).GetProperties();
-            //iterate to two levels
-            foreach(var prop in props) {
-                var propId = prop.Name.GetHashCode();
-                if((uint)propId == columnId) {
-                    comparator = (r) => prop.GetValue(r.Value.Item1) ?? 0;
-                    break;
+        } else {
+            bool propFound = false;
+            if(_showPercentages) {
+                var props = typeof(CCScoreboardDouble).GetProperties();
+                foreach(var prop in props) {
+                    var propId2 = prop.Name.GetHashCode();
+                    if((uint)"TimeOnCrystal".GetHashCode() == columnId) {
+                        comparator = (r) => r.Value.Item2.TimeOnCrystalDouble;
+                        propFound = true;
+                        break;
+                    } else if((uint)propId2 == columnId) {
+                        comparator = (r) => prop.GetValue(r.Value.Item2) ?? 0;
+                        propFound = true;
+                        break;
+                    }
                 }
             }
-        } else {
-            var props = typeof(CCScoreboardDouble).GetProperties();
-            foreach(var prop in props) {
-                var propId2 = prop.Name.GetHashCode();
-                if((uint)"TimeOnCrystal".GetHashCode() == columnId) {
-                    comparator = (r) => r.Value.Item2.TimeOnCrystalDouble;
-                    break;
-                } else if((uint)propId2 == columnId) {
-                    comparator = (r) => prop.GetValue(r.Value.Item2) ?? 0;
-                    break;
+            if(!propFound) {
+                var props = typeof(CCScoreboard).GetProperties();
+                //iterate to two levels
+                foreach(var prop in props) {
+                    var propId = prop.Name.GetHashCode();
+                    if((uint)propId == columnId) {
+                        comparator = (r) => prop.GetValue(r.Value.Item1) ?? 0;
+                        break;
+                    }
                 }
             }
         }
