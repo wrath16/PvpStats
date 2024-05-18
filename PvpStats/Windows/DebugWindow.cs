@@ -123,6 +123,11 @@ internal unsafe class DebugWindow : Window {
                         //ImGui.TableNextColumn();
                         //ImGui.Text($"0x{new IntPtr(crystallineConflictDirector).ToString("X2")}");
                     }
+                    if(ImGui.Button("Copy ICD ptr")) {
+                        ImGui.SetClipboardText(new IntPtr(instanceDirector).ToString("X2"));
+                    }
+
+
                     if(ImGui.Button("Print ICD Bytes")) {
                         _plugin.Functions.FindValue<byte>(0, (nint)instanceDirector, 0x2000, 0, true);
                         //var x = _plugin.Functions.GetRawInstanceContentDirector();
@@ -136,7 +141,7 @@ internal unsafe class DebugWindow : Window {
                     }
 
                     if(ImGui.Button("Create ICD Byte Dump")) {
-                        _plugin.Functions.CreateByteDump((nint)instanceDirector, 0x2030, "ICD");
+                        _plugin.Functions.CreateByteDump((nint)instanceDirector, 0x3000, "ICD");
                     }
 
                     if(ImGui.Button("Print Object Table")) {

@@ -99,12 +99,12 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
                 }
             });
 
-            var printTeamStats = (FrontlineResultsPacket.TeamStat team, string name) => {
-                Plugin.Log.Debug($"{name}\nPlace {team.Placement}\nOvooPoints {team.OccupationPoints}\nKillPoints {team.EnemyKillPoints}\nDeathLosses {team.KOPointLosses}\nUnknown1 {team.Unknown1}\nIcePoints {team.IcePoints}\nTotalRating {team.TotalPoints}");
-            };
-            printTeamStats(resultsPacket.MaelStats, "Maelstrom");
-            printTeamStats(resultsPacket.AdderStats, "Adders");
-            printTeamStats(resultsPacket.FlameStats, "Flames");
+            //var printTeamStats = (FrontlineResultsPacket.TeamStat team, string name) => {
+            //    Plugin.Log.Debug($"{name}\nPlace {team.Placement}\nOvooPoints {team.OccupationPoints}\nKillPoints {team.EnemyKillPoints}\nDeathLosses {team.KOPointLosses}\nUnknown1 {team.Unknown1}\nIcePoints {team.IcePoints}\nTotalRating {team.TotalPoints}");
+            //};
+            //printTeamStats(resultsPacket.MaelStats, "Maelstrom");
+            //printTeamStats(resultsPacket.AdderStats, "Adders");
+            //printTeamStats(resultsPacket.FlameStats, "Flames");
         } catch(Exception e) {
             Plugin.Log.Error(e, $"Error in FLMatchEnd100Detour");
         }

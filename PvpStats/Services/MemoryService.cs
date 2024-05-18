@@ -68,13 +68,18 @@ internal unsafe class MemoryService : IDisposable {
             //_plugin.Log.Debug(string.Format("{0,-32} {1,-15} {2,-10} {3,-8} {4,-8} {5,-8} {6,-8} {7,-15} {8,-15} {9,-15} {10,-15} {11,-15} {12,-15}", "NAME", "TEAM", "ALLIANCE", "JOB", "KILLS", "DEATHS", "ASSISTS", "DAMAGE DEALT", "DAMAGE OTHER", "DAMAGE TAKEN", "HP RESTORED", "??? 1", "??? 2"));
             //_plugin.Log.Debug(string.Format("{0,-32} {1,-15} {2,-10} {3,-8} {4,-8} {5,-8} {6,-8} {7,-15} {8,-15} {9,-15} {10,-15} {11,-15} {12,-15}", playerName, team, resultsPacket.Alliance, job, resultsPacket.Kills, resultsPacket.Deaths, resultsPacket.Assists, resultsPacket.DamageDealt, resultsPacket.DamageToOther, resultsPacket.DamageTaken, resultsPacket.HPRestored, resultsPacket.Unknown1, resultsPacket.Unknown2));
 
-            FindValue<byte>(0, dataPtr, 0x800, 0, true);
-            FindValue<ushort>(0, dataPtr, 0x800, 0, true);
-            FindValue<uint>(0, dataPtr, 0x800, 0, true);
-            FindValue<string>("", dataPtr, 0x800, 0, true);
+            FindValue<byte>(0, dataPtr, 0x100, 0, true);
+            FindValue<ushort>(0, dataPtr, 0x100, 0, true);
+            FindValue<uint>(0, dataPtr, 0x100, 0, true);
+            FindValue<string>("", dataPtr, 0x100, 0, true);
             //var agent = AgentModule.Instance()->GetAgentByInternalId(AgentId.ContentsFinderMenu);
             //AtkComponentButton* x;
             //x->Flags |= (uint)NodeFlags.Enabled;
+        } else if(opCode == 937) {
+            FindValue<byte>(0, dataPtr, 0x30, 0, true);
+            FindValue<ushort>(0, dataPtr, 0x30, 0, true);
+            FindValue<uint>(0, dataPtr, 0x30, 0, true);
+            //FindValue<string>("", dataPtr, 0x20, 0, true);
         }
 
         ////643 has promise...

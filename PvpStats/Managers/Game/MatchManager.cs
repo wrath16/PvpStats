@@ -50,7 +50,7 @@ internal abstract class MatchManager<T> : IDisposable where T : PvpMatch {
 
     protected void OnTerritoryChanged(ushort territoryId) {
         var dutyId = Plugin.GameState.GetCurrentDutyId();
-        Plugin.Log.Debug($"Territory changed: {territoryId}, Current duty: {dutyId}");
+        //Plugin.Log.Debug($"Territory changed: {territoryId}, Current duty: {dutyId}");
         if(IsMatchInProgress()) {
             Plugin.DataQueue.QueueDataOperation(() => {
                 Plugin.Functions._opcodeMatchCount++;

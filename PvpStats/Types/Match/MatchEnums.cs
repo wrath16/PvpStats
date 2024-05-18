@@ -58,3 +58,13 @@ public enum FrontlineTeamName {
     Adders,
     Flames
 }
+
+public enum RivalWingsMap {
+    Astragalos,
+    HiddenGorge,
+}
+
+public enum RivalWingsTeamName {
+    Falcons,
+    Ravens
+}
