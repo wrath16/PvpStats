@@ -2,25 +2,6 @@
 
 namespace PvpStats.Types.ClientStruct;
 
-//[StructLayout(LayoutKind.Explicit, Size = 0x310)]
-//public unsafe struct FrontlineTeamResultsPacket {
-//    //in seconds
-//    [FieldOffset(0x48)] public FrontlineTeamStat MaelStats;
-//    [FieldOffset(0x55)] public FrontlineTeamStat AdderStats;
-//    [FieldOffset(0x62)] public FrontlineTeamStat FlameStats;
-
-//    [StructLayout(LayoutKind.Explicit, Size = 0x0D)]
-//    public struct FrontlineTeamStat {
-//        [FieldOffset(0x00)] public uint Unknown1;
-//        [FieldOffset(0x02)] public uint Stat1;
-//        [FieldOffset(0x04)] public uint TotalScore;
-//        [FieldOffset(0x06)] public uint Stat2;
-//        [FieldOffset(0x08)] public uint Unknown2;
-//        [FieldOffset(0x0A)] public uint Unknown3;
-//        [FieldOffset(0x0C)] public uint Stat3;
-//    }
-//}
-
 [StructLayout(LayoutKind.Explicit)]
 public unsafe struct FrontlineResultsPacket {
 

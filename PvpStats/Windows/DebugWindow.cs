@@ -5,6 +5,8 @@ using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
+using FFXIVClientStructs.FFXIV.Component.GUI;
+using FFXIVClientStructs.Havok;
 using ImGuiNET;
 using PvpStats.Services;
 using PvpStats.Types.Player;
@@ -70,6 +72,20 @@ internal unsafe class DebugWindow : Window {
                     if(ImGui.Button("Print Text Nodes")) {
                         _plugin.AtkNodeService.PrintTextNodes(_addon);
                     }
+
+
+                    if(ImGui.Button("GetNodeById")) {
+                        unsafe {
+                            AtkUnitBase * addonNode = AtkStage.GetSingleton()->RaptureAtkUnitManager->GetAddonByName(_addon);
+                            if(uint.TryParse(_idChain, out uint result) && addonNode != null) {
+                                var x = addonNode->GetNodeById(result);
+                                _plugin.Log.Debug($"0x{new IntPtr(x).ToString("X8")}");
+                            }
+
+                        }
+
+                    }
+
 
                     if(ImGui.Button("GetNodeByIDChain")) {
                         unsafe {
@@ -210,7 +226,11 @@ internal unsafe class DebugWindow : Window {
                     }
                 }
             }
-
+            using(var tab = ImRaii.TabItem("Agent")) {
+                //if(tab) {
+                //    if(ImGui.Button(""))
+                //}
+            }
         }
 
         //if (ImGui.Button("test obj table")) {

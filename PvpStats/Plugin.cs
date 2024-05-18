@@ -47,6 +47,7 @@ public sealed class Plugin : IDalamudPlugin {
 
     internal CrystallineConflictMatchManager? CCMatchManager { get; init; }
     internal FrontlineMatchManager? FLMatchManager { get; init; }
+    internal RivalWingsMatchManager? RWMatchManager { get; init; }
     internal WindowManager WindowManager { get; init; }
     internal MigrationManager MigrationManager { get; init; }
     internal CrystallineConflictStatsManager CCStatsEngine { get; init; }
@@ -127,12 +128,17 @@ public sealed class Plugin : IDalamudPlugin {
             try {
                 CCMatchManager = new(this);
             } catch(SignatureException e) {
-                Log.Error($"failed to initialize cc match manager: {e.Message}");
+                Log.Error(e, $"failed to initialize cc match manager");
             }
             try {
                 FLMatchManager = new(this);
             } catch(SignatureException e) {
-                Log.Error($"failed to initialize fl match manager: {e.Message}");
+                Log.Error(e, $"failed to initialize fl match manager");
+            }
+            try {
+                RWMatchManager = new(this);
+            } catch(SignatureException e) {
+                Log.Error(e, $"failed to initialize rw match manager");
             }
 
             CommandManager.AddHandler(CCStatsCommandName, new CommandInfo(OnCCCommand) {
