@@ -164,7 +164,7 @@ internal class ConfigWindow : Window {
     private void DrawColorSettings() {
         if(ImGui.Button("Reset to Defaults")) {
             _plugin.Configuration.Colors = new();
-            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+            //_plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
 
         ImGui.SameLine();
@@ -249,6 +249,18 @@ internal class ConfigWindow : Window {
         ImGui.TableNextRow();
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
+        var falconsColor = _plugin.Configuration.Colors.Falcons;
+        if(ImGui.ColorEdit4("Falcons", ref falconsColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.Falcons = falconsColor;
+        }
+        ImGui.TableNextColumn();
+        var ravensColor = _plugin.Configuration.Colors.Ravens;
+        if(ImGui.ColorEdit4("Ravens", ref ravensColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.Ravens = ravensColor;
+        }
+        ImGui.TableNextRow();
+        ImGui.TableNextRow();
+        ImGui.TableNextColumn();
         var tankColor = _plugin.Configuration.Colors.Tank;
         if(ImGui.ColorEdit4("Tank", ref tankColor, ImGuiColorEditFlags.NoInputs)) {
             _plugin.Configuration.Colors.Tank = tankColor;
@@ -273,7 +285,6 @@ internal class ConfigWindow : Window {
         if(ImGui.ColorEdit4("Caster", ref casterColor, ImGuiColorEditFlags.NoInputs)) {
             _plugin.Configuration.Colors.Caster = casterColor;
         }
-
         ImGui.TableNextRow();
         ImGui.TableNextRow();
         ImGui.TableNextColumn();

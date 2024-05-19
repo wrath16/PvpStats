@@ -54,7 +54,7 @@ internal unsafe class MemoryService : IDisposable {
         }
 
         if(!_blacklistedOpcodes.Contains(opCode)) {
-            _plugin.Log.Debug($"OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
+            //_plugin.Log.Debug($"OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
             //_plugin.Functions.PrintAllChars(dataPtr, 0x2000, 8);
             //_plugin.Functions.PrintAllStrings(dataPtr, 0x500);
         }
@@ -76,9 +76,9 @@ internal unsafe class MemoryService : IDisposable {
             //AtkComponentButton* x;
             //x->Flags |= (uint)NodeFlags.Enabled;
         } else if(opCode == 937) {
-            FindValue<byte>(0, dataPtr, 0x30, 0, true);
-            FindValue<ushort>(0, dataPtr, 0x30, 0, true);
-            FindValue<uint>(0, dataPtr, 0x30, 0, true);
+            //FindValue<byte>(0, dataPtr, 0x30, 0, true);
+            //FindValue<ushort>(0, dataPtr, 0x30, 0, true);
+            //FindValue<uint>(0, dataPtr, 0x30, 0, true);
             //FindValue<string>("", dataPtr, 0x20, 0, true);
         }
 
@@ -96,7 +96,7 @@ internal unsafe class MemoryService : IDisposable {
     internal void CreateByteDump(nint ptr, int length, string name) {
         var bytes = new ReadOnlySpan<byte>((void*)ptr, length);
         var timeStamp = DateTime.Now;
-        using(FileStream fs = File.Create($"{_plugin.PluginInterface.GetPluginConfigDirectory()}\\{name}_{timeStamp.Year}{timeStamp.Month}{timeStamp.Day}{timeStamp.Hour}{timeStamp.Minute}{timeStamp.Second}{timeStamp.Millisecond}_dump.bin")) {
+        using(FileStream fs = File.Create($"{_plugin.PluginInterface.GetPluginConfigDirectory()}\\{name}_{timeStamp.Year}{timeStamp.Month}{timeStamp.Day}{timeStamp.Hour}{timeStamp.Minute}_{timeStamp.Second}{timeStamp.Millisecond}_dump.bin")) {
             fs.Write(bytes);
         }
     }

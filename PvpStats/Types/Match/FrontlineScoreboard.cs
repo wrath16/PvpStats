@@ -1,7 +1,7 @@
 ﻿using LiteDB;
 
 namespace PvpStats.Types.Match;
-internal class FrontlineScoreboard : PvpScoreboard {
+public class FrontlineScoreboard : PvpScoreboard {
     public long Occupations { get; set; }
     public long DamageToOther { get; set; }
     [BsonIgnore]

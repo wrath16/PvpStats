@@ -1,10 +1,13 @@
 ﻿using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
+using Dalamud.Game.ClientState.Objects.Enums;
+using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.GeneratedSheets2;
 using PvpStats.Helpers;
@@ -13,6 +16,8 @@ using PvpStats.Types.ClientStruct;
 using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using System;
+using System.Linq;
+using System.Numerics;
 using System.Threading.Tasks;
 
 namespace PvpStats.Managers.Game;
@@ -171,12 +176,39 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             return;
         }
         var now = DateTime.Now;
-        if((now - _lastPrint).TotalMinutes < 1) {
+        if((now - _lastPrint).TotalSeconds < 30) {
             return;
         }
         _lastPrint = now;
 
+        Plugin.Log.Debug("");
+
+        var playerPosition = Plugin.ClientState.LocalPlayer.Position;
+        var playerMapPosition = WorldPosToMapCoords(playerPosition);
+        Plugin.Log.Debug($"Player Position: {playerPosition} Map Coords: {playerMapPosition}");
+
+        foreach(PlayerCharacter pc in Plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
+            //Status x = new();
+            //x.RowId = 1420;
+            //var y = pc.StatusList.ToList().Where(x => x.StatusId == 1420);
+
+            if(pc.MaxHp ==250000) {
+                Plugin.Log.Debug($"{pc.Name} is a CC (health)");
+            } else if(pc.MaxHp == 500000) {
+                Plugin.Log.Debug($"{pc.Name} is an Opp (health)");
+            } else if(pc.MaxHp == 375000) {
+                Plugin.Log.Debug($"{pc.Name} is a BJ (health)");
+            }
+
+            if(pc.StatusList.Where(x => x.StatusId == 1420).Any()) {
+                Plugin.Log.Debug($"ID: {pc.ObjectId} 0x{pc.ObjectId:X2} NAME: {pc.Name} is in a machina! Position: {pc.Position} Coords: {WorldPosToMapCoords(pc.Position)}");
+            }
+            //_plugin.Log.Debug($"0x{pc.ObjectId.ToString("X2")} {pc.Name}");
+            //_plugin.Log.Debug($"team null? {isPlayerTeam is null} player team? {isPlayerTeam} is p member? {pc.StatusFlags.HasFlag(StatusFlags.PartyMember)} isSelf? {isSelf}");
+        }
+
         var instanceDirector = (RivalWingsContentDirector*)EventFramework.Instance()->GetInstanceContentDirector();
+        Plugin.Functions.CreateByteDump((nint)instanceDirector, 0x3000, "RWICD");
         //var falconCore = *(ushort*)(instanceDirector + 0x1D78);
         //var falconT1 = *(ushort*)(instanceDirector + 0x1EB8);
         //var falconT2 = *(ushort*)(instanceDirector + 0x1F58);
@@ -192,10 +224,46 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Raven Tower 1", instanceDirector->RavenTower1.Integrity));
         Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Raven Tower 2", instanceDirector->RavenTower2.Integrity));
 
-        Plugin.Log.Debug(string.Format("{0,-9} {1,-9}, {1,-9}", "ALLIANCE", "CERULEUM", "SOARING"));
+        Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Falcon Chasers:", instanceDirector->FalconMech1));
+        Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Falcon Opps:", instanceDirector->FalconMech2));
+        Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Falcon Justices:", instanceDirector->FalconMech3));
+        Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Raven Chasers:", instanceDirector->RavenMech1));
+        Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Raven Opps:", instanceDirector->RavenMech2));
+        Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Raven Justices:", instanceDirector->RavenMech3));
+
+        Plugin.Log.Debug($"MID TYPE: {instanceDirector->MidType} CONTROL: {instanceDirector->MidControl} FALCONS: {instanceDirector->FalconMidScore} RAVENS: {instanceDirector->RavenMidScore}");
+
+        Plugin.Log.Debug(string.Format("{0,-32} {1,-9}", "PLAYER", "MECH"));
+        for(int i = 0; i < 24; i++) {
+            var mech = instanceDirector->FriendlyMechSpan[i];
+            if(mech.Type != RivalWingsContentDirector.MechType.None) {
+                string? name = null;
+                foreach(PlayerCharacter pc in Plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
+                    if(pc.ObjectId == mech.PlayerObjectId) {
+                        name = pc.Name.ToString(); break;
+                    }
+                }
+                Plugin.Log.Debug(string.Format("{0,-32} {1,-9}", name ?? mech.PlayerObjectId.ToString(), mech.Type));
+            }
+        }
+
+        //Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", "A", instanceDirector->MechAllianceA, instanceDirector->MechAllianceA_2));
+        //Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", "B", instanceDirector->MechAllianceB, instanceDirector->MechAllianceB_2));
+        //Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", "C", instanceDirector->MechAllianceC, instanceDirector->MechAllianceC_2));
+        //Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", "D", instanceDirector->MechAllianceD, instanceDirector->MechAllianceD_2));
+        //Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", "E", instanceDirector->MechAllianceE, instanceDirector->MechAllianceE_2));
+        //Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", "F", instanceDirector->MechAllianceF, instanceDirector->MechAllianceF_2));
+
+        Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", "ALLIANCE", "CERULEUM", "SOARING"));
         for(int i = 0; i < 6; i++) {
             var alliance = instanceDirector->AllianceSpan[i];
-            Plugin.Log.Debug(string.Format("{0,-9} {1,-9}, {1,-9}", i, alliance.Ceruleum, alliance.SoaringStacks));
+            Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", i, alliance.Ceruleum, alliance.SoaringStacks));
         }
+    }
+
+    private static Vector2 WorldPosToMapCoords(Vector3 pos) {
+        var xInt = (int)(MathF.Round(pos.X, 3, MidpointRounding.AwayFromZero) * 1000);
+        var yInt = (int)(MathF.Round(pos.Z, 3, MidpointRounding.AwayFromZero) * 1000);
+        return new Vector2((int)(xInt * 0.001f * 1000f), (int)(yInt * 0.001f * 1000f));
     }
 }

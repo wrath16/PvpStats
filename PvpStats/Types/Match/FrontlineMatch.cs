@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace PvpStats.Types.Match;
-internal class FrontlineMatch : PvpMatch {
+public class FrontlineMatch : PvpMatch {
 
     public FrontlineMap? Arena { get; set; }
     public int PlayerCount { get; set; }

@@ -13,5 +13,5 @@ public class RivalWingsMatch : PvpMatch {
     public List<RivalWingsPlayer> Players { get; set; } = new();
 
     //have to use string so it can be deserialized correctly -_-
-    public Dictionary<string, RivalWingsPlayer> PlayerScoreboards { get; set; } = new();
+    public Dictionary<string, RivalWingsScoreboard> PlayerScoreboards { get; set; } = new();
 }

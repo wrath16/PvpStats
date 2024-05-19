@@ -1,7 +1,7 @@
 ﻿using PvpStats.Types.Match;
 
 namespace PvpStats.Types.Display;
-internal class FLScoreboardDouble : PvpScoreboardDouble {
+public class FLScoreboardDouble : PvpScoreboardDouble {
 
     public double Occupations { get; set; }
     public double DamageToOther { get; set; }

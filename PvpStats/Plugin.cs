@@ -103,7 +103,7 @@ public sealed class Plugin : IDalamudPlugin {
             TextureProvider = textureProvider;
             InteropProvider = interopProvider;
             SigScanner = sigScanner;
-
+            
             try {
                 Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             } catch(Exception e) {
@@ -147,6 +147,9 @@ public sealed class Plugin : IDalamudPlugin {
             CommandManager.AddHandler(FLStatsCommandName, new CommandInfo(OnFLCommand) {
                 HelpMessage = "Opens Frontline tracker."
             });
+            CommandManager.AddHandler(RWStatsCommandName, new CommandInfo(OnRWCommand) {
+                HelpMessage = "Opens Rival Wings tracker."
+            });
             CommandManager.AddHandler(ConfigCommandName, new CommandInfo(OnConfigCommand) {
                 HelpMessage = "Opens config window."
             });
@@ -182,6 +185,7 @@ public sealed class Plugin : IDalamudPlugin {
         Functions?.Dispose();
         CCMatchManager?.Dispose();
         FLMatchManager?.Dispose();
+        RWMatchManager?.Dispose();
         WindowManager?.Dispose();
         Storage?.Dispose();
         DataQueue?.Dispose();
@@ -196,6 +200,9 @@ public sealed class Plugin : IDalamudPlugin {
 
     private void OnFLCommand(string command, string args) {
         WindowManager.OpenFLWindow();
+    }
+
+    private void OnRWCommand(string command, string args) {
     }
 
     private void OnConfigCommand(string command, string args) {

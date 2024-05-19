@@ -1,7 +1,7 @@
 ﻿using PvpStats.Types.Match;
 
 namespace PvpStats.Types.Display;
-internal class PvpScoreboardDouble {
+public class PvpScoreboardDouble {
     public int LifeCount { get; set; } = 1;
     public double Kills { get; set; }
     public double Deaths { get; set; }
