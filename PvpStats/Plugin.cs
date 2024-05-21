@@ -203,6 +203,7 @@ public sealed class Plugin : IDalamudPlugin {
     }
 
     private void OnRWCommand(string command, string args) {
+        WindowManager.OpenRWWindow();
     }
 
     private void OnConfigCommand(string command, string args) {

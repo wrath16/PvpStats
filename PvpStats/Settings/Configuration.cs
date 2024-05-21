@@ -32,6 +32,7 @@ public class Configuration : IPluginConfiguration {
     public bool ColorScaleStats { get; set; } = true;
     public WindowConfiguration CCWindowConfig { get; set; } = new();
     public WindowConfiguration FLWindowConfig { get; set; } = new();
+    public WindowConfiguration RWWindowConfig { get; set; } = new();
     public ColorConfiguration Colors { get; set; } = new();
 
     [NonSerialized]

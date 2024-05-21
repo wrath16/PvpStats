@@ -93,6 +93,30 @@ internal class StorageService {
         await WriteToDatabase(() => GetFLMatches().Update(matches.Where(m => m.Id != null)));
     }
 
+    internal ILiteCollection<RivalWingsMatch> GetRWMatches() {
+        return Database.GetCollection<RivalWingsMatch>(RWTable);
+    }
+
+    internal async Task AddRWMatch(RivalWingsMatch match) {
+        LogUpdate(match.Id.ToString());
+        await WriteToDatabase(() => GetRWMatches().Insert(match));
+    }
+
+    internal async Task AddRWMatches(IEnumerable<RivalWingsMatch> matches) {
+        LogUpdate(null, matches.Count());
+        await WriteToDatabase(() => GetRWMatches().Insert(matches.Where(m => m.Id != null)));
+    }
+
+    internal async Task UpdateRWMatch(RivalWingsMatch match) {
+        LogUpdate(match.Id.ToString());
+        await WriteToDatabase(() => GetRWMatches().Update(match));
+    }
+
+    internal async Task UpdateRWMatches(IEnumerable<RivalWingsMatch> matches) {
+        LogUpdate(null, matches.Count());
+        await WriteToDatabase(() => GetRWMatches().Update(matches.Where(m => m.Id != null)));
+    }
+
     internal ILiteCollection<PlayerAliasLink> GetAutoLinks() {
         return Database.GetCollection<PlayerAliasLink>(AutoPlayerLinksTable);
     }

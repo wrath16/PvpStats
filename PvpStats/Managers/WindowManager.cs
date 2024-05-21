@@ -1,6 +1,7 @@
 ﻿using Dalamud.Interface.Internal;
 using Dalamud.Interface.Windowing;
 using LiteDB;
+using Lumina.Data.Files;
 using PvpStats.Helpers;
 using PvpStats.Services.DataCache;
 using PvpStats.Types.Match;
@@ -22,13 +23,22 @@ internal class WindowManager : IDisposable {
     private Plugin _plugin;
     internal CCTrackerWindow CCTrackerWindow { get; private set; }
     internal FLTrackerWindow FLTrackerWindow { get; private set; }
+    internal RWTrackerWindow RWTrackerWindow { get; private set; }
     internal ConfigWindow ConfigWindow { get; private set; }
 #if DEBUG
     internal DebugWindow? DebugWindow { get; private set; }
 #endif
 
-    internal readonly Dictionary<Job, IDalamudTextureWrap> JobIcons = new();
+    internal readonly Dictionary<Job, IDalamudTextureWrap?> JobIcons = new();
     internal IDalamudTextureWrap CCBannerImage { get; private set; }
+    internal IDalamudTextureWrap? RWSuppliesTexture { get; private set; }
+    internal IDalamudTextureWrap? GoblinMercIcon { get; private set; }
+    internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> CoreIcons = [];
+    internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> Tower1Icons = [];
+    internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> Tower2Icons = [];
+    internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> ChaserIcons = [];
+    internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> OppressorIcons = [];
+    internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> JusticeIcons = [];
 
     internal WindowManager(Plugin plugin) {
         _plugin = plugin;
@@ -41,12 +51,30 @@ internal class WindowManager : IDisposable {
         foreach(var icon in PlayerJobHelper.JobIcons) {
             JobIcons.Add(icon.Key, _plugin.TextureProvider.GetIcon(icon.Value));
         }
+        //var rwTextureFile = _plugin.DataManager.GetFile("ui/uld/PVPSimulationHeader2_hr1.tex") as TexFile;
+        //RWSuppliesTexture = _plugin.TextureProvider.GetTexture(rwTextureFile);
+        RWSuppliesTexture = _plugin.TextureProvider.GetTextureFromGame("ui/uld/PVPSimulationHeader2_hr1.tex");
+        GoblinMercIcon = _plugin.TextureProvider.GetIcon(60976);
+        CoreIcons.Add(RivalWingsTeamName.Falcons, _plugin.TextureProvider.GetIcon(60947));
+        CoreIcons.Add(RivalWingsTeamName.Ravens, _plugin.TextureProvider.GetIcon(60948));
+        Tower1Icons.Add(RivalWingsTeamName.Falcons, _plugin.TextureProvider.GetIcon(60945));
+        Tower1Icons.Add(RivalWingsTeamName.Ravens, _plugin.TextureProvider.GetIcon(60946));
+        Tower2Icons.Add(RivalWingsTeamName.Falcons, _plugin.TextureProvider.GetIcon(60956));
+        Tower2Icons.Add(RivalWingsTeamName.Ravens, _plugin.TextureProvider.GetIcon(60957));
+        ChaserIcons.Add(RivalWingsTeamName.Falcons, _plugin.TextureProvider.GetIcon(60939));
+        ChaserIcons.Add(RivalWingsTeamName.Ravens, _plugin.TextureProvider.GetIcon(60942));
+        OppressorIcons.Add(RivalWingsTeamName.Falcons, _plugin.TextureProvider.GetIcon(60940));
+        OppressorIcons.Add(RivalWingsTeamName.Ravens, _plugin.TextureProvider.GetIcon(60943));
+        JusticeIcons.Add(RivalWingsTeamName.Falcons, _plugin.TextureProvider.GetIcon(60941));
+        JusticeIcons.Add(RivalWingsTeamName.Ravens, _plugin.TextureProvider.GetIcon(60944));
 
         CCTrackerWindow = new(plugin);
         FLTrackerWindow = new(plugin);
+        RWTrackerWindow = new(plugin);
         ConfigWindow = new(plugin);
         WindowSystem.AddWindow(CCTrackerWindow);
         WindowSystem.AddWindow(FLTrackerWindow);
+        WindowSystem.AddWindow(RWTrackerWindow);
         WindowSystem.AddWindow(ConfigWindow);
 
 #if DEBUG
@@ -95,6 +123,10 @@ internal class WindowManager : IDisposable {
 
     internal void OpenFLWindow() {
         FLTrackerWindow.IsOpen = true;
+    }
+
+    internal void OpenRWWindow() {
+        RWTrackerWindow.IsOpen = true;
     }
 
     internal void OpenConfigWindow() {
@@ -182,7 +214,7 @@ internal class WindowManager : IDisposable {
 
     public async Task RefreshAll() {
         _plugin.Log.Debug("refreshing windows...");
-        Task.WaitAll(ConfigWindow.Refresh(), RefreshCCWindow(), RefreshFLWindow());
+        Task.WaitAll(ConfigWindow.Refresh(), RefreshCCWindow(), RefreshFLWindow(), RefreshRWWindow());
         await Task.CompletedTask;
     }
 
@@ -195,6 +227,10 @@ internal class WindowManager : IDisposable {
     }
 
     public async Task RefreshFLWindow() {
+        await FLTrackerWindow.Refresh();
+    }
+
+    public async Task RefreshRWWindow() {
         await FLTrackerWindow.Refresh();
     }
 }

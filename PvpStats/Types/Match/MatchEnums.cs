@@ -65,6 +65,20 @@ public enum RivalWingsMap {
 }
 
 public enum RivalWingsTeamName {
-    Falcons,
-    Ravens
+    Falcons = 0,
+    Ravens = 1,
+    Unknown = 2
+}
+
+public enum RivalWingsMech {
+    Chaser = 0,
+    Oppressor = 1,
+    Justice = 2,
+}
+
+public enum RivalWingsSupplies {
+    Gobtank = 0,
+    Ceruleum = 1,
+    Gobbiejuice = 2,
+    Gobcrate = 3
 }

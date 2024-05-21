@@ -17,38 +17,28 @@ public unsafe struct RivalWingsContentDirector {
     [FieldOffset(0x1FF8)] public Structure RavenTower1;
     [FieldOffset(0x2098)] public Structure RavenTower2;
 
+    [FieldOffset(0x2398)] public short MercBalance;                 //50 to 100 for falcons, 0 to 50 for ravens
+    [FieldOffset(0x239C)] public Team MercControl;
+
     [FieldOffset(0x2444)] public Supplies MidType;
     [FieldOffset(0x2448)] public Team MidControl;
     [FieldOffset(0x245C)] public byte FalconMidScore;
     [FieldOffset(0x2460)] public byte RavenMidScore;
+    //to find: mid timer, mid status, num players per team, control prog.
+    //also to find: mercs
 
-    [FieldOffset(0x24D0)] public byte FalconMech1;
-    [FieldOffset(0x24D4)] public byte FalconMech2;
-    [FieldOffset(0x24D8)] public byte FalconMech3;
+    [FieldOffset(0x24D0)] public byte FalconChaserCount;
+    [FieldOffset(0x24D4)] public byte FalconOppressorCount;
+    [FieldOffset(0x24D8)] public byte FalconJusticeCount;
 
-    [FieldOffset(0x24DC)] public byte RavenMech1;
-    [FieldOffset(0x24E0)] public byte RavenMech2;
-    [FieldOffset(0x24E4)] public byte RavenMech3;
+    [FieldOffset(0x24DC)] public byte RavenChaserCount;
+    [FieldOffset(0x24E0)] public byte RavenOppressorCount;
+    [FieldOffset(0x24E4)] public byte RavenJusticeCount;
 
     [FixedSizeArray<Mech>(24)]
     [FieldOffset(0x24F0)] public fixed byte FriendlyMechs[0x08 * 24];
-
-    //all dubious
-    //[FieldOffset(0x2504)] public Mech MechAllianceB;
-    //[FieldOffset(0x251C)] public Mech MechAllianceB_2;
-    //[FieldOffset(0x2524)] public Mech MechAllianceA;
-    //[FieldOffset(0x2534)] public Mech MechAllianceC;
-    //[FieldOffset(0x253C)] public Mech MechAllianceD;
-    //[FieldOffset(0x255C)] public Mech MechAllianceC_2;
-    //[FieldOffset(0x2574)] public Mech MechAllianceA_2;
-    //[FieldOffset(0x257C)] public Mech MechAllianceF;
-    //[FieldOffset(0x2584)] public Mech MechAllianceE_2;
-    //[FieldOffset(0x258C)] public Mech MechAllianceF_2;
-    //[FieldOffset(0x2594)] public Mech MechAllianceE;
-    //[FieldOffset(0x25AC)] public Mech MechAllianceD_2;
-
-    //[FieldOffset(0x2B40)] enemy mech
-
+    
+    //[FieldOffset(0x2B40)] enemy mech hmm...
 
     public unsafe Span<AllianceStatus> AllianceSpan => new(Unsafe.AsPointer(ref PlayerAlliances[0]), 6);
     public unsafe Span<Mech> FriendlyMechSpan => new(Unsafe.AsPointer(ref FriendlyMechs[0]), 24);
