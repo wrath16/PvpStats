@@ -5,7 +5,7 @@ using System;
 using System.Text.RegularExpressions;
 
 namespace PvpStats.Types.Player;
-public class PlayerAlias : IEquatable<PlayerAlias>, IEquatable<CrystallineConflictPlayer>, IEquatable<string>, IComparable<PlayerAlias> {
+public class PlayerAlias : IEquatable<PlayerAlias>, IEquatable<PvpPlayer>, IEquatable<CrystallineConflictPlayer>, IEquatable<string>, IComparable<PlayerAlias> {
     public string Name { get; set; } = "";
     public string HomeWorld { get; set; } = "";
     //[BsonId]
@@ -15,6 +15,9 @@ public class PlayerAlias : IEquatable<PlayerAlias>, IEquatable<CrystallineConfli
         s = s.Trim();
         var homeWorld = Regex.Match(s, @"\b[\S]+$").Value.Trim();
         var playerName = Regex.Match(s, @".*(?=\s[\S]+$)").Value.Trim();
+        if(s.IsNullOrEmpty()) {
+            throw new InvalidCastException("Cannot convert empty string to player alias!");
+        }
         if(homeWorld.IsNullOrEmpty() || playerName.IsNullOrEmpty()) {
             return new PlayerAlias(s, "");
         }
@@ -70,6 +73,13 @@ public class PlayerAlias : IEquatable<PlayerAlias>, IEquatable<CrystallineConfli
             return false;
         }
         return FullName.Equals(other.FullName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public bool Equals(PvpPlayer? other) {
+        if(other is null) {
+            return false;
+        }
+        return FullName.Equals(other.Name.FullName, StringComparison.OrdinalIgnoreCase);
     }
 
     public bool Equals(CrystallineConflictPlayer? other) {

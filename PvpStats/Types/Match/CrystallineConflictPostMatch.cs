@@ -1,4 +1,5 @@
-﻿using PvpStats.Types.Player;
+﻿using PvpStats.Types.Display;
+using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 
@@ -32,4 +33,17 @@ public class CrystallineConflictPostMatchRow {
     public int HPRestored { get; set; }
 
     public TimeSpan TimeOnCrystal { get; set; }
+
+    public CCScoreboard ToScoreboard() {
+        return new CCScoreboard() {
+            IsTeam = Player is null,
+            Kills = (ulong)Kills,
+            Deaths = (ulong)Deaths,
+            Assists = (ulong)Assists,
+            DamageDealt = (ulong)DamageDealt,
+            DamageTaken = (ulong)DamageTaken,
+            HPRestored = (ulong)HPRestored,
+            TimeOnCrystal = TimeOnCrystal
+        };
+    }
 }

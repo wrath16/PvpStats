@@ -8,8 +8,10 @@ using PvpStats.Managers;
 using PvpStats.Managers.Game;
 using PvpStats.Managers.Stats;
 using PvpStats.Services;
+using PvpStats.Services.DataCache;
 using PvpStats.Settings;
 using System;
+using System.Threading.Tasks;
 
 namespace PvpStats;
 
@@ -19,6 +21,8 @@ public sealed class Plugin : IDalamudPlugin {
     internal const string DatabaseName = "data.db";
 
     private const string CCStatsCommandName = "/ccstats";
+    private const string FLStatsCommandName = "/flstats";
+    private const string RWStatsCommandName = "/rwstats";
     private const string DebugCommandName = "/pvpstatsdebug";
     private const string ConfigCommandName = "/pvpstatsconfig";
 
@@ -41,14 +45,18 @@ public sealed class Plugin : IDalamudPlugin {
     internal IGameInteropProvider InteropProvider { get; init; }
     internal ISigScanner SigScanner { get; init; }
 
-    internal MatchManager? MatchManager { get; init; }
+    internal CrystallineConflictMatchManager? CCMatchManager { get; init; }
+    internal FrontlineMatchManager? FLMatchManager { get; init; }
     internal WindowManager WindowManager { get; init; }
     internal MigrationManager MigrationManager { get; init; }
     internal CrystallineConflictStatsManager CCStatsEngine { get; init; }
+    internal FrontlineStatsManager FLStatsEngine { get; init; }
 
     internal DataQueueService DataQueue { get; init; }
     internal LocalizationService Localization { get; init; }
     internal StorageService Storage { get; init; }
+    internal CCMatchCacheService CCCache { get; init; }
+    internal FLMatchCacheService FLCache { get; init; }
     internal GameStateService GameState { get; init; }
     internal AtkNodeService AtkNodeService { get; init; }
     internal PlayerLinkService PlayerLinksService { get; init; }
@@ -95,27 +103,43 @@ public sealed class Plugin : IDalamudPlugin {
             InteropProvider = interopProvider;
             SigScanner = sigScanner;
 
-            Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+            try {
+                Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+            } catch(Exception e) {
+                Configuration = new();
+                Log.Error(e, "Error in configuration setup.");
+            }
             Configuration.Initialize(this);
 
             DataQueue = new(this);
             Storage = new(this, $"{PluginInterface.GetPluginConfigDirectory()}\\{DatabaseName}");
+            CCCache = new(this);
+            FLCache = new(this);
             Functions = new(this);
             GameState = new(this);
             AtkNodeService = new(this);
             PlayerLinksService = new(this);
             Localization = new(this);
             CCStatsEngine = new(this);
+            FLStatsEngine = new(this);
             WindowManager = new(this);
             MigrationManager = new(this);
             try {
-                MatchManager = new(this);
+                CCMatchManager = new(this);
             } catch(SignatureException e) {
-                Log.Error($"failed to initialize match manager: {e.Message}");
+                Log.Error($"failed to initialize cc match manager: {e.Message}");
+            }
+            try {
+                FLMatchManager = new(this);
+            } catch(SignatureException e) {
+                Log.Error($"failed to initialize fl match manager: {e.Message}");
             }
 
-            CommandManager.AddHandler(CCStatsCommandName, new CommandInfo(OnCommand) {
+            CommandManager.AddHandler(CCStatsCommandName, new CommandInfo(OnCCCommand) {
                 HelpMessage = "Opens Crystalline Conflict tracker."
+            });
+            CommandManager.AddHandler(FLStatsCommandName, new CommandInfo(OnFLCommand) {
+                HelpMessage = "Opens Frontline tracker."
             });
             CommandManager.AddHandler(ConfigCommandName, new CommandInfo(OnConfigCommand) {
                 HelpMessage = "Opens config window."
@@ -127,9 +151,9 @@ public sealed class Plugin : IDalamudPlugin {
             });
             DebugMode = true;
 #endif
+            DataQueue.QueueDataOperation(Initialize);
             //PluginInterface.UiBuilder.OpenConfigUi += WindowManager.OpenConfigWindow;
-
-            Log.Debug("PvP Stats has started.");
+            //Log.Debug("PvP Stats has started.");
         } catch(Exception e) {
             //remove handlers and release database if we fail to start
             Log!.Error($"Failed to initialize plugin constructor: {e.Message}");
@@ -146,31 +170,26 @@ public sealed class Plugin : IDalamudPlugin {
 #endif
 
         CommandManager.RemoveHandler(CCStatsCommandName);
+        CommandManager.RemoveHandler(FLStatsCommandName);
         CommandManager.RemoveHandler(ConfigCommandName);
 
-        if(MatchManager != null) {
-            MatchManager.Dispose();
-        }
-        if(WindowManager != null) {
-            WindowManager.Dispose();
-        }
-        if(Storage != null) {
-            Storage.Dispose();
-        }
-        if(DataQueue != null) {
-            DataQueue.Dispose();
-        }
-        if(GameState != null) {
-            GameState.Dispose();
-        }
+        Functions?.Dispose();
+        CCMatchManager?.Dispose();
+        FLMatchManager?.Dispose();
+        WindowManager?.Dispose();
+        Storage?.Dispose();
+        DataQueue?.Dispose();
+        GameState?.Dispose();
 
-        if(Configuration != null) {
-            Configuration.Save();
-        }
+        Configuration?.Save();
     }
 
-    private void OnCommand(string command, string args) {
-        WindowManager.OpenMainWindow();
+    private void OnCCCommand(string command, string args) {
+        WindowManager.OpenCCWindow();
+    }
+
+    private void OnFLCommand(string command, string args) {
+        WindowManager.OpenFLWindow();
     }
 
     private void OnConfigCommand(string command, string args) {
@@ -182,4 +201,14 @@ public sealed class Plugin : IDalamudPlugin {
         WindowManager.OpenDebugWindow();
     }
 #endif
+
+    private async Task Initialize() {
+        if(Configuration.EnableDBCachingCC ?? true) {
+            CCCache.EnableCaching();
+        }
+        await MigrationManager.BulkUpdateCCMatchTypes();
+        await MigrationManager.BulkCCUpdateValidatePlayerCount();
+        await WindowManager.RefreshAll();
+        Log.Information("PvP Tracker initialized.");
+    }
 }

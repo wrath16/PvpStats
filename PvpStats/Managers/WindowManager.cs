@@ -2,10 +2,12 @@
 using Dalamud.Interface.Windowing;
 using LiteDB;
 using PvpStats.Helpers;
+using PvpStats.Services.DataCache;
 using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using PvpStats.Windows;
 using PvpStats.Windows.Detail;
+using PvpStats.Windows.Tracker;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -18,10 +20,11 @@ internal class WindowManager : IDisposable {
 
     private WindowSystem WindowSystem;
     private Plugin _plugin;
-    private MainWindow MainWindow;
-    private ConfigWindow ConfigWindow;
+    internal CCTrackerWindow CCTrackerWindow { get; private set; }
+    internal FLTrackerWindow FLTrackerWindow { get; private set; }
+    internal ConfigWindow ConfigWindow { get; private set; }
 #if DEBUG
-    private DebugWindow? DebugWindow;
+    internal DebugWindow? DebugWindow { get; private set; }
 #endif
 
     internal readonly Dictionary<Job, IDalamudTextureWrap> JobIcons = new();
@@ -39,9 +42,11 @@ internal class WindowManager : IDisposable {
             JobIcons.Add(icon.Key, _plugin.TextureProvider.GetIcon(icon.Value));
         }
 
-        MainWindow = new(plugin);
+        CCTrackerWindow = new(plugin);
+        FLTrackerWindow = new(plugin);
         ConfigWindow = new(plugin);
-        WindowSystem.AddWindow(MainWindow);
+        WindowSystem.AddWindow(CCTrackerWindow);
+        WindowSystem.AddWindow(FLTrackerWindow);
         WindowSystem.AddWindow(ConfigWindow);
 
 #if DEBUG
@@ -62,6 +67,7 @@ internal class WindowManager : IDisposable {
         WindowSystem.RemoveAllWindows();
         _plugin.PluginInterface.UiBuilder.Draw -= DrawUI;
         _plugin.PluginInterface.UiBuilder.OpenConfigUi -= OpenConfigWindow;
+        CCBannerImage.Dispose();
 
         _plugin.ClientState.Login -= OnLogin;
     }
@@ -69,8 +75,8 @@ internal class WindowManager : IDisposable {
     private void OnLogin() {
         Task.Delay(3000).ContinueWith((t) => {
             _plugin.DataQueue.QueueDataOperation(async () => {
-                _plugin.PlayerLinksService.BuildAutoLinksCache();
-                await Refresh();
+                await _plugin.PlayerLinksService.BuildAutoLinksCache();
+                await RefreshAll();
             });
         });
     }
@@ -83,8 +89,12 @@ internal class WindowManager : IDisposable {
         WindowSystem.RemoveWindow(window);
     }
 
-    internal void OpenMainWindow() {
-        MainWindow.IsOpen = true;
+    internal void OpenCCWindow() {
+        CCTrackerWindow.IsOpen = true;
+    }
+
+    internal void OpenFLWindow() {
+        FLTrackerWindow.IsOpen = true;
     }
 
     internal void OpenConfigWindow() {
@@ -99,7 +109,21 @@ internal class WindowManager : IDisposable {
     }
 #endif
 
-    internal void OpenMatchDetailsWindow(CrystallineConflictMatch match) {
+    //internal void OpenMatchDetailsWindow(CrystallineConflictMatch match) {
+    //    var windowName = $"Match Details: {match.Id}";
+    //    var window = WindowSystem.Windows.Where(w => w.WindowName == windowName).FirstOrDefault();
+    //    if(window is not null) {
+    //        window.BringToFront();
+    //        window.IsOpen = true;
+    //    } else {
+    //        _plugin.Log.Debug($"Opening item detail for...{match.DutyStartTime}");
+    //        var itemDetail = new CrystallineConflictMatchDetail(_plugin, match);
+    //        itemDetail.IsOpen = true;
+    //        _plugin.WindowManager.AddWindow(itemDetail);
+    //    }
+    //}
+
+    internal void OpenMatchDetailsWindow(PvpMatch match) {
         var windowName = $"Match Details: {match.Id}";
         var window = WindowSystem.Windows.Where(w => w.WindowName == windowName).FirstOrDefault();
         if(window is not null) {
@@ -107,9 +131,19 @@ internal class WindowManager : IDisposable {
             window.IsOpen = true;
         } else {
             _plugin.Log.Debug($"Opening item detail for...{match.DutyStartTime}");
-            var itemDetail = new CrystallineConflictMatchDetail(_plugin, match);
-            itemDetail.IsOpen = true;
-            _plugin.WindowManager.AddWindow(itemDetail);
+            if(match.GetType() == typeof(CrystallineConflictMatch)) {
+                var itemDetail = new CrystallineConflictMatchDetail(_plugin, match as CrystallineConflictMatch);
+                itemDetail.IsOpen = true;
+                _plugin.WindowManager.AddWindow(itemDetail);
+            } else if(match.GetType() == typeof(FrontlineMatch)) {
+                var itemDetail = new FrontlineMatchDetail(_plugin, match as FrontlineMatch);
+                itemDetail.IsOpen = true;
+                _plugin.WindowManager.AddWindow(itemDetail);
+            }
+
+            //var itemDetail = new CrystallineConflictMatchDetail(_plugin, match);
+            //itemDetail.IsOpen = true;
+            //_plugin.WindowManager.AddWindow(itemDetail);
         }
     }
 
@@ -120,7 +154,7 @@ internal class WindowManager : IDisposable {
         }
     }
 
-    internal void OpenFullEditWindow(CrystallineConflictMatch match) {
+    internal void OpenFullEditWindow<T>(T match) where T : PvpMatch {
         var windowName = $"Full Edit: {match.GetHashCode()}";
         var window = WindowSystem.Windows.Where(w => w.WindowName == windowName).FirstOrDefault();
         if(window is not null) {
@@ -128,15 +162,39 @@ internal class WindowManager : IDisposable {
             window.IsOpen = true;
         } else {
             _plugin.Log.Debug($"Opening full edit details for...{match.DutyStartTime}");
-            var itemDetail = new FullEditDetail<CrystallineConflictMatch>(_plugin, match);
+            var matchType = typeof(T);
+            MatchCacheService<T>? matchCache = null;
+            switch(matchType) {
+                case Type _ when matchType == typeof(CrystallineConflictMatch):
+                    matchCache = _plugin.CCCache as MatchCacheService<T>;
+                    break;
+                case Type _ when matchType == typeof(FrontlineMatch):
+                    matchCache = _plugin.FLCache as MatchCacheService<T>;
+                    break;
+                default:
+                    break;
+            }
+            var itemDetail = new FullEditDetail<T>(_plugin, matchCache, match);
             itemDetail.IsOpen = true;
             _plugin.WindowManager.AddWindow(itemDetail);
         }
     }
 
-    public async Task Refresh() {
+    public async Task RefreshAll() {
         _plugin.Log.Debug("refreshing windows...");
+        Task.WaitAll(ConfigWindow.Refresh(), RefreshCCWindow(), RefreshFLWindow());
+        await Task.CompletedTask;
+    }
+
+    public async Task RefreshConfigWindow() {
         await ConfigWindow.Refresh();
-        await MainWindow.Refresh();
+    }
+
+    public async Task RefreshCCWindow() {
+        await CCTrackerWindow.Refresh();
+    }
+
+    public async Task RefreshFLWindow() {
+        await FLTrackerWindow.Refresh();
     }
 }

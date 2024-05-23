@@ -1,4 +1,5 @@
 ﻿using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PvpStats.Types.Match;
 using System;
@@ -40,31 +41,44 @@ public class MatchTypeFilter : DataFilter {
     internal override void Draw() {
         bool allSelected = AllSelected;
         if(ImGui.Checkbox($"Select All##{GetHashCode()}", ref allSelected)) {
-            _plugin!.DataQueue.QueueDataOperation(async () => {
+            RateLimitRefresh(() => {
                 foreach(var category in FilterState) {
                     FilterState[category.Key] = allSelected;
                 }
                 AllSelected = allSelected;
-                await Refresh();
             });
+            //_plugin!.DataQueue.QueueDataOperation(async () => {
+            //    foreach(var category in FilterState) {
+            //        FilterState[category.Key] = allSelected;
+            //    }
+            //    AllSelected = allSelected;
+            //    await Refresh();
+            //});
         }
 
-        ImGui.BeginTable("matchTypeFilterTable", 2);
-        ImGui.TableSetupColumn($"c1", ImGuiTableColumnFlags.WidthFixed, float.Min(ImGui.GetContentRegionAvail().X / 2, ImGuiHelpers.GlobalScale * 400f));
-        ImGui.TableSetupColumn($"c2", ImGuiTableColumnFlags.WidthFixed, float.Min(ImGui.GetContentRegionAvail().X / 2, ImGuiHelpers.GlobalScale * 400f));
-        ImGui.TableNextRow();
+        using var table = ImRaii.Table("matchTypeFilterTable", 2);
+        if(table) {
+            ImGui.TableSetupColumn($"c1", ImGuiTableColumnFlags.WidthFixed, float.Min(ImGui.GetContentRegionAvail().X / 2, ImGuiHelpers.GlobalScale * 400f));
+            ImGui.TableSetupColumn($"c2", ImGuiTableColumnFlags.WidthFixed, float.Min(ImGui.GetContentRegionAvail().X / 2, ImGuiHelpers.GlobalScale * 400f));
+            ImGui.TableNextRow();
 
-        foreach(var category in FilterState) {
-            ImGui.TableNextColumn();
-            bool filterState = category.Value;
-            if(ImGui.Checkbox($"{category.Key}##{GetHashCode()}", ref filterState)) {
-                _plugin!.DataQueue.QueueDataOperation(async () => {
-                    FilterState[category.Key] = filterState;
-                    UpdateAllSelected();
-                    await Refresh();
-                });
+            foreach(var category in FilterState) {
+                ImGui.TableNextColumn();
+                bool filterState = category.Value;
+                if(ImGui.Checkbox($"{category.Key}##{GetHashCode()}", ref filterState)) {
+                    //if(CurrentRefresh is null || CurrentRefresh.Result.IsCompleted) {
+                    //    CurrentRefresh = _plugin!.DataQueue.QueueDataOperation(async () => {
+                    //        FilterState[category.Key] = filterState;
+                    //        UpdateAllSelected();
+                    //        await Refresh();
+                    //    });
+                    //}
+                    RateLimitRefresh(() => {
+                        FilterState[category.Key] = filterState;
+                        UpdateAllSelected();
+                    });
+                }
             }
         }
-        ImGui.EndTable();
     }
 }

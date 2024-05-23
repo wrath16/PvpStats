@@ -203,9 +203,12 @@ internal abstract class FilteredList<T> {
             if(ImGui.Selectable($"##{item!.GetHashCode()}-selectable", false, ImGuiSelectableFlags.SpanAllColumns)) {
                 OpenItemDetail(item);
             }
-            if(ContextMenu && ImGui.BeginPopupContextItem($"##{item!.GetHashCode()}--ContextMenu", ImGuiPopupFlags.MouseButtonRight)) {
-                ContextMenuItems(item);
-                ImGui.EndPopup();
+
+            if(ContextMenu) {
+                using var contextMenu = ImRaii.ContextPopupItem($"##{item!.GetHashCode()}--ContextMenu", ImGuiPopupFlags.MouseButtonRight);
+                if(contextMenu) {
+                    ContextMenuItems(item);
+                }
             }
             DrawListItem(item);
         }

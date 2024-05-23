@@ -1,17 +1,14 @@
-﻿using Dalamud.Interface;
-using Dalamud.Interface.Colors;
+﻿using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
-using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PvpStats.Helpers;
 using PvpStats.Types.Match;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
-internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> {
+internal class CrystallineConflictMatchList : MatchList<CrystallineConflictMatch> {
 
     protected override List<ColumnParams> Columns { get; set; } = new() {
         new ColumnParams{Name = "Start Time", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 125f },
@@ -23,28 +20,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         new ColumnParams{Name = "RankAfter", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 125f, Priority = 3 },
     };
 
-    protected override ImGuiTableFlags TableFlags { get; set; } = ImGuiTableFlags.Hideable;
-    protected override ImGuiWindowFlags ChildFlags { get; set; } = ImGuiWindowFlags.AlwaysVerticalScrollbar;
-    protected override bool ContextMenu { get; set; } = true;
-    protected override bool DynamicColumns { get; set; } = true;
-
-    public CrystallineConflictList(Plugin plugin) : base(plugin, plugin.CCStatsEngine.RefreshLock) {
-    }
-
-    protected override void PreChildDraw() {
-        ImGuiHelper.CSVButton(ListCSV);
-        ImGui.SameLine();
-        using(var font = ImRaii.PushFont(UiBuilder.IconFont)) {
-            if(ImGui.Button($"{FontAwesomeIcon.Ban.ToIconString()}##CloseAllMatches")) {
-                _plugin.DataQueue.QueueDataOperation(_plugin.WindowManager.CloseAllMatchWindows);
-            }
-        }
-        ImGuiHelper.WrappedTooltip("Close all open match windows");
-        //ImGui.SameLine();
-        //using(var font = ImRaii.PushFont(UiBuilder.IconFont)) {
-        //    ImGuiHelper.RightAlignCursor(FontAwesomeIcon.Heart.ToIconString());
-        //}
-        //ImGuiHelper.DonateButton();
+    public CrystallineConflictMatchList(Plugin plugin) : base(plugin, plugin.CCCache, plugin.CCStatsEngine.RefreshLock) {
     }
 
     public override void DrawListItem(CrystallineConflictMatch item) {
@@ -59,7 +35,9 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         }
         ImGui.TableNextColumn();
         if(!item.IsSpectated) {
-            ImGui.TextColored(_plugin.Configuration.GetJobColor(item.LocalPlayerTeamMember!.Job), item.LocalPlayerTeamMember.Job.ToString());
+            var localPlayerJob = item.LocalPlayerTeamMember!.Job;
+            ImGuiHelper.CenterAlignCursor(localPlayerJob.ToString() ?? "");
+            ImGui.TextColored(_plugin.Configuration.GetJobColor(localPlayerJob), localPlayerJob.ToString());
         }
         ImGui.TableNextColumn();
         ImGui.Text($"{item.MatchType}");
@@ -69,8 +47,8 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         bool noWinner = item.MatchWinner is null;
         bool isWin = item.MatchWinner == item.LocalPlayerTeam?.TeamName;
         bool isSpectated = item.LocalPlayerTeam is null;
-        var color = ImGuiColors.DalamudWhite;
-        string resultText = "";
+        Vector4 color;
+        string resultText;
         if(isSpectated) {
             color = ImGuiColors.DalamudWhite;
             resultText = "N/A";
@@ -80,6 +58,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
             resultText = isWin ? "WIN" : "LOSS";
             resultText = noWinner ? "???" : resultText;
         }
+        ImGuiHelper.CenterAlignCursor(resultText);
         ImGui.TextColored(color, resultText);
         ImGui.TableNextColumn();
         if(item.MatchType == CrystallineConflictMatchType.Ranked) {
@@ -89,47 +68,7 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         //ImGui.TableNextRow();
     }
 
-    public async override Task RefreshDataModel() {
-        //#if DEBUG
-        //        DataModel = _plugin.Storage.GetCCMatches().Query().Where(m => !m.IsDeleted).OrderByDescending(m => m.DutyStartTime).ToList();
-        //#else
-        //        DataModel = _plugin.Storage.GetCCMatches().Query().Where(m => !m.IsDeleted && m.IsCompleted).OrderByDescending(m => m.DutyStartTime).ToList();
-        //#endif
-        foreach(var match in DataModel) {
-            ListCSV += CSVRow(match);
-        }
-        await Task.CompletedTask;
-    }
-
-    public override void OpenItemDetail(CrystallineConflictMatch item) {
-        _plugin.DataQueue.QueueDataOperation(() => {
-            _plugin.WindowManager.OpenMatchDetailsWindow(item);
-        });
-    }
-
-    public override void OpenFullEditDetail(CrystallineConflictMatch item) {
-        _plugin.DataQueue.QueueDataOperation(() => {
-            _plugin.WindowManager.OpenFullEditWindow(item);
-        });
-    }
-
-    protected override void ContextMenuItems(CrystallineConflictMatch item) {
-        bool isBookmarked = item.IsBookmarked;
-        if(ImGui.MenuItem($"Favorite##{item!.GetHashCode()}--AddBookmark", null, isBookmarked)) {
-            item.IsBookmarked = !item.IsBookmarked;
-            _plugin.DataQueue.QueueDataOperation(async () => {
-                await _plugin.Storage.UpdateCCMatch(item, false);
-            });
-        }
-
-#if DEBUG
-        if(ImGui.MenuItem($"Edit document##{item!.GetHashCode()}--FullEditContext")) {
-            OpenFullEditDetail(item);
-        }
-#endif
-    }
-
-    private string CSVRow(CrystallineConflictMatch match) {
+    protected override string CSVRow(CrystallineConflictMatch match) {
         string csv = "";
         csv += match.DutyStartTime + ",";
         csv += (match.Arena != null ? MatchHelper.GetArenaName((CrystallineConflictMap)match.Arena) : "") + ",";
@@ -141,4 +80,10 @@ internal class CrystallineConflictList : FilteredList<CrystallineConflictMatch> 
         csv += "\n";
         return csv;
     }
+
+    //public override void OpenItemDetail(CrystallineConflictMatch item) {
+    //    _plugin.DataQueue.QueueDataOperation(() => {
+    //        _plugin.WindowManager.OpenMatchDetailsWindow(item);
+    //    });
+    //}
 }

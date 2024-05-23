@@ -21,7 +21,6 @@ internal static class ImGuiHelper {
     }
 
     internal static void CenterAlignCursor(string text) {
-        var size = ImGui.CalcTextSize(text);
         var posX = ImGui.GetCursorPosX() + (ImGui.GetColumnWidth() - ImGui.CalcTextSize(text).X) / 2f;
         ImGui.SetCursorPosX(posX);
     }
@@ -42,9 +41,8 @@ internal static class ImGuiHelper {
 
     internal static void WrappedTooltip(string text, float width = 400f) {
         if(ImGui.IsItemHovered()) {
-            ImGui.BeginTooltip();
+            using var tooltip = ImRaii.Tooltip();
             ImGui.Text(WrappedString(text, width));
-            ImGui.EndTooltip();
         }
     }
 
@@ -181,6 +179,15 @@ internal static class ImGuiHelper {
         WrappedTooltip("Copy CSV to clipboard");
     }
 
+    internal static void CSVButton(Action action) {
+        using(_ = ImRaii.PushFont(UiBuilder.IconFont)) {
+            if(ImGui.Button($"{FontAwesomeIcon.Copy.ToIconString()}##--CopyCSV")) {
+                action.Invoke();
+            }
+        }
+        WrappedTooltip("Copy CSV to clipboard");
+    }
+
     internal static void DonateButton() {
         using(_ = ImRaii.PushFont(UiBuilder.IconFont)) {
             var text = $"{FontAwesomeIcon.Star.ToIconString()}{FontAwesomeIcon.Copy.ToIconString()}";
@@ -233,5 +240,27 @@ internal static class ImGuiHelper {
         minWidth = minWidth * ImGuiHelpers.GlobalScale;
         maxWidth = maxWidth * ImGuiHelpers.GlobalScale;
         ImGui.SetNextItemWidth(width < minWidth ? minWidth : width > maxWidth ? maxWidth : width);
+    }
+
+    public static string AddOrdinal(int num) {
+        if(num <= 0) return num.ToString();
+
+        switch(num % 100) {
+            case 11:
+            case 12:
+            case 13:
+                return num + "th";
+        }
+
+        switch(num % 10) {
+            case 1:
+                return num + "st";
+            case 2:
+                return num + "nd";
+            case 3:
+                return num + "rd";
+            default:
+                return num + "th";
+        }
     }
 }

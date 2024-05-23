@@ -1,16 +1,119 @@
+using Dalamud.Game.Network;
+using PvpStats.Types.ClientStruct;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace PvpStats.Services;
 
-internal unsafe class MemoryService {
+internal unsafe class MemoryService : IDisposable {
     private Plugin _plugin;
+
+    //debug fields
+    internal Dictionary<ushort, uint> _opCodeCount = new();
+    internal int _opcodeMatchCount = 0;
+    private DateTime _lastSortTime;
+    internal bool _qPopped = false;
+
+    private ushort[] _blacklistedOpcodes = [];
 
     internal MemoryService(Plugin plugin) {
         _plugin = plugin;
+
+#if DEBUG
+        _plugin.GameNetwork.NetworkMessage += OnNetworkMessage;
+#endif
+    }
+
+    public void Dispose() {
+#if DEBUG
+        _plugin.GameNetwork.NetworkMessage -= OnNetworkMessage;
+#endif
+    }
+
+    private unsafe void OnNetworkMessage(nint dataPtr, ushort opCode, uint sourceActorId, uint targetActorId, NetworkMessageDirection direction) {
+        if(direction != NetworkMessageDirection.ZoneDown) {
+            return;
+        }
+
+        if(_opCodeCount.ContainsKey(opCode)) {
+            _opCodeCount[opCode]++;
+        } else {
+            _opCodeCount.Add(opCode, 1);
+        }
+
+        if(!_blacklistedOpcodes.Contains(opCode)) {
+            _plugin.Log.Verbose($"OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
+            //_plugin.Functions.PrintAllChars(dataPtr, 0x2000, 8);
+            //_plugin.Functions.PrintAllStrings(dataPtr, 0x500);
+        }
+
+        //770...
+        //235...
+        //347 = cc packet
+        if(opCode == 235) {
+            _plugin.Log.Debug("235 occurred!");
+
+            FrontlineResultsPacket resultsPacket = *(FrontlineResultsPacket*)(dataPtr);
+            //var printTeamStats = (FrontlineTeamResultsPacket.FrontlineTeamStat team, string name) => {
+            //    _plugin.Log.Debug($"{name}\nUnknown1 {team.Unknown1}\nStat1 {team.Stat1}\nTotalScore {team.TotalScore}\nStat2 {team.Stat2}\nUnknown2 {team.Unknown2}\nUnknown3 {team.Unknown3}\nStat3 {team.Stat3}");
+            //};
+
+            var printTeamStats = (FrontlineResultsPacket.TeamStat team, string name) => {
+                _plugin.Log.Debug($"{name}\nPlace {team.Placement}\nOvooPoints {team.OccupationPoints}\nKillPoints {team.EnemyKillPoints}\nDeathLosses {team.KOPointLosses}\nUnknown1 {team.Unknown1}\nUnknown2 {team.IcePoints}\nTotalRating {team.TotalPoints}");
+            };
+
+            //printTeamStats(resultsPacket.MaelStats, "Maelstrom");
+            //printTeamStats(resultsPacket.AdderStats, "Adders");
+            //printTeamStats(resultsPacket.FlameStats, "Flames");
+            FindValue<ushort>(0, dataPtr, 0x300, 0, true);
+
+            //try {
+            //    FindValue<byte>(0, dataPtr, 0x2000, 0, true);
+            //} catch {
+            //}
+            //try {
+            //    FindValue<int>(0, dataPtr, 0x2000, 0, true);
+            //} catch {
+            //}
+            //try {
+            //    FindValue<short>(0, dataPtr, 0x2000, 0, true);
+            //} catch {
+            //}
+            //try {
+            //    FindValue<string>("", dataPtr, 0x2000, 0, true);
+            //} catch {
+            //}
+
+            //PrintAllChars(dataPtr, 0x2000, 8);
+        }
+
+        if(opCode == 552) {
+            //player payload
+            //FrontlinePlayerResultsPacket resultsPacket = *(FrontlinePlayerResultsPacket*)(dataPtr);
+            //var playerName = (PlayerAlias)$"{MemoryService.ReadString(resultsPacket.PlayerName, 32)} {_plugin.DataManager.GetExcelSheet<World>()?.GetRow(resultsPacket.WorldId)?.Name}";
+            //var team = resultsPacket.Team == 0 ? "Maelstrom" : resultsPacket.Team == 1 ? "Adders" : "Flames";
+            //var job = PlayerJobHelper.GetJobFromName(_plugin.DataManager.GetExcelSheet<ClassJob>()?.GetRow(resultsPacket.ClassJobId)?.NameEnglish ?? "");
+            //_plugin.Log.Debug(string.Format("{0,-32} {1,-15} {2,-10} {3,-8} {4,-8} {5,-8} {6,-8} {7,-15} {8,-15} {9,-15} {10,-15} {11,-15} {12,-15}", "NAME", "TEAM", "ALLIANCE", "JOB", "KILLS", "DEATHS", "ASSISTS", "DAMAGE DEALT", "DAMAGE OTHER", "DAMAGE TAKEN", "HP RESTORED", "??? 1", "??? 2"));
+            //_plugin.Log.Debug(string.Format("{0,-32} {1,-15} {2,-10} {3,-8} {4,-8} {5,-8} {6,-8} {7,-15} {8,-15} {9,-15} {10,-15} {11,-15} {12,-15}", playerName, team, resultsPacket.Alliance, job, resultsPacket.Kills, resultsPacket.Deaths, resultsPacket.Assists, resultsPacket.DamageDealt, resultsPacket.DamageToOther, resultsPacket.DamageTaken, resultsPacket.HPRestored, resultsPacket.Unknown1, resultsPacket.Unknown2));
+
+            //FindValue<byte>(0, dataPtr, 0x50, 0, true);
+            FindValue<ushort>(0, dataPtr, 0x40, 0, true);
+            //FindValue<uint>(0, dataPtr, 0x50, 0, true);
+        }
+
+        ////643 has promise...
+        //if (opCode == 945 || opCode == 560) {
+        //    _plugin.Functions.FindValue<string>("", dataPtr, 0x500, 0, true);
+        //}
+
+        if(DateTime.Now - _lastSortTime > TimeSpan.FromSeconds(60)) {
+            _lastSortTime = DateTime.Now;
+            _opCodeCount = _opCodeCount.OrderBy(x => x.Value).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        }
     }
 
     internal void CreateByteDump(nint ptr, int length, string name) {
@@ -125,7 +228,7 @@ internal unsafe class MemoryService {
                                         matchingCursors.Add(cursor);
                                     }
                                 } else {
-                                    _plugin.Log.Debug($"offset: 0x{(cursor + offset).ToString("X2")} Byte {output}");
+                                    _plugin.Log.Debug($"offset: 0x{(cursor + offset).ToString("X2")} Byte {output:X2}");
                                 }
                                 cursor += sizeof(byte);
                             }

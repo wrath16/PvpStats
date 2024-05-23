@@ -1,4 +1,5 @@
 ﻿using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PvpStats.Types.Match;
 using System;
@@ -54,7 +55,8 @@ public class TimeFilter : DataFilter {
             });
         }
         if(StatRange == TimeRange.Custom) {
-            if(ImGui.BeginTable("timeFilterTable", 2)) {
+            using var table = ImRaii.Table("timeFilterTable", 2);
+            if(table) {
                 ImGui.TableSetupColumn($"c1", ImGuiTableColumnFlags.WidthStretch);
                 ImGui.TableSetupColumn($"c2", ImGuiTableColumnFlags.WidthStretch);
                 ImGui.TableNextRow();
@@ -91,7 +93,6 @@ public class TimeFilter : DataFilter {
                         }
                     }
                 }
-                ImGui.EndTable();
             }
         } else if(StatRange == TimeRange.Season) {
             ImGui.SameLine();

@@ -68,34 +68,27 @@ internal class ConfigWindow : Window {
 
     public override void Draw() {
         //_plugin.Log.Verbose("draw config");
-        if(ImGui.BeginTabBar("SettingsTabBar")) {
-            if(ImGui.BeginTabItem("Interface")) {
-                DrawInterfaceSettings();
-                ImGui.EndTabItem();
+        using(var tabBar = ImRaii.TabBar("SettingsTabBar")) {
+            using(var tab = ImRaii.TabItem("Interface")) {
+                if(tab) {
+                    DrawInterfaceSettings();
+                }
             }
-            if(ImGui.BeginTabItem("Player Links")) {
-                DrawPlayerLinkSettings();
-                ImGui.EndTabItem();
+            using(var tab = ImRaii.TabItem("Player Links")) {
+                if(tab) {
+                    DrawPlayerLinkSettings();
+                }
             }
-            ImGui.EndTabBar();
+            using(var tab = ImRaii.TabItem("Performance")) {
+                if(tab) {
+                    DrawPerformanceSettings();
+                }
+            }
         }
-        //_plugin.Log.Verbose("draw config end");
     }
 
     private void DrawInterfaceSettings() {
         ImGui.TextColored(_plugin.Configuration.Colors.Header, "Tracker Window");
-        //var filterRatio = _plugin.Configuration.FilterRatio;
-        //ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
-        //if(ImGui.SliderFloat("Filters height ratio", ref filterRatio, 2f, 5f)) {
-        //    _plugin.Configuration.FilterRatio = filterRatio;
-        //    _plugin.Configuration.Save();
-        //}
-        //ImGuiHelper.HelpMarker("Controls the denominator of the ratio of the window that will be occupied by the filters child.");
-        //var sizeToFit = _plugin.Configuration.SizeFiltersToFit;
-        //if(ImGui.Checkbox("Size to fit", ref sizeToFit)) {
-        //    _plugin.Configuration.SizeFiltersToFit = sizeToFit;
-        //    _plugin.Configuration.Save();
-        //}
 
         var filterHeight = (int)_plugin.Configuration.CCWindowConfig.FilterHeight;
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
@@ -103,9 +96,9 @@ internal class ConfigWindow : Window {
             _plugin.Configuration.CCWindowConfig.FilterHeight = (uint)filterHeight;
             _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
-        bool filterHeightAdjust = _plugin.Configuration.CCWindowConfig.AdjustWindowHeightOnFilterCollapse;
+        bool filterHeightAdjust = _plugin.Configuration.AdjustWindowHeightOnFilterCollapse;
         if(ImGui.Checkbox("Offset window size when filters hidden", ref filterHeightAdjust)) {
-            _plugin.Configuration.CCWindowConfig.AdjustWindowHeightOnFilterCollapse = filterHeightAdjust;
+            _plugin.Configuration.AdjustWindowHeightOnFilterCollapse = filterHeightAdjust;
             _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
         ImGuiHelper.HelpMarker("The height of the window will be offset by the height of the filter child whenever filters are shown or hidden.", true, true);
@@ -239,6 +232,23 @@ internal class ConfigWindow : Window {
         ImGui.TableNextRow();
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
+        var maelstromColor = _plugin.Configuration.Colors.Maelstrom;
+        if(ImGui.ColorEdit4("Maelstrom", ref maelstromColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.Maelstrom = maelstromColor;
+        }
+        ImGui.TableNextColumn();
+        var addersColor = _plugin.Configuration.Colors.Adders;
+        if(ImGui.ColorEdit4("Adders", ref addersColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.Adders = addersColor;
+        }
+        ImGui.TableNextColumn();
+        var flamesColor = _plugin.Configuration.Colors.Flames;
+        if(ImGui.ColorEdit4("Immortal Flames", ref flamesColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.Flames = flamesColor;
+        }
+        ImGui.TableNextRow();
+        ImGui.TableNextRow();
+        ImGui.TableNextColumn();
         var tankColor = _plugin.Configuration.Colors.Tank;
         if(ImGui.ColorEdit4("Tank", ref tankColor, ImGuiColorEditFlags.NoInputs)) {
             _plugin.Configuration.Colors.Tank = tankColor;
@@ -293,7 +303,7 @@ internal class ConfigWindow : Window {
             _plugin.DataQueue.QueueDataOperation(async () => {
                 _plugin.Configuration.EnablePlayerLinking = playerLinking;
                 _plugin.Configuration.Save();
-                await _plugin.WindowManager.Refresh();
+                await _plugin.WindowManager.RefreshAll();
             });
         }
         ImGuiHelper.HelpMarker("Enable combining of player stats with different aliases linked with the same unique character or player.");
@@ -302,7 +312,7 @@ internal class ConfigWindow : Window {
             _plugin.DataQueue.QueueDataOperation(async () => {
                 _plugin.Configuration.EnableAutoPlayerLinking = autoLinking;
                 _plugin.Configuration.Save();
-                await _plugin.WindowManager.Refresh();
+                await _plugin.WindowManager.RefreshAll();
             });
         }
         ImGuiHelper.HelpMarker("Use name change data from PlayerTrack to create player links.\n\n" +
@@ -312,7 +322,7 @@ internal class ConfigWindow : Window {
             _plugin.DataQueue.QueueDataOperation(async () => {
                 _plugin.Configuration.EnableManualPlayerLinking = manualLinking;
                 _plugin.Configuration.Save();
-                await _plugin.WindowManager.Refresh();
+                await _plugin.WindowManager.RefreshAll();
             });
         }
         ImGuiHelper.HelpMarker("Use the manual tab to create player links by hand or to track" +
@@ -323,7 +333,7 @@ internal class ConfigWindow : Window {
                     if(ImGui.Button("Update Now")) {
                         _plugin.DataQueue.QueueDataOperation(async () => {
                             await _plugin.PlayerLinksService.BuildAutoLinksCache();
-                            await _plugin.WindowManager.Refresh();
+                            await _plugin.WindowManager.RefreshAll();
                         });
                     }
                     DrawAutoPlayerLinkSettings();
@@ -376,7 +386,7 @@ internal class ConfigWindow : Window {
                 //_plugin.Storage.SetManualLinks(ManualLinks, false);
                 await _plugin.PlayerLinksService.SaveManualLinksCache(ManualLinks);
                 if(_plugin.Configuration.EnablePlayerLinking && _plugin.Configuration.EnableManualPlayerLinking) {
-                    await _plugin.WindowManager.Refresh();
+                    await _plugin.WindowManager.RefreshAll();
                 }
             }).ContinueWith((t) => {
                 _saveOpacity = 1f;
@@ -472,5 +482,36 @@ internal class ConfigWindow : Window {
             }
         }
         ImGuiHelper.WrappedTooltip(isNew ? "Add Link" : "Remove");
+    }
+
+    private void DrawPerformanceSettings() {
+        ImGui.TextColored(_plugin.Configuration.Colors.Header, "Match Caching");
+        ImGuiHelper.HelpMarker("Enabling these options will cache your entire match history in memory. Can help with refresh performance at the cost of increased memory usage.", true);
+
+        bool enableCachingCC = _plugin.Configuration.EnableDBCachingCC ?? true;
+        if(ImGui.Checkbox("Crystalline Conflict", ref enableCachingCC)) {
+            _plugin.Configuration.EnableDBCachingCC = enableCachingCC;
+            _plugin.DataQueue.QueueDataOperation(() => {
+                if(enableCachingCC) {
+                    _plugin.CCCache.EnableCaching();
+                } else {
+                    _plugin.CCCache.DisableCaching();
+                }
+                _plugin.Configuration.Save();
+            });
+        }
+        bool enableCachingFL = _plugin.Configuration.EnableDBCachingFL ?? true;
+        if(ImGui.Checkbox("Frontline", ref enableCachingFL)) {
+            _plugin.Configuration.EnableDBCachingFL = enableCachingFL;
+            _plugin.DataQueue.QueueDataOperation(() => {
+                if(enableCachingFL) {
+                    _plugin.FLCache.EnableCaching();
+                } else {
+                    _plugin.FLCache.DisableCaching();
+                }
+                _plugin.Configuration.Save();
+            });
+        }
+
     }
 }

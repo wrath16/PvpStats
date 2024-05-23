@@ -1,6 +1,7 @@
 using Dalamud.Configuration;
 using Dalamud.Interface.Colors;
 using PvpStats.Helpers;
+using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using System;
 using System.Numerics;
@@ -10,8 +11,11 @@ namespace PvpStats.Settings;
 
 [Serializable]
 public class Configuration : IPluginConfiguration {
-    public static int CurrentVersion = 0;
+    public static readonly int CurrentVersion = 0;
     public int Version { get; set; } = CurrentVersion;
+    public bool? EnableDBCachingCC { get; set; }
+    public bool? EnableDBCachingFL { get; set; }
+    public bool? EnableDBCachingRW { get; set; }
     public bool EnablePlayerLinking { get; set; } = true;
     public bool EnableAutoPlayerLinking { get; set; } = true;
     public bool EnableManualPlayerLinking { get; set; } = true;
@@ -24,9 +28,10 @@ public class Configuration : IPluginConfiguration {
     public bool MinimizeWindow { get; set; } = true;
     public bool MinimizeDirectionLeft { get; set; } = false;
     public bool ResizeWindowLeft { get; set; } = false;
+    public bool AdjustWindowHeightOnFilterCollapse { get; set; } = false;
     public bool ColorScaleStats { get; set; } = true;
     public WindowConfiguration CCWindowConfig { get; set; } = new();
-    public FilterConfiguration MatchWindowFilters { get; set; } = new();
+    public WindowConfiguration FLWindowConfig { get; set; } = new();
     public ColorConfiguration Colors { get; set; } = new();
 
     [NonSerialized]
@@ -58,6 +63,15 @@ public class Configuration : IPluginConfiguration {
             JobSubRole.MELEE => Colors.Melee,
             JobSubRole.RANGED => Colors.Ranged,
             JobSubRole.CASTER => Colors.Caster,
+            _ => ImGuiColors.DalamudWhite,
+        };
+    }
+
+    public Vector4 GetFrontlineTeamColor(FrontlineTeamName? team) {
+        return team switch {
+            FrontlineTeamName.Maelstrom => Colors.Maelstrom,
+            FrontlineTeamName.Adders => Colors.Adders,
+            FrontlineTeamName.Flames => Colors.Flames,
             _ => ImGuiColors.DalamudWhite,
         };
     }

@@ -11,6 +11,10 @@ public class ColorConfiguration {
     public Vector4 CCPlayerTeam { get; set; } = ImGuiColors.TankBlue;
     public Vector4 CCEnemyTeam { get; set; } = ImGuiColors.DPSRed;
 
+    public Vector4 Maelstrom { get; set; } = ImGuiColors.DPSRed;
+    public Vector4 Adders { get; set; } = ImGuiColors.DalamudYellow;
+    public Vector4 Flames { get; set; } = ImGuiColors.TankBlue;
+
     public Vector4 Tank { get; set; } = ImGuiColors.TankBlue;
     public Vector4 Healer { get; set; } = ImGuiColors.HealerGreen;
     public Vector4 Melee { get; set; } = ImGuiColors.DPSRed;

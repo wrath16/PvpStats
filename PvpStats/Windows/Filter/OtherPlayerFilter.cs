@@ -69,7 +69,7 @@ public class OtherPlayerFilter : DataFilter {
         if(ImGui.InputTextWithHint("###PlayerNameInput", "Enter player name and world", ref playerName, 50)) {
             if(playerName != _lastTextValue) {
                 _lastTextValue = playerName;
-                _plugin!.DataQueue.QueueDataOperation(async () => {
+                _plugin!.DataQueue.QueueDataOperation(() => {
                     PlayerNamesRaw = playerName;
                     //await Refresh();
                 });
