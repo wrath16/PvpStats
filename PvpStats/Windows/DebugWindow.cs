@@ -11,12 +11,15 @@ using FFXIVClientStructs.Havok;
 using ImGuiNET;
 using PvpStats.Services;
 using PvpStats.Types.ClientStruct;
+using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Numerics;
+using static PvpStats.Types.ClientStruct.RivalWingsContentDirector;
 
 namespace PvpStats.Windows;
 internal unsafe class DebugWindow : Window {
@@ -339,6 +342,25 @@ internal unsafe class DebugWindow : Window {
                 ImGui.TextUnformatted("Raven Score");
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted(instanceDirector->RavenMidScore.ToString());
+            }
+        }
+
+        using(var table = ImRaii.Table("playermechs", 2)) {
+            if(table) {
+                ImGui.TableSetupColumn("player");
+                ImGui.TableSetupColumn("mech");
+
+                for(int i = 0; i < instanceDirector->FriendlyMechSpan.Length; i++) {
+                    var friendlyMechNative = instanceDirector->FriendlyMechSpan[i];
+                    //var mechStats = _playerMechStats[i];
+                    //add input bounds for sanity check in case of missing alliance
+                    if(friendlyMechNative.Type != MechType.None) {
+                        ImGui.TableNextColumn();
+                        ImGui.TextUnformatted(friendlyMechNative.PlayerObjectId.ToString());
+                        ImGui.TableNextColumn();
+                        ImGui.TextUnformatted(friendlyMechNative.Type.ToString());
+                    }
+                }
             }
         }
     }

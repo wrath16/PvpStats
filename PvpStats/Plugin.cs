@@ -58,6 +58,7 @@ public sealed class Plugin : IDalamudPlugin {
     internal StorageService Storage { get; init; }
     internal CCMatchCacheService CCCache { get; init; }
     internal FLMatchCacheService FLCache { get; init; }
+    internal RWMatchCacheService RWCache { get; init; }
     internal GameStateService GameState { get; init; }
     internal AtkNodeService AtkNodeService { get; init; }
     internal PlayerLinkService PlayerLinksService { get; init; }
@@ -116,6 +117,7 @@ public sealed class Plugin : IDalamudPlugin {
             Storage = new(this, $"{PluginInterface.GetPluginConfigDirectory()}\\{DatabaseName}");
             CCCache = new(this);
             FLCache = new(this);
+            RWCache = new(this);
             Functions = new(this);
             GameState = new(this);
             AtkNodeService = new(this);

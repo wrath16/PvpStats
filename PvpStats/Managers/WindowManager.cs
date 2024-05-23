@@ -61,10 +61,13 @@ internal class WindowManager : IDisposable {
         Tower1Icons.Add(RivalWingsTeamName.Ravens, _plugin.TextureProvider.GetIcon(60946));
         Tower2Icons.Add(RivalWingsTeamName.Falcons, _plugin.TextureProvider.GetIcon(60956));
         Tower2Icons.Add(RivalWingsTeamName.Ravens, _plugin.TextureProvider.GetIcon(60957));
+        ChaserIcons.Add(RivalWingsTeamName.Unknown, _plugin.TextureProvider.GetIcon(60666));
         ChaserIcons.Add(RivalWingsTeamName.Falcons, _plugin.TextureProvider.GetIcon(60939));
         ChaserIcons.Add(RivalWingsTeamName.Ravens, _plugin.TextureProvider.GetIcon(60942));
+        OppressorIcons.Add(RivalWingsTeamName.Unknown, _plugin.TextureProvider.GetIcon(60667));
         OppressorIcons.Add(RivalWingsTeamName.Falcons, _plugin.TextureProvider.GetIcon(60940));
         OppressorIcons.Add(RivalWingsTeamName.Ravens, _plugin.TextureProvider.GetIcon(60943));
+        JusticeIcons.Add(RivalWingsTeamName.Unknown, _plugin.TextureProvider.GetIcon(60668));
         JusticeIcons.Add(RivalWingsTeamName.Falcons, _plugin.TextureProvider.GetIcon(60941));
         JusticeIcons.Add(RivalWingsTeamName.Ravens, _plugin.TextureProvider.GetIcon(60944));
 

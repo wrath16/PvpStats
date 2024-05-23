@@ -146,14 +146,6 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             _lastFalconMidScore = 0;
             _lastRavenMidScore = 0;
             _lastMercControl = RivalWingsContentDirector.Team.None;
-            //_lastAllianceStats = [];
-            //_lastPlayerMechStats = [];
-            //_lastFalconChaserCount = 0;
-            //_lastFalconOppressorCount = 0;
-            //_lastFalconJusticeCount = 0;
-            //_lastRavenChaserCount = 0;
-            //_lastRavenOppressorCount = 0;
-            //_lastRavenJusticeCount = 0;
         } catch(Exception e) {
             //suppress all exceptions so game doesn't crash if something fails here
             Plugin.Log.Error(e, $"Error in rw director .ctor.");
@@ -164,15 +156,13 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
     private void RWMatchEnd10Detour(IntPtr p1, IntPtr p2) {
         try {
             Plugin.Log.Debug("rw match end detour entered.");
-            _resultPayloadReceived = true;
-            EnableLeaveDutyButton();
 
             RivalWingsResultsPacket resultsPacket;
             unsafe {
                 var director = (RivalWingsContentDirector*)EventFramework.Instance()->GetInstanceContentDirector();
-                Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", "TEAM", "CORE", "TOWER1", "TOWER2"));
-                Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", RivalWingsTeamName.Falcons, director->FalconCore.Integrity, director->FalconTower1.Integrity, director->FalconTower2.Integrity));
-                Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", RivalWingsTeamName.Ravens, director->RavenCore.Integrity, director->RavenTower1.Integrity, director->RavenTower2.Integrity));
+                Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9} {3,-9}", "TEAM", "CORE", "TOWER1", "TOWER2"));
+                Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9} {3,-9}", RivalWingsTeamName.Falcons, director->FalconCore.Integrity, director->FalconTower1.Integrity, director->FalconTower2.Integrity));
+                Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9} {3,-9}", RivalWingsTeamName.Ravens, director->RavenCore.Integrity, director->RavenTower1.Integrity, director->RavenTower2.Integrity));
 
                 Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9} {3,-9} {4,-9} {5,-9}", "TEAM", "MERCS", "TANKS", "CERULEUM", "JUICE", "CRATES"));
                 Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9} {3,-9} {4,-9} {5,-9}", RivalWingsTeamName.Falcons, _mercCounts[RivalWingsTeamName.Falcons], _midCounts[RivalWingsTeamName.Falcons][RivalWingsSupplies.Gobtank], _midCounts[RivalWingsTeamName.Falcons][RivalWingsSupplies.Ceruleum], _midCounts[RivalWingsTeamName.Falcons][RivalWingsSupplies.Gobbiejuice], _midCounts[RivalWingsTeamName.Falcons][RivalWingsSupplies.Gobcrate]));
@@ -195,6 +185,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                 }
 
                 resultsPacket = *(RivalWingsResultsPacket*)p2;
+
                 Plugin.Log.Debug($"Match Length: {resultsPacket.MatchLength}");
                 Plugin.Log.Debug($"Result: {resultsPacket.Result}");
                 Plugin.Log.Debug(string.Format("{0,-32} {1,-15} {2,-10} {3,-8} {4,-8} {5,-8} {6,-8} {7,-15} {8,-15} {9,-15} {10,-15} {11,-15} {12,-8}", "NAME", "TEAM", "ALLIANCE", "JOB", "KILLS", "DEATHS", "ASSISTS", "DAMAGE DEALT", "DAMAGE OTHER", "DAMAGE TAKEN", "HP RESTORED", "???", "CERULEUM"));
@@ -211,7 +202,47 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         } catch(Exception e) {
             Plugin.Log.Error(e, $"Error in rw match end .ctor.");
         }
+        _resultPayloadReceived = true;
+        EnableLeaveDutyButton();
         _rwMatchEndHook.Original(p1, p2);
+    }
+
+    private bool ProcessMatchResults(RivalWingsResultsPacket results) {
+        if(!IsMatchInProgress()) {
+            Plugin.Log.Error("trying to process match results on no match!");
+            return false;
+            //fallback for case where you load into a game after the match has completed creating a new match
+        } else if((DateTime.Now - CurrentMatch!.DutyStartTime).TotalSeconds < 10) {
+            Plugin.Log.Error("double match detected.");
+            return false;
+        }
+
+        CurrentMatch.MatchEndTime = DateTime.Now;
+        CurrentMatch.MatchStartTime = CurrentMatch.MatchEndTime - TimeSpan.FromSeconds(results.MatchLength);
+        if(CurrentMatch.MatchStartTime > CurrentMatch.DutyStartTime) {
+            unsafe {
+                var director = (RivalWingsContentDirector*)EventFramework.Instance()->GetInstanceContentDirector();
+                CurrentMatch.StructureHealth = new() {
+                { RivalWingsTeamName.Falcons , new() {
+                    { RivalWingsStructure.Core, director->FalconCore.Integrity },
+                    { RivalWingsStructure.Tower1, director->FalconTower1.Integrity },
+                    { RivalWingsStructure.Tower2, director->FalconTower2.Integrity },
+                }},
+                { RivalWingsTeamName.Ravens , new() {
+                    { RivalWingsStructure.Core, director->RavenCore.Integrity },
+                    { RivalWingsStructure.Tower1, director->RavenTower1.Integrity },
+                    { RivalWingsStructure.Tower2, director->RavenTower2.Integrity },
+                }} };
+
+
+
+
+            }
+
+
+        } else {
+            Plugin.Log.Warning("Incomplete match information...skipping some data");
+        }
     }
 
     private void MechDeployDetour(IntPtr p1, IntPtr p2) {
@@ -276,6 +307,9 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             return;
         }
         var director = (RivalWingsContentDirector*)EventFramework.Instance()->GetInstanceContentDirector();
+        if(director == null) {
+            return;
+        }
         var now = DateTime.Now;
 
         //mech times
@@ -286,7 +320,6 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             _mechTime[RivalWingsTeamName.Ravens][RivalWingsMech.Chaser] += director->RavenChaserCount * (now - _lastUpdate).TotalSeconds;
             _mechTime[RivalWingsTeamName.Ravens][RivalWingsMech.Oppressor] += director->RavenOppressorCount * (now - _lastUpdate).TotalSeconds;
             _mechTime[RivalWingsTeamName.Ravens][RivalWingsMech.Justice] += director->RavenJusticeCount * (now - _lastUpdate).TotalSeconds;
-            _lastUpdate = now;
         }
 
         //merc win
@@ -309,12 +342,16 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         for(int i = 0; i < director->AllianceSpan.Length; i++) {
             var alliance = director->AllianceSpan[i];
             var allianceStats = _allianceStats[i];
+            var ceruleumChange = (int)alliance.Ceruleum - _allianceStats[i].CeruleumLast;
             //add input bounds for sanity check in case of missing alliance
-            if(allianceStats.CeruleumLast != alliance.Ceruleum && alliance.Ceruleum <= 100 && alliance.Ceruleum >= 0) {
+            if(ceruleumChange != 0 && alliance.Ceruleum <= 100 && alliance.Ceruleum >= 0) {
                 if(allianceStats.CeruleumLast > alliance.Ceruleum) {
-                    allianceStats.CeruleumConsumed += _allianceStats[i].CeruleumLast - (int)alliance.Ceruleum;
+                    allianceStats.CeruleumConsumed += -ceruleumChange;
+                    if(ceruleumChange % 5 != 0) {
+                        Plugin.Log.Debug($"ceruleum consumed not factor of 5! {i}: {ceruleumChange}");
+                    }
                 } else if(allianceStats.CeruleumLast < alliance.Ceruleum) {
-                    allianceStats.CeruleumGenerated += (int)alliance.Ceruleum - _allianceStats[i].CeruleumLast;
+                    allianceStats.CeruleumGenerated += ceruleumChange;
                 }
                 allianceStats.CeruleumLast = (int)alliance.Ceruleum;
                 _allianceStats[i] = allianceStats;
@@ -338,111 +375,118 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             if(friendlyMechNative.Type != MechType.None) {
                 var mech = (RivalWingsMech)friendlyMechNative.Type;
                 if(!_playerMechStats.TryGetValue(friendlyMechNative.PlayerObjectId, out (RivalWingsMech? LastMech, Dictionary<RivalWingsMech, int> MechsDeployed, Dictionary<RivalWingsMech, double> MechTime) mechStats)) {
-                    mechStats = new();
+                    mechStats = new() {
+                        MechTime = new()
+                    };
                     mechStats.MechTime.Add(RivalWingsMech.Chaser, 0);
                     mechStats.MechTime.Add(RivalWingsMech.Oppressor, 0);
                     mechStats.MechTime.Add(RivalWingsMech.Justice, 0);
                     _playerMechStats.Add(friendlyMechNative.PlayerObjectId, mechStats);
+                    //Plugin.Log.Debug($"adding mech stats for: {friendlyMechNative.PlayerObjectId}");
                 }
-                if(!mechStats.MechTime.TryGetValue(mech, out double mechTime)) {
-                    mechStats.MechTime.Add(mech, 0);
-                }
+                //if(!mechStats.MechTime.TryGetValue(mech, out double mechTime)) {
+                //    mechStats.MechTime.Add(mech, 0);
+                //}
                 mechStats.MechTime[mech] += (now - _lastUpdate).TotalSeconds;
+                //if((now - _lastPrint).TotalSeconds > 30) {
+                //    Plugin.Log.Debug($"{friendlyMechNative.PlayerObjectId} : CC {mechStats.MechTime[RivalWingsMech.Chaser]} OPP {mechStats.MechTime[RivalWingsMech.Chaser]} BJ {mechStats.MechTime[RivalWingsMech.Justice]}");
+
+                //}
                 //not sure if this needed
                 _playerMechStats[friendlyMechNative.PlayerObjectId] = mechStats;
             }
         }
-
-
+        _lastUpdate = now;
+        _lastPrint = now;
 
         return;
 
-        if((now - _lastPrint).TotalSeconds < 30) {
-            return;
-        }
-        _lastPrint = now;
+        //if((now - _lastPrint).TotalSeconds < 30) {
+        //    return;
+        //}
+        //_lastPrint = now;
 
-        Plugin.Log.Debug("");
+        //Plugin.Log.Debug("");
 
-        var playerPosition = Plugin.ClientState.LocalPlayer.Position;
-        var playerMapPosition = WorldPosToMapCoords(playerPosition);
-        Plugin.Log.Debug($"Player Position: {playerPosition} Map Coords: {playerMapPosition}");
+        //var playerPosition = Plugin.ClientState.LocalPlayer.Position;
+        //var playerMapPosition = WorldPosToMapCoords(playerPosition);
+        //Plugin.Log.Debug($"Player Position: {playerPosition} Map Coords: {playerMapPosition}");
 
-        foreach(PlayerCharacter pc in Plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
-            //Status x = new();
-            //x.RowId = 1420;
-            //var y = pc.StatusList.ToList().Where(x => x.StatusId == 1420);
+        //foreach(PlayerCharacter pc in Plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
+        //    //Status x = new();
+        //    //x.RowId = 1420;
+        //    //var y = pc.StatusList.ToList().Where(x => x.StatusId == 1420);
 
-            if(pc.MaxHp ==250000) {
-                Plugin.Log.Debug($"{pc.Name} is a CC (health)");
-            } else if(pc.MaxHp == 500000) {
-                Plugin.Log.Debug($"{pc.Name} is an Opp (health)");
-            } else if(pc.MaxHp == 375000) {
-                Plugin.Log.Debug($"{pc.Name} is a BJ (health)");
-            }
+        //    if(pc.MaxHp ==250000) {
+        //        Plugin.Log.Debug($"{pc.Name} is a CC (health)");
+        //    } else if(pc.MaxHp == 500000) {
+        //        Plugin.Log.Debug($"{pc.Name} is an Opp (health)");
+        //    } else if(pc.MaxHp == 375000) {
+        //        Plugin.Log.Debug($"{pc.Name} is a BJ (health)");
+        //    }
 
-            if(pc.StatusList.Where(x => x.StatusId == 1420).Any()) {
-                Plugin.Log.Debug($"ID: {pc.ObjectId} 0x{pc.ObjectId:X2} NAME: {pc.Name} is in a machina! Position: {pc.Position} Coords: {WorldPosToMapCoords(pc.Position)}");
-            }
-            //_plugin.Log.Debug($"0x{pc.ObjectId.ToString("X2")} {pc.Name}");
-            //_plugin.Log.Debug($"team null? {isPlayerTeam is null} player team? {isPlayerTeam} is p member? {pc.StatusFlags.HasFlag(StatusFlags.PartyMember)} isSelf? {isSelf}");
-        }
-
-
-        Plugin.Functions.CreateByteDump((nint)director, 0x3000, "RWICD");
-        //var falconCore = *(ushort*)(instanceDirector + 0x1D78);
-        //var falconT1 = *(ushort*)(instanceDirector + 0x1EB8);
-        //var falconT2 = *(ushort*)(instanceDirector + 0x1F58);
-        //var ravenCore = *(ushort*)(instanceDirector + 0x1E18);
-        //var ravenT1 = *(ushort*)(instanceDirector + 0x1FF8);
-        //var ravenT2 = *(ushort*)(instanceDirector + 0x2098);
-
-        Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "ITEM", "INTEGRITY"));
-        Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Falcon Core", director->FalconCore.Integrity));
-        Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Falcon Tower 1", director->FalconTower1.Integrity));
-        Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Falcon Tower 2", director->FalconTower2.Integrity));
-        Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Raven Core", director->RavenCore.Integrity));
-        Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Raven Tower 1", director->RavenTower1.Integrity));
-        Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Raven Tower 2", director->RavenTower2.Integrity));
-
-        Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Falcon Chasers:", director->FalconChaserCount));
-        Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Falcon Opps:", director->FalconOppressorCount));
-        Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Falcon Justices:", director->FalconJusticeCount));
-        Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Raven Chasers:", director->RavenChaserCount));
-        Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Raven Opps:", director->RavenOppressorCount));
-        Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Raven Justices:", director->RavenJusticeCount));
-
-        Plugin.Log.Debug($"MERC SCORE: {director->MercBalance} CONTROL: {director->MercControl}");
+        //    if(pc.StatusList.Where(x => x.StatusId == 1420).Any()) {
+        //        Plugin.Log.Debug($"ID: {pc.ObjectId} 0x{pc.ObjectId:X2} NAME: {pc.Name} is in a machina! Position: {pc.Position} Coords: {WorldPosToMapCoords(pc.Position)}");
+        //    }
+        //    //_plugin.Log.Debug($"0x{pc.ObjectId.ToString("X2")} {pc.Name}");
+        //    //_plugin.Log.Debug($"team null? {isPlayerTeam is null} player team? {isPlayerTeam} is p member? {pc.StatusFlags.HasFlag(StatusFlags.PartyMember)} isSelf? {isSelf}");
+        //}
 
 
-        Plugin.Log.Debug($"MID TYPE: {director->MidType} CONTROL: {director->MidControl} FALCONS: {director->FalconMidScore} RAVENS: {director->RavenMidScore}");
+        //Plugin.Functions.CreateByteDump((nint)director, 0x3000, "RWICD");
+        ////var falconCore = *(ushort*)(instanceDirector + 0x1D78);
+        ////var falconT1 = *(ushort*)(instanceDirector + 0x1EB8);
+        ////var falconT2 = *(ushort*)(instanceDirector + 0x1F58);
+        ////var ravenCore = *(ushort*)(instanceDirector + 0x1E18);
+        ////var ravenT1 = *(ushort*)(instanceDirector + 0x1FF8);
+        ////var ravenT2 = *(ushort*)(instanceDirector + 0x2098);
 
-        Plugin.Log.Debug(string.Format("{0,-32} {1,-9}", "PLAYER", "MECH"));
-        for(int i = 0; i < 24; i++) {
-            var mech = director->FriendlyMechSpan[i];
-            if(mech.Type != RivalWingsContentDirector.MechType.None) {
-                string? name = null;
-                foreach(PlayerCharacter pc in Plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
-                    if(pc.ObjectId == mech.PlayerObjectId) {
-                        name = pc.Name.ToString(); break;
-                    }
-                }
-                Plugin.Log.Debug(string.Format("{0,-32} {1,-9}", name ?? mech.PlayerObjectId.ToString(), mech.Type));
-            }
-        }
+        //Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "ITEM", "INTEGRITY"));
+        //Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Falcon Core", director->FalconCore.Integrity));
+        //Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Falcon Tower 1", director->FalconTower1.Integrity));
+        //Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Falcon Tower 2", director->FalconTower2.Integrity));
+        //Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Raven Core", director->RavenCore.Integrity));
+        //Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Raven Tower 1", director->RavenTower1.Integrity));
+        //Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Raven Tower 2", director->RavenTower2.Integrity));
 
-        //Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", "A", instanceDirector->MechAllianceA, instanceDirector->MechAllianceA_2));
-        //Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", "B", instanceDirector->MechAllianceB, instanceDirector->MechAllianceB_2));
-        //Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", "C", instanceDirector->MechAllianceC, instanceDirector->MechAllianceC_2));
-        //Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", "D", instanceDirector->MechAllianceD, instanceDirector->MechAllianceD_2));
-        //Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", "E", instanceDirector->MechAllianceE, instanceDirector->MechAllianceE_2));
-        //Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", "F", instanceDirector->MechAllianceF, instanceDirector->MechAllianceF_2));
+        //Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Falcon Chasers:", director->FalconChaserCount));
+        //Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Falcon Opps:", director->FalconOppressorCount));
+        //Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Falcon Justices:", director->FalconJusticeCount));
+        //Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Raven Chasers:", director->RavenChaserCount));
+        //Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Raven Opps:", director->RavenOppressorCount));
+        //Plugin.Log.Debug(string.Format("{0,-20} {1,-9}", "Raven Justices:", director->RavenJusticeCount));
 
-        Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", "ALLIANCE", "CERULEUM", "SOARING"));
-        for(int i = 0; i < 6; i++) {
-            var alliance = director->AllianceSpan[i];
-            Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", i, alliance.Ceruleum, alliance.SoaringStacks));
-        }
+        //Plugin.Log.Debug($"MERC SCORE: {director->MercBalance} CONTROL: {director->MercControl}");
+
+
+        //Plugin.Log.Debug($"MID TYPE: {director->MidType} CONTROL: {director->MidControl} FALCONS: {director->FalconMidScore} RAVENS: {director->RavenMidScore}");
+
+        //Plugin.Log.Debug(string.Format("{0,-32} {1,-9}", "PLAYER", "MECH"));
+        //for(int i = 0; i < 24; i++) {
+        //    var mech = director->FriendlyMechSpan[i];
+        //    if(mech.Type != RivalWingsContentDirector.MechType.None) {
+        //        string? name = null;
+        //        foreach(PlayerCharacter pc in Plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
+        //            if(pc.ObjectId == mech.PlayerObjectId) {
+        //                name = pc.Name.ToString(); break;
+        //            }
+        //        }
+        //        Plugin.Log.Debug(string.Format("{0,-32} {1,-9}", name ?? mech.PlayerObjectId.ToString(), mech.Type));
+        //    }
+        //}
+
+        ////Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", "A", instanceDirector->MechAllianceA, instanceDirector->MechAllianceA_2));
+        ////Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", "B", instanceDirector->MechAllianceB, instanceDirector->MechAllianceB_2));
+        ////Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", "C", instanceDirector->MechAllianceC, instanceDirector->MechAllianceC_2));
+        ////Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", "D", instanceDirector->MechAllianceD, instanceDirector->MechAllianceD_2));
+        ////Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", "E", instanceDirector->MechAllianceE, instanceDirector->MechAllianceE_2));
+        ////Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", "F", instanceDirector->MechAllianceF, instanceDirector->MechAllianceF_2));
+
+        //Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", "ALLIANCE", "CERULEUM", "SOARING"));
+        //for(int i = 0; i < 6; i++) {
+        //    var alliance = director->AllianceSpan[i];
+        //    Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9}", i, alliance.Ceruleum, alliance.SoaringStacks));
+        //}
     }
 
     private static Vector2 WorldPosToMapCoords(Vector3 pos) {

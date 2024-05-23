@@ -82,3 +82,9 @@ public enum RivalWingsSupplies {
     Gobbiejuice = 2,
     Gobcrate = 3
 }
+
+public enum RivalWingsStructure {
+    Core = 0,
+    Tower1 = 1,
+    Tower2 = 2
+}

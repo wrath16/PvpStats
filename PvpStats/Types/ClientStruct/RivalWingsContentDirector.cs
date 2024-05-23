@@ -25,7 +25,6 @@ public unsafe struct RivalWingsContentDirector {
     [FieldOffset(0x245C)] public byte FalconMidScore;
     [FieldOffset(0x2460)] public byte RavenMidScore;
     //to find: mid timer, mid status, num players per team, control prog.
-    //also to find: mercs
 
     [FieldOffset(0x24D0)] public byte FalconChaserCount;
     [FieldOffset(0x24D4)] public byte FalconOppressorCount;
@@ -51,7 +50,7 @@ public unsafe struct RivalWingsContentDirector {
 
     [StructLayout(LayoutKind.Explicit, Size = 0xA0)]
     public unsafe struct Structure {
-        [FieldOffset(0x00)] public uint Integrity;
+        [FieldOffset(0x00)] public int Integrity;
     }
 
     [StructLayout(LayoutKind.Explicit, Size = 0x08)]
