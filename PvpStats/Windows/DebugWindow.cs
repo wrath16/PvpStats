@@ -81,7 +81,7 @@ internal unsafe class DebugWindow : Window {
 
                     if(ImGui.Button("GetNodeById")) {
                         unsafe {
-                            AtkUnitBase * addonNode = AtkStage.GetSingleton()->RaptureAtkUnitManager->GetAddonByName(_addon);
+                            AtkUnitBase* addonNode = AtkStage.GetSingleton()->RaptureAtkUnitManager->GetAddonByName(_addon);
                             if(uint.TryParse(_idChain, out uint result) && addonNode != null) {
                                 var x = addonNode->GetNodeById(result);
                                 _plugin.Log.Debug($"0x{new IntPtr(x).ToString("X8")}");

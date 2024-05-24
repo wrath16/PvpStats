@@ -1,9 +1,4 @@
-using Dalamud.Game.Addon.Events;
 using Dalamud.Game.Network;
-using FFXIVClientStructs.FFXIV.Client.Game.Event;
-using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using FFXIVClientStructs.FFXIV.Component.GUI;
-using PvpStats.Types.ClientStruct;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -22,7 +17,7 @@ internal unsafe class MemoryService : IDisposable {
     private DateTime _lastSortTime;
     internal bool _qPopped = false;
 
-    private ushort[] _blacklistedOpcodes = [284,328,899,125,752,893,822,570,812,605,540,443,244,679,405,924,707,952,167,619,734,152,248,472,105,238,889,193,737,669,454,444,438,473,831,159,585];
+    private ushort[] _blacklistedOpcodes = [284, 328, 899, 125, 752, 893, 822, 570, 812, 605, 540, 443, 244, 679, 405, 924, 707, 952, 167, 619, 734, 152, 248, 472, 105, 238, 889, 193, 737, 669, 454, 444, 438, 473, 831, 159, 585];
 
     internal MemoryService(Plugin plugin) {
         _plugin = plugin;

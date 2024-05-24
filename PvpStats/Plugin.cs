@@ -52,6 +52,7 @@ public sealed class Plugin : IDalamudPlugin {
     internal MigrationManager MigrationManager { get; init; }
     internal CrystallineConflictStatsManager CCStatsEngine { get; init; }
     internal FrontlineStatsManager FLStatsEngine { get; init; }
+    internal RivalWingsStatsManager RWStatsEngine { get; init; }
 
     internal DataQueueService DataQueue { get; init; }
     internal LocalizationService Localization { get; init; }
@@ -104,7 +105,7 @@ public sealed class Plugin : IDalamudPlugin {
             TextureProvider = textureProvider;
             InteropProvider = interopProvider;
             SigScanner = sigScanner;
-            
+
             try {
                 Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             } catch(Exception e) {
@@ -125,6 +126,7 @@ public sealed class Plugin : IDalamudPlugin {
             Localization = new(this);
             CCStatsEngine = new(this);
             FLStatsEngine = new(this);
+            RWStatsEngine = new(this);
             WindowManager = new(this);
             MigrationManager = new(this);
             try {

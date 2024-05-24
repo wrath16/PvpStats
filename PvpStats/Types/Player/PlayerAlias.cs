@@ -11,6 +11,8 @@ public class PlayerAlias : IEquatable<PlayerAlias>, IEquatable<PvpPlayer>, IEqua
     //[BsonId]
     public string FullName => $"{Name} {HomeWorld}";
 
+    public static PlayerAlias Unknown => new("_UNKNOWN_", "_UNKNOWN_");
+
     public static explicit operator PlayerAlias(string s) {
         s = s.Trim();
         var homeWorld = Regex.Match(s, @"\b[\S]+$").Value.Trim();

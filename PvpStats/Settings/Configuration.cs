@@ -76,4 +76,12 @@ public class Configuration : IPluginConfiguration {
             _ => ImGuiColors.DalamudWhite,
         };
     }
+
+    public Vector4 GetRivalWingsTeamColor(RivalWingsTeamName? team) {
+        return team switch {
+            RivalWingsTeamName.Falcons => Colors.Falcons,
+            RivalWingsTeamName.Ravens => Colors.Ravens,
+            _ => ImGuiColors.DalamudWhite,
+        };
+    }
 }

@@ -2,17 +2,14 @@
 using ImGuiNET;
 using PvpStats.Windows.Filter;
 using PvpStats.Windows.List;
-using PvpStats.Windows.Summary;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Numerics;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Tracker;
 internal class RWTrackerWindow : TrackerWindow {
+
+    private readonly RivalWingsMatchList _matchList;
 
     public RWTrackerWindow(Plugin plugin) : base(plugin, plugin.Configuration.RWWindowConfig, "Rival Wings Tracker") {
         SizeConstraints = new WindowSizeConstraints {
@@ -25,6 +22,8 @@ internal class RWTrackerWindow : TrackerWindow {
         MatchFilters.Add(new OtherPlayerFilter(plugin, Refresh));
         MatchFilters.Add(new DurationFilter(plugin, Refresh));
         MatchFilters.Add(new BookmarkFilter(plugin, Refresh));
+
+        _matchList = new(plugin);
     }
 
     public override void DrawInternal() {
@@ -32,6 +31,7 @@ internal class RWTrackerWindow : TrackerWindow {
 
         using(var tabBar = ImRaii.TabBar("TabBar", ImGuiTabBarFlags.None)) {
             if(tabBar) {
+                Tab("Matches", _matchList.Draw);
             }
         }
     }
@@ -41,12 +41,12 @@ internal class RWTrackerWindow : TrackerWindow {
         s0.Start();
         try {
             await RefreshLock.WaitAsync();
-            //await Plugin.RWStatsEngine.Refresh(MatchFilters, new(), new());
+            await Plugin.RWStatsEngine.Refresh(MatchFilters, new(), new());
             Stopwatch s1 = new();
             s1.Start();
-            //Task.WaitAll([
-            //    _matchList.Refresh(Plugin.FLStatsEngine.Matches),
-            //]);
+            Task.WaitAll([
+                _matchList.Refresh(Plugin.RWStatsEngine.Matches),
+            ]);
             Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"all window modules", s1.ElapsedMilliseconds.ToString()));
             s1.Restart();
             SaveFilters();

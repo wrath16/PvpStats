@@ -1,7 +1,6 @@
 ﻿using Dalamud.Interface.Internal;
 using Dalamud.Interface.Windowing;
 using LiteDB;
-using Lumina.Data.Files;
 using PvpStats.Helpers;
 using PvpStats.Services.DataCache;
 using PvpStats.Types.Match;
@@ -234,6 +233,6 @@ internal class WindowManager : IDisposable {
     }
 
     public async Task RefreshRWWindow() {
-        await FLTrackerWindow.Refresh();
+        await RWTrackerWindow.Refresh();
     }
 }
