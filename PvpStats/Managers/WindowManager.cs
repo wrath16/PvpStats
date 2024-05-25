@@ -1,4 +1,5 @@
-﻿using Dalamud.Interface.Internal;
+﻿using Dalamud.Interface;
+using Dalamud.Interface.Internal;
 using Dalamud.Interface.Windowing;
 using LiteDB;
 using PvpStats.Helpers;
@@ -78,7 +79,6 @@ internal class WindowManager : IDisposable {
                 SoaringIcons.Add(i, _plugin.TextureProvider.GetIcon(14845));
             }
         }
-
         CCTrackerWindow = new(plugin);
         FLTrackerWindow = new(plugin);
         RWTrackerWindow = new(plugin);

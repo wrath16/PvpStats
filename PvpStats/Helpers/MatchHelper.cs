@@ -218,6 +218,17 @@ public static class MatchHelper {
         }
     }
 
+    public static string GetSuppliesName(RivalWingsSupplies supplies) {
+        return supplies switch {
+            RivalWingsSupplies.Gobtank => "Gobtank",
+            RivalWingsSupplies.Ceruleum => "Main Ceruleum Tank",
+            RivalWingsSupplies.Gobbiejuice => "Gobbiejuice",
+            RivalWingsSupplies.Gobcrate => "Gobcrate",
+            _ => "???",
+
+        };
+    }
+
     public static readonly Regex CreditBeforeRegex = new Regex(@"^\d+(?= →)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
     public static readonly Regex StarBeforeRegex = new Regex(@"(?<=^\w*\s*\d*\s*)★*(?=☆*\s*→)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
     public static readonly Regex RiserBeforeRegex = new Regex(@"(?<=^\w*\s?)\d*(?=\s?(★|☆)* →)", RegexOptions.IgnoreCase | RegexOptions.Multiline);

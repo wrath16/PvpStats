@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using static PvpStats.Types.ClientStruct.RivalWingsContentDirector;
 
 namespace PvpStats.Windows.Detail;
 internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
@@ -127,26 +128,23 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
 
         using(var tabBar = ImRaii.TabBar("TabBar")) {
 
-            if(Match.PlayerScoreboards != null) {
-                using(var tab = ImRaii.TabItem("Players")) {
-                    if(tab) {
-                        ImGuiComponents.ToggleButton("##showPercentages", ref ShowPercentages);
-                        ImGui.SameLine();
-                        ImGui.Text("Show team contributions");
-                        ImGuiHelper.HelpMarker("Right-click table header to show and hide columns including extra metrics.");
-                        DrawPlayerStatsTable();
-                    }
-                }
-            }
-
             if(Match.AllianceStats != null) {
-                using(var tab = ImRaii.TabItem("Alliances")) {
-                    if(tab) {
-                        DrawAlliances();
-                    }
+                using var tab = ImRaii.TabItem("Alliances");
+                if(tab) {
+                    DrawAlliances();
                 }
             }
 
+            if(Match.PlayerScoreboards != null) {
+                using var tab = ImRaii.TabItem("Players");
+                if(tab) {
+                    ImGuiComponents.ToggleButton("##showPercentages", ref ShowPercentages);
+                    ImGui.SameLine();
+                    ImGui.Text("Show team contributions");
+                    ImGuiHelper.HelpMarker("Right-click table header to show and hide columns including extra metrics.");
+                    DrawPlayerStatsTable();
+                }
+            }
         }
     }
 
@@ -365,6 +363,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 break;
         };
         ImGui.Image(Plugin.WindowManager.RWSuppliesTexture.ImGuiHandle, new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), uv0, uv1);
+        ImGuiHelper.WrappedTooltip(MatchHelper.GetSuppliesName(supplies));
     }
 
     private void DrawPlayerStatsTable() {
@@ -516,10 +515,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
         } else if(columnId == 2) {
             comparator = (r) => Match.Players.First(x => x.Name.Equals(r.Key)).Job ?? 0;
         } else if(columnId == 3) {
-            comparator = (r) => {
-                var player = Match.Players.First(x => x.Name.Equals(r.Key));
-                return ((int)player.Team * 6) + player.Alliance;
-            };
+            comparator = (r) => Match.Players.First(x => x.Name.Equals(r.Key)).TeamAlliance;
         } else {
             bool propFound = false;
             if(ShowPercentages) {
@@ -575,10 +571,10 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
 
         //using var style = ImRaii.PushStyle(ImGuiStyleVar.CellPadding, new Vector2(ImGui.GetStyle().CellPadding.X, 0));
 
-        var drawText = (string text) => {
+        var drawText = (string text, Vector4 color) => {
             ImGuiHelper.CenterAlignCursor(text);
             ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 5f * ImGuiHelpers.GlobalScale);
-            ImGui.Text(text);
+            ImGui.TextColored(color, text);
         };
 
         var drawImage = (nint image, float size) => {
@@ -598,12 +594,14 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 //using( var font = ImRaii.PushFont(UiBuilder.DefaultFont)) {
                 //    UiBuilder.
                 //}
-                drawText(GetAllianceLetter(alliance));
+                var teamAlliance = ((int)team * 6) + alliance;
+                var color = teamAlliance == Match.LocalPlayerTeamMember!.TeamAlliance ? Plugin.Configuration.Colors.CCLocalPlayer : ImGuiColors.DalamudWhite;
+                drawText(GetAllianceLetter(alliance), color);
                 //ImGui.Text(GetAllianceLetter(alliance));
                 ImGui.TableNextColumn();
-                var size = 30f;
+                var size = 40f;
                 var handle = Plugin.WindowManager.SoaringIcons[allianceStats.SoaringStacks].ImGuiHandle;
-                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 14f * ImGuiHelpers.GlobalScale);
+                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 10f * ImGuiHelpers.GlobalScale);
                 ImGui.Image(handle, new Vector2(size * ImGuiHelpers.GlobalScale * 0.75f, size * ImGuiHelpers.GlobalScale), new Vector2(0f), new Vector2(1));
                 //ImGui.Image(Plugin.WindowManager.SoaringIcons[allianceStats.SoaringStacks].ImGuiHandle, new Vector2(25f * ImGuiHelpers.GlobalScale, 25f * ImGuiHelpers.GlobalScale));
                 //ImGui.TableNextColumn();
