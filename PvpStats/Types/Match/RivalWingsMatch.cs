@@ -14,6 +14,8 @@ public class RivalWingsMatch : PvpMatch {
     public Dictionary<string, RivalWingsScoreboard>? PlayerScoreboards { get; set; } = [];
     public Dictionary<RivalWingsTeamName, Dictionary<RivalWingsStructure, int>>? StructureHealth { get; set; } = [];
     public Dictionary<RivalWingsTeamName, Dictionary<RivalWingsMech, double>>? TeamMechTime { get; set; } = [];
+    public Dictionary<RivalWingsTeamName, Dictionary<RivalWingsSupplies, int>>? Supplies { get; set; } = [];
+    public Dictionary<RivalWingsTeamName, int>? Mercs { get; set; } = [];
     public Dictionary<string, Dictionary<RivalWingsMech, double>>? PlayerMechTime { get; set; } = [];
     public Dictionary<int, RivalWingsAllianceScoreboard>? AllianceStats { get; set; } = [];
 

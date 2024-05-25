@@ -173,6 +173,10 @@ internal class WindowManager : IDisposable {
                 var itemDetail = new FrontlineMatchDetail(_plugin, match as FrontlineMatch);
                 itemDetail.IsOpen = true;
                 _plugin.WindowManager.AddWindow(itemDetail);
+            } else if(match.GetType() == typeof(RivalWingsMatch)) {
+                var itemDetail = new RivalWingsMatchDetail(_plugin, match as RivalWingsMatch);
+                itemDetail.IsOpen = true;
+                _plugin.WindowManager.AddWindow(itemDetail);
             }
 
             //var itemDetail = new CrystallineConflictMatchDetail(_plugin, match);

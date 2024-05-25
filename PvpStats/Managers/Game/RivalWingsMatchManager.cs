@@ -270,6 +270,19 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                     SoaringStacks = director.AllianceSpan[alliance.Key].SoaringStacks
                 });
             }
+
+            CurrentMatch.Supplies = [];
+            foreach(var team in _midCounts) {
+                CurrentMatch.Supplies.Add(team.Key, []);
+                foreach(var supply in team.Value) {
+                    CurrentMatch.Supplies[team.Key].Add(supply.Key, supply.Value);
+                }
+            }
+
+            CurrentMatch.Mercs = [];
+            foreach(var team in _mercCounts) {
+                CurrentMatch.Mercs.Add(team.Key, team.Value);
+            }
         } else {
             Plugin.Log.Warning("Incomplete match information...skipping some data");
         }

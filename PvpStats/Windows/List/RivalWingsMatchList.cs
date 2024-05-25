@@ -17,7 +17,7 @@ internal class RivalWingsMatchList : MatchList<RivalWingsMatch> {
         new ColumnParams{Name = "Start Time", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 125f },
         new ColumnParams{Name = "Arena", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 140f },
         new ColumnParams{Name = "Job", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 40f, Priority = 1 },
-        new ColumnParams{Name = "Team", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 65f },
+        new ColumnParams{Name = "Team", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 55f },
         new ColumnParams{Name = "Duration", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 40f, Priority = 2 },
         new ColumnParams{Name = "Result", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 40f },
     };
