@@ -30,6 +30,7 @@ internal class WindowManager : IDisposable {
 
     internal readonly Dictionary<Job, IDalamudTextureWrap?> JobIcons = new();
     internal IDalamudTextureWrap CCBannerImage { get; private set; }
+    internal IDalamudTextureWrap RWBannerImage { get; private set; }
     internal IDalamudTextureWrap? RWSuppliesTexture { get; private set; }
     internal IDalamudTextureWrap? GoblinMercIcon { get; private set; }
     internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> CoreIcons = [];
@@ -38,6 +39,7 @@ internal class WindowManager : IDisposable {
     internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> ChaserIcons = [];
     internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> OppressorIcons = [];
     internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> JusticeIcons = [];
+    internal readonly Dictionary<int, IDalamudTextureWrap?> SoaringIcons = [];
 
     internal WindowManager(Plugin plugin) {
         _plugin = plugin;
@@ -69,6 +71,13 @@ internal class WindowManager : IDisposable {
         JusticeIcons.Add(RivalWingsTeamName.Unknown, _plugin.TextureProvider.GetIcon(60668));
         JusticeIcons.Add(RivalWingsTeamName.Falcons, _plugin.TextureProvider.GetIcon(60941));
         JusticeIcons.Add(RivalWingsTeamName.Ravens, _plugin.TextureProvider.GetIcon(60944));
+        for(int i = 1; i <= 20; i++) {
+            if(i < 20) {
+                SoaringIcons.Add(i, _plugin.TextureProvider.GetIcon(19181 + (uint)i - 1));
+            } else {
+                SoaringIcons.Add(i, _plugin.TextureProvider.GetIcon(14845));
+            }
+        }
 
         CCTrackerWindow = new(plugin);
         FLTrackerWindow = new(plugin);
@@ -86,6 +95,7 @@ internal class WindowManager : IDisposable {
 
         var imagePath = Path.Combine(_plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "cc_logo_full.png");
         CCBannerImage = _plugin.PluginInterface.UiBuilder.LoadImage(imagePath);
+        RWBannerImage = _plugin.PluginInterface.UiBuilder.LoadImage(Path.Combine(_plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "rw_logo.png"));
 
         _plugin.ClientState.Login += OnLogin;
     }
@@ -98,6 +108,7 @@ internal class WindowManager : IDisposable {
         _plugin.PluginInterface.UiBuilder.Draw -= DrawUI;
         _plugin.PluginInterface.UiBuilder.OpenConfigUi -= OpenConfigWindow;
         CCBannerImage.Dispose();
+        RWBannerImage.Dispose();
 
         _plugin.ClientState.Login -= OnLogin;
     }
