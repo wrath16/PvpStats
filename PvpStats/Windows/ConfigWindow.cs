@@ -544,14 +544,14 @@ internal class ConfigWindow : Window {
 
     private void DrawMiscSettings() {
         bool disableMatchGuardRW = _plugin.Configuration.DisableMatchGuardsRW ?? false;
-        if(ImGui.Checkbox("Disable Rival Wings match guarding", ref disableMatchGuardRW)) {
+        if(ImGui.Checkbox("Disable Rival Wings match guards", ref disableMatchGuardRW)) {
             _plugin.Configuration.DisableMatchGuardsRW = disableMatchGuardRW;
             _plugin.DataQueue.QueueDataOperation(() => {
                 _plugin.Configuration.Save();
             });
         }
-        ImGuiHelper.HelpMarker("Unlike Crystalline Conflict and Frontline, the Rival Wings scoreboard is not typically received by the game client until ~8 seconds after the match has ended." +
-            "To prevent players from prematurely leaving the duty and missing the scoreboard, the leave duty button is disabled during this window.\n\nYou may disable this feature here but be warned: " +
-            "Matches will not be recorded as completed if the scoreboard payload is not received!", true);
+        ImGuiHelper.HelpMarker("Unlike Crystalline Conflict and Frontline, the Rival Wings scoreboard is not typically received by the game client until ~9 seconds after the match has ended." +
+            " To prevent players from prematurely leaving the duty and missing the scoreboard, the leave duty button is disabled during this brief window.\n\nYou may disable this feature here but be warned: " +
+            "Matches will not be recorded if the scoreboard payload is not received!", true);
     }
 }

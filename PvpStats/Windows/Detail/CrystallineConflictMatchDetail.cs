@@ -225,7 +225,7 @@ internal class CrystallineConflictMatchDetail : Window {
                             ImGui.TableNextColumn();
                             using(var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero)) {
                                 if(player0.Job != null && _plugin.WindowManager.JobIcons.ContainsKey((Job)player0.Job)) {
-                                    ImGui.Image(_plugin.WindowManager.JobIcons[(Job)player0.Job].ImGuiHandle, new Vector2(24 * ImGuiHelpers.GlobalScale, 24 * ImGuiHelpers.GlobalScale));
+                                    ImGui.Image(_plugin.WindowManager.JobIcons[(Job)player0.Job]?.ImGuiHandle ?? _plugin.WindowManager.Icon0.ImGuiHandle, new Vector2(24 * ImGuiHelpers.GlobalScale, 24 * ImGuiHelpers.GlobalScale));
                                 }
                             }
                         } else {
@@ -239,7 +239,7 @@ internal class CrystallineConflictMatchDetail : Window {
                             ImGui.TableNextColumn();
                             using(var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero)) {
                                 if(player1.Job != null && _plugin.WindowManager.JobIcons.ContainsKey((Job)player1.Job)) {
-                                    ImGui.Image(_plugin.WindowManager.JobIcons[(Job)player1.Job].ImGuiHandle, new Vector2(24 * ImGuiHelpers.GlobalScale, 24 * ImGuiHelpers.GlobalScale));
+                                    ImGui.Image(_plugin.WindowManager.JobIcons[(Job)player1.Job]?.ImGuiHandle ?? _plugin.WindowManager.Icon0.ImGuiHandle, new Vector2(24 * ImGuiHelpers.GlobalScale, 24 * ImGuiHelpers.GlobalScale));
                                 }
                             }
 

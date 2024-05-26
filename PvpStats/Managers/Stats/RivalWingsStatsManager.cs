@@ -31,6 +31,7 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
             linkedPlayerAliases = Plugin.PlayerLinksService.GetAllLinkedAliases(filter.PlayerNamesRaw);
         }
         filteredMatches = filteredMatches.Where(x => {
+            if(x.Players == null) return false;
             foreach(var player in x.Players) {
                 if(!filter.AnyJob && player.Job != filter.PlayerJob) {
                     continue;

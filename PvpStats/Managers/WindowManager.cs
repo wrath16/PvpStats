@@ -1,5 +1,4 @@
-﻿using Dalamud.Interface;
-using Dalamud.Interface.Internal;
+﻿using Dalamud.Interface.Internal;
 using Dalamud.Interface.Windowing;
 using LiteDB;
 using PvpStats.Helpers;
@@ -29,6 +28,9 @@ internal class WindowManager : IDisposable {
     internal DebugWindow? DebugWindow { get; private set; }
 #endif
 
+    //fallback icon for missing icons/textures
+    internal IDalamudTextureWrap Icon0 { get; private set; }
+
     internal readonly Dictionary<Job, IDalamudTextureWrap?> JobIcons = new();
     internal IDalamudTextureWrap CCBannerImage { get; private set; }
     internal IDalamudTextureWrap RWBannerImage { get; private set; }
@@ -49,6 +51,8 @@ internal class WindowManager : IDisposable {
         //MainWindow = new();
         _plugin.PluginInterface.UiBuilder.Draw += DrawUI;
         _plugin.PluginInterface.UiBuilder.OpenConfigUi += OpenConfigWindow;
+
+        Icon0 = _plugin.TextureProvider.GetIcon(0)!;
 
         foreach(var icon in PlayerJobHelper.JobIcons) {
             JobIcons.Add(icon.Key, _plugin.TextureProvider.GetIcon(icon.Value));
@@ -72,13 +76,10 @@ internal class WindowManager : IDisposable {
         JusticeIcons.Add(RivalWingsTeamName.Unknown, _plugin.TextureProvider.GetIcon(60668));
         JusticeIcons.Add(RivalWingsTeamName.Falcons, _plugin.TextureProvider.GetIcon(60941));
         JusticeIcons.Add(RivalWingsTeamName.Ravens, _plugin.TextureProvider.GetIcon(60944));
-        for(int i = 1; i <= 20; i++) {
-            if(i < 20) {
-                SoaringIcons.Add(i, _plugin.TextureProvider.GetIcon(19181 + (uint)i - 1));
-            } else {
-                SoaringIcons.Add(i, _plugin.TextureProvider.GetIcon(14845));
-            }
+        for(int i = 1; i <= 19; i++) {
+            SoaringIcons.Add(i, _plugin.TextureProvider.GetIcon(19181 + (uint)i - 1));
         }
+        SoaringIcons.Add(20, _plugin.TextureProvider.GetIcon(14845));
         CCTrackerWindow = new(plugin);
         FLTrackerWindow = new(plugin);
         RWTrackerWindow = new(plugin);
@@ -177,15 +178,15 @@ internal class WindowManager : IDisposable {
         } else {
             _plugin.Log.Debug($"Opening item detail for...{match.DutyStartTime}");
             if(match.GetType() == typeof(CrystallineConflictMatch)) {
-                var itemDetail = new CrystallineConflictMatchDetail(_plugin, match as CrystallineConflictMatch);
+                var itemDetail = new CrystallineConflictMatchDetail(_plugin, (match as CrystallineConflictMatch)!);
                 itemDetail.IsOpen = true;
                 _plugin.WindowManager.AddWindow(itemDetail);
             } else if(match.GetType() == typeof(FrontlineMatch)) {
-                var itemDetail = new FrontlineMatchDetail(_plugin, match as FrontlineMatch);
+                var itemDetail = new FrontlineMatchDetail(_plugin, (match as FrontlineMatch)!);
                 itemDetail.IsOpen = true;
                 _plugin.WindowManager.AddWindow(itemDetail);
             } else if(match.GetType() == typeof(RivalWingsMatch)) {
-                var itemDetail = new RivalWingsMatchDetail(_plugin, match as RivalWingsMatch);
+                var itemDetail = new RivalWingsMatchDetail(_plugin, (match as RivalWingsMatch)!);
                 itemDetail.IsOpen = true;
                 _plugin.WindowManager.AddWindow(itemDetail);
             }

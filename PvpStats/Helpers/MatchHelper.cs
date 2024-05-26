@@ -225,7 +225,6 @@ public static class MatchHelper {
             RivalWingsSupplies.Gobbiejuice => "Gobbiejuice",
             RivalWingsSupplies.Gobcrate => "Gobcrate",
             _ => "???",
-
         };
     }
 

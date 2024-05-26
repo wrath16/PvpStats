@@ -112,7 +112,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 ImGui.TableNextColumn();
                 DrawTeamHeader(RivalWingsTeamName.Falcons);
                 ImGui.TableNextColumn();
-                
+
                 if(Match.TeamMechTime == null || Match.Mercs == null || Match.Supplies == null || Match.AllianceStats == null) {
                     ImGuiHelper.CenterAlignCursor("(?)");
                     ////ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().X / 2 - 2f * ImGuiHelpers.GlobalScale);
@@ -233,7 +233,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
 
             var drawIcon = (float size) => {
                 ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().X / 2 - size / 2 * ImGuiHelpers.GlobalScale);
-                var image = Plugin.WindowManager.CoreIcons[team].ImGuiHandle;
+                var image = Plugin.WindowManager.CoreIcons[team]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle;
                 ImGui.Image(image, new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), new Vector2(0f), new Vector2(1f));
             };
             var drawText = (RivalWingsStructure structure) => {
@@ -263,10 +263,10 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             var drawIcon = (RivalWingsStructure structure, float size) => {
                 ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().X / 2 - size / 2 * ImGuiHelpers.GlobalScale);
                 var image = structure switch {
-                    RivalWingsStructure.Core => Plugin.WindowManager.CoreIcons[team].ImGuiHandle,
-                    RivalWingsStructure.Tower1 => Plugin.WindowManager.Tower1Icons[team].ImGuiHandle,
-                    RivalWingsStructure.Tower2 => Plugin.WindowManager.Tower2Icons[team].ImGuiHandle,
-                    _ => Plugin.WindowManager.ChaserIcons[RivalWingsTeamName.Unknown].ImGuiHandle,
+                    RivalWingsStructure.Core => Plugin.WindowManager.CoreIcons[team]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle,
+                    RivalWingsStructure.Tower1 => Plugin.WindowManager.Tower1Icons[team]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle,
+                    RivalWingsStructure.Tower2 => Plugin.WindowManager.Tower2Icons[team]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle,
+                    _ => Plugin.WindowManager.ChaserIcons[RivalWingsTeamName.Unknown]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle,
                 };
                 ImGui.Image(image, new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), new Vector2(0.1f), new Vector2(0.9f));
             };
@@ -292,6 +292,9 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
     }
 
     private void DrawMechTable(RivalWingsTeamName team, Dictionary<RivalWingsMech, double> mechTime, bool reverse) {
+        if(Match.MatchDuration == null) {
+            return;
+        }
         using var style = ImRaii.PushStyle(ImGuiStyleVar.CellPadding, new Vector2(ImGui.GetStyle().CellPadding.X, 0));
         using(var table = ImRaii.Table($"{team}--MechTable", 2, ImGuiTableFlags.NoClip | ImGuiTableFlags.None, new Vector2(60f, 30f) * ImGuiHelpers.GlobalScale)) {
             ImGui.TableSetupColumn("c1", ImGuiTableColumnFlags.WidthFixed, 20f * ImGuiHelpers.GlobalScale);
@@ -300,10 +303,10 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             var drawIcon = (RivalWingsMech mech, float size) => {
                 ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().X / 2 - size / 2 * ImGuiHelpers.GlobalScale);
                 var image = mech switch {
-                    RivalWingsMech.Chaser => Plugin.WindowManager.ChaserIcons[team].ImGuiHandle,
-                    RivalWingsMech.Oppressor => Plugin.WindowManager.OppressorIcons[team].ImGuiHandle,
-                    RivalWingsMech.Justice => Plugin.WindowManager.JusticeIcons[team].ImGuiHandle,
-                    _ => Plugin.WindowManager.ChaserIcons[RivalWingsTeamName.Unknown].ImGuiHandle,
+                    RivalWingsMech.Chaser => Plugin.WindowManager.ChaserIcons[team]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle,
+                    RivalWingsMech.Oppressor => Plugin.WindowManager.OppressorIcons[team]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle,
+                    RivalWingsMech.Justice => Plugin.WindowManager.JusticeIcons[team]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle,
+                    _ => Plugin.WindowManager.ChaserIcons[RivalWingsTeamName.Unknown]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle,
                 };
                 ImGui.Image(image, new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), new Vector2(0.1f), new Vector2(0.9f));
             };
@@ -353,7 +356,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 ImGui.TableNextColumn();
                 drawText(Match.Mercs[RivalWingsTeamName.Falcons].ToString());
                 ImGui.TableNextColumn();
-                drawImage(Plugin.WindowManager.GoblinMercIcon.ImGuiHandle, 25f);
+                drawImage(Plugin.WindowManager.GoblinMercIcon?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle, 25f);
                 ImGui.TableNextColumn();
                 drawText(Match.Mercs[RivalWingsTeamName.Ravens].ToString());
             }
@@ -396,7 +399,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 uv1 = new Vector2(0.1f, 1 / 3f);
                 break;
         };
-        ImGui.Image(Plugin.WindowManager.RWSuppliesTexture.ImGuiHandle, new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), uv0, uv1);
+        ImGui.Image(Plugin.WindowManager.RWSuppliesTexture?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle, new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), uv0, uv1);
         ImGuiHelper.WrappedTooltip(MatchHelper.GetSuppliesName(supplies));
     }
 
@@ -503,25 +506,25 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             //ImGuiHelper.CenterAlignCursor(player.Job?.ToString() ?? "");
             ImGui.TextColored(textColor, $"{player.Job}");
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions[player.Name].Kills) : row.Value.Kills)}");
+            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].Kills) : row.Value.Kills)}");
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions[player.Name].Deaths) : row.Value.Deaths)}");
+            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].Deaths) : row.Value.Deaths)}");
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions[player.Name].Assists) : row.Value.Assists)}");
+            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].Assists) : row.Value.Assists)}");
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions[player.Name].DamageToPCs) : row.Value.DamageToPCs)}");
+            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].DamageToPCs) : row.Value.DamageToPCs)}");
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions[player.Name].DamageToOther) : row.Value.DamageToOther)}");
+            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].DamageToOther) : row.Value.DamageToOther)}");
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions[player.Name].DamageDealt) : row.Value.DamageDealt)}");
+            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].DamageDealt) : row.Value.DamageDealt)}");
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions[player.Name].DamageTaken) : row.Value.DamageTaken)}");
+            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].DamageTaken) : row.Value.DamageTaken)}");
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions[player.Name].HPRestored) : row.Value.HPRestored)}");
+            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].HPRestored) : row.Value.HPRestored)}");
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions[player.Name].Special1) : row.Value.Special1)}");
+            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].Special1) : row.Value.Special1)}");
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions[player.Name].Ceruleum) : row.Value.Ceruleum)}");
+            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].Ceruleum) : row.Value.Ceruleum)}");
             ImGui.TableNextColumn();
             ImGui.TextColored(textColor, $"{row.Value.DamageDealtPerKA}");
             ImGui.TableNextColumn();
@@ -536,6 +539,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
     }
 
     private void SortByColumn(uint columnId, ImGuiSortDirection direction) {
+        if(Match.PlayerScoreboards == null) return;
         Func<KeyValuePair<string, RivalWingsScoreboard>, object> comparator = (r) => 0;
 
         //0 = name
@@ -543,16 +547,16 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
         //2 = job
         //3 = alliance
         if(columnId == 0) {
-            comparator = (r) => Match.Players.First(x => x.Name.Equals(r.Key)).Name.Name ?? "";
+            comparator = (r) => Match.Players?.First(x => x.Name.Equals(r.Key)).Name.Name ?? "";
         } else if(columnId == 1) {
-            comparator = (r) => Match.Players.First(x => x.Name.Equals(r.Key)).Name.HomeWorld ?? "";
+            comparator = (r) => Match.Players?.First(x => x.Name.Equals(r.Key)).Name.HomeWorld ?? "";
         } else if(columnId == 2) {
-            comparator = (r) => Match.Players.First(x => x.Name.Equals(r.Key)).Job ?? 0;
+            comparator = (r) => Match.Players?.First(x => x.Name.Equals(r.Key)).Job ?? 0;
         } else if(columnId == 3) {
-            comparator = (r) => Match.Players.First(x => x.Name.Equals(r.Key)).TeamAlliance;
+            comparator = (r) => Match.Players?.First(x => x.Name.Equals(r.Key)).TeamAlliance ?? 0;
         } else {
             bool propFound = false;
-            if(ShowPercentages) {
+            if(ShowPercentages && _playerContributions != null) {
                 var props = typeof(RWScoreboardDouble).GetProperties();
                 foreach(var prop in props) {
                     var propId = prop.Name.GetHashCode();
@@ -576,6 +580,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 }
             }
         }
+        //should probably not sort match property directly
         Match.PlayerScoreboards = direction == ImGuiSortDirection.Ascending ? Match.PlayerScoreboards.OrderBy(comparator).ToDictionary()
             : Match.PlayerScoreboards.OrderByDescending(comparator).ToDictionary();
     }
@@ -648,7 +653,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 ImGui.TableNextColumn();
                 if(allianceStats.SoaringStacks > 0) {
                     var size = 40f;
-                    var handle = Plugin.WindowManager.SoaringIcons[allianceStats.SoaringStacks].ImGuiHandle;
+                    var handle = Plugin.WindowManager.SoaringIcons[allianceStats.SoaringStacks]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle;
                     ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 10f * ImGuiHelpers.GlobalScale);
                     ImGui.Image(handle, new Vector2(size * ImGuiHelpers.GlobalScale * 0.75f, size * ImGuiHelpers.GlobalScale), new Vector2(0f), new Vector2(1));
                 }
@@ -714,7 +719,6 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             }
         }
 
-
         //player mech times
         if(Match.PlayerMechTime != null) {
             csv += "\n\n\n";
@@ -728,7 +732,12 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
 
         //alliance stats
         if(Match.AllianceStats != null) {
-
+            csv += "\n\n\n";
+            csv += "Alliance,Soaring,Ceruleum Generated, Ceruleum Consumed\n";
+            foreach(var alliance in Match.AllianceStats) {
+                csv += GetAllianceLetter(alliance.Key) + "," + alliance.Value.SoaringStacks + "," + alliance.Value.CeruleumGenerated + "," + alliance.Value.CeruleumConsumed + ","
+                + "\n";
+            }
         }
 
         //player stats

@@ -17,7 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using static PvpStats.Types.ClientStruct.RivalWingsContentDirector;
+using System.Threading.Tasks;
 
 namespace PvpStats.Managers.Game;
 internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
@@ -37,17 +37,6 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
     private DateTime _lastUpdate;
     private int _lastFalconMidScore;
     private int _lastRavenMidScore;
-    //private Dictionary<int, (int CeruleumGenerated, int CeruleumConsumed)> _lastAllianceStats = [];
-    //private Dictionary<uint, (Dictionary<RivalWingsMech, int> MechsDeployed, Dictionary<RivalWingsMech, double> MechTime)> _lastPlayerMechStats = [];
-
-    //private Dictionary<int, (int CeruleumGenerated, int CeruleumConsumed, Dictionary<RivalWingsMech, int> MechsDeployed, Dictionary<RivalWingsMech, double> MechTime)> _allianceStats = [];
-
-    //private int _lastFalconChaserCount;
-    //private int _lastFalconOppressorCount;
-    //private int _lastFalconJusticeCount;
-    //private int _lastRavenChaserCount;
-    //private int _lastRavenOppressorCount;
-    //private int _lastRavenJusticeCount;
 
     private DateTime _lastPrint = DateTime.MinValue;
 
@@ -79,12 +68,14 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "ContentsFinderMenu", DutyMenuClose);
         plugin.Log.Debug($"rw director .ctor address: 0x{_rwDirectorCtorHook!.Address:X2}");
         plugin.Log.Debug($"rw match end 10 address: 0x{_rwMatchEndHook!.Address:X2}");
-        plugin.Log.Debug($"rw mech deploy address: 0x{_mechDeployHook!.Address:X2}");
+        plugin.Log.Debug($"rw icd update address: 0x{_mechDeployHook!.Address:X2}");
         plugin.Log.Debug($"leave duty address: 0x{_leaveDutyHook!.Address:X2}");
         _rwDirectorCtorHook.Enable();
         _rwMatchEndHook.Enable();
         _leaveDutyHook.Enable();
+#if DEBUG
         _mechDeployHook.Enable();
+#endif
     }
 
     public override void Dispose() {
@@ -95,7 +86,9 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         _rwDirectorCtorHook.Dispose();
         _rwMatchEndHook.Dispose();
         _leaveDutyHook.Dispose();
+#if DEBUG
         _mechDeployHook.Dispose();
+#endif
         base.Dispose();
     }
 
@@ -159,6 +152,15 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             RivalWingsContentDirector director;
             unsafe {
                 director = *(RivalWingsContentDirector*)EventFramework.Instance()->GetInstanceContentDirector();
+                resultsPacket = *(RivalWingsResultsPacket*)p2;
+            }
+            Plugin.DataQueue.QueueDataOperation(async () => {
+                if(ProcessMatchResults(resultsPacket, director)) {
+                    await Plugin.RWCache.UpdateMatch(CurrentMatch!);
+                    await Plugin.WindowManager.RefreshRWWindow();
+                }
+            });
+            unsafe {
                 Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9} {3,-9}", "TEAM", "CORE", "TOWER1", "TOWER2"));
                 Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9} {3,-9}", RivalWingsTeamName.Falcons, director.FalconCore.Integrity, director.FalconTower1.Integrity, director.FalconTower2.Integrity));
                 Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9} {3,-9}", RivalWingsTeamName.Ravens, director.RavenCore.Integrity, director.RavenTower1.Integrity, director.RavenTower2.Integrity));
@@ -182,8 +184,6 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                     Plugin.Log.Debug(string.Format("{0,-32} {1,-9:0.00} {2,-9:0.00} {3,-9:0.00}", playerName?.Name ?? player.Key.ToString(), player.Value.MechTime[RivalWingsMech.Chaser], player.Value.MechTime[RivalWingsMech.Oppressor], player.Value.MechTime[RivalWingsMech.Justice]));
                 }
 
-                resultsPacket = *(RivalWingsResultsPacket*)p2;
-
                 Plugin.Log.Debug($"Match Length: {resultsPacket.MatchLength}");
                 Plugin.Log.Debug($"Result: {resultsPacket.Result}");
                 Plugin.Log.Debug(string.Format("{0,-32} {1,-15} {2,-10} {3,-8} {4,-8} {5,-8} {6,-8} {7,-15} {8,-15} {9,-15} {10,-15} {11,-15} {12,-8}", "NAME", "TEAM", "ALLIANCE", "JOB", "KILLS", "DEATHS", "ASSISTS", "DAMAGE DEALT", "DAMAGE OTHER", "DAMAGE TAKEN", "HP RESTORED", "???", "CERULEUM"));
@@ -196,14 +196,6 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                     Plugin.Log.Debug(string.Format("{0,-32} {1,-15} {2,-10} {3,-8} {4,-8} {5,-8} {6,-8} {7,-15} {8,-15} {9,-15} {10,-15} {11,-15} {12,-8}", playerName, player.Team, player.Alliance, job, player.Kills, player.Deaths, player.Assists, player.DamageDealt, player.DamageToOther, player.DamageTaken, player.HPRestored, player.Unknown1, player.Ceruleum));
                 }
             }
-
-            Plugin.DataQueue.QueueDataOperation(async () => {
-                if(ProcessMatchResults(resultsPacket, director)) {
-                    await Plugin.RWCache.UpdateMatch(CurrentMatch!);
-                    await Plugin.WindowManager.RefreshRWWindow();
-                }
-            });
-
         } catch(Exception e) {
             Plugin.Log.Error(e, $"Error in rw match end .ctor.");
         }
@@ -226,7 +218,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         CurrentMatch.MatchStartTime = CurrentMatch.MatchEndTime - TimeSpan.FromSeconds(results.MatchLength);
         CurrentMatch.LocalPlayer ??= Plugin.GameState.CurrentPlayer;
         CurrentMatch.DataCenter ??= Plugin.ClientState.LocalPlayer?.CurrentWorld.GameData?.DataCenter.Value?.Name.ToString();
-        
+
         CurrentMatch.StructureHealth = new() {
         { RivalWingsTeamName.Falcons , new() {
             { RivalWingsStructure.Core, director.FalconCore.Integrity },
@@ -282,9 +274,10 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             CurrentMatch.PlayerScoreboards.Add(playerName, playerScoreboard);
         }
 
+        //discard grace period 
         if(CurrentMatch.MatchStartTime > CurrentMatch.DutyStartTime - TimeSpan.FromSeconds(10)) {
             //CurrentMatch.TeamMechTime = _mechTime;
-            //do this to pass by val
+            //do this to decouple from fields
             CurrentMatch.TeamMechTime = [];
             foreach(var team in _mechTime) {
                 CurrentMatch.TeamMechTime.Add(team.Key, []);
@@ -306,7 +299,6 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                 CurrentMatch.PlayerMechTime.Add(playerName, playerMechStat.Value.MechTime);
             }
 
-            //CurrentMatch.AllianceStats = [];
             foreach(var alliance in _allianceStats) {
                 if(CurrentMatch.AllianceStats.TryGetValue(alliance.Key, out var allianceStats)) {
                     allianceStats.CeruleumGenerated = alliance.Value.CeruleumGenerated;
@@ -327,7 +319,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                 CurrentMatch.Mercs.Add(team.Key, team.Value);
             }
         } else {
-            Plugin.Log.Warning("Incomplete match recording...discarding recorded data.");
+            Plugin.Log.Warning("Incomplete match recording...discarding frame data.");
         }
 
         var playerTeam = CurrentMatch.LocalPlayerTeam;
@@ -346,7 +338,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
 
     private void LeaveDutyDetour(byte p1) {
         if(IsMatchInProgress() && _matchEnded && !_resultPayloadReceived && (!Plugin.Configuration.DisableMatchGuardsRW ?? true)) {
-            Plugin.Log.Debug("Preventing duty leave!");
+            Plugin.Log.Information("Preventing duty leave!");
             return;
         }
         _leaveDutyHook.Original(p1);
@@ -355,20 +347,21 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
     protected override void OnDutyCompleted(object? sender, ushort p1) {
         Plugin.Log.Debug("Duty has completed.");
         _matchEnded = true;
-        ////re-enable duty leave button after 15 seconds as a fallback
-        //Task.Delay(15000).ContinueWith(t => {
-        //    EnableLeaveDutyButton();
-        //});
+        //re-enable duty leave button after 20 seconds as a fallback
+        Task.Delay(20000).ContinueWith(t => {
+            try {
+                EnableLeaveDutyButton();
+            } catch {
+                //suppress
+            }
+        });
     }
 
     private void DutyMenuSetup(AddonEvent type, AddonArgs args) {
-        if(!IsMatchInProgress()) {
+        if(!IsMatchInProgress() || (Plugin.Configuration.DisableMatchGuardsRW ?? false)) {
             return;
         }
         Plugin.Log.Debug("Duty menu setup");
-        if(Plugin.Configuration.DisableMatchGuardsRW ?? false) {
-            return;
-        }
         unsafe {
             if(_matchEnded && !_resultPayloadReceived) {
                 var addon = (AtkUnitBase*)args.Addon;
@@ -472,11 +465,11 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                 var friendlyMechNative = director->FriendlyMechSpan[i];
                 //var mechStats = _playerMechStats[i];
                 //add input bounds for sanity check in case of missing alliance
-                if(friendlyMechNative.Type != MechType.None) {
+                if(friendlyMechNative.Type != RivalWingsContentDirector.MechType.None) {
                     var mech = (RivalWingsMech)friendlyMechNative.Type;
                     if(!_playerMechStats.TryGetValue(friendlyMechNative.PlayerObjectId, out (RivalWingsMech? LastMech, Dictionary<RivalWingsMech, int> MechsDeployed, Dictionary<RivalWingsMech, double> MechTime) mechStats)) {
                         mechStats = new() {
-                            MechTime = new()
+                            MechTime = []
                         };
                         mechStats.MechTime.Add(RivalWingsMech.Chaser, 0);
                         mechStats.MechTime.Add(RivalWingsMech.Oppressor, 0);
