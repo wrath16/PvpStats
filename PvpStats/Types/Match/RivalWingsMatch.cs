@@ -36,7 +36,7 @@ public class RivalWingsMatch : PvpMatch {
 
     public Dictionary<RivalWingsTeamName, RivalWingsScoreboard>? GetTeamScoreboards() {
         Dictionary<RivalWingsTeamName, RivalWingsScoreboard> scoreboards = [];
-        if(StructureHealth is null || Players is null) {
+        if(StructureHealth is null || Players is null || PlayerScoreboards is null) {
             return null;
         }
         foreach(var team in StructureHealth.Keys) {
