@@ -226,65 +226,24 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         CurrentMatch.MatchStartTime = CurrentMatch.MatchEndTime - TimeSpan.FromSeconds(results.MatchLength);
         CurrentMatch.LocalPlayer ??= Plugin.GameState.CurrentPlayer;
         CurrentMatch.DataCenter ??= Plugin.ClientState.LocalPlayer?.CurrentWorld.GameData?.DataCenter.Value?.Name.ToString();
-        if(CurrentMatch.MatchStartTime > CurrentMatch.DutyStartTime - TimeSpan.FromSeconds(10)) {
-            CurrentMatch.StructureHealth = new() {
-                { RivalWingsTeamName.Falcons , new() {
-                    { RivalWingsStructure.Core, director.FalconCore.Integrity },
-                    { RivalWingsStructure.Tower1, director.FalconTower1.Integrity },
-                    { RivalWingsStructure.Tower2, director.FalconTower2.Integrity },
-                }},
-                { RivalWingsTeamName.Ravens , new() {
-                    { RivalWingsStructure.Core, director.RavenCore.Integrity },
-                    { RivalWingsStructure.Tower1, director.RavenTower1.Integrity },
-                    { RivalWingsStructure.Tower2, director.RavenTower2.Integrity },
-                }} };
+        
+        CurrentMatch.StructureHealth = new() {
+        { RivalWingsTeamName.Falcons , new() {
+            { RivalWingsStructure.Core, director.FalconCore.Integrity },
+            { RivalWingsStructure.Tower1, director.FalconTower1.Integrity },
+            { RivalWingsStructure.Tower2, director.FalconTower2.Integrity },
+        }},
+        { RivalWingsTeamName.Ravens , new() {
+            { RivalWingsStructure.Core, director.RavenCore.Integrity },
+            { RivalWingsStructure.Tower1, director.RavenTower1.Integrity },
+            { RivalWingsStructure.Tower2, director.RavenTower2.Integrity },
+        }} };
 
-            //CurrentMatch.TeamMechTime = _mechTime;
-            //do this to pass by val
-            CurrentMatch.TeamMechTime = [];
-            foreach(var team in _mechTime) {
-                CurrentMatch.TeamMechTime.Add(team.Key, []);
-                foreach(var mechTime in team.Value) {
-                    CurrentMatch.TeamMechTime[team.Key].Add(mechTime.Key, mechTime.Value);
-                }
-            }
-
-            CurrentMatch.PlayerMechTime = [];
-            foreach(var playerMechStat in _playerMechStats) {
-                if(!_objIdToPlayer.TryGetValue(playerMechStat.Key, out var playerName)) {
-                    Plugin.Log.Error($"Unknown objectID: {playerMechStat.Key}");
-                    continue;
-                }
-                if(CurrentMatch.PlayerMechTime.ContainsKey(playerName)) {
-                    Plugin.Log.Error($"Double player mech stats: {playerName}");
-                    continue;
-                }
-                CurrentMatch.PlayerMechTime.Add(playerName, playerMechStat.Value.MechTime);
-            }
-
-            CurrentMatch.AllianceStats = [];
-            foreach(var alliance in _allianceStats) {
-                CurrentMatch.AllianceStats.Add(alliance.Key, new() {
-                    CeruleumGenerated = alliance.Value.CeruleumGenerated,
-                    CeruleumConsumed = alliance.Value.CeruleumConsumed,
-                    SoaringStacks = director.AllianceSpan[alliance.Key].SoaringStacks
-                });
-            }
-
-            CurrentMatch.Supplies = [];
-            foreach(var team in _midCounts) {
-                CurrentMatch.Supplies.Add(team.Key, []);
-                foreach(var supply in team.Value) {
-                    CurrentMatch.Supplies[team.Key].Add(supply.Key, supply.Value);
-                }
-            }
-
-            CurrentMatch.Mercs = [];
-            foreach(var team in _mercCounts) {
-                CurrentMatch.Mercs.Add(team.Key, team.Value);
-            }
-        } else {
-            Plugin.Log.Warning("Incomplete match information...skipping some data");
+        CurrentMatch.AllianceStats = [];
+        foreach(var alliance in _allianceStats) {
+            CurrentMatch.AllianceStats.Add(alliance.Key, new() {
+                SoaringStacks = director.AllianceSpan[alliance.Key].SoaringStacks
+            });
         }
 
         CurrentMatch.PlayerCount = results.PlayerCount;
@@ -323,8 +282,56 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             CurrentMatch.PlayerScoreboards.Add(playerName, playerScoreboard);
         }
 
+        if(CurrentMatch.MatchStartTime > CurrentMatch.DutyStartTime - TimeSpan.FromSeconds(10)) {
+            //CurrentMatch.TeamMechTime = _mechTime;
+            //do this to pass by val
+            CurrentMatch.TeamMechTime = [];
+            foreach(var team in _mechTime) {
+                CurrentMatch.TeamMechTime.Add(team.Key, []);
+                foreach(var mechTime in team.Value) {
+                    CurrentMatch.TeamMechTime[team.Key].Add(mechTime.Key, mechTime.Value);
+                }
+            }
+
+            CurrentMatch.PlayerMechTime = [];
+            foreach(var playerMechStat in _playerMechStats) {
+                if(!_objIdToPlayer.TryGetValue(playerMechStat.Key, out var playerName)) {
+                    Plugin.Log.Error($"Unknown objectID: {playerMechStat.Key}");
+                    continue;
+                }
+                if(CurrentMatch.PlayerMechTime.ContainsKey(playerName)) {
+                    Plugin.Log.Error($"Double player mech stats: {playerName}");
+                    continue;
+                }
+                CurrentMatch.PlayerMechTime.Add(playerName, playerMechStat.Value.MechTime);
+            }
+
+            //CurrentMatch.AllianceStats = [];
+            foreach(var alliance in _allianceStats) {
+                if(CurrentMatch.AllianceStats.TryGetValue(alliance.Key, out var allianceStats)) {
+                    allianceStats.CeruleumGenerated = alliance.Value.CeruleumGenerated;
+                    allianceStats.CeruleumConsumed = alliance.Value.CeruleumConsumed;
+                }
+            }
+
+            CurrentMatch.Supplies = [];
+            foreach(var team in _midCounts) {
+                CurrentMatch.Supplies.Add(team.Key, []);
+                foreach(var supply in team.Value) {
+                    CurrentMatch.Supplies[team.Key].Add(supply.Key, supply.Value);
+                }
+            }
+
+            CurrentMatch.Mercs = [];
+            foreach(var team in _mercCounts) {
+                CurrentMatch.Mercs.Add(team.Key, team.Value);
+            }
+        } else {
+            Plugin.Log.Warning("Incomplete match information...skipping some data");
+        }
+
         var playerTeam = CurrentMatch.LocalPlayerTeam;
-        var enemyTeam = (RivalWingsTeamName)(int)playerTeam! + 1 % 2;
+        var enemyTeam = (RivalWingsTeamName)((int)playerTeam! + 1 % 2);
         CurrentMatch.MatchWinner = results.Result == 0 ? playerTeam : results.Result == 1 ? enemyTeam : RivalWingsTeamName.Unknown;
         CurrentMatch.IsCompleted = true;
         return true;
@@ -338,7 +345,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
     }
 
     private void LeaveDutyDetour(byte p1) {
-        if(IsMatchInProgress() && _matchEnded && !_resultPayloadReceived) {
+        if(IsMatchInProgress() && _matchEnded && !_resultPayloadReceived && (!Plugin.Configuration.DisableMatchGuardsRW ?? true)) {
             Plugin.Log.Debug("Preventing duty leave!");
             return;
         }
@@ -359,6 +366,9 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             return;
         }
         Plugin.Log.Debug("Duty menu setup");
+        if(Plugin.Configuration.DisableMatchGuardsRW ?? false) {
+            return;
+        }
         unsafe {
             if(_matchEnded && !_resultPayloadReceived) {
                 var addon = (AtkUnitBase*)args.Addon;

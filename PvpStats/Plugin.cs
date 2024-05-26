@@ -224,6 +224,12 @@ public sealed class Plugin : IDalamudPlugin {
         if(Configuration.EnableDBCachingCC ?? true) {
             CCCache.EnableCaching();
         }
+        if(Configuration.EnableDBCachingFL ?? true) {
+            FLCache.EnableCaching();
+        }
+        if(Configuration.EnableDBCachingRW ?? true) {
+            RWCache.EnableCaching();
+        }
         await MigrationManager.BulkUpdateCCMatchTypes();
         await MigrationManager.BulkCCUpdateValidatePlayerCount();
         await WindowManager.RefreshAll();

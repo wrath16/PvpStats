@@ -11,14 +11,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using static PvpStats.Types.ClientStruct.RivalWingsContentDirector;
 
 namespace PvpStats.Windows.Detail;
 internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
 
-    Dictionary<PlayerAlias, RWScoreboardDouble> _playerContributions = [];
+    Dictionary<PlayerAlias, RWScoreboardDouble>? _playerContributions = [];
 
-    Dictionary<int, Dictionary<RivalWingsMech, double>>? _allianceMechTimes;
+    Dictionary<int, (Dictionary<RivalWingsMech, double> MechTime, List<PlayerAlias> Pilots)>? _allianceMechTimes;
 
     public RivalWingsMatchDetail(Plugin plugin, RivalWingsMatch match) : base(plugin, plugin.RWCache, match) {
         SizeConstraints = new WindowSizeConstraints {
@@ -33,27 +32,32 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
         if(match.PlayerMechTime != null) {
             _allianceMechTimes = [];
             for(int i = 0; i < 6; i++) {
-                _allianceMechTimes.Add(i, new() {
-                    {RivalWingsMech.Chaser, 0 },
-                    {RivalWingsMech.Oppressor, 0 },
-                    {RivalWingsMech.Justice, 0 },
-                });
+                _allianceMechTimes.Add(i, (new() {
+                    { RivalWingsMech.Chaser, 0 },
+                    { RivalWingsMech.Oppressor, 0 },
+                    { RivalWingsMech.Justice, 0 },
+                }, new()));
             }
             foreach(var playerMechTime in match.PlayerMechTime) {
                 var alliance = match.Players?.Where(x => x.Name.Equals(playerMechTime.Key)).FirstOrDefault()?.Alliance;
+                var alias = (PlayerAlias)playerMechTime.Key;
                 if(alliance != null) {
-                    _allianceMechTimes[(int)alliance][RivalWingsMech.Chaser] += playerMechTime.Value[RivalWingsMech.Chaser];
-                    _allianceMechTimes[(int)alliance][RivalWingsMech.Oppressor] += playerMechTime.Value[RivalWingsMech.Oppressor];
-                    _allianceMechTimes[(int)alliance][RivalWingsMech.Justice] += playerMechTime.Value[RivalWingsMech.Justice];
+                    _allianceMechTimes[(int)alliance].MechTime[RivalWingsMech.Chaser] += playerMechTime.Value[RivalWingsMech.Chaser];
+                    _allianceMechTimes[(int)alliance].MechTime[RivalWingsMech.Oppressor] += playerMechTime.Value[RivalWingsMech.Oppressor];
+                    _allianceMechTimes[(int)alliance].MechTime[RivalWingsMech.Justice] += playerMechTime.Value[RivalWingsMech.Justice];
+                    if(!_allianceMechTimes[(int)alliance].Pilots.Contains(alias)) {
+                        _allianceMechTimes[(int)alliance].Pilots.Add(alias);
+                    }
                     //Plugin.Log.Debug($"adding {playerMechTime.Key} to alliance {alliance}");
                 }
             }
         }
-
+        CSV = BuildCSV();
         SortByColumn(0, ImGuiSortDirection.Ascending);
     }
 
     public override void Draw() {
+        base.Draw();
         if(Plugin.Configuration.ShowBackgroundImage) {
             var cursorPosBefore = ImGui.GetCursorPos();
             ImGui.SetCursorPosX(ImGui.GetWindowSize().X / 2 - (250 / 2 + 0f) * ImGuiHelpers.GlobalScale);
@@ -108,6 +112,14 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 ImGui.TableNextColumn();
                 DrawTeamHeader(RivalWingsTeamName.Falcons);
                 ImGui.TableNextColumn();
+                
+                if(Match.TeamMechTime == null || Match.Mercs == null || Match.Supplies == null || Match.AllianceStats == null) {
+                    ImGuiHelper.CenterAlignCursor("(?)");
+                    ////ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().X / 2 - 2f * ImGuiHelpers.GlobalScale);
+                    //ImGui.Text("");
+                    ImGuiHelper.HelpMarker("Information missing due to match not fully recorded.", false);
+                }
+
                 ImGui.TableNextColumn();
                 DrawTeamHeader(RivalWingsTeamName.Ravens);
 
@@ -131,16 +143,25 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             if(Match.AllianceStats != null) {
                 using var tab = ImRaii.TabItem("Alliances");
                 if(tab) {
+                    if(CurrentTab != "Alliances") {
+                        SetWindowSize(SizeConstraints!.Value.MinimumSize);
+                        CurrentTab = "Alliances";
+                    }
                     DrawAlliances();
                 }
             }
-
             if(Match.PlayerScoreboards != null) {
                 using var tab = ImRaii.TabItem("Players");
                 if(tab) {
-                    ImGuiComponents.ToggleButton("##showPercentages", ref ShowPercentages);
-                    ImGui.SameLine();
-                    ImGui.Text("Show team contributions");
+                    if(CurrentTab != "Players") {
+                        SetWindowSize(new Vector2(980, 900));
+                        CurrentTab = "Players";
+                    }
+                    if(_playerContributions != null) {
+                        ImGuiComponents.ToggleButton("##showPercentages", ref ShowPercentages);
+                        ImGui.SameLine();
+                        ImGui.Text("Show team contributions");
+                    }
                     ImGuiHelper.HelpMarker("Right-click table header to show and hide columns including extra metrics.");
                     DrawPlayerStatsTable();
                 }
@@ -161,6 +182,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                     ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().X - 49f * ImGuiHelpers.GlobalScale);
                     if(Match.TeamMechTime != null) {
                         DrawMechTable(team, Match.TeamMechTime[team], reverse);
+                        ImGuiHelper.WrappedTooltip("Average mechs deployed");
                     } else {
                         ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 80f * ImGuiHelpers.GlobalScale);
                     }
@@ -181,6 +203,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                     //ImGui.SetNextItemWidth(40f * ImGuiHelpers.GlobalScale);
                     if(Match.TeamMechTime != null) {
                         DrawMechTable(team, Match.TeamMechTime[team], reverse);
+                        ImGuiHelper.WrappedTooltip("Average mechs deployed");
                     } else {
                         ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 80f * ImGuiHelpers.GlobalScale);
                     }
@@ -198,6 +221,10 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
     }
 
     private void DrawCoreTable(RivalWingsTeamName team) {
+        if(Match.StructureHealth == null) {
+            return;
+        }
+
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 36f * ImGuiHelpers.GlobalScale);
         //Plugin.Log.Debug($"{ImGui.GetStyle().CellPadding.X * 2}");
         using var style = ImRaii.PushStyle(ImGuiStyleVar.CellPadding, new Vector2(ImGui.GetStyle().CellPadding.X * 0, 0));
@@ -224,6 +251,10 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
     }
 
     private void DrawTowerTable(RivalWingsTeamName team, RivalWingsStructure tower, bool reverse) {
+        if(Match.StructureHealth == null) {
+            return;
+        }
+
         using var style = ImRaii.PushStyle(ImGuiStyleVar.CellPadding, new Vector2(ImGui.GetStyle().CellPadding.X, 0));
         using(var table = ImRaii.Table($"{team}{tower}--Table", 2, ImGuiTableFlags.NoClip | ImGuiTableFlags.None, new Vector2(60f, 30f) * ImGuiHelpers.GlobalScale)) {
             ImGui.TableSetupColumn("c1", ImGuiTableColumnFlags.WidthFixed, 20f * ImGuiHelpers.GlobalScale);
@@ -298,7 +329,6 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 }
             }
         }
-        ImGuiHelper.WrappedTooltip("Average mechs deployed");
     }
 
     private void DrawMidMercTable() {
@@ -319,22 +349,26 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 ImGui.Text(text);
             };
 
-            ImGui.TableNextColumn();
-            drawText(Match.Mercs[RivalWingsTeamName.Falcons].ToString());
-            ImGui.TableNextColumn();
-            drawImage(Plugin.WindowManager.GoblinMercIcon.ImGuiHandle, 25f);
-            ImGui.TableNextColumn();
-            drawText(Match.Mercs[RivalWingsTeamName.Ravens].ToString());
+            if(Match.Mercs != null) {
+                ImGui.TableNextColumn();
+                drawText(Match.Mercs[RivalWingsTeamName.Falcons].ToString());
+                ImGui.TableNextColumn();
+                drawImage(Plugin.WindowManager.GoblinMercIcon.ImGuiHandle, 25f);
+                ImGui.TableNextColumn();
+                drawText(Match.Mercs[RivalWingsTeamName.Ravens].ToString());
+            }
 
-            RivalWingsSupplies[] supplies = { RivalWingsSupplies.Gobtank, RivalWingsSupplies.Ceruleum, RivalWingsSupplies.Gobbiejuice, RivalWingsSupplies.Gobcrate };
-            foreach(var supply in supplies) {
-                ImGui.TableNextColumn();
-                drawText(Match.Supplies[RivalWingsTeamName.Falcons][supply].ToString());
-                ImGui.TableNextColumn();
-                //ImGui.SetCursorPosX(ImGui.GetCursorPosX() - 2.5f * ImGuiHelpers.GlobalScale);
-                DrawSuppliesIcon(supply, 25f);
-                ImGui.TableNextColumn();
-                drawText(Match.Supplies[RivalWingsTeamName.Ravens][supply].ToString());
+            if(Match.Supplies != null) {
+                RivalWingsSupplies[] supplies = { RivalWingsSupplies.Gobtank, RivalWingsSupplies.Ceruleum, RivalWingsSupplies.Gobbiejuice, RivalWingsSupplies.Gobcrate };
+                foreach(var supply in supplies) {
+                    ImGui.TableNextColumn();
+                    drawText(Match.Supplies[RivalWingsTeamName.Falcons][supply].ToString());
+                    ImGui.TableNextColumn();
+                    //ImGui.SetCursorPosX(ImGui.GetCursorPosX() - 2.5f * ImGuiHelpers.GlobalScale);
+                    DrawSuppliesIcon(supply, 25f);
+                    ImGui.TableNextColumn();
+                    drawText(Match.Supplies[RivalWingsTeamName.Ravens][supply].ToString());
+                }
             }
         }
     }
@@ -557,6 +591,9 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             ImGui.TableSetupColumn("c3", ImGuiTableColumnFlags.WidthStretch);
             for(int i = 0; i < 6; i++) {
                 ImGui.TableNextColumn();
+                if(i >= Match.AllianceStats!.Count) {
+                    break;
+                }
                 DrawAllianceStatTable((RivalWingsTeamName)Match.LocalPlayerTeam, i);
             }
         }
@@ -564,6 +601,9 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
     }
 
     private void DrawAllianceStatTable(RivalWingsTeamName team, int alliance) {
+        if(Match.AllianceStats == null || alliance >= Match.AllianceStats.Count) {
+            return;
+        }
         var allianceStats = Match.AllianceStats?[alliance];
         if(allianceStats == null) {
             return;
@@ -597,21 +637,36 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 var teamAlliance = ((int)team * 6) + alliance;
                 var color = teamAlliance == Match.LocalPlayerTeamMember!.TeamAlliance ? Plugin.Configuration.Colors.CCLocalPlayer : ImGuiColors.DalamudWhite;
                 drawText(GetAllianceLetter(alliance), color);
-                //ImGui.Text(GetAllianceLetter(alliance));
+                if(Match.Players != null) {
+                    string tooltipText = "";
+                    Match.Players.Where(x => x.TeamAlliance == teamAlliance).ToList().ForEach(x => tooltipText += x.Name.Name + "\n");
+                    if(tooltipText.Length > 0) {
+                        tooltipText = tooltipText[..^1];
+                        ImGuiHelper.WrappedTooltip(tooltipText);
+                    }
+                }
                 ImGui.TableNextColumn();
-                var size = 40f;
-                var handle = Plugin.WindowManager.SoaringIcons[allianceStats.SoaringStacks].ImGuiHandle;
-                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 10f * ImGuiHelpers.GlobalScale);
-                ImGui.Image(handle, new Vector2(size * ImGuiHelpers.GlobalScale * 0.75f, size * ImGuiHelpers.GlobalScale), new Vector2(0f), new Vector2(1));
+                if(allianceStats.SoaringStacks > 0) {
+                    var size = 40f;
+                    var handle = Plugin.WindowManager.SoaringIcons[allianceStats.SoaringStacks].ImGuiHandle;
+                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 10f * ImGuiHelpers.GlobalScale);
+                    ImGui.Image(handle, new Vector2(size * ImGuiHelpers.GlobalScale * 0.75f, size * ImGuiHelpers.GlobalScale), new Vector2(0f), new Vector2(1));
+                }
                 //ImGui.Image(Plugin.WindowManager.SoaringIcons[allianceStats.SoaringStacks].ImGuiHandle, new Vector2(25f * ImGuiHelpers.GlobalScale, 25f * ImGuiHelpers.GlobalScale));
                 //ImGui.TableNextColumn();
             }
 
             //draw mech stats
-            if(Match.LocalPlayerTeam != null && _allianceMechTimes != null) {
+            if(Match.LocalPlayerTeam != null && _allianceMechTimes != null && alliance < _allianceMechTimes.Count) {
                 ImGui.TableNextColumn();
                 ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().X - 49f * ImGuiHelpers.GlobalScale);
-                DrawMechTable((RivalWingsTeamName)Match.LocalPlayerTeam, _allianceMechTimes[alliance], false);
+                DrawMechTable((RivalWingsTeamName)Match.LocalPlayerTeam, _allianceMechTimes[alliance].MechTime, false);
+                string tooltipText = "Pilots:\n\n";
+                _allianceMechTimes[alliance].Pilots.ForEach(x => tooltipText += x.Name + "\n");
+                if(tooltipText.Length > 0) {
+                    tooltipText = tooltipText[..^1];
+                    ImGuiHelper.WrappedTooltip(tooltipText);
+                }
             }
         }
     }
@@ -629,6 +684,65 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
     }
 
     protected override string BuildCSV() {
-        throw new NotImplementedException();
+        string csv = "";
+
+        //header
+        csv += "Id,Start Time,Arena,Duration,Winner\n";
+        csv += Match.Id + "," + Match.DutyStartTime + ","
+            + (Match.Arena != null ? MatchHelper.GetArenaName(Match.Arena) : "") + ","
+            + Match.MatchDuration + ","
+            + Match.MatchWinner + ","
+            + "\n";
+
+        //core stats
+        if(Match.StructureHealth != null) {
+            csv += "\n\n\n";
+            csv += "Team,Core,Tower1,Tower2\n";
+            foreach(var team in Match.StructureHealth) {
+                csv += team.Key + "," + team.Value[RivalWingsStructure.Core] + "," + team.Value[RivalWingsStructure.Tower1] + "," + team.Value[RivalWingsStructure.Tower2] + ","
+                + "\n";
+            }
+        }
+
+        //team mech times
+        if(Match.TeamMechTime != null) {
+            csv += "\n\n\n";
+            csv += "Team,Chaser,Oppressor,Justice\n";
+            foreach(var team in Match.TeamMechTime) {
+                csv += team.Key + "," + team.Value[RivalWingsMech.Chaser] + "," + team.Value[RivalWingsMech.Oppressor] + "," + team.Value[RivalWingsMech.Justice] + ","
+                + "\n";
+            }
+        }
+
+
+        //player mech times
+        if(Match.PlayerMechTime != null) {
+            csv += "\n\n\n";
+            csv += "Player,HomeWorld,Chaser,Oppressor,Justice\n";
+            foreach(var player in Match.PlayerMechTime) {
+                var alias = (PlayerAlias)player.Key;
+                csv += alias.Name + "," + alias.HomeWorld + "," + player.Value[RivalWingsMech.Chaser] + "," + player.Value[RivalWingsMech.Oppressor] + "," + player.Value[RivalWingsMech.Justice] + ","
+                + "\n";
+            }
+        }
+
+        //alliance stats
+        if(Match.AllianceStats != null) {
+
+        }
+
+        //player stats
+        if(Match.Players != null && Match.PlayerScoreboards != null) {
+            csv += "\n\n\n";
+            csv += "Alliance,Name,Home World,Job,Kills,Deaths,Assists,Damage Dealt,Damage to PCs,Damage To Other,Damage Taken, HP Restored,Special,Ceruleum\n";
+            foreach(var player in Match.Players) {
+                var scoreboard = Match.PlayerScoreboards[player.Name];
+                csv += player.Alliance + "," + player.Name.Name + "," + player.Name.HomeWorld + "," + player.Job + "," + scoreboard.Kills + "," + scoreboard.Deaths + "," + scoreboard.Assists + ","
+                    + scoreboard.DamageDealt + "," + scoreboard.DamageToPCs + "," + scoreboard.DamageToOther + "," + scoreboard.DamageTaken + "," + scoreboard.HPRestored + ","
+                    + scoreboard.Special1 + "," + scoreboard.Ceruleum + ","
+                    + "\n";
+            }
+        }
+        return csv;
     }
 }

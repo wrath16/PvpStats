@@ -220,6 +220,9 @@ internal class WindowManager : IDisposable {
                 case Type _ when matchType == typeof(FrontlineMatch):
                     matchCache = _plugin.FLCache as MatchCacheService<T>;
                     break;
+                case Type _ when matchType == typeof(RivalWingsMatch):
+                    matchCache = _plugin.RWCache as MatchCacheService<T>;
+                    break;
                 default:
                     break;
             }

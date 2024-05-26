@@ -84,6 +84,11 @@ internal class ConfigWindow : Window {
                     DrawPerformanceSettings();
                 }
             }
+            using(var tab = ImRaii.TabItem("Misc")) {
+                if(tab) {
+                    DrawMiscSettings();
+                }
+            }
         }
     }
 
@@ -523,6 +528,30 @@ internal class ConfigWindow : Window {
                 _plugin.Configuration.Save();
             });
         }
+        bool enableCachingRW = _plugin.Configuration.EnableDBCachingRW ?? true;
+        if(ImGui.Checkbox("Rival Wings", ref enableCachingRW)) {
+            _plugin.Configuration.EnableDBCachingRW = enableCachingRW;
+            _plugin.DataQueue.QueueDataOperation(() => {
+                if(enableCachingRW) {
+                    _plugin.RWCache.EnableCaching();
+                } else {
+                    _plugin.RWCache.DisableCaching();
+                }
+                _plugin.Configuration.Save();
+            });
+        }
+    }
 
+    private void DrawMiscSettings() {
+        bool disableMatchGuardRW = _plugin.Configuration.DisableMatchGuardsRW ?? false;
+        if(ImGui.Checkbox("Disable Rival Wings match guarding", ref disableMatchGuardRW)) {
+            _plugin.Configuration.DisableMatchGuardsRW = disableMatchGuardRW;
+            _plugin.DataQueue.QueueDataOperation(() => {
+                _plugin.Configuration.Save();
+            });
+        }
+        ImGuiHelper.HelpMarker("Unlike Crystalline Conflict and Frontline, the Rival Wings scoreboard is not typically received by the game client until ~8 seconds after the match has ended." +
+            "To prevent players from prematurely leaving the duty and missing the scoreboard, the leave duty button is disabled during this window.\n\nYou may disable this feature here but be warned: " +
+            "Matches will not be recorded as completed if the scoreboard payload is not received!", true);
     }
 }

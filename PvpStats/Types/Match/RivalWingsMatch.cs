@@ -34,8 +34,11 @@ public class RivalWingsMatch : PvpMatch {
         Version = 0;
     }
 
-    public Dictionary<RivalWingsTeamName, RivalWingsScoreboard> GetTeamScoreboards() {
+    public Dictionary<RivalWingsTeamName, RivalWingsScoreboard>? GetTeamScoreboards() {
         Dictionary<RivalWingsTeamName, RivalWingsScoreboard> scoreboards = [];
+        if(StructureHealth is null || Players is null) {
+            return null;
+        }
         foreach(var team in StructureHealth.Keys) {
             scoreboards.Add(team, new());
         }
@@ -48,8 +51,11 @@ public class RivalWingsMatch : PvpMatch {
         return scoreboards;
     }
 
-    public Dictionary<PlayerAlias, RWScoreboardDouble> GetPlayerContributions() {
+    public Dictionary<PlayerAlias, RWScoreboardDouble>? GetPlayerContributions() {
         var teamScoreboards = GetTeamScoreboards();
+        if(teamScoreboards is null || Players is null || PlayerScoreboards is null) {
+            return null;
+        }
         Dictionary<PlayerAlias, RWScoreboardDouble> contributions = [];
         foreach(var player in Players) {
             var scoreboard = PlayerScoreboards[player.Name];
