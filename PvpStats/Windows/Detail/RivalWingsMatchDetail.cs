@@ -127,7 +127,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 DrawTeamTable(RivalWingsTeamName.Falcons, false);
                 ImGui.TableNextColumn();
                 if(Match.Mercs != null && Match.Supplies != null) {
-                    var tableWidth = 55f * ImGuiHelpers.GlobalScale + ImGui.GetStyle().CellPadding.X * 3;
+                    var tableWidth = 55f * ImGuiHelpers.GlobalScale + ImGui.GetStyle().CellPadding.X * 4;
                     ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().X / 2 - tableWidth / 2);
                     //ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 30f * ImGuiHelpers.GlobalScale);
                     ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 9f * ImGuiHelpers.GlobalScale);

@@ -327,11 +327,11 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                 CurrentMatch.Mercs.Add(team.Key, team.Value);
             }
         } else {
-            Plugin.Log.Warning("Incomplete match information...skipping some data");
+            Plugin.Log.Warning("Incomplete match recording...discarding recorded data.");
         }
 
         var playerTeam = CurrentMatch.LocalPlayerTeam;
-        var enemyTeam = (RivalWingsTeamName)((int)playerTeam! + 1 % 2);
+        var enemyTeam = (RivalWingsTeamName)(((int)playerTeam! + 1) % 2);
         CurrentMatch.MatchWinner = results.Result == 0 ? playerTeam : results.Result == 1 ? enemyTeam : RivalWingsTeamName.Unknown;
         CurrentMatch.IsCompleted = true;
         return true;
