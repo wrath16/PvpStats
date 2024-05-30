@@ -432,7 +432,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
         ImGui.TableSetupScrollFreeze(2, 1);
 
         ImGui.TableNextColumn();
-        ImGui.TableHeader("Alliance");
+        ImGui.TableHeader("Alliance\n\n");
         ImGui.TableNextColumn();
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
         //ImGuiHelper.CenterAlignCursor("Name");

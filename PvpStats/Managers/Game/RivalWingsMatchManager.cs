@@ -1,4 +1,5 @@
-﻿using Dalamud.Game.Addon.Lifecycle;
+﻿using Dalamud.Game.Addon.Events;
+using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
@@ -371,8 +372,25 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                     Plugin.Log.Debug($"Disabling button at node: 0x{new IntPtr(buttonNode):X8}");
                     buttonNode->AtkComponentBase.SetEnabledState(false);
                     _leaveDutyButton = (IntPtr)buttonNode;
+                    var targetNode = buttonNode->AtkComponentBase.OwnerNode;
+                    targetNode->AtkResNode.NodeFlags |= NodeFlags.EmitsEvents | NodeFlags.RespondToMouse | NodeFlags.HasCollision;
+                    Plugin.AddonEventManager.AddEvent((nint)addon, (nint)targetNode, AddonEventType.MouseOver, TooltipHandler);
+                    Plugin.AddonEventManager.AddEvent((nint)addon, (nint)targetNode, AddonEventType.MouseOut, TooltipHandler);
                 }
             }
+        }
+    }
+
+    private unsafe void TooltipHandler(AddonEventType type, IntPtr addon, IntPtr node) {
+        var addonId = ((AtkUnitBase*)addon)->ID;
+
+        switch(type) {
+            case AddonEventType.MouseOver:
+                AtkStage.GetSingleton()->TooltipManager.ShowTooltip(addonId, (AtkResNode*)node, "Disabled by PvP Tracker until scoreboard payload received!");
+                break;
+            case AddonEventType.MouseOut:
+                AtkStage.GetSingleton()->TooltipManager.HideTooltip(addonId);
+                break;
         }
     }
 

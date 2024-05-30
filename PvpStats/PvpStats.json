@@ -6,7 +6,7 @@
   "InternalName": "PvpStats",
   "RepoUrl": "https://github.com/wrath16/PvpStats",
   "ApplicableVersion": "any",
-  "Changelog": "* Rival Wings support.",
+  "Changelog": "* Rival Wings match leave button tooltip.",
   "Tags": [
     "pvp",
     "statistics"

@@ -1,6 +1,5 @@
 using Dalamud.Game;
 using Dalamud.Game.Command;
-using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
@@ -34,11 +33,12 @@ public sealed class Plugin : IDalamudPlugin {
     internal IGameNetwork GameNetwork { get; init; }
     internal ICondition Condition { get; init; }
     internal IDutyState DutyState { get; init; }
-    internal IPartyList PartyList { get; init; }
+    //internal IPartyList PartyList { get; init; }
     internal IChatGui ChatGui { get; init; }
     internal IGameGui GameGui { get; init; }
     internal IFramework Framework { get; init; }
     internal IPluginLog Log { get; init; }
+    internal IAddonEventManager AddonEventManager { get; init; }
     internal IAddonLifecycle AddonLifecycle { get; init; }
     internal IObjectTable ObjectTable { get; init; }
     internal ITextureProvider TextureProvider { get; init; }
@@ -70,23 +70,24 @@ public sealed class Plugin : IDalamudPlugin {
     internal bool DebugMode { get; set; }
 
     public Plugin(
-        [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
-        [RequiredVersion("1.0")] ICommandManager commandManager,
-        [RequiredVersion("1.0")] IDataManager dataManager,
-        [RequiredVersion("1.0")] IClientState clientState,
-        [RequiredVersion("1.0")] IGameNetwork gameNetwork,
-        [RequiredVersion("1.0")] ICondition condition,
-        [RequiredVersion("1.0")] IDutyState dutyState,
-        [RequiredVersion("1.0")] IPartyList partyList,
-        [RequiredVersion("1.0")] IChatGui chatGui,
-        [RequiredVersion("1.0")] IGameGui gameGui,
-        [RequiredVersion("1.0")] IFramework framework,
-        [RequiredVersion("1.0")] IPluginLog log,
-        [RequiredVersion("1.0")] IAddonLifecycle addonLifecycle,
-        [RequiredVersion("1.0")] IObjectTable objectTable,
-        [RequiredVersion("1.0")] ITextureProvider textureProvider,
-        [RequiredVersion("1.0")] IGameInteropProvider interopProvider,
-        [RequiredVersion("1.0")] ISigScanner sigScanner) {
+        DalamudPluginInterface pluginInterface,
+        ICommandManager commandManager,
+        IDataManager dataManager,
+        IClientState clientState,
+        IGameNetwork gameNetwork,
+        ICondition condition,
+        IDutyState dutyState,
+        IPartyList partyList,
+        IChatGui chatGui,
+        IGameGui gameGui,
+        IFramework framework,
+        IPluginLog log,
+        IAddonEventManager addonEventManager,
+        IAddonLifecycle addonLifecycle,
+        IObjectTable objectTable,
+        ITextureProvider textureProvider,
+        IGameInteropProvider interopProvider,
+        ISigScanner sigScanner) {
         try {
             PluginInterface = pluginInterface;
             CommandManager = commandManager;
@@ -95,11 +96,12 @@ public sealed class Plugin : IDalamudPlugin {
             GameNetwork = gameNetwork;
             Condition = condition;
             DutyState = dutyState;
-            PartyList = partyList;
+            //PartyList = partyList;
             ChatGui = chatGui;
             GameGui = gameGui;
             Framework = framework;
             Log = log;
+            AddonEventManager = addonEventManager;
             AddonLifecycle = addonLifecycle;
             ObjectTable = objectTable;
             TextureProvider = textureProvider;
