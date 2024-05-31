@@ -51,4 +51,16 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
         }).ToList();
         return filteredMatches;
     }
+
+    protected List<RivalWingsMatch> ApplyFilter(ResultFilter filter, List<RivalWingsMatch> matches) {
+        List<RivalWingsMatch> filteredMatches = new(matches);
+        if(filter.Result == MatchResult.Win) {
+            filteredMatches = filteredMatches.Where(x => x.IsWin).ToList();
+        } else if(filter.Result == MatchResult.Loss) {
+            filteredMatches = filteredMatches.Where(x => !x.IsWin && x.MatchWinner != null).ToList();
+        } else if(filter.Result == MatchResult.Other) {
+            filteredMatches = filteredMatches.Where(x => x.MatchWinner == null).ToList();
+        }
+        return filteredMatches;
+    }
 }
