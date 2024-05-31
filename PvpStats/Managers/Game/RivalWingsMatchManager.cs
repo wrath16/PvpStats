@@ -24,6 +24,10 @@ namespace PvpStats.Managers.Game;
 internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
 
     private IntPtr _leaveDutyButton = IntPtr.Zero;
+    private IntPtr _leaveDutyButtonOwnerNode = IntPtr.Zero;
+    private ushort _addonId;
+    IAddonEventHandle? _mouseOverEvent;
+    IAddonEventHandle? _mouseOutEvent;
     private bool _matchEnded;
     private bool _resultPayloadReceived;
 
@@ -218,6 +222,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         CurrentMatch.MatchEndTime = DateTime.Now;
         CurrentMatch.MatchStartTime = CurrentMatch.MatchEndTime - TimeSpan.FromSeconds(results.MatchLength);
         CurrentMatch.LocalPlayer ??= Plugin.GameState.CurrentPlayer;
+        //access object table out of main thread...
         CurrentMatch.DataCenter ??= Plugin.ClientState.LocalPlayer?.CurrentWorld.GameData?.DataCenter.Value?.Name.ToString();
 
         CurrentMatch.StructureHealth = new() {
@@ -371,11 +376,13 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                 if(buttonNode != null) {
                     Plugin.Log.Debug($"Disabling button at node: 0x{new IntPtr(buttonNode):X8}");
                     buttonNode->AtkComponentBase.SetEnabledState(false);
-                    _leaveDutyButton = (IntPtr)buttonNode;
                     var targetNode = buttonNode->AtkComponentBase.OwnerNode;
                     targetNode->AtkResNode.NodeFlags |= NodeFlags.EmitsEvents | NodeFlags.RespondToMouse | NodeFlags.HasCollision;
-                    Plugin.AddonEventManager.AddEvent((nint)addon, (nint)targetNode, AddonEventType.MouseOver, TooltipHandler);
-                    Plugin.AddonEventManager.AddEvent((nint)addon, (nint)targetNode, AddonEventType.MouseOut, TooltipHandler);
+                    _mouseOverEvent = Plugin.AddonEventManager.AddEvent((nint)addon, (nint)targetNode, AddonEventType.MouseOver, TooltipHandler);
+                    _mouseOutEvent = Plugin.AddonEventManager.AddEvent((nint)addon, (nint)targetNode, AddonEventType.MouseOut, TooltipHandler);
+                    _leaveDutyButton = (IntPtr)buttonNode;
+                    _leaveDutyButtonOwnerNode = (IntPtr)targetNode;
+                    _addonId = addon->ID;
                 }
             }
         }
@@ -383,7 +390,6 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
 
     private unsafe void TooltipHandler(AddonEventType type, IntPtr addon, IntPtr node) {
         var addonId = ((AtkUnitBase*)addon)->ID;
-
         switch(type) {
             case AddonEventType.MouseOver:
                 AtkStage.GetSingleton()->TooltipManager.ShowTooltip(addonId, (AtkResNode*)node, "Disabled by PvP Tracker until scoreboard payload received!");
@@ -400,11 +406,27 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         }
         Plugin.Log.Debug("Duty menu closed");
         _leaveDutyButton = IntPtr.Zero;
+        _leaveDutyButtonOwnerNode = IntPtr.Zero;
+        _mouseOverEvent = null;
+        _mouseOutEvent = null;
+        _addonId = 0;
     }
 
-    private unsafe void EnableLeaveDutyButton() {
+    internal unsafe void EnableLeaveDutyButton() {
         if(_leaveDutyButton != IntPtr.Zero) {
             ((AtkComponentButton*)_leaveDutyButton)->AtkComponentBase.SetEnabledState(true);
+        }
+        if(_mouseOverEvent != null) {
+            Plugin.AddonEventManager.RemoveEvent(_mouseOverEvent);
+        }
+        if(_mouseOutEvent != null) {
+            Plugin.AddonEventManager.RemoveEvent(_mouseOutEvent);
+        }
+        if(_leaveDutyButtonOwnerNode != IntPtr.Zero) {
+            ((AtkComponentNode*)_leaveDutyButtonOwnerNode)->AtkResNode.NodeFlags &= ~(NodeFlags.HasCollision | NodeFlags.EmitsEvents | NodeFlags.RespondToMouse);
+        }
+        if(_addonId != 0) {
+            AtkStage.GetSingleton()->TooltipManager.HideTooltip(_addonId);
         }
     }
 
@@ -511,5 +533,26 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         var xInt = (int)(MathF.Round(pos.X, 3, MidpointRounding.AwayFromZero) * 1000);
         var yInt = (int)(MathF.Round(pos.Z, 3, MidpointRounding.AwayFromZero) * 1000);
         return new Vector2((int)(xInt * 0.001f * 1000f), (int)(yInt * 0.001f * 1000f));
+    }
+
+    private void Reset() {
+        _leaveDutyButton = IntPtr.Zero;
+        _leaveDutyButtonOwnerNode = IntPtr.Zero;
+        _addonId = 0;
+        _mouseOverEvent = null;
+        _mouseOutEvent = null;
+        _matchEnded = false;
+        _resultPayloadReceived = false;
+        _objIdToPlayer = [];
+        _mechTime = [];
+        _midCounts = [];
+        _mercCounts = [];
+        _allianceStats = [];
+        _playerMechStats = [];
+        _lastMercControl = null;
+        _lastUpdate = DateTime.MinValue;
+        _lastFalconMidScore = 0;
+        _lastRavenMidScore = 0;
+        _lastPrint = DateTime.MinValue;
     }
 }
