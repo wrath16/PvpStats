@@ -2,6 +2,7 @@
 using ImGuiNET;
 using PvpStats.Windows.Filter;
 using PvpStats.Windows.List;
+using PvpStats.Windows.Summary;
 using System.Diagnostics;
 using System.Numerics;
 using System.Threading.Tasks;
@@ -10,6 +11,7 @@ namespace PvpStats.Windows.Tracker;
 internal class RWTrackerWindow : TrackerWindow {
 
     private readonly RivalWingsMatchList _matchList;
+    private readonly RivalWingsPvPProfile _profile;
 
     public RWTrackerWindow(Plugin plugin) : base(plugin, plugin.Configuration.RWWindowConfig, "Rival Wings Tracker") {
         SizeConstraints = new WindowSizeConstraints {
@@ -20,10 +22,12 @@ internal class RWTrackerWindow : TrackerWindow {
         MatchFilters.Add(new LocalPlayerFilter(plugin, Refresh, plugin.Configuration.RWWindowConfig.MatchFilters.LocalPlayerFilter));
         MatchFilters.Add(new LocalPlayerJobFilter(plugin, Refresh));
         MatchFilters.Add(new OtherPlayerFilter(plugin, Refresh));
+        MatchFilters.Add(new ResultFilter(plugin, Refresh));
         MatchFilters.Add(new DurationFilter(plugin, Refresh));
         MatchFilters.Add(new BookmarkFilter(plugin, Refresh));
 
         _matchList = new(plugin);
+        _profile = new(plugin);
     }
 
     public override void DrawInternal() {
@@ -32,6 +36,11 @@ internal class RWTrackerWindow : TrackerWindow {
         using(var tabBar = ImRaii.TabBar("TabBar", ImGuiTabBarFlags.None)) {
             if(tabBar) {
                 Tab("Matches", _matchList.Draw);
+                Tab("Profile", () => {
+                    using(ImRaii.Child("ProfileChild")) {
+                        _profile.Draw();
+                    }
+                });
             }
         }
     }
