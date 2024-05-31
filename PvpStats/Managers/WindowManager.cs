@@ -24,6 +24,7 @@ internal class WindowManager : IDisposable {
     internal FLTrackerWindow FLTrackerWindow { get; private set; }
     internal RWTrackerWindow RWTrackerWindow { get; private set; }
     internal ConfigWindow ConfigWindow { get; private set; }
+    internal SplashWindow SplashWindow { get; private set; }
 #if DEBUG
     internal DebugWindow? DebugWindow { get; private set; }
 #endif
@@ -49,8 +50,6 @@ internal class WindowManager : IDisposable {
         WindowSystem = new("PvP Stats");
 
         //MainWindow = new();
-        _plugin.PluginInterface.UiBuilder.Draw += DrawUI;
-        _plugin.PluginInterface.UiBuilder.OpenConfigUi += OpenConfigWindow;
 
         Icon0 = _plugin.TextureProvider.GetIcon(0)!;
 
@@ -80,24 +79,28 @@ internal class WindowManager : IDisposable {
             SoaringIcons.Add(i, _plugin.TextureProvider.GetIcon(19181 + (uint)i - 1));
         }
         SoaringIcons.Add(20, _plugin.TextureProvider.GetIcon(14845));
+        CCBannerImage = _plugin.PluginInterface.UiBuilder.LoadImage(Path.Combine(_plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "cc_logo_full.png"));
+        RWBannerImage = _plugin.PluginInterface.UiBuilder.LoadImage(Path.Combine(_plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "rw_logo.png"));
+
         CCTrackerWindow = new(plugin);
         FLTrackerWindow = new(plugin);
         RWTrackerWindow = new(plugin);
         ConfigWindow = new(plugin);
+        SplashWindow = new(plugin);
         WindowSystem.AddWindow(CCTrackerWindow);
         WindowSystem.AddWindow(FLTrackerWindow);
         WindowSystem.AddWindow(RWTrackerWindow);
         WindowSystem.AddWindow(ConfigWindow);
+        WindowSystem.AddWindow(SplashWindow);
 
 #if DEBUG
         DebugWindow = new(plugin);
         WindowSystem.AddWindow(DebugWindow);
 #endif
 
-        var imagePath = Path.Combine(_plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "cc_logo_full.png");
-        CCBannerImage = _plugin.PluginInterface.UiBuilder.LoadImage(imagePath);
-        RWBannerImage = _plugin.PluginInterface.UiBuilder.LoadImage(Path.Combine(_plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "rw_logo.png"));
-
+        _plugin.PluginInterface.UiBuilder.Draw += DrawUI;
+        _plugin.PluginInterface.UiBuilder.OpenConfigUi += OpenConfigWindow;
+        _plugin.PluginInterface.UiBuilder.OpenMainUi += OpenSplashWindow;
         _plugin.ClientState.Login += OnLogin;
     }
     private void DrawUI() {
@@ -145,6 +148,10 @@ internal class WindowManager : IDisposable {
 
     internal void OpenConfigWindow() {
         ConfigWindow.IsOpen = true;
+    }
+
+    internal void OpenSplashWindow() {
+        SplashWindow.IsOpen = true;
     }
 
 #if DEBUG
