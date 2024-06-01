@@ -27,7 +27,7 @@ internal class RivalWingsSummary {
                 ImGui.TableSetupColumn("c2");
 
                 ImGui.TableNextColumn();
-                ImGui.TextColored(Plugin.Configuration.Colors.Header, "Mech Uptime:");
+                ImGui.TextColored(Plugin.Configuration.Colors.Header, "Personal Mech Uptime:");
                 DrawMechTable();
                 ImGui.TableNextColumn();
                 ImGui.TextColored(Plugin.Configuration.Colors.Header, "Objective Win Rate:");
@@ -36,7 +36,7 @@ internal class RivalWingsSummary {
             if(Plugin.RWStatsEngine.LocalPlayerJobResults.Count > 0) {
                 ImGui.Separator();
                 ImGui.TextColored(Plugin.Configuration.Colors.Header, "Jobs Played:");
-                ImGuiHelper.HelpMarker("Job is determined by end-game scoreboard.");
+                ImGuiHelper.HelpMarker("Job is determined by the post-match scoreboard.");
                 DrawJobTable(Plugin.RWStatsEngine.LocalPlayerJobResults.OrderByDescending(x => x.Value.Matches).ToDictionary());
             }
             ImGui.Separator();
