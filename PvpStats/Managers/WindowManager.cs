@@ -37,6 +37,7 @@ internal class WindowManager : IDisposable {
     internal IDalamudTextureWrap RWBannerImage { get; private set; }
     internal IDalamudTextureWrap? RWSuppliesTexture { get; private set; }
     internal IDalamudTextureWrap? GoblinMercIcon { get; private set; }
+    internal IDalamudTextureWrap? TrainIcon { get; private set; }
     internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> CoreIcons = [];
     internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> Tower1Icons = [];
     internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> Tower2Icons = [];
@@ -60,6 +61,7 @@ internal class WindowManager : IDisposable {
         //RWSuppliesTexture = _plugin.TextureProvider.GetTexture(rwTextureFile);
         RWSuppliesTexture = _plugin.TextureProvider.GetTextureFromGame("ui/uld/PVPSimulationHeader2_hr1.tex");
         GoblinMercIcon = _plugin.TextureProvider.GetIcon(60976);
+        TrainIcon = _plugin.TextureProvider.GetIcon(60980);
         CoreIcons.Add(RivalWingsTeamName.Falcons, _plugin.TextureProvider.GetIcon(60947));
         CoreIcons.Add(RivalWingsTeamName.Ravens, _plugin.TextureProvider.GetIcon(60948));
         Tower1Icons.Add(RivalWingsTeamName.Falcons, _plugin.TextureProvider.GetIcon(60945));

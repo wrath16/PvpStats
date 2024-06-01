@@ -11,6 +11,7 @@ namespace PvpStats.Windows.Tracker;
 internal class RWTrackerWindow : TrackerWindow {
 
     private readonly RivalWingsMatchList _matchList;
+    private readonly RivalWingsSummary _summary;
     private readonly RivalWingsPvPProfile _profile;
 
     public RWTrackerWindow(Plugin plugin) : base(plugin, plugin.Configuration.RWWindowConfig, "Rival Wings Tracker") {
@@ -27,6 +28,7 @@ internal class RWTrackerWindow : TrackerWindow {
         MatchFilters.Add(new BookmarkFilter(plugin, Refresh));
 
         _matchList = new(plugin);
+        _summary = new(plugin);
         _profile = new(plugin);
     }
 
@@ -36,6 +38,11 @@ internal class RWTrackerWindow : TrackerWindow {
         using(var tabBar = ImRaii.TabBar("TabBar", ImGuiTabBarFlags.None)) {
             if(tabBar) {
                 Tab("Matches", _matchList.Draw);
+                Tab("Summary", () => {
+                    using(ImRaii.Child("SummaryChild")) {
+                        _summary.Draw();
+                    }
+                });
                 Tab("Profile", () => {
                     using(ImRaii.Child("ProfileChild")) {
                         _profile.Draw();

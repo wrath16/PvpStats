@@ -9,11 +9,15 @@ public class PvpScoreboardDouble {
     public double DamageDealt { get; set; }
     public double DamageTaken { get; set; }
     public double HPRestored { get; set; }
-    public double KillsAndAssists => Kills + Assists;
-    public double DamageDealtPerKA => KillsAndAssists > 0 ? DamageDealt / KillsAndAssists : DamageDealt;
-    public double DamageDealtPerLife => DamageDealt / Deaths + LifeCount;
-    public double DamageTakenPerLife => DamageTaken / Deaths + LifeCount;
-    public double HPRestoredPerLife => HPRestored / Deaths + LifeCount;
+    public double KillsAndAssists { get; set; }
+    //public double DamageDealtPerKA => KillsAndAssists > 0 ? DamageDealt / KillsAndAssists : DamageDealt;
+    //public double DamageDealtPerLife => DamageDealt / Deaths + LifeCount;
+    //public double DamageTakenPerLife => DamageTaken / Deaths + LifeCount;
+    //public double HPRestoredPerLife => HPRestored / Deaths + LifeCount;
+
+    public PvpScoreboardDouble() {
+
+    }
 
     public PvpScoreboardDouble(PvpScoreboard playerScoreboard, PvpScoreboard teamScoreboard) {
         Kills = teamScoreboard.Kills != 0 ? (double)playerScoreboard.Kills / teamScoreboard.Kills : 0;
@@ -22,5 +26,28 @@ public class PvpScoreboardDouble {
         DamageDealt = teamScoreboard.DamageDealt != 0 ? (double)playerScoreboard.DamageDealt / teamScoreboard.DamageDealt : 0;
         DamageTaken = teamScoreboard.DamageTaken != 0 ? (double)playerScoreboard.DamageTaken / teamScoreboard.DamageTaken : 0;
         HPRestored = teamScoreboard.HPRestored != 0 ? (double)playerScoreboard.HPRestored / teamScoreboard.HPRestored : 0;
+        KillsAndAssists = ((double)playerScoreboard.Kills + playerScoreboard.Assists) / (teamScoreboard.Kills + teamScoreboard.Assists);
+    }
+
+    public static PvpScoreboardDouble operator /(PvpScoreboardDouble a, double b) {
+        return new PvpScoreboardDouble() {
+            Kills = a.Kills / b,
+            Deaths = a.Deaths / b,
+            Assists = a.Assists / b,
+            DamageDealt = a.DamageDealt / b,
+            DamageTaken = a.DamageTaken / b,
+            HPRestored = a.HPRestored / b,
+        };
+    }
+
+    public static explicit operator PvpScoreboardDouble(PvpScoreboard a) {
+        return new PvpScoreboardDouble() {
+            Kills = a.Kills,
+            Deaths = a.Deaths,
+            Assists = a.Assists,
+            DamageDealt = a.DamageDealt,
+            DamageTaken = a.DamageTaken,
+            HPRestored = a.HPRestored,
+        };
     }
 }

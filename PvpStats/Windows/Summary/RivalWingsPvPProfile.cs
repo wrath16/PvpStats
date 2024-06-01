@@ -13,7 +13,6 @@ internal class RivalWingsPvPProfile {
         _plugin = plugin;
     }
 
-
     public unsafe void Draw() {
         var pvpProfile = PvPProfile.Instance();
         ImGuiHelper.HelpMarker("Uses game server-originating data from your PvP profile.", false);
