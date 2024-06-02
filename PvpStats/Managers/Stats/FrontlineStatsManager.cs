@@ -192,4 +192,10 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
         }).ToList();
         return filteredMatches;
     }
+
+    protected List<FrontlineMatch> ApplyFilter(FLResultFilter filter, List<FrontlineMatch> matches) {
+        List<FrontlineMatch> filteredMatches = new(matches);
+        filteredMatches = filteredMatches.Where(x => x.Result == null || filter.FilterState[(int)x.Result]).ToList();
+        return filteredMatches;
+    }
 }
