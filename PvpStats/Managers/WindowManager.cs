@@ -1,5 +1,9 @@
-﻿using Dalamud.Interface.Internal;
+﻿using Dalamud.Interface.GameFonts;
+using Dalamud.Interface.Internal;
+using Dalamud.Interface.ManagedFontAtlas;
 using Dalamud.Interface.Windowing;
+using Dalamud.Storage.Assets;
+using ImGuiNET;
 using LiteDB;
 using PvpStats.Helpers;
 using PvpStats.Services.DataCache;
@@ -45,6 +49,9 @@ internal class WindowManager : IDisposable {
     internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> OppressorIcons = [];
     internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> JusticeIcons = [];
     internal readonly Dictionary<int, IDalamudTextureWrap?> SoaringIcons = [];
+
+    //internal ImFontPtr? DoubleDefault { get; private set; } = null;
+    internal IFontHandle LargeFont { get; private set; }
 
     internal WindowManager(Plugin plugin) {
         _plugin = plugin;
@@ -100,6 +107,12 @@ internal class WindowManager : IDisposable {
         WindowSystem.AddWindow(DebugWindow);
 #endif
 
+        //var x = _plugin.PluginInterface.UiBuilder.DefaultFontHandle;
+        var y = new GameFontStyle(GameFontFamily.Axis, 24f);
+
+        LargeFont = _plugin.PluginInterface.UiBuilder.FontAtlas.NewGameFontHandle(y);
+
+        //_plugin.PluginInterface.UiBuilder.BuildFonts += BuildFonts;
         _plugin.PluginInterface.UiBuilder.Draw += DrawUI;
         _plugin.PluginInterface.UiBuilder.OpenConfigUi += OpenConfigWindow;
         _plugin.PluginInterface.UiBuilder.OpenMainUi += OpenSplashWindow;
@@ -107,6 +120,20 @@ internal class WindowManager : IDisposable {
     }
     private void DrawUI() {
         WindowSystem.Draw();
+    }
+
+    private void BuildFonts() {
+        var fontPath = Path.Combine(_plugin.PluginInterface.DalamudAssetDirectory.FullName, "UIRes", "NotoSansCJKjp-Medium.otf");
+        if(File.Exists(fontPath)) {
+            try {
+                //DoubleDefault = ImGui.GetIO().Fonts.AddFontFromFileTTF(fontPath, 24f);
+                //_plugin.PluginInterface.UiBuilder.RebuildFonts();
+            } catch(Exception ex) {
+                _plugin.Log.Error(ex, "Font load failure.");
+            }
+        } else {
+            _plugin.Log.Warning($"font doesn't exist: {fontPath}");
+        }
     }
 
     public void Dispose() {
