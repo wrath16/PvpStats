@@ -19,6 +19,7 @@ public sealed class Plugin : IDalamudPlugin {
 
     internal const string DatabaseName = "data.db";
 
+    private const string SplashCommandName = "/pvpstats";
     private const string CCStatsCommandName = "/ccstats";
     private const string FLStatsCommandName = "/flstats";
     private const string RWStatsCommandName = "/rwstats";
@@ -147,6 +148,9 @@ public sealed class Plugin : IDalamudPlugin {
                 Log.Error(e, $"failed to initialize rw match manager");
             }
 
+            CommandManager.AddHandler(SplashCommandName, new CommandInfo(OnSplashCommand) {
+                HelpMessage = "Opens launcher window."
+            });
             CommandManager.AddHandler(CCStatsCommandName, new CommandInfo(OnCCCommand) {
                 HelpMessage = "Opens Crystalline Conflict tracker."
             });
@@ -167,8 +171,6 @@ public sealed class Plugin : IDalamudPlugin {
             DebugMode = true;
 #endif
             DataQueue.QueueDataOperation(Initialize);
-            //PluginInterface.UiBuilder.OpenConfigUi += WindowManager.OpenConfigWindow;
-            //Log.Debug("PvP Stats has started.");
         } catch(Exception e) {
             //remove handlers and release database if we fail to start
             Log!.Error($"Failed to initialize plugin constructor: {e.Message}");
@@ -198,6 +200,10 @@ public sealed class Plugin : IDalamudPlugin {
         GameState?.Dispose();
 
         Configuration?.Save();
+    }
+
+    private void OnSplashCommand(string command, string args) {
+        WindowManager.OpenSplashWindow();
     }
 
     private void OnCCCommand(string command, string args) {
