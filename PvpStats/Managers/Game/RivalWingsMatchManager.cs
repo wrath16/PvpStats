@@ -356,6 +356,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         //re-enable duty leave button after 20 seconds as a fallback
         Task.Delay(20000).ContinueWith(t => {
             try {
+                _resultPayloadReceived = true;
                 EnableLeaveDutyButton();
             } catch {
                 //suppress
