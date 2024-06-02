@@ -29,6 +29,13 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
     }
 
     public override void Draw() {
+        //if(Plugin.Configuration.ShowBackgroundImage) {
+        //    var cursorPosBefore = ImGui.GetCursorPos();
+        //    ImGui.SetCursorPosX(ImGui.GetWindowSize().X / 2 - (250 / 2 + 0f) * ImGuiHelpers.GlobalScale);
+        //    ImGui.SetCursorPosY((ImGui.GetCursorPos().Y + 40f * ImGuiHelpers.GlobalScale));
+        //    ImGui.Image(Plugin.WindowManager.FLBannerImage.ImGuiHandle, new Vector2(2, 240) * ImGuiHelpers.GlobalScale, Vector2.Zero, Vector2.One, new Vector4(1, 1, 1, 0.1f));
+        //    ImGui.SetCursorPos(cursorPosBefore);
+        //}
         using(var table = ImRaii.Table("header", 3, ImGuiTableFlags.PadOuterX)) {
             if(table) {
                 ImGui.TableSetupColumn("c1", ImGuiTableColumnFlags.WidthStretch);

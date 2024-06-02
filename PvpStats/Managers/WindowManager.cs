@@ -36,6 +36,7 @@ internal class WindowManager : IDisposable {
 
     internal readonly Dictionary<Job, IDalamudTextureWrap?> JobIcons = new();
     internal IDalamudTextureWrap CCBannerImage { get; private set; }
+    internal IDalamudTextureWrap FLBannerImage { get; private set; }
     internal IDalamudTextureWrap RWBannerImage { get; private set; }
     internal IDalamudTextureWrap? RWSuppliesTexture { get; private set; }
     internal IDalamudTextureWrap? GoblinMercIcon { get; private set; }
@@ -85,6 +86,7 @@ internal class WindowManager : IDisposable {
         SoaringIcons.Add(20, _plugin.TextureProvider.GetIcon(14845));
         CCBannerImage = _plugin.PluginInterface.UiBuilder.LoadImage(Path.Combine(_plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "cc_logo_full.png"));
         RWBannerImage = _plugin.PluginInterface.UiBuilder.LoadImage(Path.Combine(_plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "rw_logo.png"));
+        FLBannerImage = _plugin.PluginInterface.UiBuilder.LoadImage(Path.Combine(_plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "fl_logo.png"));
 
         CCTrackerWindow = new(plugin);
         FLTrackerWindow = new(plugin);
