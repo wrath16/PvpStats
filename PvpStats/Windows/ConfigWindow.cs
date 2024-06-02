@@ -378,12 +378,12 @@ internal class ConfigWindow : Window {
     private void DrawManualPlayerLinkSettings() {
         using(var child = ImRaii.Child("ManualLinksChild", new Vector2(0, -(25 + ImGui.GetStyle().ItemSpacing.Y) * ImGuiHelpers.GlobalScale), true)) {
             if(child) {
-                using(var table = ImRaii.Table("ManualLinksTabke", 4, ImGuiTableFlags.NoSavedSettings)) {
+                using(var table = ImRaii.Table("ManualLinksTable", 4, ImGuiTableFlags.NoSavedSettings)) {
                     if(table) {
-                        ImGui.TableSetupColumn("LinkedAlias", ImGuiTableColumnFlags.WidthFixed, 180f * ImGuiHelpers.GlobalScale);
+                        ImGui.TableSetupColumn("LinkedAlias", ImGuiTableColumnFlags.WidthStretch, 180f * ImGuiHelpers.GlobalScale);
                         ImGui.TableSetupColumn("Verb", ImGuiTableColumnFlags.WidthFixed, 75f * ImGuiHelpers.GlobalScale);
-                        ImGui.TableSetupColumn("SourceAlias", ImGuiTableColumnFlags.WidthFixed, 180f * ImGuiHelpers.GlobalScale);
-                        ImGui.TableSetupColumn("Button", ImGuiTableColumnFlags.WidthFixed, 50f * ImGuiHelpers.GlobalScale);
+                        ImGui.TableSetupColumn("SourceAlias", ImGuiTableColumnFlags.WidthStretch, 180f * ImGuiHelpers.GlobalScale);
+                        ImGui.TableSetupColumn("Button", ImGuiTableColumnFlags.WidthFixed, 25f * ImGuiHelpers.GlobalScale);
                         try {
                             foreach(var link in ManualLinks) {
                                 DrawManualPlayerLink(link);
