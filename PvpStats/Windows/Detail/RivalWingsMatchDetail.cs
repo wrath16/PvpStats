@@ -639,22 +639,9 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
 
                 var teamAlliance = ((int)team * 6) + alliance;
                 var color = teamAlliance == Match.LocalPlayerTeamMember!.TeamAlliance ? Plugin.Configuration.Colors.CCLocalPlayer : ImGuiColors.DalamudWhite;
-
-                using (_ = Plugin.WindowManager.LargeFont.Push()) {
+                using(_ = Plugin.WindowManager.LargeFont.Push()) {
                     drawText(GetAllianceLetter(alliance), color);
                 }
-
-                //if(Plugin.WindowManager.DoubleDefault != null) {
-                //    try {
-                //        using var font = ImRaii.PushFont((ImFontPtr)Plugin.WindowManager.DoubleDefault);
-                //        drawText(GetAllianceLetter(alliance), color);
-                //    } catch(Exception ex) {
-                //        Plugin.Log.Error(ex, "Font exception");
-                //    }
-                //} else {
-                //    drawText(GetAllianceLetter(alliance), color);
-                //}
-                //drawText(GetAllianceLetter(alliance), color);
                 if(Match.Players != null) {
                     string tooltipText = "";
                     Match.Players.Where(x => x.TeamAlliance == teamAlliance).ToList().ForEach(x => tooltipText += x.Name.Name + "\n");
