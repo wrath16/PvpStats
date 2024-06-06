@@ -130,110 +130,6 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         DrawPlayerStatsTable();
     }
 
-    private void DrawTeamStatsTable() {
-        using var table = ImRaii.Table("teamstats", 4, ImGuiTableFlags.PadOuterX | ImGuiTableFlags.Borders);
-        if(!table) return;
-        var team1 = Match.Teams.ElementAt(0);
-        var team2 = Match.Teams.ElementAt(1);
-        var team3 = Match.Teams.ElementAt(2);
-
-        ImGui.TableSetupColumn("rows", ImGuiTableColumnFlags.WidthStretch | ImGuiTableColumnFlags.NoClip);
-        ImGui.TableSetupColumn("team1", ImGuiTableColumnFlags.WidthFixed, 150f * ImGuiHelpers.GlobalScale);
-        ImGui.TableSetupColumn("team2", ImGuiTableColumnFlags.WidthFixed, 150f * ImGuiHelpers.GlobalScale);
-        ImGui.TableSetupColumn("team3", ImGuiTableColumnFlags.WidthFixed, 150f * ImGuiHelpers.GlobalScale);
-        ImGui.TableNextRow();
-
-        ImGui.TableNextColumn();
-        ImGui.TableNextColumn();
-        DrawTeamName(team1.Key);
-        ImGui.TableNextColumn();
-        DrawTeamName(team2.Key);
-        ImGui.TableNextColumn();
-        DrawTeamName(team3.Key);
-
-        ImGui.TableNextColumn();
-        ImGui.TableNextColumn();
-        DrawPlacement(team1.Value.Placement);
-        ImGui.TableNextColumn();
-        DrawPlacement(team2.Value.Placement);
-        ImGui.TableNextColumn();
-        DrawPlacement(team3.Value.Placement);
-
-        ImGui.TableNextColumn();
-        var text1 = "Total points: ";
-        ImGuiHelper.RightAlignCursor(text1);
-        ImGui.TextUnformatted(text1);
-        ImGui.TableNextColumn();
-        ImGuiHelper.CenterAlignCursor(team1.Value.TotalPoints.ToString());
-        ImGui.Text(team1.Value.TotalPoints.ToString());
-        ImGui.TableNextColumn();
-        ImGuiHelper.CenterAlignCursor(team2.Value.TotalPoints.ToString());
-        ImGui.Text(team2.Value.TotalPoints.ToString());
-        ImGui.TableNextColumn();
-        ImGuiHelper.CenterAlignCursor(team3.Value.TotalPoints.ToString());
-        ImGui.Text(team3.Value.TotalPoints.ToString());
-
-        ImGui.TableNextColumn();
-        string text4 = Match.Arena switch {
-            FrontlineMap.FieldsOfGlory => "Points earned from ice: ",
-            FrontlineMap.SealRock => "Points earned from tomeliths: ",
-            FrontlineMap.OnsalHakair => "Points earned from ovoos: ",
-            _ => "",
-        };
-        ImGuiHelper.RightAlignCursor(text4);
-        ImGui.TextUnformatted(text4);
-
-        if(Match.Arena == FrontlineMap.OnsalHakair || Match.Arena == FrontlineMap.SealRock) {
-            ImGui.TableNextColumn();
-            ImGuiHelper.CenterAlignCursor(team1.Value.OccupationPoints.ToString());
-            ImGui.Text(team1.Value.OccupationPoints.ToString());
-            ImGui.TableNextColumn();
-            ImGuiHelper.CenterAlignCursor(team2.Value.OccupationPoints.ToString());
-            ImGui.Text(team2.Value.OccupationPoints.ToString());
-            ImGui.TableNextColumn();
-            ImGuiHelper.CenterAlignCursor(team3.Value.OccupationPoints.ToString());
-            ImGui.Text(team3.Value.OccupationPoints.ToString());
-        } else {
-            ImGui.TableNextColumn();
-            ImGuiHelper.CenterAlignCursor(team1.Value.TargetablePoints.ToString());
-            ImGui.Text(team1.Value.TargetablePoints.ToString());
-            ImGui.TableNextColumn();
-            ImGuiHelper.CenterAlignCursor(team2.Value.TargetablePoints.ToString());
-            ImGui.Text(team2.Value.TargetablePoints.ToString());
-            ImGui.TableNextColumn();
-            ImGuiHelper.CenterAlignCursor(team3.Value.TargetablePoints.ToString());
-            ImGui.Text(team3.Value.TargetablePoints.ToString());
-        }
-
-        ImGui.TableNextColumn();
-        var text2 = "Points earned from kills: ";
-        ImGuiHelper.RightAlignCursor(text2);
-        ImGui.TextUnformatted(text2);
-        ImGui.TableNextColumn();
-        ImGuiHelper.CenterAlignCursor(team1.Value.KillPoints.ToString());
-        ImGui.Text(team1.Value.KillPoints.ToString());
-        ImGui.TableNextColumn();
-        ImGuiHelper.CenterAlignCursor(team2.Value.KillPoints.ToString());
-        ImGui.Text(team2.Value.KillPoints.ToString());
-        ImGui.TableNextColumn();
-        ImGuiHelper.CenterAlignCursor(team3.Value.KillPoints.ToString());
-        ImGui.Text(team3.Value.KillPoints.ToString());
-
-        ImGui.TableNextColumn();
-        var text3 = "Points lost from deaths: ";
-        ImGuiHelper.RightAlignCursor(text3);
-        ImGui.TextUnformatted(text3);
-        ImGui.TableNextColumn();
-        ImGuiHelper.CenterAlignCursor(team1.Value.DeathPointLosses.ToString());
-        ImGui.Text(team1.Value.DeathPointLosses.ToString());
-        ImGui.TableNextColumn();
-        ImGuiHelper.CenterAlignCursor(team2.Value.DeathPointLosses.ToString());
-        ImGui.Text(team2.Value.DeathPointLosses.ToString());
-        ImGui.TableNextColumn();
-        ImGuiHelper.CenterAlignCursor(team3.Value.DeathPointLosses.ToString());
-        ImGui.Text(team3.Value.DeathPointLosses.ToString());
-    }
-
     private void DrawTeamName(FrontlineTeamName team) {
         var color = Plugin.Configuration.GetFrontlineTeamColor(team);
         var text = MatchHelper.GetTeamName(team);
@@ -281,7 +177,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         if(!table) return;
         ImGui.TableSetupColumn("Alliance", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 10f, 3);
         if(Match.MaxBattleHigh != null) {
-            ImGui.TableSetupColumn("Peak Battle High", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoClip, ImGuiHelpers.GlobalScale * 15f, 4);
+            ImGui.TableSetupColumn("Peak Battle High", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 15f, 4);
         }
         ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 200f, 0);
         ImGui.TableSetupColumn("Home World", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 110f, 1);
@@ -317,7 +213,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         ImGui.TableHeader("Alliance\n\n");
         if(Match.MaxBattleHigh != null) {
             ImGui.TableNextColumn();
-            ImGui.TableHeader("");
+            ImGui.TableHeader("\n");
         }
         ImGui.TableNextColumn();
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
@@ -449,8 +345,9 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         var flags = ImGuiTableFlags.None;
         if(teamName == Match.LocalPlayerTeam) {
             flags |= ImGuiTableFlags.BordersOuter;
+            
         }
-
+        using var style = ImRaii.PushColor(ImGuiCol.TableBorderStrong, Plugin.Configuration.Colors.CCLocalPlayer);
         using var table = ImRaii.Table("teamstats", 1, flags);
         if(!table) return;
         var team = Match.Teams[teamName];
