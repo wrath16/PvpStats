@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 namespace PvpStats.Windows.Filter;
 public class FLResultFilter : DataFilter {
 
-
     public override string Name => "Result";
     internal bool AllSelected { get; set; }
     public Dictionary<int, bool> FilterState { get; set; } = new();

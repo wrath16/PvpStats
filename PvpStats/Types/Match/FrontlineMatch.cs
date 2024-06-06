@@ -16,6 +16,8 @@ public class FrontlineMatch : PvpMatch {
     public Dictionary<string, FrontlineScoreboard> PlayerScoreboards { get; set; } = new();
     public Dictionary<FrontlineTeamName, FrontlineTeamScoreboard> Teams { get; set; } = new();
 
+    public Dictionary<string, int>? MaxBattleHigh { get; set; }
+
     [BsonIgnore]
     public FrontlinePlayer? LocalPlayerTeamMember => Players.FirstOrDefault(x => x.Name.Equals(LocalPlayer));
 

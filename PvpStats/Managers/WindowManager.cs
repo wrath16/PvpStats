@@ -48,6 +48,7 @@ internal class WindowManager : IDisposable {
     internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> OppressorIcons = [];
     internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> JusticeIcons = [];
     internal readonly Dictionary<int, IDalamudTextureWrap?> SoaringIcons = [];
+    internal readonly Dictionary<int, IDalamudTextureWrap?> BattleHighIcons = [];
 
     internal IFontHandle LargeFont { get; private set; }
 
@@ -84,6 +85,13 @@ internal class WindowManager : IDisposable {
             SoaringIcons.Add(i, _plugin.TextureProvider.GetIcon(19181 + (uint)i - 1));
         }
         SoaringIcons.Add(20, _plugin.TextureProvider.GetIcon(14845));
+
+        BattleHighIcons.Add(1, _plugin.TextureProvider.GetIcon(61483));
+        BattleHighIcons.Add(2, _plugin.TextureProvider.GetIcon(61484));
+        BattleHighIcons.Add(3, _plugin.TextureProvider.GetIcon(61485));
+        BattleHighIcons.Add(4, _plugin.TextureProvider.GetIcon(61486));
+        BattleHighIcons.Add(5, _plugin.TextureProvider.GetIcon(61487));
+
         CCBannerImage = _plugin.PluginInterface.UiBuilder.LoadImage(Path.Combine(_plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "cc_logo_full.png"));
         RWBannerImage = _plugin.PluginInterface.UiBuilder.LoadImage(Path.Combine(_plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "rw_logo.png"));
         FLBannerImage = _plugin.PluginInterface.UiBuilder.LoadImage(Path.Combine(_plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "fl_logo.png"));
@@ -120,6 +128,9 @@ internal class WindowManager : IDisposable {
         _plugin.PluginInterface.UiBuilder.OpenConfigUi -= OpenConfigWindow;
         CCBannerImage.Dispose();
         RWBannerImage.Dispose();
+        FLBannerImage.Dispose();
+        //GoblinMercIcon?.Dispose();
+        //RWSuppliesTexture?.Dispose();
 
         _plugin.ClientState.Login -= OnLogin;
     }

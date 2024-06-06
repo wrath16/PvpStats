@@ -20,7 +20,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
     public FrontlineMatchDetail(Plugin plugin, FrontlineMatch match) : base(plugin, plugin.FLCache, match) {
         //Flags -= ImGuiWindowFlags.AlwaysAutoResize;
         SizeConstraints = new WindowSizeConstraints {
-            MinimumSize = new Vector2(900, 800),
+            MinimumSize = new Vector2(910, 800),
             MaximumSize = new Vector2(5000, 5000)
         };
 
@@ -262,19 +262,27 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
     }
 
     private void DrawPlayerStatsTable() {
+        var tableFlags = ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.ScrollX | ImGuiTableFlags.ScrollY | ImGuiTableFlags.NoSavedSettings | ImGuiTableFlags.PadOuterX;
         //this is hacky
-        int columnCount = 15;
+        int columnCount = 16;
         if(Match.Arena == FrontlineMap.FieldsOfGlory) {
             columnCount += 2;
         }
         if(Match.Arena == FrontlineMap.SealRock) {
             columnCount += 1;
         }
-        using var table = ImRaii.Table($"postmatchplayers##{Match.Id}", columnCount,
-            ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.ScrollX | ImGuiTableFlags.ScrollY | ImGuiTableFlags.NoSavedSettings | ImGuiTableFlags.PadOuterX
-            , new Vector2(ImGui.GetContentRegionAvail().X, ImGui.GetContentRegionAvail().Y));
+        if(Match.MaxBattleHigh != null) {
+            columnCount += 1;
+            //tableFlags &= ~ImGuiTableFlags.PadOuterX;
+        }
+
+        using var table = ImRaii.Table($"postmatchplayers##{Match.Id}", columnCount, tableFlags, new Vector2(ImGui.GetContentRegionAvail().X, ImGui.GetContentRegionAvail().Y));
         //new Vector2(ImGui.GetContentRegionAvail().X, 550f * ImGuiHelpers.GlobalScale)
         if(!table) return;
+        ImGui.TableSetupColumn("Alliance", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 10f, 3);
+        if(Match.MaxBattleHigh != null) {
+            ImGui.TableSetupColumn("Peak Battle High", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoClip, ImGuiHelpers.GlobalScale * 15f, 4);
+        }
         ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 200f, 0);
         ImGui.TableSetupColumn("Home World", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 110f, 1);
         ImGui.TableSetupColumn("Job", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 50f, 2);
@@ -300,8 +308,17 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         ImGui.TableSetupColumn("HP Restored per Life", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)"HPRestoredPerLife".GetHashCode());
         ImGui.TableSetupColumn("KDA Ratio", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)"KDA".GetHashCode());
 
-        ImGui.TableSetupScrollFreeze(1, 1);
-
+        if(Match.MaxBattleHigh != null) {
+            ImGui.TableSetupScrollFreeze(3, 1);
+        } else {
+            ImGui.TableSetupScrollFreeze(2, 1);
+        }
+        ImGui.TableNextColumn();
+        ImGui.TableHeader("Alliance\n\n");
+        if(Match.MaxBattleHigh != null) {
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("");
+        }
         ImGui.TableNextColumn();
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
         //ImGuiHelper.CenterAlignCursor("Name");
@@ -363,12 +380,26 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         foreach(var row in Match.PlayerScoreboards) {
             var player = Match.Players.Where(x => x.Name.Equals(row.Key)).First();
             var playerAlias = (PlayerAlias)row.Key;
-            ImGui.TableNextColumn();
             //bool isPlayer = row.Key.Player != null;
             //bool isPlayerTeam = row.Key.Team == _dataModel.LocalPlayerTeam?.TeamName;
             var rowColor = Plugin.Configuration.GetFrontlineTeamColor(player.Team) - new Vector4(0f, 0f, 0f, 0.7f);
             var textColor = Match.LocalPlayer is not null && Match.LocalPlayer.Equals(playerAlias) ? Plugin.Configuration.Colors.CCLocalPlayer : ImGuiColors.DalamudWhite;
+            ImGui.TableNextColumn();
             ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(rowColor));
+            string alliance = MatchHelper.GetAllianceLetter(player.Alliance);
+            ImGui.TextColored(textColor, $" {alliance} ");
+            if(Match.MaxBattleHigh != null) {
+                ImGui.TableNextColumn();
+                if(Match.MaxBattleHigh.TryGetValue(playerAlias, out var peakBattleHigh) && Plugin.WindowManager.BattleHighIcons.TryGetValue(peakBattleHigh, out var icon)) {
+                    //using var style = ImRaii.PushStyle(ImGuiStyleVar.CellPadding, new Vector2(0, 0));
+
+                    var size = 15f;
+                    ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 2f * ImGuiHelpers.GlobalScale);
+                    ImGui.Image(icon?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle, new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), new Vector2(0.12f), new Vector2(0.88f));
+                }
+                //ImGui.TableHeader("Peak Battle High\n\n");
+            }
+            ImGui.TableNextColumn();
             ImGui.TextColored(textColor, $" {playerAlias.Name} ");
             ImGui.TableNextColumn();
             ImGui.TextColored(textColor, $"{player.Name.HomeWorld}");
@@ -485,6 +516,10 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
             comparator = (r) => Match.Players.First(x => x.Name.Equals(r.Key)).Name.HomeWorld ?? "";
         } else if(columnId == 2) {
             comparator = (r) => Match.Players.First(x => x.Name.Equals(r.Key)).Job ?? 0;
+        } else if(columnId == 3) {
+            comparator = (r) => Match.Players?.First(x => x.Name.Equals(r.Key)).TeamAlliance ?? 0;
+        } else if(columnId == 4) {
+            comparator = (r) => Match.MaxBattleHigh?.First(x => x.Key.Equals(r.Key)).Value ?? 0;
         } else {
             bool propFound = false;
             if(ShowPercentages) {

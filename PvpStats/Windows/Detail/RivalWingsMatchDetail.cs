@@ -291,7 +291,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
         }
     }
 
-    private void DrawMechTable(RivalWingsTeamName team, Dictionary<RivalWingsMech, double> mechTime, bool reverse) {
+    private void DrawMechTable(RivalWingsTeamName team, Dictionary<RivalWingsMech, double> mechTime, bool reverse, bool drawPercentage = false) {
         if(Match.MatchDuration == null) {
             return;
         }
@@ -311,10 +311,16 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 ImGui.Image(image, new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), new Vector2(0.1f), new Vector2(0.9f));
             };
             var drawText = (RivalWingsMech mech) => {
-                string text = (mechTime[mech] / Match.MatchDuration.Value.TotalSeconds).ToString("0.0");
+                var uptime = mechTime[mech] / Match.MatchDuration.Value.TotalSeconds;
+                string text = "";
+                if(drawPercentage) {
+                    text = (uptime * 100).ToString("N0");
+                } else {
+                    text = uptime.ToString("0.0");
+                }
                 ImGuiHelper.CenterAlignCursor(text);
                 ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 5f * ImGuiHelpers.GlobalScale);
-                ImGui.Text(text);
+                ImGui.TextUnformatted(text);
             };
 
             RivalWingsMech[] mechs = { RivalWingsMech.Chaser, RivalWingsMech.Oppressor, RivalWingsMech.Justice };
@@ -357,6 +363,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 drawText(Match.Mercs[RivalWingsTeamName.Falcons].ToString());
                 ImGui.TableNextColumn();
                 drawImage(Plugin.WindowManager.GoblinMercIcon?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle, 25f);
+                ImGuiHelper.WrappedTooltip("Goblin Mercenary");
                 ImGui.TableNextColumn();
                 drawText(Match.Mercs[RivalWingsTeamName.Ravens].ToString());
             }
@@ -665,7 +672,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             if(Match.LocalPlayerTeam != null && _allianceMechTimes != null && alliance < _allianceMechTimes.Count) {
                 ImGui.TableNextColumn();
                 ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().X - 49f * ImGuiHelpers.GlobalScale);
-                DrawMechTable((RivalWingsTeamName)Match.LocalPlayerTeam, _allianceMechTimes[alliance].MechTime, false);
+                DrawMechTable((RivalWingsTeamName)Match.LocalPlayerTeam, _allianceMechTimes[alliance].MechTime, false, true);
                 string tooltipText = "Pilots:\n\n";
                 _allianceMechTimes[alliance].Pilots.ForEach(x => tooltipText += x.Name + "\n");
                 if(tooltipText.Length > 0) {

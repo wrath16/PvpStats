@@ -1,4 +1,7 @@
-﻿using Dalamud.Hooking;
+﻿using Dalamud.Game.ClientState.Objects.Enums;
+using Dalamud.Game.ClientState.Objects.SubKinds;
+using Dalamud.Hooking;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using Lumina.Excel.GeneratedSheets2;
 using PvpStats.Helpers;
@@ -7,12 +10,24 @@ using PvpStats.Types.ClientStruct;
 using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PvpStats.Managers.Game;
 internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
 
     //protected FrontlineMatch? CurrentMatch { get; set; }
+
+    private Dictionary<PlayerAlias, int> _maxObservedBattleHigh = [];
+
+    private static readonly Dictionary<int, int> BattleHighStatuses = new() {
+        { 1, 2131 },
+        { 2, 2132 },
+        { 3, 2133 },
+        { 4, 2134 },
+        { 5, 2135 },
+    };
 
     //fl director ctor
     private delegate IntPtr FLDirectorCtorDelegate(IntPtr p1, IntPtr p2, IntPtr p3);
@@ -34,6 +49,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
     public FrontlineMatchManager(Plugin plugin) : base(plugin) {
         //plugin.DutyState.DutyCompleted += OnDutyCompleted;
         //plugin.InteropProvider.InitializeFromAttributes(this);
+        plugin.Framework.Update += OnFrameworkUpdate;
         plugin.Log.Debug($"fl director .ctor address: 0x{_flDirectorCtorHook!.Address:X2}");
         plugin.Log.Debug($"fl match end address: 0x{_flMatchEndHook!.Address:X2}");
         plugin.Log.Debug($"fl player payload address: 0x{_flPlayerPayloadHook!.Address:X2}");
@@ -43,6 +59,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
     }
 
     public override void Dispose() {
+        Plugin.Framework.Update -= OnFrameworkUpdate;
         //Plugin.DutyState.DutyCompleted -= OnDutyCompleted;
         _flDirectorCtorHook.Dispose();
         _flMatchEndHook.Dispose();
@@ -50,9 +67,9 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
         base.Dispose();
     }
 
-    private void OnDutyCompleted(object? sender, ushort p1) {
-        Plugin.Log.Debug("Duty has completed.");
-    }
+    //private void OnDutyCompleted(object? sender, ushort p1) {
+    //    Plugin.Log.Debug("Duty has completed.");
+    //}
 
     private IntPtr FLDirectorCtorDetour(IntPtr p1, IntPtr p2, IntPtr p3) {
         Plugin.Log.Debug("Fl director .ctor detour entered.");
@@ -65,7 +82,9 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
                     DutyId = dutyId,
                     TerritoryId = territoryId,
                     Arena = MatchHelper.GetFrontlineMap(dutyId),
+                    MaxBattleHigh = new(),
                 };
+                _maxObservedBattleHigh = [];
                 Plugin.Log.Information($"starting new match on {CurrentMatch.Arena}");
                 Plugin.DataQueue.QueueDataOperation(async () => {
                     await Plugin.FLCache.AddMatch(CurrentMatch);
@@ -98,6 +117,11 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
                     });
                 }
             });
+
+            Plugin.Log.Debug(string.Format("{0,-32} {1,-2}", "Player", "MAX BH"));
+            foreach(var x in _maxObservedBattleHigh) {
+                Plugin.Log.Debug(string.Format("{0,-32} {1,-2}", x.Key, x.Value));
+            }
 
             //var printTeamStats = (FrontlineResultsPacket.TeamStat team, string name) => {
             //    Plugin.Log.Debug($"{name}\nPlace {team.Placement}\nOvooPoints {team.OccupationPoints}\nKillPoints {team.EnemyKillPoints}\nDeathLosses {team.KOPointLosses}\nUnknown1 {team.Unknown1}\nIcePoints {team.IcePoints}\nTotalRating {team.TotalPoints}");
@@ -216,7 +240,40 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
         //}
         CurrentMatch.Players.Add(newPlayer);
         CurrentMatch.PlayerScoreboards.Add(newPlayer.Name, newScoreboard);
+        if(CurrentMatch.MaxBattleHigh != null) {
+
+            int maxBattleHigh = 0;
+            if(newScoreboard.Deaths == 0) {
+                maxBattleHigh = int.Min(((int)newScoreboard.Kills * 10 + (int)newScoreboard.Assists * 2) / 20, 5);
+            } else {
+                _maxObservedBattleHigh.TryGetValue(playerName, out maxBattleHigh);
+            }
+            CurrentMatch.MaxBattleHigh.TryAdd(playerName, maxBattleHigh);
+        }
         return true;
     }
 
+    private unsafe void OnFrameworkUpdate(IFramework framework) {
+        if(!IsMatchInProgress()) {
+            return;
+        }
+        foreach(PlayerCharacter pc in Plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player).Cast<PlayerCharacter>()) {
+            try {
+                var battleHigh = 0;
+                foreach(var battleHighLevel in BattleHighStatuses) {
+                    if(pc.StatusList.Where(x => x.StatusId == battleHighLevel.Value).Any()) {
+                        battleHigh = battleHighLevel.Key; break;
+                    }
+                }
+
+                var alias = (PlayerAlias)$"{pc.Name} {pc.HomeWorld.GameData?.Name.ToString()}";
+                _maxObservedBattleHigh.TryAdd(alias, 0);
+                if(_maxObservedBattleHigh[alias] < battleHigh) {
+                    _maxObservedBattleHigh[alias] = battleHigh;
+                }
+            } catch {
+                //suppress all exceptions
+            }
+        }
+    }
 }
