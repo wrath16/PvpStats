@@ -34,6 +34,8 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         SizeCondition = ImGuiCond.Appearing;
         switch(match.Arena) {
             case FrontlineMap.FieldsOfGlory:
+                Size = new Vector2(930, 800);
+                break;
             case FrontlineMap.SealRock:
                 Size = new Vector2(920, 800);
                 break;
@@ -48,6 +50,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         _unfilteredScoreboard = match.PlayerScoreboards;
         _scoreboard = _unfilteredScoreboard;
         _playerContributions = match.GetPlayerContributions();
+        _triggerSort = true;
     }
 
     public override void Draw() {
@@ -185,7 +188,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
     }
 
     private void DrawPlayerStatsTable() {
-        var tableFlags = ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.ScrollX 
+        var tableFlags = ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.ScrollX
             | ImGuiTableFlags.ScrollY | ImGuiTableFlags.NoSavedSettings | ImGuiTableFlags.PadOuterX;
         //this is hacky
         int columnCount = 16;
@@ -240,12 +243,14 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
 
         //column sorting
         ImGuiTableSortSpecsPtr sortSpecs = ImGui.TableGetSortSpecs();
-        if(!_firstDrawComplete) {
-            sortSpecs.Specs.ColumnUserID = 0;
-            sortSpecs.Specs.SortDirection = ImGuiSortDirection.Ascending;
-            _triggerSort = true;
-            _firstDrawComplete = true;
-        }
+        //if(!_firstDrawComplete) {
+        //    sortSpecs.Specs.ColumnUserID = 0;
+        //    //sortSpecs.Specs.ColumnIndex = 2;
+        //    sortSpecs.Specs.SortDirection = ImGuiSortDirection.Ascending;
+        //    sortSpecs.SpecsDirty = true;
+        //    _triggerSort = true;
+        //    _firstDrawComplete = true;
+        //}
         if(sortSpecs.SpecsDirty || _triggerSort) {
             _triggerSort = false;
             SortByColumn(sortSpecs.Specs.ColumnUserID, sortSpecs.Specs.SortDirection);
@@ -256,7 +261,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         ImGui.TableHeader("Alliance\n\n");
         if(Match.MaxBattleHigh != null) {
             ImGui.TableNextColumn();
-            ImGui.TableHeader("\n");
+            ImGui.TableHeader("\n\n");
         }
         ImGui.TableNextColumn();
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
@@ -409,7 +414,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         var flags = ImGuiTableFlags.None;
         if(teamName == Match.LocalPlayerTeam) {
             flags |= ImGuiTableFlags.BordersOuter;
-            
+
         }
         using var style = ImRaii.PushColor(ImGuiCol.TableBorderStrong, Plugin.Configuration.Colors.CCLocalPlayer);
         using var table = ImRaii.Table("teamstats", 1, flags);
