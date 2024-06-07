@@ -13,8 +13,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
-using System.Xml.Linq;
-using static Lumina.Data.Parsing.Layer.LayerCommon;
 
 namespace PvpStats.Windows.Detail;
 internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
@@ -37,7 +35,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         switch(match.Arena) {
             case FrontlineMap.FieldsOfGlory:
             case FrontlineMap.SealRock:
-                Size = new Vector2(930, 800);
+                Size = new Vector2(920, 800);
                 break;
             default:
             case FrontlineMap.OnsalHakair:
@@ -187,7 +185,8 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
     }
 
     private void DrawPlayerStatsTable() {
-        var tableFlags = ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.ScrollX | ImGuiTableFlags.ScrollY | ImGuiTableFlags.NoSavedSettings | ImGuiTableFlags.PadOuterX;
+        var tableFlags = ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.ScrollX 
+            | ImGuiTableFlags.ScrollY | ImGuiTableFlags.NoSavedSettings | ImGuiTableFlags.PadOuterX;
         //this is hacky
         int columnCount = 16;
         if(Match.Arena == FrontlineMap.FieldsOfGlory) {
@@ -225,7 +224,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         ImGui.TableSetupColumn("HP Restored", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 65f, (uint)"HPRestored".GetHashCode());
         ImGui.TableSetupColumn("Special", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 60f, (uint)"Special1".GetHashCode());
         if(Match.Arena == FrontlineMap.SealRock) {
-            ImGui.TableSetupColumn("Occupations", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 65f, (uint)"Occupations".GetHashCode());
+            ImGui.TableSetupColumn("Occupations", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 55f, (uint)"Occupations".GetHashCode());
         }
         ImGui.TableSetupColumn("Damage Dealt per Kill/Assist", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)"DamageDealtPerKA".GetHashCode());
         ImGui.TableSetupColumn("Damage Dealt per Life", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)"DamageDealtPerLife".GetHashCode());
@@ -328,7 +327,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
                     var size = 16f;
                     var cursorBefore = ImGui.GetCursorPosY();
                     //ImGui.SetCursorPosY(cursorBefore + 2f * ImGuiHelpers.GlobalScale);
-                    ImGui.Image(icon?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle, new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), new Vector2(0f), new Vector2(0.85f));
+                    ImGui.Image(icon?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle, new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), new Vector2(0f), new Vector2(0.88f));
                     //ImGui.SetCursorPosY(cursorBefore);
                 }
                 //ImGui.TableHeader("Peak Battle High\n\n");
@@ -384,8 +383,35 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         ImGuiHelper.RightAlignCursor2(name, -11f * ImGuiHelpers.GlobalScale);
         if(!name.Contains('\n')) {
             ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
+            ImGui.TableHeader(name);
+        } else {
+            using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(ImGui.GetStyle().ItemSpacing.X, 0f));
+            var splitName = name.Split('\n');
+            ImGui.TableHeader($"##{name}");
+            ImGui.SameLine();
+            foreach(var s in splitName) {
+                ImGuiHelper.RightAlignCursor2(s, -11f * ImGuiHelpers.GlobalScale);
+                ImGui.TextUnformatted(s);
+            }
+
+            //var alignedName = "";
+            //var targetWidth = ImGui.CalcTextSize(name).X;
+            //for(int i = 0; i < splitName.Length; i++) {
+            //    string line = splitName[i];
+            //    var width = ImGui.CalcTextSize(line).X;
+            //    while(width < targetWidth) {
+            //        line = " " + line;
+            //        width = ImGui.CalcTextSize(line).X;
+            //    }
+            //    alignedName += line;
+            //    if(i !=  splitName.Length - 1) {
+            //        alignedName += "\n";
+            //    }
+            //}
+            //ImGui.TableHeader(alignedName);
+            //ImGui.TableHeader(name);
         }
-        ImGui.TableHeader(name);
+
     }
 
     private void DrawNumericCell(Vector4 color, string value) {
