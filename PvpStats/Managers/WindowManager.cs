@@ -48,6 +48,8 @@ internal class WindowManager : IDisposable {
     internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> OppressorIcons = [];
     internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> JusticeIcons = [];
     internal readonly Dictionary<int, IDalamudTextureWrap?> SoaringIcons = [];
+
+    internal readonly Dictionary<FrontlineTeamName, IDalamudTextureWrap?> FrontlineTeamIcons = [];
     internal readonly Dictionary<int, IDalamudTextureWrap?> BattleHighIcons = [];
 
     internal IFontHandle LargeFont { get; private set; }
@@ -91,6 +93,10 @@ internal class WindowManager : IDisposable {
         BattleHighIcons.Add(3, _plugin.TextureProvider.GetIcon(61485));
         BattleHighIcons.Add(4, _plugin.TextureProvider.GetIcon(61486));
         BattleHighIcons.Add(5, _plugin.TextureProvider.GetIcon(61487));
+
+        FrontlineTeamIcons.Add(FrontlineTeamName.Maelstrom, _plugin.TextureProvider.GetIcon(61526));
+        FrontlineTeamIcons.Add(FrontlineTeamName.Adders, _plugin.TextureProvider.GetIcon(61527));
+        FrontlineTeamIcons.Add(FrontlineTeamName.Flames, _plugin.TextureProvider.GetIcon(61528));
 
         CCBannerImage = _plugin.PluginInterface.UiBuilder.LoadImage(Path.Combine(_plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "cc_logo_full.png"));
         RWBannerImage = _plugin.PluginInterface.UiBuilder.LoadImage(Path.Combine(_plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "rw_logo.png"));
