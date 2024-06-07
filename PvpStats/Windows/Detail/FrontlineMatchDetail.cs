@@ -51,13 +51,13 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
     }
 
     public override void Draw() {
-        //if(Plugin.Configuration.ShowBackgroundImage) {
-        //    var cursorPosBefore = ImGui.GetCursorPos();
-        //    ImGui.SetCursorPosX(ImGui.GetWindowSize().X / 2 - (250 / 2 + 0f) * ImGuiHelpers.GlobalScale);
-        //    ImGui.SetCursorPosY((ImGui.GetCursorPos().Y + 40f * ImGuiHelpers.GlobalScale));
-        //    ImGui.Image(Plugin.WindowManager.FLBannerImage.ImGuiHandle, new Vector2(2, 240) * ImGuiHelpers.GlobalScale, Vector2.Zero, Vector2.One, new Vector4(1, 1, 1, 0.1f));
-        //    ImGui.SetCursorPos(cursorPosBefore);
-        //}
+        if(Plugin.Configuration.ShowBackgroundImage) {
+            var cursorPosBefore = ImGui.GetCursorPos();
+            ImGui.SetCursorPosX(ImGui.GetWindowSize().X / 2 - (259 / 2 + 0f) * ImGuiHelpers.GlobalScale);
+            ImGui.SetCursorPosY((ImGui.GetCursorPos().Y + 40f * ImGuiHelpers.GlobalScale));
+            ImGui.Image(Plugin.WindowManager.FLBannerImage.ImGuiHandle, new Vector2(259, 233) * ImGuiHelpers.GlobalScale, Vector2.Zero, Vector2.One, new Vector4(1, 1, 1, 0.1f));
+            ImGui.SetCursorPos(cursorPosBefore);
+        }
         using(var table = ImRaii.Table("header", 3, ImGuiTableFlags.PadOuterX)) {
             if(table) {
                 ImGui.TableSetupColumn("c1", ImGuiTableColumnFlags.WidthStretch);
@@ -393,23 +393,6 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
                 ImGuiHelper.RightAlignCursor2(s, -11f * ImGuiHelpers.GlobalScale);
                 ImGui.TextUnformatted(s);
             }
-
-            //var alignedName = "";
-            //var targetWidth = ImGui.CalcTextSize(name).X;
-            //for(int i = 0; i < splitName.Length; i++) {
-            //    string line = splitName[i];
-            //    var width = ImGui.CalcTextSize(line).X;
-            //    while(width < targetWidth) {
-            //        line = " " + line;
-            //        width = ImGui.CalcTextSize(line).X;
-            //    }
-            //    alignedName += line;
-            //    if(i !=  splitName.Length - 1) {
-            //        alignedName += "\n";
-            //    }
-            //}
-            //ImGui.TableHeader(alignedName);
-            //ImGui.TableHeader(name);
         }
 
     }
