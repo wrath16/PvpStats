@@ -7,24 +7,46 @@ using PvpStats.Helpers;
 using PvpStats.Types.Display;
 using PvpStats.Types.Match;
 using PvpStats.Types.Player;
+using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Detail;
 internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
 
-    Dictionary<PlayerAlias, FLScoreboardDouble> _playerContributions = [];
+    private FLTeamQuickFilter _teamQuickFilter;
+    private Dictionary<PlayerAlias, FLScoreboardDouble> _playerContributions = [];
+    private Dictionary<string, FrontlineScoreboard> _scoreboard;
+    private Dictionary<string, FrontlineScoreboard> _unfilteredScoreboard;
+    private bool _triggerSort;
+    private bool _firstDrawComplete;
 
     public FrontlineMatchDetail(Plugin plugin, FrontlineMatch match) : base(plugin, plugin.FLCache, match) {
         //Flags -= ImGuiWindowFlags.AlwaysAutoResize;
         SizeConstraints = new WindowSizeConstraints {
-            MinimumSize = new Vector2(910, 800),
+            MinimumSize = new Vector2(860, 800),
             MaximumSize = new Vector2(5000, 5000)
         };
 
+        SizeCondition = ImGuiCond.Appearing;
+        switch(match.Arena) {
+            case FrontlineMap.FieldsOfGlory:
+            case FrontlineMap.SealRock:
+                Size = new Vector2(930, 800);
+                break;
+            default:
+            case FrontlineMap.OnsalHakair:
+                Size = new Vector2(865, 800);
+                break;
+        }
+
         CSV = BuildCSV();
+        _teamQuickFilter = new(plugin, ApplyTeamFilter);
+        _unfilteredScoreboard = match.PlayerScoreboards;
+        _scoreboard = _unfilteredScoreboard;
         _playerContributions = match.GetPlayerContributions();
     }
 
@@ -125,8 +147,11 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         }
         ImGuiComponents.ToggleButton("##showPercentages", ref ShowPercentages);
         ImGui.SameLine();
+        ImGui.AlignTextToFramePadding();
         ImGui.Text("Show team contributions");
         ImGuiHelper.HelpMarker("Right-click table header to show and hide columns including extra metrics.");
+        ImGui.SameLine();
+        _teamQuickFilter.Draw();
         DrawPlayerStatsTable();
     }
 
@@ -209,6 +234,21 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         } else {
             ImGui.TableSetupScrollFreeze(2, 1);
         }
+
+        //column sorting
+        ImGuiTableSortSpecsPtr sortSpecs = ImGui.TableGetSortSpecs();
+        if(!_firstDrawComplete) {
+            sortSpecs.Specs.ColumnUserID = 0;
+            sortSpecs.Specs.SortDirection = ImGuiSortDirection.Ascending;
+            _triggerSort = true;
+            _firstDrawComplete = true;
+        }
+        if(sortSpecs.SpecsDirty || _triggerSort) {
+            _triggerSort = false;
+            SortByColumn(sortSpecs.Specs.ColumnUserID, sortSpecs.Specs.SortDirection);
+            sortSpecs.SpecsDirty = false;
+        }
+
         ImGui.TableNextColumn();
         ImGui.TableHeader("Alliance\n\n");
         if(Match.MaxBattleHigh != null) {
@@ -266,14 +306,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         ImGui.TableNextColumn();
         ImGui.TableHeader("KDA\nRatio");
 
-        //column sorting
-        ImGuiTableSortSpecsPtr sortSpecs = ImGui.TableGetSortSpecs();
-        if(sortSpecs.SpecsDirty) {
-            SortByColumn(sortSpecs.Specs.ColumnUserID, sortSpecs.Specs.SortDirection);
-            sortSpecs.SpecsDirty = false;
-        }
-
-        foreach(var row in Match.PlayerScoreboards) {
+        foreach(var row in _scoreboard) {
             var player = Match.Players.Where(x => x.Name.Equals(row.Key)).First();
             var playerAlias = (PlayerAlias)row.Key;
             //bool isPlayer = row.Key.Player != null;
@@ -452,8 +485,19 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         //    _scoreboard = direction == ImGuiSortDirection.Ascending ? _scoreboard.ToList().OrderBy(comparator).ToDictionary()
         //        : _scoreboard.ToList().OrderByDescending(comparator).ToDictionary();
         //}
-        Match.PlayerScoreboards = direction == ImGuiSortDirection.Ascending ? Match.PlayerScoreboards.OrderBy(comparator).ToDictionary()
-            : Match.PlayerScoreboards.OrderByDescending(comparator).ToDictionary();
+        _scoreboard = direction == ImGuiSortDirection.Ascending ? _scoreboard.OrderBy(comparator).ToDictionary()
+            : _scoreboard.OrderByDescending(comparator).ToDictionary();
+        _unfilteredScoreboard = direction == ImGuiSortDirection.Ascending ? _unfilteredScoreboard.OrderBy(comparator).ToDictionary()
+            : _unfilteredScoreboard.OrderByDescending(comparator).ToDictionary();
+    }
+
+    private Task ApplyTeamFilter() {
+        _scoreboard = _unfilteredScoreboard.Where(x => {
+            var player = Match.Players.Where(y => y.Name.Equals(x.Key)).First();
+            return _teamQuickFilter.FilterState[player.Team];
+        }).ToDictionary();
+        //_triggerSort = true;
+        return Task.CompletedTask;
     }
 
     protected override string BuildCSV() {
