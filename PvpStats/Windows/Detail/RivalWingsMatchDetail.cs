@@ -7,17 +7,21 @@ using PvpStats.Helpers;
 using PvpStats.Types.Display;
 using PvpStats.Types.Match;
 using PvpStats.Types.Player;
+using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Detail;
 internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
 
-    Dictionary<PlayerAlias, RWScoreboardDouble>? _playerContributions = [];
-
-    Dictionary<int, (Dictionary<RivalWingsMech, double> MechTime, List<PlayerAlias> Pilots)>? _allianceMechTimes;
+    private RWTeamQuickFilter _teamQuickFilter;
+    private Dictionary<PlayerAlias, RWScoreboardDouble>? _playerContributions = [];
+    private Dictionary<string, RivalWingsScoreboard>? _scoreboard;
+    private Dictionary<string, RivalWingsScoreboard>? _unfilteredScoreboard;
+    private Dictionary<int, (Dictionary<RivalWingsMech, double> MechTime, List<PlayerAlias> Pilots)>? _allianceMechTimes;
 
     public RivalWingsMatchDetail(Plugin plugin, RivalWingsMatch match) : base(plugin, plugin.RWCache, match) {
         SizeConstraints = new WindowSizeConstraints {
@@ -53,6 +57,9 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             }
         }
         CSV = BuildCSV();
+        _teamQuickFilter = new(plugin, ApplyTeamFilter);
+        _unfilteredScoreboard = match.PlayerScoreboards;
+        _scoreboard = _unfilteredScoreboard;
         SortByColumn(0, ImGuiSortDirection.Ascending);
     }
 
@@ -154,15 +161,20 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 using var tab = ImRaii.TabItem("Players");
                 if(tab) {
                     if(CurrentTab != "Players") {
-                        SetWindowSize(new Vector2(980, 900));
+                        SetWindowSize(new Vector2(975, 800));
                         CurrentTab = "Players";
                     }
+                    ImGuiHelper.HelpMarker("Right-click table header to show and hide columns including extra metrics.", false, true);
                     if(_playerContributions != null) {
-                        ImGuiComponents.ToggleButton("##showPercentages", ref ShowPercentages);
                         ImGui.SameLine();
                         ImGui.Text("Show team contributions");
+                        ImGui.SameLine();
+                        ImGuiComponents.ToggleButton("##showPercentages", ref ShowPercentages);
+
                     }
-                    ImGuiHelper.HelpMarker("Right-click table header to show and hide columns including extra metrics.");
+                    ImGui.SameLine();
+                    _teamQuickFilter.Draw();
+
                     DrawPlayerStatsTable();
                 }
             }
@@ -429,12 +441,12 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
         ImGui.TableSetupColumn("Damage Taken", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 65f, (uint)"DamageTaken".GetHashCode());
         ImGui.TableSetupColumn("HP Restored", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 65f, (uint)"HPRestored".GetHashCode());
         ImGui.TableSetupColumn("Special", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 60f, (uint)"Special1".GetHashCode());
-        ImGui.TableSetupColumn("Ceruleum", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 65f, (uint)"Ceruleum".GetHashCode());
+        ImGui.TableSetupColumn("Ceruleum", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 55f, (uint)"Ceruleum".GetHashCode());
         ImGui.TableSetupColumn("Damage Dealt per Kill/Assist", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)"DamageDealtPerKA".GetHashCode());
         ImGui.TableSetupColumn("Damage Dealt per Life", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)"DamageDealtPerLife".GetHashCode());
         ImGui.TableSetupColumn("Damage Taken per Life", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)"DamageTakenPerLife".GetHashCode());
         ImGui.TableSetupColumn("HP Restored per Life", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)"HPRestoredPerLife".GetHashCode());
-        ImGui.TableSetupColumn("KDA Ratio", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)"KDA".GetHashCode());
+        ImGui.TableSetupColumn("KDA Ratio", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 50f, (uint)"KDA".GetHashCode());
 
         ImGui.TableSetupScrollFreeze(2, 1);
 
@@ -449,43 +461,40 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
         ImGui.TableHeader("Home World");
         ImGui.TableNextColumn();
+        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 14f * ImGuiHelpers.GlobalScale);
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
-        //ImGuiHelper.CenterAlignCursor("Job");
         ImGui.TableHeader("Job");
         ImGui.TableNextColumn();
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
-        ImGui.TableHeader("Kills");
+        ImGuiHelper.DrawNumericTableHeader("Kills");
         ImGui.TableNextColumn();
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
-        ImGui.TableHeader("Deaths");
+        ImGuiHelper.DrawNumericTableHeader("Deaths");
         ImGui.TableNextColumn();
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
-        ImGui.TableHeader("Assists");
+        ImGuiHelper.DrawNumericTableHeader("Assists");
         ImGui.TableNextColumn();
-        ImGui.TableHeader("Damage\nto PCs");
+        ImGuiHelper.DrawNumericTableHeader("Damage\nto PCs");
         ImGui.TableNextColumn();
-        ImGui.TableHeader("Damage\nto Other");
+        ImGuiHelper.DrawNumericTableHeader("Damage\nto Other");
         ImGui.TableNextColumn();
-        ImGui.TableHeader("Damage\nDealt");
+        ImGuiHelper.DrawNumericTableHeader("Damage\nDealt");
         ImGui.TableNextColumn();
-        ImGui.TableHeader("Damage\nTaken");
+        ImGuiHelper.DrawNumericTableHeader("Damage\nTaken");
         ImGui.TableNextColumn();
-        ImGui.TableHeader("HP\nRestored");
+        ImGuiHelper.DrawNumericTableHeader("HP\nRestored");
         ImGui.TableNextColumn();
         ImGui.TableHeader("");
         ImGuiHelper.HelpMarker("Not sure what this is. It's related to healing.");
         ImGui.TableNextColumn();
-        ImGui.TableHeader("Ceru-\nleum");
+        ImGuiHelper.DrawNumericTableHeader("Ceru-\nleum");
         ImGui.TableNextColumn();
-        ImGui.TableHeader("Damage Dealt\nper Kill/Assist");
+        ImGuiHelper.DrawNumericTableHeader("Damage Dealt\nper Kill/Assist");
         ImGui.TableNextColumn();
-        ImGui.TableHeader("Damage Dealt\nper Life");
+        ImGuiHelper.DrawNumericTableHeader("Damage Dealt\nper Life");
         ImGui.TableNextColumn();
-        ImGui.TableHeader("Damage Taken\nper Life");
+        ImGuiHelper.DrawNumericTableHeader("Damage Taken\nper Life");
         ImGui.TableNextColumn();
-        ImGui.TableHeader("HP Restored\nper Life");
+        ImGuiHelper.DrawNumericTableHeader("HP Restored\nper Life");
         ImGui.TableNextColumn();
-        ImGui.TableHeader("KDA\nRatio");
+        ImGuiHelper.DrawNumericTableHeader("KDA\nRatio");
 
         //column sorting
         ImGuiTableSortSpecsPtr sortSpecs = ImGui.TableGetSortSpecs();
@@ -494,7 +503,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             sortSpecs.SpecsDirty = false;
         }
 
-        foreach(var row in Match.PlayerScoreboards!) {
+        foreach(var row in _scoreboard!) {
             var player = Match.Players!.Where(x => x.Name.Equals(row.Key)).First();
             var playerAlias = (PlayerAlias)row.Key;
             ImGui.TableNextColumn();
@@ -510,43 +519,44 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             ImGui.TableNextColumn();
             ImGui.TextColored(textColor, $"{player.Name.HomeWorld}");
             ImGui.TableNextColumn();
-            //ImGuiHelper.CenterAlignCursor(player.Job?.ToString() ?? "");
-            ImGui.TextColored(textColor, $"{player.Job}");
+            var jobString = $"{player.Job}";
+            ImGuiHelper.CenterAlignCursor(jobString);
+            ImGui.TextColored(textColor, jobString);
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].Kills) : row.Value.Kills)}");
+            ImGuiHelper.DrawNumericCell($"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].Kills) : row.Value.Kills)}", -11f, textColor);
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].Deaths) : row.Value.Deaths)}");
+            ImGuiHelper.DrawNumericCell($"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].Deaths) : row.Value.Deaths)}", -11f, textColor);
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].Assists) : row.Value.Assists)}");
+            ImGuiHelper.DrawNumericCell($"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].Assists) : row.Value.Assists)}", -11f, textColor);
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].DamageToPCs) : row.Value.DamageToPCs)}");
+            ImGuiHelper.DrawNumericCell($"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].DamageToPCs) : row.Value.DamageToPCs)}", -11f, textColor);
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].DamageToOther) : row.Value.DamageToOther)}");
+            ImGuiHelper.DrawNumericCell($"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].DamageToOther) : row.Value.DamageToOther)}", -11f, textColor);
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].DamageDealt) : row.Value.DamageDealt)}");
+            ImGuiHelper.DrawNumericCell($"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].DamageDealt) : row.Value.DamageDealt)}", -11f, textColor);
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].DamageTaken) : row.Value.DamageTaken)}");
+            ImGuiHelper.DrawNumericCell($"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].DamageTaken) : row.Value.DamageTaken)}", -11f, textColor);
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].HPRestored) : row.Value.HPRestored)}");
+            ImGuiHelper.DrawNumericCell($"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].HPRestored) : row.Value.HPRestored)}", -11f, textColor);
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].Special1) : row.Value.Special1)}");
+            ImGuiHelper.DrawNumericCell($"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].Special1) : row.Value.Special1)}", -11f, textColor);
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].Ceruleum) : row.Value.Ceruleum)}");
+            ImGuiHelper.DrawNumericCell($"{(ShowPercentages ? string.Format("{0:P1}%", _playerContributions?[player.Name].Ceruleum) : row.Value.Ceruleum)}", -11f, textColor);
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{row.Value.DamageDealtPerKA}");
+            ImGuiHelper.DrawNumericCell($"{row.Value.DamageDealtPerKA}");
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{row.Value.DamageDealtPerLife}");
+            ImGuiHelper.DrawNumericCell($"{row.Value.DamageDealtPerLife}");
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{row.Value.DamageTakenPerLife}");
+            ImGuiHelper.DrawNumericCell($"{row.Value.DamageTakenPerLife}");
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{row.Value.HPRestoredPerLife}");
+            ImGuiHelper.DrawNumericCell($"{row.Value.HPRestoredPerLife}");
             ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{string.Format("{0:0.00}", row.Value.KDA)}");
+            ImGuiHelper.DrawNumericCell($"{string.Format("{0:0.00}", row.Value.KDA)}");
         }
     }
 
     private void SortByColumn(uint columnId, ImGuiSortDirection direction) {
-        if(Match.PlayerScoreboards == null) return;
+        if(_scoreboard == null || _unfilteredScoreboard == null) return;
         Func<KeyValuePair<string, RivalWingsScoreboard>, object> comparator = (r) => 0;
 
         //0 = name
@@ -587,9 +597,22 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 }
             }
         }
-        //should probably not sort match property directly
-        Match.PlayerScoreboards = direction == ImGuiSortDirection.Ascending ? Match.PlayerScoreboards.OrderBy(comparator).ToDictionary()
-            : Match.PlayerScoreboards.OrderByDescending(comparator).ToDictionary();
+        _scoreboard = direction == ImGuiSortDirection.Ascending ? _scoreboard.OrderBy(comparator).ToDictionary()
+            : _scoreboard.OrderByDescending(comparator).ToDictionary();
+        _unfilteredScoreboard = direction == ImGuiSortDirection.Ascending ? _unfilteredScoreboard.OrderBy(comparator).ToDictionary()
+            : _unfilteredScoreboard.OrderByDescending(comparator).ToDictionary();
+    }
+
+    private Task ApplyTeamFilter() {
+        if(_scoreboard == null || _unfilteredScoreboard == null || Match.Players == null) {
+            return Task.CompletedTask;
+        }
+
+        _scoreboard = _unfilteredScoreboard.Where(x => {
+            var player = Match.Players.Where(y => y.Name.Equals(x.Key)).First();
+            return _teamQuickFilter.FilterState[player.Team];
+        }).ToDictionary();
+        return Task.CompletedTask;
     }
 
     private void DrawAlliances() {

@@ -249,6 +249,34 @@ internal static class ImGuiHelper {
         ImGui.SetNextItemWidth(width < minWidth ? minWidth : width > maxWidth ? maxWidth : width);
     }
 
+    internal static void DrawNumericCell(string value, float offset = 0f, Vector4? color = null) {
+        RightAlignCursor2(value, offset);
+        //ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 2 * ImGui.GetStyle().ItemSpacing.X);
+        if(color != null) {
+            using var textColor = ImRaii.PushColor(ImGuiCol.Text, (Vector4)color);
+            ImGui.TextUnformatted(value);
+        } else {
+            ImGui.TextUnformatted(value);
+        }
+    }
+
+    internal static void DrawNumericTableHeader(string name) {
+        ImGuiHelper.RightAlignCursor2(name, -11f * ImGuiHelpers.GlobalScale);
+        if(!name.Contains('\n')) {
+            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
+            ImGui.TableHeader(name);
+        } else {
+            using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(ImGui.GetStyle().ItemSpacing.X, 0f));
+            var splitName = name.Split('\n');
+            ImGui.TableHeader($"##{name}");
+            ImGui.SameLine();
+            foreach(var s in splitName) {
+                ImGuiHelper.RightAlignCursor2(s, -11f * ImGuiHelpers.GlobalScale);
+                ImGui.TextUnformatted(s);
+            }
+        }
+    }
+
     public static string AddOrdinal(int num) {
         if(num <= 0) return num.ToString();
 

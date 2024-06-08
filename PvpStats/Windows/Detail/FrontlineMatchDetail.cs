@@ -149,6 +149,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
             }
         }
         ImGui.NewLine();
+        ImGui.NewLine();
         ImGuiHelper.HelpMarker("Right-click table header to show and hide columns including extra metrics.", true, true);
         ImGui.SameLine();
         ImGui.AlignTextToFramePadding();
@@ -276,23 +277,23 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
         ImGui.TableHeader("Job");
         ImGui.TableNextColumn();
-        DrawTableHeader("Kills");
+        ImGuiHelper.DrawNumericTableHeader("Kills");
         ImGui.TableNextColumn();
-        DrawTableHeader("Deaths");
+        ImGuiHelper.DrawNumericTableHeader("Deaths");
         ImGui.TableNextColumn();
-        DrawTableHeader("Assists");
+        ImGuiHelper.DrawNumericTableHeader("Assists");
         if(Match.Arena == FrontlineMap.FieldsOfGlory) {
             ImGui.TableNextColumn();
-            DrawTableHeader("Damage\nto PCs");
+            ImGuiHelper.DrawNumericTableHeader("Damage\nto PCs");
             ImGui.TableNextColumn();
-            DrawTableHeader("Damage\nto Other");
+            ImGuiHelper.DrawNumericTableHeader("Damage\nto Other");
         }
         ImGui.TableNextColumn();
-        DrawTableHeader("Damage\nDealt");
+        ImGuiHelper.DrawNumericTableHeader("Damage\nDealt");
         ImGui.TableNextColumn();
-        DrawTableHeader("Damage\nTaken");
+        ImGuiHelper.DrawNumericTableHeader("Damage\nTaken");
         ImGui.TableNextColumn();
-        DrawTableHeader("HP\nRestored");
+        ImGuiHelper.DrawNumericTableHeader("HP\nRestored");
         ImGui.TableNextColumn();
         ImGuiHelper.RightAlignCursor2("(?)", -20f * ImGuiHelpers.GlobalScale);
         //ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
@@ -300,18 +301,18 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         ImGuiHelper.HelpMarker("Not sure what this is. It's related to healing.", true);
         if(Match.Arena == FrontlineMap.SealRock) {
             ImGui.TableNextColumn();
-            DrawTableHeader("Occup-\nations");
+            ImGuiHelper.DrawNumericTableHeader("Occup-\nations");
         }
         ImGui.TableNextColumn();
-        DrawTableHeader("Damage Dealt\nper Kill/Assist");
+        ImGuiHelper.DrawNumericTableHeader("Damage Dealt\nper Kill/Assist");
         ImGui.TableNextColumn();
-        DrawTableHeader("Damage Dealt\nper Life");
+        ImGuiHelper.DrawNumericTableHeader("Damage Dealt\nper Life");
         ImGui.TableNextColumn();
-        DrawTableHeader("Damage Taken\nper Life");
+        ImGuiHelper.DrawNumericTableHeader("Damage Taken\nper Life");
         ImGui.TableNextColumn();
-        DrawTableHeader("HP Restored\nper Life");
+        ImGuiHelper.DrawNumericTableHeader("HP Restored\nper Life");
         ImGui.TableNextColumn();
-        DrawTableHeader("KDA\nRatio");
+        ImGuiHelper.DrawNumericTableHeader("KDA\nRatio");
 
         foreach(var row in _scoreboard) {
             var player = Match.Players.Where(x => x.Name.Equals(row.Key)).First();
@@ -347,67 +348,66 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
             ImGuiHelper.CenterAlignCursor(jobString);
             ImGui.TextColored(textColor, jobString);
             ImGui.TableNextColumn();
-            DrawNumericCell(textColor, $"{(ShowPercentages ? string.Format("{0:P1}", _playerContributions[player.Name].Kills) : row.Value.Kills)}");
+            ImGuiHelper.DrawNumericCell($"{(ShowPercentages ? string.Format("{0:P1}", _playerContributions[player.Name].Kills) : row.Value.Kills)}", -11f, textColor);
             ImGui.TableNextColumn();
-            DrawNumericCell(textColor, $"{(ShowPercentages ? string.Format("{0:P1}", _playerContributions[player.Name].Deaths) : row.Value.Deaths)}");
+            ImGuiHelper.DrawNumericCell($"{(ShowPercentages ? string.Format("{0:P1}", _playerContributions[player.Name].Deaths) : row.Value.Deaths)}", -11f, textColor);
             ImGui.TableNextColumn();
-            DrawNumericCell(textColor, $"{(ShowPercentages ? string.Format("{0:P1}", _playerContributions[player.Name].Assists) : row.Value.Assists)}");
+            ImGuiHelper.DrawNumericCell($"{(ShowPercentages ? string.Format("{0:P1}", _playerContributions[player.Name].Assists) : row.Value.Assists)}", -11f, textColor);
 
             if(Match.Arena == FrontlineMap.FieldsOfGlory) {
                 ImGui.TableNextColumn();
-                DrawNumericCell(textColor, $"{(ShowPercentages ? string.Format("{0:P1}", _playerContributions[player.Name].DamageToPCs) : row.Value.DamageToPCs)}");
+                ImGuiHelper.DrawNumericCell($"{(ShowPercentages ? string.Format("{0:P1}", _playerContributions[player.Name].DamageToPCs) : row.Value.DamageToPCs)}", -11f, textColor);
                 ImGui.TableNextColumn();
-                DrawNumericCell(textColor, $"{(ShowPercentages ? string.Format("{0:P1}", _playerContributions[player.Name].DamageToOther) : row.Value.DamageToOther)}");
+                ImGuiHelper.DrawNumericCell($"{(ShowPercentages ? string.Format("{0:P1}", _playerContributions[player.Name].DamageToOther) : row.Value.DamageToOther)}", -11f, textColor);
             }
             ImGui.TableNextColumn();
-            DrawNumericCell(textColor, $"{(ShowPercentages ? string.Format("{0:P1}", _playerContributions[player.Name].DamageDealt) : row.Value.DamageDealt)}");
+            ImGuiHelper.DrawNumericCell($"{(ShowPercentages ? string.Format("{0:P1}", _playerContributions[player.Name].DamageDealt) : row.Value.DamageDealt)}", -11f, textColor);
             ImGui.TableNextColumn();
-            DrawNumericCell(textColor, $"{(ShowPercentages ? string.Format("{0:P1}", _playerContributions[player.Name].DamageTaken) : row.Value.DamageTaken)}");
+            ImGuiHelper.DrawNumericCell($"{(ShowPercentages ? string.Format("{0:P1}", _playerContributions[player.Name].DamageTaken) : row.Value.DamageTaken)}", -11f, textColor);
             ImGui.TableNextColumn();
-            DrawNumericCell(textColor, $"{(ShowPercentages ? string.Format("{0:P1}", _playerContributions[player.Name].HPRestored) : row.Value.HPRestored)}");
+            ImGuiHelper.DrawNumericCell($"{(ShowPercentages ? string.Format("{0:P1}", _playerContributions[player.Name].HPRestored) : row.Value.HPRestored)}", -11f, textColor);
             ImGui.TableNextColumn();
-            DrawNumericCell(textColor, $"{(ShowPercentages ? string.Format("{0:P1}", _playerContributions[player.Name].Special1) : row.Value.Special1)}");
+            ImGuiHelper.DrawNumericCell($"{(ShowPercentages ? string.Format("{0:P1}", _playerContributions[player.Name].Special1) : row.Value.Special1)}", -11f, textColor);
             if(Match.Arena == FrontlineMap.SealRock) {
                 ImGui.TableNextColumn();
-                DrawNumericCell(textColor, $"{(ShowPercentages ? string.Format("{0:P1}", _playerContributions[player.Name].Occupations) : row.Value.Occupations)}");
+                ImGuiHelper.DrawNumericCell($"{(ShowPercentages ? string.Format("{0:P1}", _playerContributions[player.Name].Occupations) : row.Value.Occupations)}", -11f, textColor);
             }
             ImGui.TableNextColumn();
-            DrawNumericCell(textColor, $"{row.Value.DamageDealtPerKA}");
+            ImGuiHelper.DrawNumericCell($"{row.Value.DamageDealtPerKA}", -11f, textColor);
             ImGui.TableNextColumn();
-            DrawNumericCell(textColor, $"{row.Value.DamageDealtPerLife}");
+            ImGuiHelper.DrawNumericCell($"{row.Value.DamageDealtPerLife}", -11f, textColor);
             ImGui.TableNextColumn();
-            DrawNumericCell(textColor, $"{row.Value.DamageTakenPerLife}");
+            ImGuiHelper.DrawNumericCell($"{row.Value.DamageTakenPerLife}", -11f, textColor);
             ImGui.TableNextColumn();
-            DrawNumericCell(textColor, $"{row.Value.HPRestoredPerLife}");
+            ImGuiHelper.DrawNumericCell($"{row.Value.HPRestoredPerLife}", -11f, textColor);
             ImGui.TableNextColumn();
-            DrawNumericCell(textColor, $"{string.Format("{0:0.00}", row.Value.KDA)}");
+            ImGuiHelper.DrawNumericCell($"{string.Format("{0:0.00}", row.Value.KDA)}", -11f, textColor);
         }
     }
 
-    private void DrawTableHeader(string name) {
-        ImGuiHelper.RightAlignCursor2(name, -11f * ImGuiHelpers.GlobalScale);
-        if(!name.Contains('\n')) {
-            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
-            ImGui.TableHeader(name);
-        } else {
-            using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(ImGui.GetStyle().ItemSpacing.X, 0f));
-            var splitName = name.Split('\n');
-            ImGui.TableHeader($"##{name}");
-            ImGui.SameLine();
-            foreach(var s in splitName) {
-                ImGuiHelper.RightAlignCursor2(s, -11f * ImGuiHelpers.GlobalScale);
-                ImGui.TextUnformatted(s);
-            }
-        }
+    //private void DrawTableHeader(string name) {
+    //    ImGuiHelper.RightAlignCursor2(name, -11f * ImGuiHelpers.GlobalScale);
+    //    if(!name.Contains('\n')) {
+    //        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
+    //        ImGui.TableHeader(name);
+    //    } else {
+    //        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(ImGui.GetStyle().ItemSpacing.X, 0f));
+    //        var splitName = name.Split('\n');
+    //        ImGui.TableHeader($"##{name}");
+    //        ImGui.SameLine();
+    //        foreach(var s in splitName) {
+    //            ImGuiHelper.RightAlignCursor2(s, -11f * ImGuiHelpers.GlobalScale);
+    //            ImGui.TextUnformatted(s);
+    //        }
+    //    }
+    //}
 
-    }
-
-    private void DrawNumericCell(Vector4 color, string value) {
-        ImGuiHelper.RightAlignCursor2(value, -11f);
-        //ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 2 * ImGui.GetStyle().ItemSpacing.X);
-        using var textColor = ImRaii.PushColor(ImGuiCol.Text, color);
-        ImGui.TextUnformatted(value);
-    }
+    //private void DrawNumericCell(Vector4 color, string value, float offset) {
+    //    ImGuiHelper.RightAlignCursor2(value, offset);
+    //    //ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 2 * ImGui.GetStyle().ItemSpacing.X);
+    //    using var textColor = ImRaii.PushColor(ImGuiCol.Text, color);
+    //    ImGui.TextUnformatted(value);
+    //}
 
     private void DrawTeamStatTable(FrontlineTeamName teamName) {
 

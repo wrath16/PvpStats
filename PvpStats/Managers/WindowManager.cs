@@ -39,6 +39,7 @@ internal class WindowManager : IDisposable {
     internal IDalamudTextureWrap FLBannerImage { get; private set; }
     internal IDalamudTextureWrap RWBannerImage { get; private set; }
     internal IDalamudTextureWrap? RWSuppliesTexture { get; private set; }
+    internal IDalamudTextureWrap? RWTeamIconTexture { get; private set; }
     internal IDalamudTextureWrap? GoblinMercIcon { get; private set; }
     internal IDalamudTextureWrap? TrainIcon { get; private set; }
     internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> CoreIcons = [];
@@ -66,6 +67,7 @@ internal class WindowManager : IDisposable {
         //var rwTextureFile = _plugin.DataManager.GetFile("ui/uld/PVPSimulationHeader2_hr1.tex") as TexFile;
         //RWSuppliesTexture = _plugin.TextureProvider.GetTexture(rwTextureFile);
         RWSuppliesTexture = _plugin.TextureProvider.GetTextureFromGame("ui/uld/PVPSimulationHeader2_hr1.tex");
+        RWTeamIconTexture = _plugin.TextureProvider.GetTextureFromGame("ui/uld/PVPSimulationResult_hr1.tex");
         GoblinMercIcon = _plugin.TextureProvider.GetIcon(60976);
         TrainIcon = _plugin.TextureProvider.GetIcon(60980);
         CoreIcons.Add(RivalWingsTeamName.Falcons, _plugin.TextureProvider.GetIcon(60947));
