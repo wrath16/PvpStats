@@ -260,19 +260,37 @@ internal static class ImGuiHelper {
         }
     }
 
-    internal static void DrawNumericTableHeader(string name) {
-        ImGuiHelper.RightAlignCursor2(name, -11f * ImGuiHelpers.GlobalScale);
+    //0 = left, 1 = center, 2 = right
+    internal static void DrawTableHeader(string name, int alignment = 2, bool draw = true) {
+        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(ImGui.GetStyle().ItemSpacing.X, 0f));
+        //RightAlignCursor2(name, -11f);
+        var cursorBefore = ImGui.GetCursorPos();
+        ImGui.TableHeader($"\n\n##{name}");
+        ImGui.SetCursorPos(cursorBefore);
+
+        if(!draw) return;
+
+        void drawText(string text) {
+            if(alignment == 2) {
+                RightAlignCursor2(text, -11f);
+            } else if(alignment == 1) {
+                //ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 14f * ImGuiHelpers.GlobalScale);
+                CenterAlignCursor(text);
+            }
+            ImGui.TextUnformatted(text);
+        }
+
         if(!name.Contains('\n')) {
             ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
-            ImGui.TableHeader(name);
+            //ImGui.SameLine();
+
+            drawText(name);
         } else {
-            using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(ImGui.GetStyle().ItemSpacing.X, 0f));
             var splitName = name.Split('\n');
-            ImGui.TableHeader($"##{name}");
-            ImGui.SameLine();
+            //ImGui.TableHeader($"\n\n##{name}");
+            //ImGui.SameLine();
             foreach(var s in splitName) {
-                ImGuiHelper.RightAlignCursor2(s, -11f * ImGuiHelpers.GlobalScale);
-                ImGui.TextUnformatted(s);
+                drawText(s);
             }
         }
     }
