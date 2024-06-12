@@ -246,6 +246,17 @@ internal static class ImGuiHelper {
         }
     }
 
+    internal static void DrawNumericCell(string display, float value, Vector4 colorMin, Vector4 colorMax, float minValue, float maxValue, bool colorEnabled, float extra = 0f) {
+        RightAlignCursor2(display, extra);
+        //ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 2 * ImGui.GetStyle().ItemSpacing.X);
+        if(colorEnabled) {
+            using var textColor = ImRaii.PushColor(ImGuiCol.Text, ColorScale(colorMin, colorMax, minValue, maxValue, value));
+            ImGui.TextUnformatted(display);
+        } else {
+            ImGui.TextUnformatted(display);
+        }
+    }
+
     //0 = left, 1 = center, 2 = right
     internal static void DrawTableHeader(string name, int alignment = 2, bool draw = true, bool multilineExpected = true, float extra = -11f) {
         using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(ImGui.GetStyle().ItemSpacing.X, 0f));
