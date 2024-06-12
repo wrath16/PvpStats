@@ -37,7 +37,7 @@ internal class RivalWingsSummary {
                 ImGui.Separator();
                 ImGui.TextColored(Plugin.Configuration.Colors.Header, "Jobs Played:");
                 ImGuiHelper.HelpMarker("Job is determined by the post-match scoreboard.");
-                DrawJobTable(Plugin.RWStatsEngine.LocalPlayerJobResults.OrderByDescending(x => x.Value.Matches).ToDictionary());
+                DrawJobTable(Plugin.RWStatsEngine.LocalPlayerJobResults.OrderByDescending(x => x.Value.Matches).ToDictionary(), 0);
             }
             ImGui.Separator();
             ImGui.TextColored(Plugin.Configuration.Colors.Header, "Average Performance:");
@@ -95,8 +95,8 @@ internal class RivalWingsSummary {
         }
     }
 
-    private void DrawJobTable(Dictionary<Job, CCAggregateStats> jobStats) {
-        using var table = ImRaii.Table($"JobTable###{jobStats.GetHashCode()}", 5, ImGuiTableFlags.PadOuterX | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings);
+    private void DrawJobTable(Dictionary<Job, CCAggregateStats> jobStats, int id) {
+        using var table = ImRaii.Table($"JobTable###{id}", 5, ImGuiTableFlags.PadOuterX | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings);
         if(table) {
             float offset = -1f;
             ImGui.TableSetupColumn("Job");
@@ -160,7 +160,6 @@ internal class RivalWingsSummary {
             ImGuiHelper.WrappedTooltip("Cruise Chaser");
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();
-            //ImGui.Text($"{string.Format("{0:P}%", Plugin.RWStatsEngine.LocalPlayerMechTime[RivalWingsMech.Chaser])}");
             ImGuiHelper.DrawNumericCell(Plugin.RWStatsEngine.LocalPlayerMechTime[RivalWingsMech.Chaser].ToString("P2"), -1f);
 
             ImGui.TableNextColumn();
@@ -168,7 +167,6 @@ internal class RivalWingsSummary {
             ImGuiHelper.WrappedTooltip("Oppressor");
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();
-            //ImGui.Text($"{string.Format("{0:P}%", Plugin.RWStatsEngine.LocalPlayerMechTime[RivalWingsMech.Oppressor])}");
             ImGuiHelper.DrawNumericCell(Plugin.RWStatsEngine.LocalPlayerMechTime[RivalWingsMech.Oppressor].ToString("P2"), -1f);
 
             ImGui.TableNextColumn();
@@ -176,7 +174,6 @@ internal class RivalWingsSummary {
             ImGuiHelper.WrappedTooltip("Brute Justice");
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();
-            //ImGui.Text($"{string.Format("{0:P}%", Plugin.RWStatsEngine.LocalPlayerMechTime[RivalWingsMech.Justice])}");
             ImGuiHelper.DrawNumericCell(Plugin.RWStatsEngine.LocalPlayerMechTime[RivalWingsMech.Justice].ToString("P2"), -1f);
         }
     }
