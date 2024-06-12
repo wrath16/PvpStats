@@ -53,33 +53,33 @@ internal class RivalWingsSummary {
         if(table) {
             ImGui.TableSetupColumn("description", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 158f);
             ImGui.TableSetupColumn($"value", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 45f);
-            ImGui.TableSetupColumn($"rate", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 45f);
+            ImGui.TableSetupColumn($"rate", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 55f);
 
             ImGui.TableNextColumn();
-            ImGui.Text("Matches: ");
+            ImGuiHelper.DrawNumericCell("Matches: ", -10f);
             ImGui.TableNextColumn();
-            ImGui.Text($"{Plugin.RWStatsEngine.OverallResults.Matches:N0}");
+            ImGuiHelper.DrawNumericCell($"{Plugin.RWStatsEngine.OverallResults.Matches:N0}");
             ImGui.TableNextColumn();
 
             if(Plugin.RWStatsEngine.OverallResults.Matches > 0) {
                 ImGui.TableNextColumn();
-                ImGui.Text("Wins: ");
+                ImGuiHelper.DrawNumericCell("Wins: ", -10f);
                 ImGui.TableNextColumn();
-                ImGui.Text($"{Plugin.RWStatsEngine.OverallResults.Wins:N0}");
+                ImGuiHelper.DrawNumericCell($"{Plugin.RWStatsEngine.OverallResults.Wins:N0}");
                 ImGui.TableNextColumn();
-                ImGui.Text($"{string.Format("{0:P}%", Plugin.RWStatsEngine.OverallResults.WinRate)}");
+                ImGuiHelper.DrawNumericCell(Plugin.RWStatsEngine.OverallResults.WinRate.ToString("P2"));
 
                 ImGui.TableNextColumn();
-                ImGui.Text("Losses: ");
+                ImGuiHelper.DrawNumericCell("Losses: ", -10f);
                 ImGui.TableNextColumn();
-                ImGui.Text($"{Plugin.RWStatsEngine.OverallResults.Losses:N0}");
+                ImGuiHelper.DrawNumericCell($"{Plugin.RWStatsEngine.OverallResults.Losses:N0}");
                 ImGui.TableNextColumn();
 
                 if(Plugin.RWStatsEngine.OverallResults.OtherResult > 0) {
                     ImGui.TableNextColumn();
-                    ImGui.Text("Other: ");
+                    ImGuiHelper.DrawNumericCell("Other: ", -10f);
                     ImGui.TableNextColumn();
-                    ImGui.Text($"{Plugin.RWStatsEngine.OverallResults.OtherResult:N0}");
+                    ImGuiHelper.DrawNumericCell($"{Plugin.RWStatsEngine.OverallResults.OtherResult:N0}");
                     ImGui.TableNextColumn();
                 }
 
@@ -87,9 +87,9 @@ internal class RivalWingsSummary {
                 ImGui.TableNextRow();
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
-                ImGui.Text("Average match length: ");
+                ImGuiHelper.DrawNumericCell("Average match length: ", -10f);
                 ImGui.TableNextColumn();
-                ImGui.Text(ImGuiHelper.GetTimeSpanString(Plugin.RWStatsEngine.AverageMatchDuration));
+                ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(Plugin.RWStatsEngine.AverageMatchDuration));
                 ImGui.TableNextColumn();
             }
         }
@@ -98,43 +98,42 @@ internal class RivalWingsSummary {
     private void DrawJobTable(Dictionary<Job, CCAggregateStats> jobStats) {
         using var table = ImRaii.Table($"JobTable###{jobStats.GetHashCode()}", 5, ImGuiTableFlags.PadOuterX | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings);
         if(table) {
+            float offset = -1f;
             ImGui.TableSetupColumn("Job");
-            ImGui.TableSetupColumn($"Role", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 55f);
-            ImGui.TableSetupColumn($"Matches", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 55f);
-            ImGui.TableSetupColumn($"Wins", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 55f);
-            ImGui.TableSetupColumn($"Win Rate", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 55f);
+            ImGui.TableSetupColumn($"Role", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 60f);
+            ImGui.TableSetupColumn($"Matches", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 60f);
+            ImGui.TableSetupColumn($"Wins", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 60f);
+            ImGui.TableSetupColumn($"Win Rate", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 60f);
 
             ImGui.TableNextColumn();
-            ImGui.TableHeader("");
+            ImGuiHelper.DrawTableHeader("Job", 0, false, false, offset);
             ImGui.TableNextColumn();
-            //ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
-            ImGui.TableHeader("Role");
+            ImGuiHelper.DrawTableHeader("Role", 0, true, false, offset);
             ImGui.TableNextColumn();
-            //ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
-            ImGui.TableHeader("Matches");
+            ImGuiHelper.DrawTableHeader("Matches", 2, true, false, offset);
             ImGui.TableNextColumn();
-            //ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
-            ImGui.TableHeader("Wins");
+            ImGuiHelper.DrawTableHeader("Wins", 2, true, false, offset);
             ImGui.TableNextColumn();
-            //ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
-            ImGui.TableHeader("Win Rate");
+            ImGuiHelper.DrawTableHeader("Win Rate", 2, true, false, offset);
             foreach(var job in jobStats) {
                 ImGui.TableNextColumn();
                 ImGui.Text($"{PlayerJobHelper.GetNameFromJob(job.Key)}");
 
                 ImGui.TableNextColumn();
-                ImGui.TextColored(Plugin.Configuration.GetJobColor(job.Key), $"{PlayerJobHelper.GetSubRoleFromJob(job.Key)}");
+                var roleString = PlayerJobHelper.GetSubRoleFromJob(job.Key).ToString() ?? "";
+                //ImGuiHelper.CenterAlignCursor(roleString);
+                ImGui.TextColored(Plugin.Configuration.GetJobColor(job.Key), roleString);
 
                 ImGui.TableNextColumn();
-                ImGui.Text($"{job.Value.Matches}");
+                ImGuiHelper.DrawNumericCell(job.Value.Matches.ToString(), offset);
 
                 ImGui.TableNextColumn();
-                ImGui.Text($"{job.Value.Wins}");
+                ImGuiHelper.DrawNumericCell(job.Value.Wins.ToString(), offset);
 
                 ImGui.TableNextColumn();
                 if(job.Value.Matches > 0) {
                     var diffColor = job.Value.WinRate > 0.5f ? Plugin.Configuration.Colors.Win : job.Value.WinRate < 0.5f ? Plugin.Configuration.Colors.Loss : ImGuiColors.DalamudWhite;
-                    ImGui.TextColored(diffColor, $"{string.Format("{0:P}%", job.Value.WinRate)}");
+                    ImGuiHelper.DrawNumericCell(job.Value.WinRate.ToString("P2"), offset, diffColor);
                 }
             }
         }
@@ -144,8 +143,8 @@ internal class RivalWingsSummary {
         using var style = ImRaii.PushStyle(ImGuiStyleVar.CellPadding, new Vector2(ImGui.GetStyle().CellPadding.X, 0));
         using var table = ImRaii.Table($"MechTimeTable", 2, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings);
         if(table) {
-            ImGui.TableSetupColumn("mech", ImGuiTableColumnFlags.WidthStretch, ImGuiHelpers.GlobalScale * 40f);
-            ImGui.TableSetupColumn($"uptime", ImGuiTableColumnFlags.WidthStretch, ImGuiHelpers.GlobalScale * 40f);
+            ImGui.TableSetupColumn("mech", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 40f);
+            ImGui.TableSetupColumn($"uptime", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 60f);
 
             //ImGui.TableNextColumn();
             //ImGui.TableHeader("");
@@ -161,21 +160,24 @@ internal class RivalWingsSummary {
             ImGuiHelper.WrappedTooltip("Cruise Chaser");
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();
-            ImGui.Text($"{string.Format("{0:P}%", Plugin.RWStatsEngine.LocalPlayerMechTime[RivalWingsMech.Chaser])}");
+            //ImGui.Text($"{string.Format("{0:P}%", Plugin.RWStatsEngine.LocalPlayerMechTime[RivalWingsMech.Chaser])}");
+            ImGuiHelper.DrawNumericCell(Plugin.RWStatsEngine.LocalPlayerMechTime[RivalWingsMech.Chaser].ToString("P2"), -1f);
 
             ImGui.TableNextColumn();
             ImGui.Image(Plugin.WindowManager.OppressorIcons[RivalWingsTeamName.Unknown]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle, size, uv0, uv1);
             ImGuiHelper.WrappedTooltip("Oppressor");
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();
-            ImGui.Text($"{string.Format("{0:P}%", Plugin.RWStatsEngine.LocalPlayerMechTime[RivalWingsMech.Oppressor])}");
+            //ImGui.Text($"{string.Format("{0:P}%", Plugin.RWStatsEngine.LocalPlayerMechTime[RivalWingsMech.Oppressor])}");
+            ImGuiHelper.DrawNumericCell(Plugin.RWStatsEngine.LocalPlayerMechTime[RivalWingsMech.Oppressor].ToString("P2"), -1f);
 
             ImGui.TableNextColumn();
             ImGui.Image(Plugin.WindowManager.JusticeIcons[RivalWingsTeamName.Unknown]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle, size, uv0, uv1);
             ImGuiHelper.WrappedTooltip("Brute Justice");
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();
-            ImGui.Text($"{string.Format("{0:P}%", Plugin.RWStatsEngine.LocalPlayerMechTime[RivalWingsMech.Justice])}");
+            //ImGui.Text($"{string.Format("{0:P}%", Plugin.RWStatsEngine.LocalPlayerMechTime[RivalWingsMech.Justice])}");
+            ImGuiHelper.DrawNumericCell(Plugin.RWStatsEngine.LocalPlayerMechTime[RivalWingsMech.Justice].ToString("P2"), -1f);
         }
     }
 
@@ -183,8 +185,8 @@ internal class RivalWingsSummary {
         using var style = ImRaii.PushStyle(ImGuiStyleVar.CellPadding, new Vector2(ImGui.GetStyle().CellPadding.X, 0));
         using var table = ImRaii.Table($"MidMercTable", 2, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings);
         if(table) {
-            ImGui.TableSetupColumn("description", ImGuiTableColumnFlags.WidthStretch, ImGuiHelpers.GlobalScale * 40f);
-            ImGui.TableSetupColumn($"winrate", ImGuiTableColumnFlags.WidthStretch, ImGuiHelpers.GlobalScale * 40f);
+            ImGui.TableSetupColumn("description", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 40f);
+            ImGui.TableSetupColumn($"winrate", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 60f);
 
             var size = new Vector2(30f * ImGuiHelpers.GlobalScale, 30f * ImGuiHelpers.GlobalScale);
             var uv0 = new Vector2(0.15f);
@@ -195,7 +197,7 @@ internal class RivalWingsSummary {
             ImGuiHelper.WrappedTooltip("Mercenaries");
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();
-            ImGui.Text($"{string.Format("{0:P}%", Plugin.RWStatsEngine.LocalPlayerMercWinRate)}");
+            ImGuiHelper.DrawNumericCell(Plugin.RWStatsEngine.LocalPlayerMercWinRate.ToString("P2"), -1f);
 
             ImGui.TableNextColumn();
             uv0 = new Vector2(0.1f);
@@ -204,24 +206,14 @@ internal class RivalWingsSummary {
             ImGuiHelper.WrappedTooltip("Supplies");
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();
-            ImGui.Text($"{string.Format("{0:P}%", Plugin.RWStatsEngine.LocalPlayerMidWinRate)}");
+            ImGuiHelper.DrawNumericCell(Plugin.RWStatsEngine.LocalPlayerMidWinRate.ToString("P2"), -1f);
         }
     }
-
-    //private void DrawMechRow(RivalWingsMech mech) {
-    //    var size = new Vector2(30f * ImGuiHelpers.GlobalScale, 30f * ImGuiHelpers.GlobalScale);
-    //    var uv0 = new Vector2(0.1f);
-    //    var uv1 = new Vector2(0.9f);
-
-    //    ImGui.TableNextColumn();
-    //    ImGui.Image(Plugin.WindowManager.ChaserIcons[RivalWingsTeamName.Unknown]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle, size, uv0, uv1);
-    //    ImGui.TableNextColumn();
-    //    ImGui
-    //}
 
     private void DrawMatchStatsTable() {
         using(var table = ImRaii.Table($"MatchStatsTable", 8, ImGuiTableFlags.PadOuterX | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
             if(table) {
+                float offset = -1f;
                 ImGui.TableSetupColumn("Kills");
                 ImGui.TableSetupColumn($"Deaths");
                 ImGui.TableSetupColumn($"Assists");
@@ -232,78 +224,75 @@ internal class RivalWingsSummary {
                 ImGui.TableSetupColumn("Ceruleum");
 
                 ImGui.TableNextColumn();
-                ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
-                ImGui.TableHeader("Kills");
+                ImGuiHelper.DrawTableHeader("Kills", 2, true, true, offset);
                 ImGui.TableNextColumn();
-                ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
-                ImGui.TableHeader("Deaths");
+                ImGuiHelper.DrawTableHeader("Deaths", 2, true, true, offset);
                 ImGui.TableNextColumn();
-                ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
-                ImGui.TableHeader("Assists");
+                ImGuiHelper.DrawTableHeader("Assists", 2, true, true, offset);
                 ImGui.TableNextColumn();
-                ImGui.TableHeader("Damage\nto PCs");
+                ImGuiHelper.DrawTableHeader("Damage\nto PCs", 2, true, true, offset);
                 ImGui.TableNextColumn();
-                ImGui.TableHeader("Damage\nto Other");
+                ImGuiHelper.DrawTableHeader("Damage\nto Other", 2, true, true, offset);
                 ImGui.TableNextColumn();
-                ImGui.TableHeader("Damage\nTaken");
+                ImGuiHelper.DrawTableHeader("Damage\nTaken", 2, true, true, offset);
                 ImGui.TableNextColumn();
-                ImGui.TableHeader("HP\nRestored");
+                ImGuiHelper.DrawTableHeader("HP\nRestored", 2, true, true, offset);
                 ImGui.TableNextColumn();
-                ImGui.TableHeader("Ceru-\nleum");
+                ImGuiHelper.DrawTableHeader("Ceru-\nleum", 2, true, true, offset);
 
                 //per match
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Kills, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 2.0f, 8.0f, Plugin.Configuration.ColorScaleStats, "0.00");
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Kills, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 2.0f, 8.0f, Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, 2.0f, 5.0f, Plugin.Configuration.ColorScaleStats, "0.00");
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, 2.0f, 5.0f, Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 10f, 25f, Plugin.Configuration.ColorScaleStats, "0.00");
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 10f, 25f, Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.DamageToPCs, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 300000f, 2000000f, Plugin.Configuration.ColorScaleStats, "#");
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.DamageToPCs, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 300000f, 2000000f, Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.DamageToOther, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 100000f, 3000000f, Plugin.Configuration.ColorScaleStats, "#");
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.DamageToOther, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 100000f, 3000000f, Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.DamageTaken, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 400000f, 1500000f, Plugin.Configuration.ColorScaleStats, "#");
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.DamageTaken, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 400000f, 1500000f, Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.HPRestored, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 100000f, 1500000f, Plugin.Configuration.ColorScaleStats, "#");
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.HPRestored, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 100000f, 1500000f, Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Ceruleum, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 10f, 100f, Plugin.Configuration.ColorScaleStats, "#");
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Ceruleum, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 10f, 100f, Plugin.Configuration.ColorScaleStats, "#", offset);
 
                 //per min
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.Kills, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 0.2f, 0.8f, Plugin.Configuration.ColorScaleStats, "0.00");
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.Kills, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 0.2f, 0.8f, Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, 0.2f, 0.5f, Plugin.Configuration.ColorScaleStats, "0.00");
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, 0.2f, 0.5f, Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1.0f, 2.5f, Plugin.Configuration.ColorScaleStats, "0.00");
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1.0f, 2.5f, Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.DamageToPCs, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 30000f, 200000f, Plugin.Configuration.ColorScaleStats, "#");
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.DamageToPCs, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 30000f, 200000f, Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.DamageToOther, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 10000f, 300000f, Plugin.Configuration.ColorScaleStats, "#");
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.DamageToOther, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 10000f, 300000f, Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.DamageTaken, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 40000f, 150000f, Plugin.Configuration.ColorScaleStats, "#");
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.DamageTaken, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 40000f, 150000f, Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.HPRestored, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 10000f, 150000f, Plugin.Configuration.ColorScaleStats, "#");
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.HPRestored, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 10000f, 150000f, Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.Ceruleum, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1f, 10f, Plugin.Configuration.ColorScaleStats, "0.00");
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.Ceruleum, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1f, 10f, Plugin.Configuration.ColorScaleStats, "0.00", offset);
 
                 //team contrib
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.Kills, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1 / 48f, 3 / 48f, Plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.Kills, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1 / 48f, 3 / 48f, Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, 1 / 48f, 3 / 48f, Plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, 1 / 48f, 3 / 48f, Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1 / 48f, 3 / 48f, Plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1 / 48f, 3 / 48f, Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.DamageToPCs, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1 / 48f, 3 / 48f, Plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.DamageToPCs, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1 / 48f, 3 / 48f, Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.DamageToOther, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1 / 48f, 3 / 48f, Plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.DamageToOther, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1 / 48f, 3 / 48f, Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.DamageTaken, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1 / 48f, 3 / 48f, Plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.DamageTaken, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1 / 48f, 3 / 48f, Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.HPRestored, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1 / 48f, 3 / 48f, Plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.HPRestored, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1 / 48f, 3 / 48f, Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.Ceruleum, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1 / 48f, 3 / 48f, Plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.Ceruleum, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1 / 48f, 3 / 48f, Plugin.Configuration.ColorScaleStats, "P1", offset);
             }
         }
     }

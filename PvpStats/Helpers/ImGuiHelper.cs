@@ -124,22 +124,6 @@ internal static class ImGuiHelper {
         return color.Lighten(1f);
     }
 
-    //internal static Vector4 GetJobColor(Job? job) {
-    //    var role = PlayerJobHelper.GetSubRoleFromJob(job);
-    //    return role != null ? GetSubRoleColor((JobSubRole)role) : ImGuiColors.DalamudWhite;
-    //}
-
-    //internal static Vector4 GetSubRoleColor(JobSubRole role) {
-    //    return role switch {
-    //        JobSubRole.TANK => ImGuiColors.TankBlue,
-    //        JobSubRole.HEALER => ImGuiColors.HealerGreen,
-    //        JobSubRole.MELEE => ImGuiColors.DPSRed,
-    //        JobSubRole.RANGED => ImGuiColors.DalamudOrange,
-    //        JobSubRole.CASTER => ImGuiColors.ParsedPink,
-    //        _ => ImGuiColors.DalamudWhite,
-    //    };
-    //}
-
     internal static void DrawPercentage(double val, Vector4 color) {
         if(val is not double.NaN) {
             ImGui.TextColored(color, string.Format("{0:P1}%", val));
@@ -212,16 +196,6 @@ internal static class ImGuiHelper {
         WrappedTooltip("Support the dev");
     }
 
-    //internal static void IterateOverProps<T>(T item, int maxDepth, int depth = 0) {
-    //    var props = typeof(T).GetProperties();
-    //    foreach(var prop in props) {
-    //        var value = prop.GetValue(item, null);
-    //        if(depth + 1  < maxDepth) {
-    //            IterateOverProps<object>(value, maxDepth, depth + 1);
-    //        }
-    //    }
-    //}
-
     internal static void FormattedCollapsibleHeader((string, float)[] columns, Action action) {
         List<string> formattedText = new();
         foreach(var column in columns) {
@@ -249,8 +223,8 @@ internal static class ImGuiHelper {
         ImGui.SetNextItemWidth(width < minWidth ? minWidth : width > maxWidth ? maxWidth : width);
     }
 
-    internal static void DrawNumericCell(string value, float offset = 0f, Vector4? color = null) {
-        RightAlignCursor2(value, offset);
+    internal static void DrawNumericCell(string value, float extra = 0f, Vector4? color = null) {
+        RightAlignCursor2(value, extra);
         //ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 2 * ImGui.GetStyle().ItemSpacing.X);
         if(color != null) {
             using var textColor = ImRaii.PushColor(ImGuiCol.Text, (Vector4)color);
@@ -260,19 +234,35 @@ internal static class ImGuiHelper {
         }
     }
 
+    internal static void DrawNumericCell(float value, Vector4 colorMin, Vector4 colorMax, float minValue, float maxValue, bool colorEnabled, string format = "0.00", float extra = 0f) {
+        var outputString = value.ToString(format);
+        RightAlignCursor2(outputString, extra);
+        //ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 2 * ImGui.GetStyle().ItemSpacing.X);
+        if(colorEnabled) {
+            using var textColor = ImRaii.PushColor(ImGuiCol.Text, ColorScale(colorMin, colorMax, minValue, maxValue, value));
+            ImGui.TextUnformatted(outputString);
+        } else {
+            ImGui.TextUnformatted(outputString);
+        }
+    }
+
     //0 = left, 1 = center, 2 = right
-    internal static void DrawTableHeader(string name, int alignment = 2, bool draw = true) {
+    internal static void DrawTableHeader(string name, int alignment = 2, bool draw = true, bool multilineExpected = true, float extra = -11f) {
         using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(ImGui.GetStyle().ItemSpacing.X, 0f));
         //RightAlignCursor2(name, -11f);
         var cursorBefore = ImGui.GetCursorPos();
-        ImGui.TableHeader($"\n\n##{name}");
+        if(multilineExpected) {
+            ImGui.TableHeader($"\n\n##{name}");
+        } else {
+            ImGui.TableHeader($"##{name}");
+        }
         ImGui.SetCursorPos(cursorBefore);
 
         if(!draw) return;
 
         void drawText(string text) {
             if(alignment == 2) {
-                RightAlignCursor2(text, -11f);
+                RightAlignCursor2(text, extra);
             } else if(alignment == 1) {
                 //ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 14f * ImGuiHelpers.GlobalScale);
                 CenterAlignCursor(text);
@@ -281,7 +271,9 @@ internal static class ImGuiHelper {
         }
 
         if(!name.Contains('\n')) {
-            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
+            if(multilineExpected) {
+                ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
+            }
             //ImGui.SameLine();
 
             drawText(name);
