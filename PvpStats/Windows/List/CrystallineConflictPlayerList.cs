@@ -18,65 +18,65 @@ namespace PvpStats.Windows.List;
 internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
 
     protected override List<ColumnParams> Columns { get; set; } = new() {
-        new ColumnParams{Name = "Name", Id = 0, Width = 200f, Flags = ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoHide },
-        new ColumnParams{Name = "Home World", Id = 1, Width = 110f, Flags = ImGuiTableColumnFlags.WidthFixed },
-        new ColumnParams{Name = "Favored Job", Id = (uint)"StatsAll.Job".GetHashCode() },
-        new ColumnParams{Name = "Total Matches", Id = (uint)"StatsAll.Matches".GetHashCode() },
-        new ColumnParams{Name = "Player Wins", Id = (uint)"StatsAll.Wins".GetHashCode(), Flags = ImGuiTableColumnFlags.None },
-        new ColumnParams{Name = "Player Losses", Id = (uint)"StatsAll.Losses".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Player Win Diff.", Id = (uint)"StatsAll.WinDiff".GetHashCode(), Flags = ImGuiTableColumnFlags.None },
-        new ColumnParams{Name = "Player Win Rate", Id = (uint)"StatsAll.WinRate".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Your Wins", Id = (uint)"StatsPersonal.Wins".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Your Losses", Id = (uint)"StatsPersonal.Losses".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Your Win Diff.", Id = (uint)"StatsPersonal.WinDiff".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Your Win Rate", Id = (uint)"StatsPersonal.WinRate".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Teammate Matches", Id = (uint)"StatsTeammate.Matches".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Teammate Wins", Id = (uint)"StatsTeammate.Wins".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Teammate Losses", Id = (uint)"StatsTeammate.Losses".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Teammate Win Diff.", Id = (uint)"StatsTeammate.WinDiff".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Teammate Win Rate", Id = (uint)"StatsTeammate.WinRate".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Opponent Matches", Id = (uint)"StatsOpponent.Matches".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Opponent Wins", Id = (uint)"StatsOpponent.Wins".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Opponent Losses", Id = (uint)"StatsOpponent.Losses".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Opponent Win Diff.", Id = (uint)"StatsOpponent.WinDiff".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Opponent Win Rate", Id = (uint)"StatsOpponent.WinRate".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Total Kills", Id = (uint)"ScoreboardTotal.Kills".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Total Deaths", Id = (uint)"ScoreboardTotal.Deaths".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Total Assists", Id = (uint)"ScoreboardTotal.Assists".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Total Damage Dealt", Id = (uint)"ScoreboardTotal.DamageDealt".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Total Damage Taken", Id = (uint)"ScoreboardTotal.DamageTaken".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Total HP Restored", Id = (uint)"ScoreboardTotal.HPRestored".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Total Time on Crystal", Id = (uint)"ScoreboardTotal.TimeOnCrystal".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Total Kills/Assists", Id = (uint)"ScoreboardTotal.KillsAndAssists".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Kills Per Match", Id = (uint)"ScoreboardPerMatch.Kills".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Deaths Per Match", Id = (uint)"ScoreboardPerMatch.Deaths".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Assists Per Match", Id = (uint)"ScoreboardPerMatch.Assists".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Damage Dealt Per Match", Id = (uint)"ScoreboardPerMatch.DamageDealt".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Damage Taken Per Match", Id = (uint)"ScoreboardPerMatch.DamageTaken".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "HP Restored Per Match", Id = (uint)"ScoreboardPerMatch.HPRestored".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Time on Crystal Per Match", Id = (uint)"ScoreboardPerMatch.TimeOnCrystal".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Kills/Assists Per Match", Id = (uint)"ScoreboardPerMatch.KillsAndAssists".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Kills Per Min", Id = (uint)"ScoreboardPerMin.Kills".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Deaths Per Min", Id = (uint)"ScoreboardPerMin.Deaths".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Assists Per Min", Id = (uint)"ScoreboardPerMin.Assists".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Damage Dealt Per Min", Id = (uint)"ScoreboardPerMin.DamageDealt".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Damage Taken Per Min", Id = (uint)"ScoreboardPerMin.DamageTaken".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "HP Restored Per Min", Id = (uint)"ScoreboardPerMin.HPRestored".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Time on Crystal Per Min", Id = (uint)"ScoreboardPerMin.TimeOnCrystal".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Kills/Assists Per Min", Id = (uint)"ScoreboardPerMin.KillsAndAssists".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Median Kill Contrib.", Id = (uint)"ScoreboardContrib.Kills".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Median Death Contrib.", Id = (uint)"ScoreboardContrib.Deaths".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Median Assist Contrib.", Id = (uint)"ScoreboardContrib.Assists".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Median Damage Dealt Contrib.", Id = (uint)"ScoreboardContrib.DamageDealt".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Median Damage Taken Contrib.", Id = (uint)"ScoreboardContrib.DamageTaken".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Median HP Restored Contrib.", Id = (uint)"ScoreboardContrib.HPRestored".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Median Time on Crystal Contrib.", Id = (uint)"ScoreboardContrib.TimeOnCrystalDouble".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Median Kill/Assist Contrib.", Id = (uint)"ScoreboardContrib.KillsAndAssists".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Damage Dealt Per Kill/Assist", Id = (uint)"ScoreboardTotal.DamageDealtPerKA".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Damage Dealt Per Life", Id = (uint)"ScoreboardTotal.DamageDealtPerLife".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "Damage Taken Per Life", Id = (uint)"ScoreboardTotal.DamageTakenPerLife".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "HP Restored Per Life", Id = (uint)"ScoreboardTotal.HPRestoredPerLife".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
-        new ColumnParams{Name = "KDA Ratio", Id = (uint)"ScoreboardTotal.KDA".GetHashCode(), Flags = ImGuiTableColumnFlags.DefaultHide },
+        new ColumnParams{           Name = "Name",                                                                      Id = 0,                                                             Width = 200f,                                   Flags = ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoHide },
+        new ColumnParams{           Name = "Home World",                        Header = "Home World",                  Id = 1,                                                             Width = 110f,                                   Flags = ImGuiTableColumnFlags.WidthFixed },
+        new ColumnParams{           Name = "Favored Job",                                                               Id = (uint)"StatsAll.Job".GetHashCode(),                            Width = 50f,            Alignment = 1,          Flags = ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Total Matches",                                                             Id = (uint)"StatsAll.Matches".GetHashCode(),                        Width = 60f + Offset,                           Flags = ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Player Wins",                                                               Id = (uint)"StatsAll.Wins".GetHashCode(),                           Width = 45f + Offset,                           Flags = ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Player Losses",                                                             Id = (uint)"StatsAll.Losses".GetHashCode(),                         Width = 50f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Player Win Diff.",                                                          Id = (uint)"StatsAll.WinDiff".GetHashCode(),                        Width = 55f + Offset,                           Flags = ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Player Win Rate",                   Header = "Player\nWin Rate",            Id = (uint)"StatsAll.WinRate".GetHashCode(),                        Width = 65f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Your Wins",                                                                 Id = (uint)"StatsPersonal.Wins".GetHashCode(),                      Width = 50f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Your Losses",                                                               Id = (uint)"StatsPersonal.Losses".GetHashCode(),                    Width = 50f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Your Win Diff.",                                                            Id = (uint)"StatsPersonal.WinDiff".GetHashCode(),                   Width = 63f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Your Win Rate",                                                             Id = (uint)"StatsPersonal.WinRate".GetHashCode(),                   Width = 63f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Teammate Matches",                                                          Id = (uint)"StatsTeammate.Matches".GetHashCode(),                   Width = 70f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Teammate Wins",                                                             Id = (uint)"StatsTeammate.Wins".GetHashCode(),                      Width = 70f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Teammate Losses",                                                           Id = (uint)"StatsTeammate.Losses".GetHashCode(),                    Width = 70f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Teammate Win Diff.",                                                        Id = (uint)"StatsTeammate.WinDiff".GetHashCode(),                   Width = 70f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Teammate Win Rate",                                                         Id = (uint)"StatsTeammate.WinRate".GetHashCode(),                   Width = 70f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Opponent Matches",                                                          Id = (uint)"StatsOpponent.Matches".GetHashCode(),                   Width = 70f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Opponent Wins",                                                             Id = (uint)"StatsOpponent.Wins".GetHashCode(),                      Width = 70f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Opponent Losses",                                                           Id = (uint)"StatsOpponent.Losses".GetHashCode(),                    Width = 70f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Opponent Win Diff.",                                                        Id = (uint)"StatsOpponent.WinDiff".GetHashCode(),                   Width = 70f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Opponent Win Rate",                                                         Id = (uint)"StatsOpponent.WinRate".GetHashCode(),                   Width = 70f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Total Kills",                                                               Id = (uint)"ScoreboardTotal.Kills".GetHashCode(),                   Width = 50f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Total Deaths",                                                              Id = (uint)"ScoreboardTotal.Deaths".GetHashCode(),                  Width = 50f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Total Assists",                                                             Id = (uint)"ScoreboardTotal.Assists".GetHashCode(),                 Width = 50f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Total Damage Dealt",                Header = "Total Damage\nDealt",         Id = (uint)"ScoreboardTotal.DamageDealt".GetHashCode(),             Width = 90f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Total Damage Taken",                Header = "Total Damage\nTaken",         Id = (uint)"ScoreboardTotal.DamageTaken".GetHashCode(),             Width = 90f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Total HP Restored",                                                         Id = (uint)"ScoreboardTotal.HPRestored".GetHashCode(),              Width = 90f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Total Time on Crystal",             Header = "Total Time\non Crystal",      Id = (uint)"ScoreboardTotal.TimeOnCrystal".GetHashCode(),           Width = 75f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Total Kills/Assists",               Header = "Total Kills\n and Assists",   Id = (uint)"ScoreboardTotal.KillsAndAssists".GetHashCode(),         Width = 75f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Kills Per Match",                                                           Id = (uint)"ScoreboardPerMatch.Kills".GetHashCode(),                Width = 73f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Deaths Per Match",                                                          Id = (uint)"ScoreboardPerMatch.Deaths".GetHashCode(),               Width = 73f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Assists Per Match",                                                         Id = (uint)"ScoreboardPerMatch.Assists".GetHashCode(),              Width = 73f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Damage Dealt Per Match",                                                    Id = (uint)"ScoreboardPerMatch.DamageDealt".GetHashCode(),          Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Damage Taken Per Match",                                                    Id = (uint)"ScoreboardPerMatch.DamageTaken".GetHashCode(),          Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "HP Restored Per Match",                                                     Id = (uint)"ScoreboardPerMatch.HPRestored".GetHashCode(),           Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Time on Crystal Per Match",                                                 Id = (uint)"ScoreboardPerMatch.TimeOnCrystal".GetHashCode(),        Width = 100f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Kills/Assists Per Match",                                                   Id = (uint)"ScoreboardPerMatch.KillsAndAssists".GetHashCode(),      Width = 85f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Kills Per Min",                     Header = "Kills\nPer Min",              Id = (uint)"ScoreboardPerMin.Kills".GetHashCode(),                  Width = 60f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Deaths Per Min",                                                            Id = (uint)"ScoreboardPerMin.Deaths".GetHashCode(),                 Width = 60f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Assists Per Min",                                                           Id = (uint)"ScoreboardPerMin.Assists".GetHashCode(),                Width = 60f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Damage Dealt Per Min",                                                      Id = (uint)"ScoreboardPerMin.DamageDealt".GetHashCode(),            Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Damage Taken Per Min",                                                      Id = (uint)"ScoreboardPerMin.DamageTaken".GetHashCode(),            Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "HP Restored Per Min",                                                       Id = (uint)"ScoreboardPerMin.HPRestored".GetHashCode(),             Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Time on Crystal Per Min",                                                   Id = (uint)"ScoreboardPerMin.TimeOnCrystal".GetHashCode(),          Width = 100f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Kills/Assists Per Min",                                                     Id = (uint)"ScoreboardPerMin.KillsAndAssists".GetHashCode(),        Width = 85f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Median Kill Contrib.",                                                      Id = (uint)"ScoreboardContrib.Kills".GetHashCode(),                 Width = 110f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Median Death Contrib.",                                                     Id = (uint)"ScoreboardContrib.Deaths".GetHashCode(),                Width = 110f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Median Assist Contrib.",                                                    Id = (uint)"ScoreboardContrib.Assists".GetHashCode(),               Width = 110f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Median Damage Dealt Contrib.",                                              Id = (uint)"ScoreboardContrib.DamageDealt".GetHashCode(),           Width = 110f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Median Damage Taken Contrib.",                                              Id = (uint)"ScoreboardContrib.DamageTaken".GetHashCode(),           Width = 110f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Median HP Restored Contrib.",                                               Id = (uint)"ScoreboardContrib.HPRestored".GetHashCode(),            Width = 110f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Median Time on Crystal Contrib.",                                           Id = (uint)"ScoreboardContrib.TimeOnCrystalDouble".GetHashCode(),   Width = 110f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Median Kill/Assist Contrib.",   Header = "Median Kill and\nAssist Contrib", Id = (uint)"ScoreboardContrib.KillsAndAssists".GetHashCode(),       Width = 110f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Damage Dealt Per Kill/Assist",  Header = "Damage Dealt\nPer Kill/Assist",   Id = (uint)"ScoreboardTotal.DamageDealtPerKA".GetHashCode(),        Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Damage Dealt Per Life",                                                     Id = (uint)"ScoreboardTotal.DamageDealtPerLife".GetHashCode(),      Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Damage Taken Per Life",                                                     Id = (uint)"ScoreboardTotal.DamageTakenPerLife".GetHashCode(),      Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "HP Restored Per Life",                                                      Id = (uint)"ScoreboardTotal.HPRestoredPerLife".GetHashCode(),       Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "KDA Ratio",                                                                 Id = (uint)"ScoreboardTotal.KDA".GetHashCode(),                     Width = 45f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
     };
 
     protected override string TableId => "###CCPlayerStatsTable";
@@ -186,151 +186,211 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
             tooltipText = tooltipText.Substring(0, tooltipText.Length - 1);
             ImGuiHelper.WrappedTooltip(tooltipText);
         }
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{item.HomeWorld}");
-        ImGui.TableNextColumn();
-        var job = _plugin.CCStatsEngine.PlayerStats[item].StatsAll.Job;
-        if(job != null) {
-            ImGui.TextColored(_plugin.Configuration.GetJobColor(job), $"{job}");
+        if(ImGui.TableNextColumn()) {
+            ImGui.TextUnformatted(item.HomeWorld);
         }
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.PlayerStats[item].StatsAll.Matches}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.PlayerStats[item].StatsAll.Wins}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.PlayerStats[item].StatsAll.Losses}");
-        ImGui.TableNextColumn();
-        var playerWinDiff = _plugin.CCStatsEngine.PlayerStats[item].StatsAll.WinDiff;
-        var playerWinDiffColor = playerWinDiff > 0 ? _plugin.Configuration.Colors.Win : playerWinDiff < 0 ? _plugin.Configuration.Colors.Loss : ImGuiColors.DalamudWhite;
-        ImGui.TextColored(playerWinDiffColor, $"{playerWinDiff}");
-        ImGui.TableNextColumn();
-        ImGui.TextColored(playerWinDiffColor, $"{string.Format("{0:P1}%", _plugin.CCStatsEngine.PlayerStats[item].StatsAll.WinRate)}");
+        if(ImGui.TableNextColumn()) {
+            var job = _plugin.CCStatsEngine.PlayerStats[item].StatsAll.Job;
+            var jobString = job.ToString() ?? "";
+            ImGuiHelper.CenterAlignCursor(jobString);
+            ImGui.TextColored(_plugin.Configuration.GetJobColor(job), jobString);
+        }
 
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.PlayerStats[item].StatsPersonal.Wins}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.PlayerStats[item].StatsPersonal.Losses}");
-        ImGui.TableNextColumn();
-        var selfWinDiff = _plugin.CCStatsEngine.PlayerStats[item].StatsPersonal.WinDiff;
-        var selfAllWinDiffColor = selfWinDiff > 0 ? _plugin.Configuration.Colors.Win : selfWinDiff < 0 ? _plugin.Configuration.Colors.Loss : ImGuiColors.DalamudWhite;
-        ImGui.TextColored(selfAllWinDiffColor, $"{selfWinDiff}");
-        ImGui.TableNextColumn();
-        ImGui.TextColored(selfAllWinDiffColor, $"{string.Format("{0:P1}%", _plugin.CCStatsEngine.PlayerStats[item].StatsPersonal.WinRate)}");
+        //player
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].StatsAll.Matches.ToString(), Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].StatsAll.Wins.ToString(), Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].StatsAll.Losses.ToString(), Offset);
+        }
+        var jobWinDiff = _plugin.CCStatsEngine.PlayerStats[item].StatsAll.WinDiff;
+        var jobWinDiffColor = jobWinDiff > 0 ? _plugin.Configuration.Colors.Win : jobWinDiff < 0 ? _plugin.Configuration.Colors.Loss : ImGuiColors.DalamudWhite;
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(jobWinDiff.ToString(), Offset, jobWinDiffColor);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].StatsAll.WinRate.ToString("P1"), Offset, jobWinDiffColor);
+        }
 
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.PlayerStats[item].StatsTeammate.Matches}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.PlayerStats[item].StatsTeammate.Wins}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.PlayerStats[item].StatsTeammate.Losses}");
-        ImGui.TableNextColumn();
+        //personal
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].StatsPersonal.Wins.ToString(), Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].StatsPersonal.Losses.ToString(), Offset);
+        }
+        var personalWinDiff = _plugin.CCStatsEngine.PlayerStats[item].StatsPersonal.WinDiff;
+        var personalWinDiffColor = personalWinDiff > 0 ? _plugin.Configuration.Colors.Win : personalWinDiff < 0 ? _plugin.Configuration.Colors.Loss : ImGuiColors.DalamudWhite;
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(personalWinDiff.ToString(), Offset, personalWinDiffColor);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].StatsPersonal.WinRate.ToString("P1"), Offset, personalWinDiffColor);
+        }
+
+        //teammate
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].StatsTeammate.Matches.ToString(), Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].StatsTeammate.Wins.ToString(), Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].StatsTeammate.Losses.ToString(), Offset);
+        }
         var teammateWinDiff = _plugin.CCStatsEngine.PlayerStats[item].StatsTeammate.WinDiff;
         var teammateWinDiffColor = teammateWinDiff > 0 ? _plugin.Configuration.Colors.Win : teammateWinDiff < 0 ? _plugin.Configuration.Colors.Loss : ImGuiColors.DalamudWhite;
-        ImGui.TextColored(teammateWinDiffColor, $"{teammateWinDiff}");
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawPercentage(_plugin.CCStatsEngine.PlayerStats[item].StatsTeammate.WinRate, teammateWinDiffColor);
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(teammateWinDiff.ToString(), Offset, teammateWinDiffColor);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].StatsTeammate.WinRate.ToString("P1"), Offset, teammateWinDiffColor);
+        }
 
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.PlayerStats[item].StatsOpponent.Matches}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.PlayerStats[item].StatsOpponent.Wins}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.PlayerStats[item].StatsOpponent.Losses}");
-        ImGui.TableNextColumn();
+        //opponent
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].StatsOpponent.Matches.ToString(), Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].StatsOpponent.Wins.ToString(), Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].StatsOpponent.Losses.ToString(), Offset);
+        }
         var opponentWinDiff = _plugin.CCStatsEngine.PlayerStats[item].StatsOpponent.WinDiff;
         var opponentWinDiffColor = opponentWinDiff > 0 ? _plugin.Configuration.Colors.Win : opponentWinDiff < 0 ? _plugin.Configuration.Colors.Loss : ImGuiColors.DalamudWhite;
-        ImGui.TextColored(opponentWinDiffColor, $"{opponentWinDiff}");
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawPercentage(_plugin.CCStatsEngine.PlayerStats[item].StatsOpponent.WinRate, opponentWinDiffColor);
-
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.Kills.ToString("N0")}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.Deaths.ToString("N0")}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.Assists.ToString("N0")}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.DamageDealt.ToString("N0")}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.DamageTaken.ToString("N0")}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.HPRestored.ToString("N0")}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted(ImGuiHelper.GetTimeSpanString(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.TimeOnCrystal));
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.KillsAndAssists.ToString("N0")}");
-
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.Kills, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 1.0f, 4.5f, _plugin.Configuration.ColorScaleStats, "0.00");
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.Deaths, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 1.5f, 3.5f, _plugin.Configuration.ColorScaleStats, "0.00");
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.Assists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 5.0f, 7.5f, _plugin.Configuration.ColorScaleStats, "0.00");
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.DamageDealt, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 400000f, 850000f, _plugin.Configuration.ColorScaleStats, "#");
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.DamageTaken, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 400000f, 850000f, _plugin.Configuration.ColorScaleStats, "#");
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 350000f, 1000000f, _plugin.Configuration.ColorScaleStats, "#");
-        ImGui.TableNextColumn();
-        var tcpa = _plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.TimeOnCrystal;
-        if(_plugin.Configuration.ColorScaleStats) {
-            ImGui.TextColored(ImGuiHelper.ColorScale(_plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 35f, 120f, (float)tcpa.TotalSeconds), ImGuiHelper.GetTimeSpanString(tcpa));
-        } else {
-            ImGui.TextUnformatted(ImGuiHelper.GetTimeSpanString(tcpa));
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(opponentWinDiff.ToString(), Offset, opponentWinDiffColor);
         }
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.KillsAndAssists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 6.0f, 10.0f, _plugin.Configuration.ColorScaleStats, "0.00");
-
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.Kills, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.1f, 0.7f, _plugin.Configuration.ColorScaleStats, "0.00");
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.Deaths, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 0.25f, 0.55f, _plugin.Configuration.ColorScaleStats, "0.00");
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.Assists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.75f, 1.5f, _plugin.Configuration.ColorScaleStats, "0.00");
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.DamageDealt, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 75000f, 140000f, _plugin.Configuration.ColorScaleStats, "#");
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.DamageTaken, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 75000f, 140000f, _plugin.Configuration.ColorScaleStats, "#");
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 60000f, 185000f, _plugin.Configuration.ColorScaleStats, "#");
-        ImGui.TableNextColumn();
-        var tcpm = _plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.TimeOnCrystal;
-        if(_plugin.Configuration.ColorScaleStats) {
-            ImGui.TextColored(ImGuiHelper.ColorScale(_plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 6f, 20f, (float)tcpm.TotalSeconds), ImGuiHelper.GetTimeSpanString(tcpm));
-        } else {
-            ImGui.TextUnformatted(ImGuiHelper.GetTimeSpanString(tcpm));
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].StatsOpponent.WinRate.ToString("P1"), Offset, opponentWinDiffColor);
         }
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.KillsAndAssists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 1.0f, 2.0f, _plugin.Configuration.ColorScaleStats, "0.00");
 
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.Kills, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.Deaths, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.Assists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.DamageDealt, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.DamageTaken, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.TimeOnCrystalDouble, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.KillsAndAssists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "{0:P1}%", true);
+        //total
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.Kills.ToString("N0"), Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.Deaths.ToString("N0"), Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.Assists.ToString("N0"), Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.DamageDealt.ToString("N0"), Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.DamageTaken.ToString("N0"), Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.HPRestored.ToString("N0"), Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.TimeOnCrystal), Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.KillsAndAssists.ToString("N0"), Offset);
+        }
 
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.DamageDealtPerKA, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 52000f, 100000f, _plugin.Configuration.ColorScaleStats, "#");
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.DamageDealtPerLife, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 190000f, 400000f, _plugin.Configuration.ColorScaleStats, "#");
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.DamageTakenPerLife, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 190000f, 400000f, _plugin.Configuration.ColorScaleStats, "#");
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.HPRestoredPerLife, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 120000f, 600000f, _plugin.Configuration.ColorScaleStats, "#");
-        ImGui.TableNextColumn();
-        ImGuiHelper.DrawColorScale((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.KDA, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 2.25f, 6.25f, _plugin.Configuration.ColorScaleStats, "0.00");
+        //per match
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.Kills, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 1.0f, 4.5f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.Deaths, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 1.5f, 3.5f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.Assists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 5.0f, 7.5f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.DamageDealt, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 400000f, 850000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.DamageTaken, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 400000f, 850000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 350000f, 1000000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            var tcpa = _plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.TimeOnCrystal;
+            ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(tcpa), (float)tcpa.TotalSeconds, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 35f, 120f, _plugin.Configuration.ColorScaleStats, Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMatch.KillsAndAssists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 6.0f, 10.0f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
+        }
+
+        //per min
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.Kills, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.1f, 0.7f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.Deaths, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 0.25f, 0.55f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.Assists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.75f, 1.5f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.DamageDealt, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 75000f, 140000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.DamageTaken, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 75000f, 140000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 60000f, 185000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            var tcpm = _plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.TimeOnCrystal;
+            ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(tcpm), (float)tcpm.TotalSeconds, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 6f, 20f, _plugin.Configuration.ColorScaleStats, Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardPerMin.KillsAndAssists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 1.0f, 2.0f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
+        }
+
+        //team contrib
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.Kills, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.Deaths, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.Assists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.DamageDealt, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.DamageTaken, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.TimeOnCrystalDouble, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardContrib.KillsAndAssists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
+        }
+
+        //special
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.DamageDealtPerKA, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 52000f, 100000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.DamageDealtPerLife, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 190000f, 400000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.DamageTakenPerLife, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 190000f, 400000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.HPRestoredPerLife, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 120000f, 600000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.PlayerStats[item].ScoreboardTotal.KDA, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 2.25f, 6.25f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
+        }
     }
 
     //we don't need this
