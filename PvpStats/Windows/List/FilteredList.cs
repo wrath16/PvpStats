@@ -13,12 +13,20 @@ using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
 
-public struct ColumnParams {
-    public string Name;
+public class ColumnParams {
+    public string Name = "";
+    public string? Header;
     public ImGuiTableColumnFlags Flags;
     public float Width;
     public uint Id;
     public int Priority;
+    public int Alignment = 0;
+}
+
+public class NumericColumnParams : ColumnParams {
+    public NumericColumnParams() {
+        Alignment = 2;
+    }
 }
 
 internal abstract class FilteredList<T> {
@@ -171,17 +179,22 @@ internal abstract class FilteredList<T> {
             //ImGui.TableSetupScrollFreeze(1, 1);
             //ImGui.TableHeadersRow();
             foreach(var i in clipper.Columns) {
-                var column = Columns[i];
-                ImGui.TableNextColumn();
-                //var tableHeader = ImGuiHelper.WrappedString(column.Name, 80f);
-                var tableHeader = ImGuiHelper.WrappedString(column.Name, 2);
-                //ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 1f);
-                //this is stupid!
-                if(ImGui.GetColumnIndex() == 0) {
-                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 4f * ImGuiHelpers.GlobalScale);
+
+                if(ImGui.TableNextColumn()) {
+                    var column = Columns[i];
+                    var tableHeader = column.Header ?? ImGuiHelper.WrappedString(column.Name, 2);
+                    //ImGui.TableHeader(tableHeader);
+                    ImGuiHelper.DrawTableHeader(tableHeader, column.Alignment, true, true, -5f);
                 }
+                //var tableHeader = ImGuiHelper.WrappedString(column.Name, 80f);
+
+                //ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 1f);
+                ////this is stupid!
+                //if(ImGui.GetColumnIndex() == 0) {
+                //    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 4f * ImGuiHelpers.GlobalScale);
+                //}
                 //ImGuiHelper.CenterAlignCursor(tableHeader);
-                ImGui.TableHeader(tableHeader);
+
             }
         }
         //ImGui.TableNextRow();
