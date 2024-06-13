@@ -17,7 +17,7 @@ internal class FLTrackerWindow : TrackerWindow {
     public FLTrackerWindow(Plugin plugin) : base(plugin, plugin.Configuration.FLWindowConfig, "Frontline Tracker") {
         SizeConstraints = new WindowSizeConstraints {
             MinimumSize = new Vector2(435, 400),
-            MaximumSize = new Vector2(5000, 5000)
+            MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
 
         MatchFilters.Add(new FrontlineArenaFilter(plugin, Refresh));

@@ -27,7 +27,7 @@ internal class ConfigWindow : Window {
     public ConfigWindow(Plugin plugin) : base("PvP Tracker Settings") {
         SizeConstraints = new WindowSizeConstraints {
             MinimumSize = new Vector2(525, 500),
-            MaximumSize = new Vector2(5000, 5000)
+            MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
         _plugin = plugin;
         _newManualLink = new();

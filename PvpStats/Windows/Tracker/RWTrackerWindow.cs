@@ -17,7 +17,7 @@ internal class RWTrackerWindow : TrackerWindow {
     public RWTrackerWindow(Plugin plugin) : base(plugin, plugin.Configuration.RWWindowConfig, "Rival Wings Tracker") {
         SizeConstraints = new WindowSizeConstraints {
             MinimumSize = new Vector2(435, 400),
-            MaximumSize = new Vector2(5000, 5000)
+            MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
         MatchFilters.Add(new TimeFilter(plugin, Refresh, plugin.Configuration.RWWindowConfig.MatchFilters.TimeFilter));
         MatchFilters.Add(new LocalPlayerFilter(plugin, Refresh, plugin.Configuration.RWWindowConfig.MatchFilters.LocalPlayerFilter));
