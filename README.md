@@ -3,7 +3,7 @@
 
 [![Download count](https://img.shields.io/endpoint?url=https://qzysathwfhebdai6xgauhz4q7m0mzmrf.lambda-url.us-east-1.on.aws/PvpStats)](https://github.com/wrath16/PvpStats)
 
-Final Fantasy XIV Dalamud plugin for recording PvP match history. Currently supports Crystalline Conflict and Frontline. (Rival Wings coming soon!)
+Final Fantasy XIV Dalamud plugin for recording PvP match history.
 
 ## Examples
 ![image](https://raw.githubusercontent.com/wrath16/PvpStats/master/images/example1.PNG)
@@ -12,15 +12,17 @@ Final Fantasy XIV Dalamud plugin for recording PvP match history. Currently supp
 
 ## Usage Instructions
 * Install from main Dalamud repo.
-* Matches are recorded automatically. There's no need to wait for the scoreboard to appear for it to be saved.
+* Matches are recorded automatically.
 * Enter `/ccstats` to open the Crystalline Conflict stats window.
 *  Enter `/flstats` to open the Frontline stats window.
+*  Enter `/rwstats` to open the Rival Wings stats window.
 * Enter `/pvpstatsconfig` or press the gear on the plugin description to access various settings.
 
 ## Known Issues
 
 ## Feature Roadmap
 May or may not eventually get implemented:
-* Rival Wings support.
-* Advanced stat tracking.
+* More stats.
 * More localization.
+* UI improvements.
+* Performance and reliability improvements.
