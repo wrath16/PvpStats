@@ -1,4 +1,4 @@
-﻿using FFXIVClientStructs.Interop.Attributes;
+﻿using FFXIVClientStructs.Interop.Generated;
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -25,8 +25,7 @@ public unsafe struct CrystallineConflictResultsPacket {
     [FieldOffset(0x28)] public uint AstraProgress;
     [FieldOffset(0x2C)] public uint UmbraProgress;
 
-    [FixedSizeArray<CrystallineConflictPlayer>(10)]
-    [FieldOffset(0x38)] public fixed byte Player[0x48 * 10];
+    [FieldOffset(0x38)] private FixedSizeArray10<CrystallineConflictPlayer> Player;
 
     [StructLayout(LayoutKind.Explicit, Size = 0x48)]
     public struct CrystallineConflictPlayer {

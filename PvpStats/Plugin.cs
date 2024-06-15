@@ -173,7 +173,7 @@ public sealed class Plugin : IDalamudPlugin {
             DataQueue.QueueDataOperation(Initialize);
         } catch(Exception e) {
             //remove handlers and release database if we fail to start
-            Log!.Error($"Failed to initialize plugin constructor: {e.Message}");
+            Log!.Error(e, "Failed to initialize plugin constructor");
             Dispose();
             //re-throw to prevent constructor from initializing
             throw;

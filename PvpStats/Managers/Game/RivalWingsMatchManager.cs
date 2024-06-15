@@ -31,7 +31,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
     private bool _matchEnded;
     private bool _resultPayloadReceived;
 
-    private Dictionary<uint, PlayerAlias> _objIdToPlayer = [];
+    private Dictionary<ulong, PlayerAlias> _objIdToPlayer = [];
     private Dictionary<RivalWingsTeamName, Dictionary<RivalWingsMech, double>> _mechTime = [];
     private Dictionary<RivalWingsTeamName, Dictionary<RivalWingsSupplies, int>> _midCounts = [];
     private Dictionary<RivalWingsTeamName, int> _mercCounts = [];
@@ -383,20 +383,20 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                     _mouseOutEvent = Plugin.AddonEventManager.AddEvent((nint)addon, (nint)targetNode, AddonEventType.MouseOut, TooltipHandler);
                     _leaveDutyButton = (IntPtr)buttonNode;
                     _leaveDutyButtonOwnerNode = (IntPtr)targetNode;
-                    _addonId = addon->ID;
+                    _addonId = addon->Id;
                 }
             }
         }
     }
 
     private unsafe void TooltipHandler(AddonEventType type, IntPtr addon, IntPtr node) {
-        var addonId = ((AtkUnitBase*)addon)->ID;
+        var addonId = ((AtkUnitBase*)addon)->Id;
         switch(type) {
             case AddonEventType.MouseOver:
-                AtkStage.GetSingleton()->TooltipManager.ShowTooltip(addonId, (AtkResNode*)node, "Disabled by PvP Tracker until scoreboard payload received!");
+                AtkStage.Instance()->TooltipManager.ShowTooltip(addonId, (AtkResNode*)node, "Disabled by PvP Tracker until scoreboard payload received!");
                 break;
             case AddonEventType.MouseOut:
-                AtkStage.GetSingleton()->TooltipManager.HideTooltip(addonId);
+                AtkStage.Instance()->TooltipManager.HideTooltip(addonId);
                 break;
         }
     }
@@ -427,7 +427,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             ((AtkComponentNode*)_leaveDutyButtonOwnerNode)->AtkResNode.NodeFlags &= ~(NodeFlags.HasCollision | NodeFlags.EmitsEvents | NodeFlags.RespondToMouse);
         }
         if(_addonId != 0) {
-            AtkStage.GetSingleton()->TooltipManager.HideTooltip(_addonId);
+            AtkStage.Instance()->TooltipManager.HideTooltip(_addonId);
         }
     }
 
@@ -490,11 +490,11 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
 
             //associate player Ids with aliases
             foreach(PlayerCharacter pc in Plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player).Cast<PlayerCharacter>()) {
-                if(!_objIdToPlayer.ContainsKey(pc.ObjectId)) {
+                if(!_objIdToPlayer.ContainsKey(pc.GameObjectId)) {
                     try {
                         var worldName = Plugin.DataManager.GetExcelSheet<World>()?.GetRow(pc.HomeWorld.Id)?.Name;
                         var player = (PlayerAlias)$"{pc.Name} {worldName}";
-                        _objIdToPlayer.Add(pc.ObjectId, player);
+                        _objIdToPlayer.Add(pc.GameObjectId, player);
                     } catch {
                         //sometime encounter players with no object id...
                     }

@@ -410,5 +410,4 @@ internal class CrystallineConflictMatchManager : IDisposable {
         //await _plugin.Storage.UpdateCCMatch(_currentMatch);
         return true;
     }
-
 }

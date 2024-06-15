@@ -1,6 +1,7 @@
 ﻿using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
+using PvpStats.Helpers;
 using PvpStats.Types.Match;
 using System;
 using System.Collections.Generic;
@@ -57,11 +58,11 @@ internal class FLTeamQuickFilter : DataFilter {
 
             foreach(var category in FilterState) {
                 ImGui.TableNextColumn();
-                var image = _plugin!.WindowManager.FrontlineTeamIcons[category.Key];
+                var image = TextureHelper.FrontlineTeamIcons[category.Key];
                 var size = 25f;
                 //ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 1f * ImGuiHelpers.GlobalScale);
                 //ImGui.AlignTextToFramePadding();
-                ImGui.Image(image?.ImGuiHandle ?? _plugin.WindowManager.Icon0.ImGuiHandle, new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), new Vector2(0f), new Vector2(1f));
+                ImGui.Image(_plugin.WindowManager.GetTextureHandle(image), new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), new Vector2(0f), new Vector2(1f));
                 ImGui.SameLine();
                 bool filterState = category.Value;
                 if(ImGui.Checkbox($"##{category.Key}{GetHashCode()}", ref filterState)) {

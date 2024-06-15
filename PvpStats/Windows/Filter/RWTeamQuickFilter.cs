@@ -90,7 +90,7 @@ internal class RWTeamQuickFilter : DataFilter {
                 uv1 = new Vector2(1.0f, 0.44f);
                 break;
         };
-        ImGui.Image(_plugin.WindowManager.RWTeamIconTexture?.ImGuiHandle ?? _plugin.WindowManager.Icon0.ImGuiHandle, new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), uv0, uv1);
+        ImGui.Image(_plugin.WindowManager.GetTextureHandle(TextureHelper.RWTeamIconTexture), new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), uv0, uv1);
         ImGuiHelper.WrappedTooltip(team.ToString());
     }
 }
