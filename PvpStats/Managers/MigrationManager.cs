@@ -35,9 +35,9 @@ internal class MigrationManager {
             foreach(var team in match.Teams) {
                 if(team.Value.Players.Count > 5) {
                     List<CrystallineConflictPlayer> toRemove = new();
-                    bool isValid = false;
                     //remove ones that are not included in post match...
                     foreach(var player in team.Value.Players) {
+                        bool isValid = false;
                         foreach(var postMatchPlayer in match.PostMatch!.Teams[team.Key].PlayerStats) {
                             if(postMatchPlayer.Player.Equals(player.Alias)) {
                                 isValid = true;

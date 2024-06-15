@@ -1,12 +1,12 @@
 {
   "Author": "SaMo",
   "Name": "PvP Tracker",
-  "Punchline": "PvP match history and scoreboard tracker.",
-  "Description": "Record, browse and filter your Crystalline Conflict and Frontline match history, view match scoreboards and view aggregated statistics like win rate and average damage dealt per match.",
+  "Punchline": "PvP match history and stats tracker.",
+  "Description": "Record, browse and filter your Crystalline Conflict, Frontline and Rival Wings match history, view match scoreboards and view aggregated statistics like win rate and average damage dealt per match.",
   "InternalName": "PvpStats",
   "RepoUrl": "https://github.com/wrath16/PvpStats",
   "ApplicableVersion": "any",
-  "Changelog": "* Frontline summary and profile tabs.",
+  "Changelog": "* Text alignment changes.",
   "Tags": [
     "pvp",
     "statistics"

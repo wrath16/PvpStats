@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace PvpStats.Types.Match;
-internal class FrontlineMatch : PvpMatch {
+public class FrontlineMatch : PvpMatch {
 
     public FrontlineMap? Arena { get; set; }
     public int PlayerCount { get; set; }
@@ -15,6 +15,8 @@ internal class FrontlineMatch : PvpMatch {
     //have to use string so it can be deserialized correctly -_-
     public Dictionary<string, FrontlineScoreboard> PlayerScoreboards { get; set; } = new();
     public Dictionary<FrontlineTeamName, FrontlineTeamScoreboard> Teams { get; set; } = new();
+
+    public Dictionary<string, int>? MaxBattleHigh { get; set; }
 
     [BsonIgnore]
     public FrontlinePlayer? LocalPlayerTeamMember => Players.FirstOrDefault(x => x.Name.Equals(LocalPlayer));

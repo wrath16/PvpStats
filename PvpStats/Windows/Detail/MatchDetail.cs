@@ -17,6 +17,7 @@ internal abstract class MatchDetail<T> : Window where T : PvpMatch {
 
     protected string CSV = "";
     protected bool ShowPercentages;
+    protected string CurrentTab = "";
 
     public MatchDetail(Plugin plugin, MatchCacheService<T> cache, T match) : base($"Match Details: {match.Id}") {
         Plugin = plugin;
@@ -41,6 +42,10 @@ internal abstract class MatchDetail<T> : Window where T : PvpMatch {
 
     public override void OnClose() {
         Plugin.WindowManager.RemoveWindow(this);
+    }
+
+    public override void Draw() {
+        SizeCondition = ImGuiCond.Once;
     }
 
     protected void DrawFunctions() {
@@ -72,5 +77,10 @@ internal abstract class MatchDetail<T> : Window where T : PvpMatch {
         ImGuiHelper.WrappedTooltip("Favorite match");
         ImGui.SameLine();
         ImGuiHelper.CSVButton(CSV);
+    }
+
+    protected void SetWindowSize(Vector2 size) {
+        SizeCondition = ImGuiCond.Always;
+        Size = size;
     }
 }

@@ -8,10 +8,11 @@ internal class StatsList<T> : FilteredList<T> {
     }
 
     protected override ImGuiTableFlags TableFlags { get; set; } = ImGuiTableFlags.Reorderable | ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable
-    | ImGuiTableFlags.Borders | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX;
+    | ImGuiTableFlags.Borders | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX | ImGuiTableFlags.PadOuterX;
     protected override bool ShowHeader { get; set; } = true;
     protected override bool ChildWindow { get; set; } = false;
     protected bool TriggerSort { get; set; }
+    protected static float Offset => -5f;
 
     public override void DrawListItem(T item) {
         throw new NotImplementedException();

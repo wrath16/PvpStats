@@ -225,7 +225,7 @@ internal class CrystallineConflictMatchDetail : Window {
                             ImGui.TableNextColumn();
                             using(var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero)) {
                                 if(player0.Job != null && _plugin.WindowManager.JobIcons.ContainsKey((Job)player0.Job)) {
-                                    ImGui.Image(_plugin.WindowManager.JobIcons[(Job)player0.Job].ImGuiHandle, new Vector2(24 * ImGuiHelpers.GlobalScale, 24 * ImGuiHelpers.GlobalScale));
+                                    ImGui.Image(_plugin.WindowManager.JobIcons[(Job)player0.Job]?.ImGuiHandle ?? _plugin.WindowManager.Icon0.ImGuiHandle, new Vector2(24 * ImGuiHelpers.GlobalScale, 24 * ImGuiHelpers.GlobalScale));
                                 }
                             }
                         } else {
@@ -239,7 +239,7 @@ internal class CrystallineConflictMatchDetail : Window {
                             ImGui.TableNextColumn();
                             using(var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero)) {
                                 if(player1.Job != null && _plugin.WindowManager.JobIcons.ContainsKey((Job)player1.Job)) {
-                                    ImGui.Image(_plugin.WindowManager.JobIcons[(Job)player1.Job].ImGuiHandle, new Vector2(24 * ImGuiHelpers.GlobalScale, 24 * ImGuiHelpers.GlobalScale));
+                                    ImGui.Image(_plugin.WindowManager.JobIcons[(Job)player1.Job]?.ImGuiHandle ?? _plugin.WindowManager.Icon0.ImGuiHandle, new Vector2(24 * ImGuiHelpers.GlobalScale, 24 * ImGuiHelpers.GlobalScale));
                                 }
                             }
 
@@ -278,10 +278,13 @@ internal class CrystallineConflictMatchDetail : Window {
                 && _dataModel.PostMatch.RankBefore is not null && _dataModel.PostMatch.RankAfter is not null) {
                 ImGui.Text($"{_dataModel.PostMatch.RankBefore.ToString()} → {_dataModel.PostMatch.RankAfter.ToString()}");
             }
-            ImGuiComponents.ToggleButton("##showPercentages", ref _showPercentages);
+            ImGui.NewLine();
+            ImGui.NewLine();
+            ImGuiHelper.HelpMarker("Right-click table header to show and hide columns including extra metrics.");
             ImGui.SameLine();
             ImGui.Text("Show team contributions");
-            ImGuiHelper.HelpMarker("Right-click table header to show and hide columns including extra metrics.");
+            ImGui.SameLine();
+            ImGuiComponents.ToggleButton("##showPercentages", ref _showPercentages);
             DrawStatsTable();
         }
     }
@@ -318,10 +321,11 @@ internal class CrystallineConflictMatchDetail : Window {
     }
 
     private void DrawStatsTable() {
-        using var table = ImRaii.Table($"postmatchplayers##{_dataModel.Id}", 14, ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.ScrollX | ImGuiTableFlags.NoSavedSettings);
+        using var table = ImRaii.Table($"postmatchplayers##{_dataModel.Id}", 15, ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.ScrollX | ImGuiTableFlags.NoSavedSettings | ImGuiTableFlags.PadOuterX);
         if(!table) return;
         ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, ImGuiHelpers.GlobalScale * 50f, 0);
-        ImGui.TableSetupColumn("Job", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 50f, 1);
+        ImGui.TableSetupColumn("Home World", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 110f, 1);
+        ImGui.TableSetupColumn("Job", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 50f, 2);
         ImGui.TableSetupColumn("Kills", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 52f, (uint)"Kills".GetHashCode());
         ImGui.TableSetupColumn("Deaths", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 52f, (uint)"Deaths".GetHashCode());
         ImGui.TableSetupColumn("Assists", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 52f, (uint)"Assists".GetHashCode());
@@ -333,40 +337,53 @@ internal class CrystallineConflictMatchDetail : Window {
         ImGui.TableSetupColumn("Damage Dealt per Life", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)"DamageDealtPerLife".GetHashCode());
         ImGui.TableSetupColumn("Damage Taken per Life", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)"DamageTakenPerLife".GetHashCode());
         ImGui.TableSetupColumn("HP Restored per Life", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)"HPRestoredPerLife".GetHashCode());
-        ImGui.TableSetupColumn("KDA Ratio", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)"KDA".GetHashCode());
+        ImGui.TableSetupColumn("KDA Ratio", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 50f, (uint)"KDA".GetHashCode());
 
-        ImGui.TableNextColumn();
-        ImGui.TableHeader("");
-        ImGui.TableNextColumn();
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
-        ImGui.TableHeader("Job");
-        ImGui.TableNextColumn();
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
-        ImGui.TableHeader("Kills");
-        ImGui.TableNextColumn();
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
-        ImGui.TableHeader("Deaths");
-        ImGui.TableNextColumn();
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8f * ImGuiHelpers.GlobalScale);
-        ImGui.TableHeader("Assists");
-        ImGui.TableNextColumn();
-        ImGui.TableHeader("Damage\nDealt");
-        ImGui.TableNextColumn();
-        ImGui.TableHeader("Damage\nTaken");
-        ImGui.TableNextColumn();
-        ImGui.TableHeader("HP\nRestored");
-        ImGui.TableNextColumn();
-        ImGui.TableHeader("Time on\nCrystal");
-        ImGui.TableNextColumn();
-        ImGui.TableHeader("Damage Dealt\nper Kill/Assist");
-        ImGui.TableNextColumn();
-        ImGui.TableHeader("Damage Dealt\nper Life");
-        ImGui.TableNextColumn();
-        ImGui.TableHeader("Damage Taken\nper Life");
-        ImGui.TableNextColumn();
-        ImGui.TableHeader("HP Restored\nper Life");
-        ImGui.TableNextColumn();
-        ImGui.TableHeader("KDA\nRatio");
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawTableHeader("Name", 0);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawTableHeader("Home World", 0);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawTableHeader("Job", 1);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawTableHeader("Kills");
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawTableHeader("Deaths");
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawTableHeader("Assists");
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawTableHeader("Damage\nDealt");
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawTableHeader("Damage\nTaken");
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawTableHeader("HP\nRestored");
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawTableHeader("Time on\nCrystal");
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawTableHeader("Damage Dealt\nper Kill/Assist");
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawTableHeader("Damage Dealt\nper Life");
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawTableHeader("Damage Taken\nper Life");
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawTableHeader("HP Restored\nper Life");
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawTableHeader("KDA\nRatio");
+        }
 
         //column sorting
         ImGuiTableSortSpecsPtr sortSpecs = ImGui.TableGetSortSpecs();
@@ -400,36 +417,57 @@ internal class CrystallineConflictMatchDetail : Window {
             var textColor = _dataModel.LocalPlayer is not null && _dataModel.LocalPlayer.Equals(row.Key.Player) ? _plugin.Configuration.Colors.CCLocalPlayer : ImGuiColors.DalamudWhite;
             ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(rowColor));
             if(isPlayer) {
-                ImGui.TextColored(textColor, $" {row.Key.Player?.Name} ");
+                ImGui.TextColored(textColor, $"{row.Key.Player?.Name}");
             } else {
-                ImGui.TextColored(textColor, $" {MatchHelper.GetTeamName(row.Key.Team ?? CrystallineConflictTeamName.Unknown)}");
+                ImGui.TextColored(textColor, $"{MatchHelper.GetTeamName(row.Key.Team ?? CrystallineConflictTeamName.Unknown)}");
             }
-            ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(isPlayer ? row.Key.Job : "")}");
-            ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(isPlayer && _showPercentages ? string.Format("{0:P1}%", row.Value.Item2.Kills) : row.Value.Item1.Kills)}");
-            ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(isPlayer && _showPercentages ? string.Format("{0:P1}%", row.Value.Item2.Deaths) : row.Value.Item1.Deaths)}");
-            ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(isPlayer && _showPercentages ? string.Format("{0:P1}%", row.Value.Item2.Assists) : row.Value.Item1.Assists)}");
-            ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(isPlayer && _showPercentages ? string.Format("{0:P1}%", row.Value.Item2.DamageDealt) : row.Value.Item1.DamageDealt)}");
-            ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(isPlayer && _showPercentages ? string.Format("{0:P1}%", row.Value.Item2.DamageTaken) : row.Value.Item1.DamageTaken)}");
-            ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(isPlayer && _showPercentages ? string.Format("{0:P1}%", row.Value.Item2.HPRestored) : row.Value.Item1.HPRestored)}");
-            ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{(isPlayer && _showPercentages ? string.Format("{0:P1}%", row.Value.Item2.TimeOnCrystalDouble) : ImGuiHelper.GetTimeSpanString(row.Value.Item1.TimeOnCrystal))}");
-            ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{string.Format("{0:f0}", row.Value.Item1.DamageDealtPerKA)}");
-            ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{string.Format("{0:f0}", row.Value.Item1.DamageDealtPerLife)}");
-            ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{string.Format("{0:f0}", row.Value.Item1.DamageTakenPerLife)}");
-            ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{string.Format("{0:f0}", row.Value.Item1.HPRestoredPerLife)}");
-            ImGui.TableNextColumn();
-            ImGui.TextColored(textColor, $"{string.Format("{0:0.00}", row.Value.Item1.KDA)}");
+            if(ImGui.TableNextColumn()) {
+                if(isPlayer) {
+                    ImGui.TextColored(textColor, $"{row.Key.Player?.HomeWorld}");
+                }
+            }
+            if(ImGui.TableNextColumn()) {
+                var jobString = $"{row.Key.Job}";
+                ImGuiHelper.CenterAlignCursor(jobString);
+                ImGui.TextColored(textColor, jobString);
+            }
+
+            if(ImGui.TableNextColumn()) {
+                ImGuiHelper.DrawNumericCell($"{(isPlayer && _showPercentages ? string.Format("{0:P1}", row.Value.Item2.Kills) : row.Value.Item1.Kills)}", -11f, textColor);
+            }
+            if(ImGui.TableNextColumn()) {
+                ImGuiHelper.DrawNumericCell($"{(isPlayer && _showPercentages ? string.Format("{0:P1}", row.Value.Item2.Deaths) : row.Value.Item1.Deaths)}", -11f, textColor);
+            }
+            if(ImGui.TableNextColumn()) {
+                ImGuiHelper.DrawNumericCell($"{(isPlayer && _showPercentages ? string.Format("{0:P1}", row.Value.Item2.Assists) : row.Value.Item1.Assists)}", -11f, textColor);
+            }
+            if(ImGui.TableNextColumn()) {
+                ImGuiHelper.DrawNumericCell($"{(isPlayer && _showPercentages ? string.Format("{0:P1}", row.Value.Item2.DamageDealt) : row.Value.Item1.DamageDealt)}", -11f, textColor);
+            }
+            if(ImGui.TableNextColumn()) {
+                ImGuiHelper.DrawNumericCell($"{(isPlayer && _showPercentages ? string.Format("{0:P1}", row.Value.Item2.DamageTaken) : row.Value.Item1.DamageTaken)}", -11f, textColor);
+            }
+            if(ImGui.TableNextColumn()) {
+                ImGuiHelper.DrawNumericCell($"{(isPlayer && _showPercentages ? string.Format("{0:P1}", row.Value.Item2.HPRestored) : row.Value.Item1.HPRestored)}", -11f, textColor);
+            }
+            if(ImGui.TableNextColumn()) {
+                ImGuiHelper.DrawNumericCell($"{(isPlayer && _showPercentages ? string.Format("{0:P1}", row.Value.Item2.TimeOnCrystalDouble) : ImGuiHelper.GetTimeSpanString(row.Value.Item1.TimeOnCrystal))}", -11f, textColor);
+            }
+            if(ImGui.TableNextColumn()) {
+                ImGuiHelper.DrawNumericCell($"{string.Format("{0:f0}", row.Value.Item1.DamageDealtPerKA)}", -11f, textColor);
+            }
+            if(ImGui.TableNextColumn()) {
+                ImGuiHelper.DrawNumericCell($"{string.Format("{0:f0}", row.Value.Item1.DamageDealtPerLife)}", -11f, textColor);
+            }
+            if(ImGui.TableNextColumn()) {
+                ImGuiHelper.DrawNumericCell($"{string.Format("{0:f0}", row.Value.Item1.DamageTakenPerLife)}", -11f, textColor);
+            }
+            if(ImGui.TableNextColumn()) {
+                ImGuiHelper.DrawNumericCell($"{string.Format("{0:f0}", row.Value.Item1.HPRestoredPerLife)}", -11f, textColor);
+            }
+            if(ImGui.TableNextColumn()) {
+                ImGuiHelper.DrawNumericCell($"{string.Format("{0:0.00}", row.Value.Item1.KDA)}", -11f, textColor);
+            }
         }
     }
 
@@ -437,10 +475,13 @@ internal class CrystallineConflictMatchDetail : Window {
         Func<KeyValuePair<CrystallineConflictPostMatchRow, (CCScoreboard, CCScoreboardDouble)>, object> comparator = (r) => 0;
 
         //0 = name
-        //1 = job
+        //1 = home world
+        //2 = job
         if(columnId == 0) {
             comparator = (r) => (r.Key.Player is not null ? r.Key.Player.Name : r.Key.Team.ToString()) ?? "";
         } else if(columnId == 1) {
+            comparator = (r) => (r.Key.Player is not null ? r.Key.Player.HomeWorld : "");
+        } else if(columnId == 2) {
             comparator = (r) => r.Key.Job ?? 0;
         } else {
             bool propFound = false;

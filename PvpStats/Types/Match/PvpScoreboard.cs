@@ -1,7 +1,7 @@
 ﻿using LiteDB;
 
 namespace PvpStats.Types.Match;
-internal class PvpScoreboard {
+public class PvpScoreboard {
     public int Size { get; set; } = 1;
     public long Kills { get; set; }
     public long Deaths { get; set; }

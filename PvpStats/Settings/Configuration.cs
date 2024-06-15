@@ -16,6 +16,7 @@ public class Configuration : IPluginConfiguration {
     public bool? EnableDBCachingCC { get; set; }
     public bool? EnableDBCachingFL { get; set; }
     public bool? EnableDBCachingRW { get; set; }
+    public bool? DisableMatchGuardsRW { get; set; }
     public bool EnablePlayerLinking { get; set; } = true;
     public bool EnableAutoPlayerLinking { get; set; } = true;
     public bool EnableManualPlayerLinking { get; set; } = true;
@@ -32,6 +33,7 @@ public class Configuration : IPluginConfiguration {
     public bool ColorScaleStats { get; set; } = true;
     public WindowConfiguration CCWindowConfig { get; set; } = new();
     public WindowConfiguration FLWindowConfig { get; set; } = new();
+    public WindowConfiguration RWWindowConfig { get; set; } = new();
     public ColorConfiguration Colors { get; set; } = new();
 
     [NonSerialized]
@@ -72,6 +74,14 @@ public class Configuration : IPluginConfiguration {
             FrontlineTeamName.Maelstrom => Colors.Maelstrom,
             FrontlineTeamName.Adders => Colors.Adders,
             FrontlineTeamName.Flames => Colors.Flames,
+            _ => ImGuiColors.DalamudWhite,
+        };
+    }
+
+    public Vector4 GetRivalWingsTeamColor(RivalWingsTeamName? team) {
+        return team switch {
+            RivalWingsTeamName.Falcons => Colors.Falcons,
+            RivalWingsTeamName.Ravens => Colors.Ravens,
             _ => ImGuiColors.DalamudWhite,
         };
     }

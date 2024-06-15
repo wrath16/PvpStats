@@ -27,7 +27,7 @@ internal class ConfigWindow : Window {
     public ConfigWindow(Plugin plugin) : base("PvP Tracker Settings") {
         SizeConstraints = new WindowSizeConstraints {
             MinimumSize = new Vector2(525, 500),
-            MaximumSize = new Vector2(5000, 5000)
+            MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
         _plugin = plugin;
         _newManualLink = new();
@@ -82,6 +82,11 @@ internal class ConfigWindow : Window {
             using(var tab = ImRaii.TabItem("Performance")) {
                 if(tab) {
                     DrawPerformanceSettings();
+                }
+            }
+            using(var tab = ImRaii.TabItem("Misc")) {
+                if(tab) {
+                    DrawMiscSettings();
                 }
             }
         }
@@ -164,7 +169,7 @@ internal class ConfigWindow : Window {
     private void DrawColorSettings() {
         if(ImGui.Button("Reset to Defaults")) {
             _plugin.Configuration.Colors = new();
-            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+            //_plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
 
         ImGui.SameLine();
@@ -249,6 +254,18 @@ internal class ConfigWindow : Window {
         ImGui.TableNextRow();
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
+        var falconsColor = _plugin.Configuration.Colors.Falcons;
+        if(ImGui.ColorEdit4("Falcons", ref falconsColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.Falcons = falconsColor;
+        }
+        ImGui.TableNextColumn();
+        var ravensColor = _plugin.Configuration.Colors.Ravens;
+        if(ImGui.ColorEdit4("Ravens", ref ravensColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.Ravens = ravensColor;
+        }
+        ImGui.TableNextRow();
+        ImGui.TableNextRow();
+        ImGui.TableNextColumn();
         var tankColor = _plugin.Configuration.Colors.Tank;
         if(ImGui.ColorEdit4("Tank", ref tankColor, ImGuiColorEditFlags.NoInputs)) {
             _plugin.Configuration.Colors.Tank = tankColor;
@@ -273,7 +290,6 @@ internal class ConfigWindow : Window {
         if(ImGui.ColorEdit4("Caster", ref casterColor, ImGuiColorEditFlags.NoInputs)) {
             _plugin.Configuration.Colors.Caster = casterColor;
         }
-
         ImGui.TableNextRow();
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
@@ -362,12 +378,12 @@ internal class ConfigWindow : Window {
     private void DrawManualPlayerLinkSettings() {
         using(var child = ImRaii.Child("ManualLinksChild", new Vector2(0, -(25 + ImGui.GetStyle().ItemSpacing.Y) * ImGuiHelpers.GlobalScale), true)) {
             if(child) {
-                using(var table = ImRaii.Table("ManualLinksTabke", 4, ImGuiTableFlags.NoSavedSettings)) {
+                using(var table = ImRaii.Table("ManualLinksTable", 4, ImGuiTableFlags.NoSavedSettings)) {
                     if(table) {
-                        ImGui.TableSetupColumn("LinkedAlias", ImGuiTableColumnFlags.WidthFixed, 180f * ImGuiHelpers.GlobalScale);
+                        ImGui.TableSetupColumn("LinkedAlias", ImGuiTableColumnFlags.WidthStretch, 180f * ImGuiHelpers.GlobalScale);
                         ImGui.TableSetupColumn("Verb", ImGuiTableColumnFlags.WidthFixed, 75f * ImGuiHelpers.GlobalScale);
-                        ImGui.TableSetupColumn("SourceAlias", ImGuiTableColumnFlags.WidthFixed, 180f * ImGuiHelpers.GlobalScale);
-                        ImGui.TableSetupColumn("Button", ImGuiTableColumnFlags.WidthFixed, 50f * ImGuiHelpers.GlobalScale);
+                        ImGui.TableSetupColumn("SourceAlias", ImGuiTableColumnFlags.WidthStretch, 180f * ImGuiHelpers.GlobalScale);
+                        ImGui.TableSetupColumn("Button", ImGuiTableColumnFlags.WidthFixed, 25f * ImGuiHelpers.GlobalScale);
                         try {
                             foreach(var link in ManualLinks) {
                                 DrawManualPlayerLink(link);
@@ -512,6 +528,30 @@ internal class ConfigWindow : Window {
                 _plugin.Configuration.Save();
             });
         }
+        bool enableCachingRW = _plugin.Configuration.EnableDBCachingRW ?? true;
+        if(ImGui.Checkbox("Rival Wings", ref enableCachingRW)) {
+            _plugin.Configuration.EnableDBCachingRW = enableCachingRW;
+            _plugin.DataQueue.QueueDataOperation(() => {
+                if(enableCachingRW) {
+                    _plugin.RWCache.EnableCaching();
+                } else {
+                    _plugin.RWCache.DisableCaching();
+                }
+                _plugin.Configuration.Save();
+            });
+        }
+    }
 
+    private void DrawMiscSettings() {
+        bool disableMatchGuardRW = _plugin.Configuration.DisableMatchGuardsRW ?? false;
+        if(ImGui.Checkbox("Disable Rival Wings match guards", ref disableMatchGuardRW)) {
+            _plugin.Configuration.DisableMatchGuardsRW = disableMatchGuardRW;
+            _plugin.DataQueue.QueueDataOperation(() => {
+                _plugin.Configuration.Save();
+            });
+        }
+        ImGuiHelper.HelpMarker("Unlike Crystalline Conflict and Frontline, the Rival Wings scoreboard is not typically received by the game client until ~9 seconds after the match has ended." +
+            " To prevent players from prematurely leaving the duty and missing the scoreboard, the leave duty button is disabled during this brief window.\n\nYou may disable this feature here but be warned: " +
+            "Matches will not be recorded if the scoreboard payload is not received!", true);
     }
 }

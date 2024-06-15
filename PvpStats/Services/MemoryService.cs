@@ -1,5 +1,4 @@
 using Dalamud.Game.Network;
-using PvpStats.Types.ClientStruct;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -18,7 +17,7 @@ internal unsafe class MemoryService : IDisposable {
     private DateTime _lastSortTime;
     internal bool _qPopped = false;
 
-    private ushort[] _blacklistedOpcodes = [];
+    private ushort[] _blacklistedOpcodes = [284, 328, 899, 125, 752, 893, 822, 570, 812, 605, 540, 443, 244, 679, 405, 924, 707, 952, 167, 619, 734, 152, 248, 472, 105, 238, 889, 193, 737, 669, 454, 444, 438, 473, 831, 159, 585];
 
     internal MemoryService(Plugin plugin) {
         _plugin = plugin;
@@ -36,6 +35,10 @@ internal unsafe class MemoryService : IDisposable {
 
     private unsafe void OnNetworkMessage(nint dataPtr, ushort opCode, uint sourceActorId, uint targetActorId, NetworkMessageDirection direction) {
         if(direction != NetworkMessageDirection.ZoneDown) {
+            //_plugin.Log.Debug($"SEND OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
+            //if(opCode == 0x18B) {
+            //    _plugin.Log.Debug("");
+            //}
             return;
         }
 
@@ -46,52 +49,12 @@ internal unsafe class MemoryService : IDisposable {
         }
 
         if(!_blacklistedOpcodes.Contains(opCode)) {
-            _plugin.Log.Verbose($"OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
+            //_plugin.Log.Debug($"OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
             //_plugin.Functions.PrintAllChars(dataPtr, 0x2000, 8);
             //_plugin.Functions.PrintAllStrings(dataPtr, 0x500);
         }
 
-        //770...
-        //235...
-        //347 = cc packet
-        if(opCode == 235) {
-            _plugin.Log.Debug("235 occurred!");
-
-            FrontlineResultsPacket resultsPacket = *(FrontlineResultsPacket*)(dataPtr);
-            //var printTeamStats = (FrontlineTeamResultsPacket.FrontlineTeamStat team, string name) => {
-            //    _plugin.Log.Debug($"{name}\nUnknown1 {team.Unknown1}\nStat1 {team.Stat1}\nTotalScore {team.TotalScore}\nStat2 {team.Stat2}\nUnknown2 {team.Unknown2}\nUnknown3 {team.Unknown3}\nStat3 {team.Stat3}");
-            //};
-
-            var printTeamStats = (FrontlineResultsPacket.TeamStat team, string name) => {
-                _plugin.Log.Debug($"{name}\nPlace {team.Placement}\nOvooPoints {team.OccupationPoints}\nKillPoints {team.EnemyKillPoints}\nDeathLosses {team.KOPointLosses}\nUnknown1 {team.Unknown1}\nUnknown2 {team.IcePoints}\nTotalRating {team.TotalPoints}");
-            };
-
-            //printTeamStats(resultsPacket.MaelStats, "Maelstrom");
-            //printTeamStats(resultsPacket.AdderStats, "Adders");
-            //printTeamStats(resultsPacket.FlameStats, "Flames");
-            FindValue<ushort>(0, dataPtr, 0x300, 0, true);
-
-            //try {
-            //    FindValue<byte>(0, dataPtr, 0x2000, 0, true);
-            //} catch {
-            //}
-            //try {
-            //    FindValue<int>(0, dataPtr, 0x2000, 0, true);
-            //} catch {
-            //}
-            //try {
-            //    FindValue<short>(0, dataPtr, 0x2000, 0, true);
-            //} catch {
-            //}
-            //try {
-            //    FindValue<string>("", dataPtr, 0x2000, 0, true);
-            //} catch {
-            //}
-
-            //PrintAllChars(dataPtr, 0x2000, 8);
-        }
-
-        if(opCode == 552) {
+        if(opCode == 732) {
             //player payload
             //FrontlinePlayerResultsPacket resultsPacket = *(FrontlinePlayerResultsPacket*)(dataPtr);
             //var playerName = (PlayerAlias)$"{MemoryService.ReadString(resultsPacket.PlayerName, 32)} {_plugin.DataManager.GetExcelSheet<World>()?.GetRow(resultsPacket.WorldId)?.Name}";
@@ -100,9 +63,18 @@ internal unsafe class MemoryService : IDisposable {
             //_plugin.Log.Debug(string.Format("{0,-32} {1,-15} {2,-10} {3,-8} {4,-8} {5,-8} {6,-8} {7,-15} {8,-15} {9,-15} {10,-15} {11,-15} {12,-15}", "NAME", "TEAM", "ALLIANCE", "JOB", "KILLS", "DEATHS", "ASSISTS", "DAMAGE DEALT", "DAMAGE OTHER", "DAMAGE TAKEN", "HP RESTORED", "??? 1", "??? 2"));
             //_plugin.Log.Debug(string.Format("{0,-32} {1,-15} {2,-10} {3,-8} {4,-8} {5,-8} {6,-8} {7,-15} {8,-15} {9,-15} {10,-15} {11,-15} {12,-15}", playerName, team, resultsPacket.Alliance, job, resultsPacket.Kills, resultsPacket.Deaths, resultsPacket.Assists, resultsPacket.DamageDealt, resultsPacket.DamageToOther, resultsPacket.DamageTaken, resultsPacket.HPRestored, resultsPacket.Unknown1, resultsPacket.Unknown2));
 
-            //FindValue<byte>(0, dataPtr, 0x50, 0, true);
-            FindValue<ushort>(0, dataPtr, 0x40, 0, true);
-            //FindValue<uint>(0, dataPtr, 0x50, 0, true);
+            FindValue<byte>(0, dataPtr, 0x100, 0, true);
+            FindValue<ushort>(0, dataPtr, 0x100, 0, true);
+            FindValue<uint>(0, dataPtr, 0x100, 0, true);
+            FindValue<string>("", dataPtr, 0x100, 0, true);
+            //var agent = AgentModule.Instance()->GetAgentByInternalId(AgentId.ContentsFinderMenu);
+            //AtkComponentButton* x;
+            //x->Flags |= (uint)NodeFlags.Enabled;
+        } else if(opCode == 937) {
+            //FindValue<byte>(0, dataPtr, 0x30, 0, true);
+            //FindValue<ushort>(0, dataPtr, 0x30, 0, true);
+            //FindValue<uint>(0, dataPtr, 0x30, 0, true);
+            //FindValue<string>("", dataPtr, 0x20, 0, true);
         }
 
         ////643 has promise...
@@ -119,7 +91,7 @@ internal unsafe class MemoryService : IDisposable {
     internal void CreateByteDump(nint ptr, int length, string name) {
         var bytes = new ReadOnlySpan<byte>((void*)ptr, length);
         var timeStamp = DateTime.Now;
-        using(FileStream fs = File.Create($"{_plugin.PluginInterface.GetPluginConfigDirectory()}\\{name}_{timeStamp.Year}{timeStamp.Month}{timeStamp.Day}{timeStamp.Hour}{timeStamp.Minute}{timeStamp.Second}{timeStamp.Millisecond}_dump.bin")) {
+        using(FileStream fs = File.Create($"{_plugin.PluginInterface.GetPluginConfigDirectory()}\\{name}_{timeStamp.Year}{timeStamp.Month}{timeStamp.Day}{timeStamp.Hour}{timeStamp.Minute}_{timeStamp.Second}{timeStamp.Millisecond}_dump.bin")) {
             fs.Write(bytes);
         }
     }

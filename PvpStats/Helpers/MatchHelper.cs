@@ -191,6 +191,55 @@ public static class MatchHelper {
         }
     }
 
+    public static RivalWingsMap? GetRivalWingsMap(uint dutyId) {
+        switch(dutyId) {
+            case 277:
+                return RivalWingsMap.Astragalos;
+            case 599:
+                return RivalWingsMap.HiddenGorge;
+            default:
+                return null;
+        }
+    }
+
+    public static string GetArenaName(RivalWingsMap? map) {
+        return map switch {
+            RivalWingsMap.Astragalos => "Astragalos",
+            RivalWingsMap.HiddenGorge => "Hidden Gorge",
+            _ => "Unknown",
+        };
+    }
+
+    public static string GetTeamName(RivalWingsTeamName team) {
+        switch(team) {
+            case RivalWingsTeamName.Falcons: return "Falcons";
+            case RivalWingsTeamName.Ravens: return "Ravens";
+            default: return "Unknown";
+        }
+    }
+
+    public static string GetSuppliesName(RivalWingsSupplies supplies) {
+        return supplies switch {
+            RivalWingsSupplies.Gobtank => "Gobtank",
+            RivalWingsSupplies.Ceruleum => "Main Ceruleum Tank",
+            RivalWingsSupplies.Gobbiejuice => "Gobbiejuice",
+            RivalWingsSupplies.Gobcrate => "Gobcrate",
+            _ => "???",
+        };
+    }
+
+    public static string GetAllianceLetter(int alliance) {
+        return alliance switch {
+            0 => "A",
+            1 => "B",
+            2 => "C",
+            3 => "D",
+            4 => "E",
+            5 => "F",
+            _ => "?",
+        };
+    }
+
     public static readonly Regex CreditBeforeRegex = new Regex(@"^\d+(?= →)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
     public static readonly Regex StarBeforeRegex = new Regex(@"(?<=^\w*\s*\d*\s*)★*(?=☆*\s*→)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
     public static readonly Regex RiserBeforeRegex = new Regex(@"(?<=^\w*\s?)\d*(?=\s?(★|☆)* →)", RegexOptions.IgnoreCase | RegexOptions.Multiline);

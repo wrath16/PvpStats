@@ -111,17 +111,21 @@ internal class CrystallineConflictRankGraph {
                 ImPlot.PlotLine("Crystal Credit", ref xs[0], ref ys[0], xs.Length, ImPlotLineFlags.None);
                 ImPlot.PopStyleColor();
 
-                ImPlot.SetNextMarkerStyle(ImPlotMarker.None);
-                ImPlot.PushStyleColor(ImPlotCol.Line, ImGui.GetColorU32(_plugin.Configuration.Colors.Loss));
-                ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, 10f);
-                ImPlot.PlotLine("Losses", ref xsLoss[0], ref ysLoss[0], xsLoss.Length, ImPlotLineFlags.Segments);
-                ImPlot.PopStyleColor();
+                if(xsLoss.Length > 0) {
+                    ImPlot.SetNextMarkerStyle(ImPlotMarker.None);
+                    ImPlot.PushStyleColor(ImPlotCol.Line, ImGui.GetColorU32(_plugin.Configuration.Colors.Loss));
+                    ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, 10f);
+                    ImPlot.PlotLine("Losses", ref xsLoss[0], ref ysLoss[0], xsLoss.Length, ImPlotLineFlags.Segments);
+                    ImPlot.PopStyleColor();
+                }
 
-                ImPlot.SetNextMarkerStyle(ImPlotMarker.None);
-                ImPlot.PushStyleColor(ImPlotCol.Line, ImGui.GetColorU32(_plugin.Configuration.Colors.Win));
-                ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, 5f);
-                ImPlot.PlotLine("Wins", ref xsWin[0], ref ysWin[0], xsWin.Length, ImPlotLineFlags.Segments);
-                ImPlot.PopStyleColor();
+                if(xsWin.Length > 0) {
+                    ImPlot.SetNextMarkerStyle(ImPlotMarker.None);
+                    ImPlot.PushStyleColor(ImPlotCol.Line, ImGui.GetColorU32(_plugin.Configuration.Colors.Win));
+                    ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, 5f);
+                    ImPlot.PlotLine("Wins", ref xsWin[0], ref ysWin[0], xsWin.Length, ImPlotLineFlags.Segments);
+                    ImPlot.PopStyleColor();
+                }
 
                 ImPlot.PushPlotClipRect();
                 //for(int i = 0; i < xs.Length; i += 2) {

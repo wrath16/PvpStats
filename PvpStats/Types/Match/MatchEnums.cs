@@ -58,3 +58,33 @@ public enum FrontlineTeamName {
     Adders,
     Flames
 }
+
+public enum RivalWingsMap {
+    Astragalos,
+    HiddenGorge,
+}
+
+public enum RivalWingsTeamName {
+    Falcons = 0,
+    Ravens = 1,
+    Unknown = 2
+}
+
+public enum RivalWingsMech {
+    Chaser = 0,
+    Oppressor = 1,
+    Justice = 2,
+}
+
+public enum RivalWingsSupplies {
+    Gobtank = 0,
+    Ceruleum = 1,
+    Gobbiejuice = 2,
+    Gobcrate = 3
+}
+
+public enum RivalWingsStructure {
+    Core = 0,
+    Tower1 = 1,
+    Tower2 = 2
+}

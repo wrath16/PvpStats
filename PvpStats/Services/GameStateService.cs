@@ -6,12 +6,14 @@ using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Game.InstanceContent;
 using PvpStats.Types.Player;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace PvpStats.Services;
 internal class GameStateService : IDisposable {
     private Plugin _plugin;
     public PlayerAlias? CurrentPlayer { get; private set; }
+    public Dictionary<uint, string> Worlds { get; private set; }
 
     internal GameStateService(Plugin plugin) {
         _plugin = plugin;

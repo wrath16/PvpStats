@@ -8,24 +8,22 @@ using System.Numerics;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Tracker;
-internal class FLTrackerWindow : TrackerWindow {
+internal class RWTrackerWindow : TrackerWindow {
 
-    private readonly FrontlineMatchList _matchList;
-    private readonly FrontlineSummary _summary;
-    private readonly FrontlinePvPProfile _profile;
+    private readonly RivalWingsMatchList _matchList;
+    private readonly RivalWingsSummary _summary;
+    private readonly RivalWingsPvPProfile _profile;
 
-    public FLTrackerWindow(Plugin plugin) : base(plugin, plugin.Configuration.FLWindowConfig, "Frontline Tracker") {
+    public RWTrackerWindow(Plugin plugin) : base(plugin, plugin.Configuration.RWWindowConfig, "Rival Wings Tracker") {
         SizeConstraints = new WindowSizeConstraints {
             MinimumSize = new Vector2(435, 400),
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
-
-        MatchFilters.Add(new FrontlineArenaFilter(plugin, Refresh));
-        MatchFilters.Add(new TimeFilter(plugin, Refresh, plugin.Configuration.FLWindowConfig.MatchFilters.TimeFilter));
-        MatchFilters.Add(new LocalPlayerFilter(plugin, Refresh, plugin.Configuration.FLWindowConfig.MatchFilters.LocalPlayerFilter));
+        MatchFilters.Add(new TimeFilter(plugin, Refresh, plugin.Configuration.RWWindowConfig.MatchFilters.TimeFilter));
+        MatchFilters.Add(new LocalPlayerFilter(plugin, Refresh, plugin.Configuration.RWWindowConfig.MatchFilters.LocalPlayerFilter));
         MatchFilters.Add(new LocalPlayerJobFilter(plugin, Refresh));
         MatchFilters.Add(new OtherPlayerFilter(plugin, Refresh));
-        MatchFilters.Add(new FLResultFilter(plugin, Refresh));
+        MatchFilters.Add(new ResultFilter(plugin, Refresh));
         MatchFilters.Add(new DurationFilter(plugin, Refresh));
         MatchFilters.Add(new BookmarkFilter(plugin, Refresh));
 
@@ -59,22 +57,22 @@ internal class FLTrackerWindow : TrackerWindow {
         s0.Start();
         try {
             await RefreshLock.WaitAsync();
-            await Plugin.FLStatsEngine.Refresh(MatchFilters, new(), new());
+            await Plugin.RWStatsEngine.Refresh(MatchFilters, new(), new());
             Stopwatch s1 = new();
             s1.Start();
             Task.WaitAll([
-                _matchList.Refresh(Plugin.FLStatsEngine.Matches),
+                _matchList.Refresh(Plugin.RWStatsEngine.Matches),
             ]);
             Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"all window modules", s1.ElapsedMilliseconds.ToString()));
             s1.Restart();
             SaveFilters();
             Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"save config", s1.ElapsedMilliseconds.ToString()));
         } catch {
-            Plugin.Log.Error("Refresh on fl stats window failed.");
+            Plugin.Log.Error("Refresh on rw stats window failed.");
             throw;
         } finally {
             RefreshLock.Release();
-            Plugin.Log.Information(string.Format("{0,-25}: {1,4} ms", $"FL tracker refresh time", s0.ElapsedMilliseconds.ToString()));
+            Plugin.Log.Information(string.Format("{0,-25}: {1,4} ms", $"RW tracker refresh time", s0.ElapsedMilliseconds.ToString()));
         }
     }
 }

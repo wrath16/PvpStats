@@ -1,6 +1,5 @@
 using Dalamud.Game;
 using Dalamud.Game.Command;
-using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
@@ -20,6 +19,7 @@ public sealed class Plugin : IDalamudPlugin {
 
     internal const string DatabaseName = "data.db";
 
+    private const string SplashCommandName = "/pvpstats";
     private const string CCStatsCommandName = "/ccstats";
     private const string FLStatsCommandName = "/flstats";
     private const string RWStatsCommandName = "/rwstats";
@@ -34,11 +34,12 @@ public sealed class Plugin : IDalamudPlugin {
     internal IGameNetwork GameNetwork { get; init; }
     internal ICondition Condition { get; init; }
     internal IDutyState DutyState { get; init; }
-    internal IPartyList PartyList { get; init; }
+    //internal IPartyList PartyList { get; init; }
     internal IChatGui ChatGui { get; init; }
     internal IGameGui GameGui { get; init; }
     internal IFramework Framework { get; init; }
     internal IPluginLog Log { get; init; }
+    internal IAddonEventManager AddonEventManager { get; init; }
     internal IAddonLifecycle AddonLifecycle { get; init; }
     internal IObjectTable ObjectTable { get; init; }
     internal ITextureProvider TextureProvider { get; init; }
@@ -47,16 +48,19 @@ public sealed class Plugin : IDalamudPlugin {
 
     internal CrystallineConflictMatchManager? CCMatchManager { get; init; }
     internal FrontlineMatchManager? FLMatchManager { get; init; }
+    internal RivalWingsMatchManager? RWMatchManager { get; init; }
     internal WindowManager WindowManager { get; init; }
     internal MigrationManager MigrationManager { get; init; }
     internal CrystallineConflictStatsManager CCStatsEngine { get; init; }
     internal FrontlineStatsManager FLStatsEngine { get; init; }
+    internal RivalWingsStatsManager RWStatsEngine { get; init; }
 
     internal DataQueueService DataQueue { get; init; }
     internal LocalizationService Localization { get; init; }
     internal StorageService Storage { get; init; }
     internal CCMatchCacheService CCCache { get; init; }
     internal FLMatchCacheService FLCache { get; init; }
+    internal RWMatchCacheService RWCache { get; init; }
     internal GameStateService GameState { get; init; }
     internal AtkNodeService AtkNodeService { get; init; }
     internal PlayerLinkService PlayerLinksService { get; init; }
@@ -67,23 +71,24 @@ public sealed class Plugin : IDalamudPlugin {
     internal bool DebugMode { get; set; }
 
     public Plugin(
-        [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
-        [RequiredVersion("1.0")] ICommandManager commandManager,
-        [RequiredVersion("1.0")] IDataManager dataManager,
-        [RequiredVersion("1.0")] IClientState clientState,
-        [RequiredVersion("1.0")] IGameNetwork gameNetwork,
-        [RequiredVersion("1.0")] ICondition condition,
-        [RequiredVersion("1.0")] IDutyState dutyState,
-        [RequiredVersion("1.0")] IPartyList partyList,
-        [RequiredVersion("1.0")] IChatGui chatGui,
-        [RequiredVersion("1.0")] IGameGui gameGui,
-        [RequiredVersion("1.0")] IFramework framework,
-        [RequiredVersion("1.0")] IPluginLog log,
-        [RequiredVersion("1.0")] IAddonLifecycle addonLifecycle,
-        [RequiredVersion("1.0")] IObjectTable objectTable,
-        [RequiredVersion("1.0")] ITextureProvider textureProvider,
-        [RequiredVersion("1.0")] IGameInteropProvider interopProvider,
-        [RequiredVersion("1.0")] ISigScanner sigScanner) {
+        DalamudPluginInterface pluginInterface,
+        ICommandManager commandManager,
+        IDataManager dataManager,
+        IClientState clientState,
+        IGameNetwork gameNetwork,
+        ICondition condition,
+        IDutyState dutyState,
+        IPartyList partyList,
+        IChatGui chatGui,
+        IGameGui gameGui,
+        IFramework framework,
+        IPluginLog log,
+        IAddonEventManager addonEventManager,
+        IAddonLifecycle addonLifecycle,
+        IObjectTable objectTable,
+        ITextureProvider textureProvider,
+        IGameInteropProvider interopProvider,
+        ISigScanner sigScanner) {
         try {
             PluginInterface = pluginInterface;
             CommandManager = commandManager;
@@ -92,11 +97,12 @@ public sealed class Plugin : IDalamudPlugin {
             GameNetwork = gameNetwork;
             Condition = condition;
             DutyState = dutyState;
-            PartyList = partyList;
+            //PartyList = partyList;
             ChatGui = chatGui;
             GameGui = gameGui;
             Framework = framework;
             Log = log;
+            AddonEventManager = addonEventManager;
             AddonLifecycle = addonLifecycle;
             ObjectTable = objectTable;
             TextureProvider = textureProvider;
@@ -115,6 +121,7 @@ public sealed class Plugin : IDalamudPlugin {
             Storage = new(this, $"{PluginInterface.GetPluginConfigDirectory()}\\{DatabaseName}");
             CCCache = new(this);
             FLCache = new(this);
+            RWCache = new(this);
             Functions = new(this);
             GameState = new(this);
             AtkNodeService = new(this);
@@ -122,24 +129,36 @@ public sealed class Plugin : IDalamudPlugin {
             Localization = new(this);
             CCStatsEngine = new(this);
             FLStatsEngine = new(this);
+            RWStatsEngine = new(this);
             WindowManager = new(this);
             MigrationManager = new(this);
             try {
                 CCMatchManager = new(this);
             } catch(SignatureException e) {
-                Log.Error($"failed to initialize cc match manager: {e.Message}");
+                Log.Error(e, $"failed to initialize cc match manager");
             }
             try {
                 FLMatchManager = new(this);
             } catch(SignatureException e) {
-                Log.Error($"failed to initialize fl match manager: {e.Message}");
+                Log.Error(e, $"failed to initialize fl match manager");
+            }
+            try {
+                RWMatchManager = new(this);
+            } catch(SignatureException e) {
+                Log.Error(e, $"failed to initialize rw match manager");
             }
 
+            CommandManager.AddHandler(SplashCommandName, new CommandInfo(OnSplashCommand) {
+                HelpMessage = "Opens launcher window."
+            });
             CommandManager.AddHandler(CCStatsCommandName, new CommandInfo(OnCCCommand) {
                 HelpMessage = "Opens Crystalline Conflict tracker."
             });
             CommandManager.AddHandler(FLStatsCommandName, new CommandInfo(OnFLCommand) {
                 HelpMessage = "Opens Frontline tracker."
+            });
+            CommandManager.AddHandler(RWStatsCommandName, new CommandInfo(OnRWCommand) {
+                HelpMessage = "Opens Rival Wings tracker."
             });
             CommandManager.AddHandler(ConfigCommandName, new CommandInfo(OnConfigCommand) {
                 HelpMessage = "Opens config window."
@@ -152,8 +171,6 @@ public sealed class Plugin : IDalamudPlugin {
             DebugMode = true;
 #endif
             DataQueue.QueueDataOperation(Initialize);
-            //PluginInterface.UiBuilder.OpenConfigUi += WindowManager.OpenConfigWindow;
-            //Log.Debug("PvP Stats has started.");
         } catch(Exception e) {
             //remove handlers and release database if we fail to start
             Log!.Error($"Failed to initialize plugin constructor: {e.Message}");
@@ -176,6 +193,7 @@ public sealed class Plugin : IDalamudPlugin {
         Functions?.Dispose();
         CCMatchManager?.Dispose();
         FLMatchManager?.Dispose();
+        RWMatchManager?.Dispose();
         WindowManager?.Dispose();
         Storage?.Dispose();
         DataQueue?.Dispose();
@@ -184,12 +202,20 @@ public sealed class Plugin : IDalamudPlugin {
         Configuration?.Save();
     }
 
+    private void OnSplashCommand(string command, string args) {
+        WindowManager.OpenSplashWindow();
+    }
+
     private void OnCCCommand(string command, string args) {
         WindowManager.OpenCCWindow();
     }
 
     private void OnFLCommand(string command, string args) {
         WindowManager.OpenFLWindow();
+    }
+
+    private void OnRWCommand(string command, string args) {
+        WindowManager.OpenRWWindow();
     }
 
     private void OnConfigCommand(string command, string args) {
@@ -205,6 +231,12 @@ public sealed class Plugin : IDalamudPlugin {
     private async Task Initialize() {
         if(Configuration.EnableDBCachingCC ?? true) {
             CCCache.EnableCaching();
+        }
+        if(Configuration.EnableDBCachingFL ?? true) {
+            FLCache.EnableCaching();
+        }
+        if(Configuration.EnableDBCachingRW ?? true) {
+            RWCache.EnableCaching();
         }
         await MigrationManager.BulkUpdateCCMatchTypes();
         await MigrationManager.BulkCCUpdateValidatePlayerCount();

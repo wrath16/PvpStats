@@ -37,7 +37,7 @@ internal abstract class TrackerWindow : Window {
 
         SizeConstraints = new WindowSizeConstraints {
             MinimumSize = new Vector2(425, 400),
-            MaximumSize = new Vector2(5000, 5000)
+            MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
         Flags |= ImGuiWindowFlags.NoScrollbar;
     }
