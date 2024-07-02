@@ -57,9 +57,9 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
     [Signature("40 55 57 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 48 8B E9", DetourName = nameof(RWMatchEnd10Detour))]
     private readonly Hook<RWMatchEnd10Delegate> _rwMatchEndHook;
 
-    private delegate void MechDeployDelegate(IntPtr p1, IntPtr p2);
-    [Signature("48 89 54 24 ?? 48 89 4C 24 ?? 41 55 41 56 48 81 EC", DetourName = nameof(MechDeployDetour))]
-    private readonly Hook<MechDeployDelegate> _mechDeployHook;
+    //private delegate void MechDeployDelegate(IntPtr p1, IntPtr p2);
+    //[Signature("48 89 54 24 ?? 48 89 4C 24 ?? 41 55 41 56 48 81 EC", DetourName = nameof(MechDeployDetour))]
+    //private readonly Hook<MechDeployDelegate> _mechDeployHook;
 
     //leave duty
     private delegate void LeaveDutyDelegate(byte p1);
@@ -73,13 +73,13 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "ContentsFinderMenu", DutyMenuClose);
         plugin.Log.Debug($"rw director .ctor address: 0x{_rwDirectorCtorHook!.Address:X2}");
         plugin.Log.Debug($"rw match end 10 address: 0x{_rwMatchEndHook!.Address:X2}");
-        plugin.Log.Debug($"rw icd update address: 0x{_mechDeployHook!.Address:X2}");
+        //plugin.Log.Debug($"rw icd update address: 0x{_mechDeployHook!.Address:X2}");
         plugin.Log.Debug($"leave duty address: 0x{_leaveDutyHook!.Address:X2}");
         _rwDirectorCtorHook.Enable();
         _rwMatchEndHook.Enable();
         _leaveDutyHook.Enable();
 #if DEBUG
-        _mechDeployHook.Enable();
+        //_mechDeployHook.Enable();
 #endif
     }
 
@@ -92,7 +92,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         _rwMatchEndHook.Dispose();
         _leaveDutyHook.Dispose();
 #if DEBUG
-        _mechDeployHook.Dispose();
+        //_mechDeployHook.Dispose();
 #endif
         base.Dispose();
     }
@@ -249,6 +249,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         CurrentMatch.PlayerScoreboards = [];
         for(int i = 0; i < results.PlayerCount; i++) {
             var player = results.PlayerSpan[i];
+            //check bounds here...
             //if(player.ClassJobId == 0) {
             //    Plugin.Log.Warning("invalid/missing player result.");
             //    continue;
@@ -339,7 +340,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         Plugin.Log.Debug("rw ICD update detour entered.");
         //Plugin.Functions.CreateByteDump(p2, 0x1000, "MECHDEPLOY");
         //Plugin.Functions.FindValue<ushort>(0, p2, 0x200, 0, true);
-        _mechDeployHook.Original(p1, p2);
+        //_mechDeployHook.Original(p1, p2);
     }
 
     private void LeaveDutyDetour(byte p1) {
@@ -489,7 +490,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             }
 
             //associate player Ids with aliases
-            foreach(PlayerCharacter pc in Plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player).Cast<PlayerCharacter>()) {
+            foreach(IPlayerCharacter pc in Plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player).Cast<IPlayerCharacter>()) {
                 if(!_objIdToPlayer.ContainsKey(pc.GameObjectId)) {
                     try {
                         var worldName = Plugin.DataManager.GetExcelSheet<World>()?.GetRow(pc.HomeWorld.Id)?.Name;

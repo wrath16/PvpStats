@@ -32,8 +32,16 @@ internal class CrystallineConflictMatchManager : IDisposable {
     private readonly Hook<CCMatchEnd101Delegate> _ccMatchEndHook;
 
     private delegate IntPtr CCDirectorCtorDelegate(IntPtr p1, IntPtr p2, IntPtr p3);
-    [Signature("E8 ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 03 48 8D 8B ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 83 ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 83 ?? ?? ?? ?? 48 8D 05", DetourName = nameof(CCDirectorCtorDetour))]
+    //48 89 5C 24 ?? 56 57 41 57 48 83 EC ?? 4C 89 74 24 
+    //48 89 5C 24 ?? 48 89 6C 24 ?? 56 57 41 56 48 83 EC ?? 4C 8B F1 E8
+    [Signature("48 89 5C 24 ?? 56 57 41 57 48 83 EC ?? 4C 89 74 24", DetourName = nameof(CCDirectorCtorDetour))]
     private readonly Hook<CCDirectorCtorDelegate> _ccDirectorCtorHook;
+
+    //E8 ?? ?? ?? ?? 48 8B F8 EB ?? 33 FF 8B C7 
+    //instance content director...
+    private delegate IntPtr InstanceContentDirectorCtorDelegate(IntPtr p1, IntPtr p2, IntPtr p3);
+    [Signature("E8 ?? ?? ?? ?? 48 8B F8 EB ?? 33 FF 8B C7 ", DetourName = nameof(ICDCtorDetour))]
+    private readonly Hook<CCDirectorCtorDelegate> _icdCtorHook;
 
     private static readonly Regex TierRegex = new(@"\D+", RegexOptions.IgnoreCase);
     private static readonly Regex RiserRegex = new(@"\d+", RegexOptions.IgnoreCase);
@@ -48,6 +56,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
         _plugin.Log.Debug($"match end 1 address: 0x{_ccMatchEndHook!.Address.ToString("X2")}");
         _ccDirectorCtorHook.Enable();
         _ccMatchEndHook.Enable();
+        _icdCtorHook.Enable();
     }
 
     public void Dispose() {
@@ -55,6 +64,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
         _plugin.AddonLifecycle.UnregisterListener(OnPvPIntro);
         _ccMatchEndHook.Dispose();
         _ccDirectorCtorHook.Dispose();
+        _icdCtorHook.Dispose();
     }
 
     private IntPtr CCDirectorCtorDetour(IntPtr p1, IntPtr p2, IntPtr p3) {
@@ -92,14 +102,20 @@ internal class CrystallineConflictMatchManager : IDisposable {
         return _ccDirectorCtorHook.Original(p1, p2, p3);
     }
 
+    private IntPtr ICDCtorDetour(IntPtr p1, IntPtr p2, IntPtr p3) {
+        _plugin.Log.Debug("icd ctor detour occurred!");
+        return _icdCtorHook.Original(p1, p2, p3);
+    }
+
     private void CCMatchEnd101Detour(IntPtr p1, IntPtr p2, IntPtr p3, uint p4) {
         _plugin.Log.Debug("Match end detour occurred.");
 #if DEBUG
         _plugin.Functions.FindValue<byte>(0, p2, 0x400, 0, true);
+        _plugin.Functions.CreateByteDump(p2, 0x400, "cc_match_results");
 #endif
         CrystallineConflictResultsPacket resultsPacket;
         unsafe {
-            resultsPacket = *(CrystallineConflictResultsPacket*)(p2 + 0x10);
+            resultsPacket = *(CrystallineConflictResultsPacket*)p2;
         }
         _plugin.DataQueue.QueueDataOperation(async () => {
             if(ProcessMatchResults(resultsPacket)) {
@@ -189,7 +205,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 //abbreviated names
                 if(playerRaw.Contains('.')) {
                     _currentMatch!.NeedsPlayerNameValidation = true;
-                    foreach(PlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
+                    foreach(IPlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
                         //_plugin.Log.Debug($"name: {pc.Name} homeworld {pc.HomeWorld.GameData.Name.ToString()} job: {pc.ClassJob.GameData.NameEnglish}");
                         bool homeWorldMatch = worldRaw.Equals(pc.HomeWorld.GameData?.Name.ToString(), StringComparison.OrdinalIgnoreCase);
                         bool jobMatch = pc.ClassJob.GameData?.NameEnglish.ToString().Equals(translatedJob, StringComparison.OrdinalIgnoreCase) ?? false;
@@ -311,7 +327,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 TimeOnCrystal = TimeSpan.FromSeconds(player.TimeOnCrystal)
             };
             unsafe {
-                playerStats.Player = (PlayerAlias)$"{MemoryService.ReadString(player.PlayerName, 32)} {_plugin.DataManager.GetExcelSheet<World>()?.GetRow(player.WorldId)?.Name}";
+                playerStats.Player = (PlayerAlias)$"{MemoryService.ReadString(player.PlayerName, 32)} {_plugin.DataManager.GetExcelSheet<World>()?.GetRow((uint)player.WorldId)?.Name}";
             }
 
             //add to team

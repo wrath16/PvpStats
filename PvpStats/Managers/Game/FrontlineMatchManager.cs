@@ -31,7 +31,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
 
     //fl director ctor
     private delegate IntPtr FLDirectorCtorDelegate(IntPtr p1, IntPtr p2, IntPtr p3);
-    [Signature("E8 ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 07 48 8D 8F ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 87 ?? ?? ?? ?? 48 8D 05", DetourName = nameof(FLDirectorCtorDetour))]
+    [Signature("48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 48 8B F9 E8 ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? BA", DetourName = nameof(FLDirectorCtorDetour))]
     private readonly Hook<FLDirectorCtorDelegate> _flDirectorCtorHook;
 
     //p1 = director
@@ -257,7 +257,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
         if(!IsMatchInProgress()) {
             return;
         }
-        foreach(PlayerCharacter pc in Plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player).Cast<PlayerCharacter>()) {
+        foreach(IPlayerCharacter pc in Plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player).Cast<IPlayerCharacter>()) {
             try {
                 var battleHigh = 0;
                 foreach(var battleHighLevel in BattleHighStatuses) {

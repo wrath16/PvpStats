@@ -4,6 +4,7 @@ using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Game.InstanceContent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -149,7 +150,7 @@ internal unsafe class DebugWindow : Window {
                     }
 
                     if(ImGui.Button("Print Object Table")) {
-                        foreach(PlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
+                        foreach(IPlayerCharacter pc in _plugin.ObjectTable.Where(o => o. ObjectKind is ObjectKind.Player)) {
                             _plugin.Log.Debug($"0x{pc.GameObjectId.ToString("X2")} {pc.Name}");
                             //_plugin.Log.Debug($"team null? {isPlayerTeam is null} player team? {isPlayerTeam} is p member? {pc.StatusFlags.HasFlag(StatusFlags.PartyMember)} isSelf? {isSelf}");
                         }

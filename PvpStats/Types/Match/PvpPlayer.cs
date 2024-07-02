@@ -7,6 +7,9 @@ public class PvpPlayer : IEquatable<PvpPlayer> {
     public Job? Job { get; set; }
     public uint? ClassJobId { get; set; }
 
+    public ulong? AccountId { get; set; }
+    public ulong? ContentId { get; set; }
+
     public PvpPlayer() { }
 
     public PvpPlayer(PlayerAlias name, Job? job) {

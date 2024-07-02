@@ -110,7 +110,7 @@ internal class AtkNodeService {
             var tNode = node->GetAsAtkTextNode();
             if(tNode != null) {
                 string nodeText = tNode->NodeText.ToString();
-                if(!nodeText.IsNullOrEmpty() && (node->IsVisible || !onlyVisible)) {
+                if(!nodeText.IsNullOrEmpty() && (node->IsVisible() || !onlyVisible)) {
                     _plugin.Log.Debug(string.Format("Visible: {5,-6} ID: {0,-8} type: {1,-6} childCount: {2,-4} parentID: {3,-25} parentType: {4}", node->NodeId, type, childCount, parentNodeIDString, parentNodeTypeString, node->IsVisible));
                     _plugin.Log.Debug($"Text: {tNode->NodeText}");
                 }
@@ -128,7 +128,7 @@ internal class AtkNodeService {
             var component = componentNode->Component;
             var uldManager = component->UldManager;
 
-            if(node->IsVisible || !onlyVisible) {
+            if(node->IsVisible() || !onlyVisible) {
                 for(int i = 0; i < uldManager.NodeListCount; i++) {
                     var childNode = uldManager.NodeList[i];
                     PrintTextNodes(childNode, false);
@@ -138,7 +138,7 @@ internal class AtkNodeService {
 
         //check child nodes
         var child = node->ChildNode;
-        if(child != null || !node->IsVisible && onlyVisible) {
+        if(child != null || !node->IsVisible() && onlyVisible) {
             PrintTextNodes(child, checkSiblings);
         }
 

@@ -41,7 +41,7 @@ internal class GameStateService : IDisposable {
     }
 
     public void PrintAllPlayerObjects() {
-        foreach(PlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
+        foreach(IPlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
             _plugin.Log.Debug($"0x{pc.GameObjectId.ToString("X2")} {pc.Name}");
         }
     }

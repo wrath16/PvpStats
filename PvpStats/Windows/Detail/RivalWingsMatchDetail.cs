@@ -70,7 +70,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             var cursorPosBefore = ImGui.GetCursorPos();
             ImGui.SetCursorPosX(ImGui.GetWindowSize().X / 2 - (250 / 2 + 0f) * ImGuiHelpers.GlobalScale);
             ImGui.SetCursorPosY((ImGui.GetCursorPos().Y + 40f * ImGuiHelpers.GlobalScale));
-            ImGui.Image(Plugin.TextureProvider.GetFromFile(Path.Combine(Plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "cc_logo_full.png")).GetWrapOrEmpty().ImGuiHandle,
+            ImGui.Image(Plugin.TextureProvider.GetFromFile(Path.Combine(Plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "rw_logo.png")).GetWrapOrEmpty().ImGuiHandle,
                 new Vector2(250, 240) * ImGuiHelpers.GlobalScale, Vector2.Zero, Vector2.One, new Vector4(1, 1, 1, 0.1f));
             ImGui.SetCursorPos(cursorPosBefore);
         }

@@ -15,6 +15,7 @@ internal static class TextureHelper {
         { Job.NIN, 62130 },
         { Job.SAM, 62134 },
         { Job.RPR, 62139 },
+        { Job.VPR, 62141 },
         { Job.WHM, 62124 },
         { Job.SCH, 62128 },
         { Job.AST, 62133 },
@@ -25,6 +26,7 @@ internal static class TextureHelper {
         { Job.BLM, 62125 },
         { Job.SMN, 62127 },
         { Job.RDM, 62135 },
+        { Job.PCT, 62142 },
     };
 
     internal static uint GoblinMercIcon => 60976;

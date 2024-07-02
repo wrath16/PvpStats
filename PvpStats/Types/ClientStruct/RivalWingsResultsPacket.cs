@@ -1,5 +1,4 @@
-﻿using FFXIVClientStructs.Interop.Generated;
-using System;
+﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -20,7 +19,8 @@ public unsafe struct RivalWingsResultsPacket {
     [FieldOffset(0x24)] public short Unknown4;                  //sample value: 21064 (0x52,0x48), 16595 (0x40, 0xD3)
     [FieldOffset(0x26)] public short Unknown5;                  //sample value: 115
     [FieldOffset(0x28)] public short PlayerCount;
-    [FieldOffset(0x2A)] private FixedSizeArray48<RivalWingsPlayer> Players;
+    [FieldOffset(0x2A)] private fixed byte Players[0x40 * 48];
+    public unsafe Span<RivalWingsPlayer> PlayerSpan => new(Unsafe.AsPointer(ref Players[0]), 48);
 
     [StructLayout(LayoutKind.Explicit, Size = 0x40)]
     public struct RivalWingsPlayer {
@@ -40,6 +40,4 @@ public unsafe struct RivalWingsResultsPacket {
         [FieldOffset(0x1E)] public byte Ceruleum;
         [FieldOffset(0x20)] public fixed byte PlayerName[32];
     }
-
-    public unsafe Span<RivalWingsPlayer> PlayerSpan => new(Unsafe.AsPointer(ref Players[0]), 48);
 }

@@ -27,7 +27,7 @@ public sealed class Plugin : IDalamudPlugin {
     private const string ConfigCommandName = "/pvpstatsconfig";
 
     //Dalamud services
-    internal DalamudPluginInterface PluginInterface { get; init; }
+    internal IDalamudPluginInterface PluginInterface { get; init; }
     private ICommandManager CommandManager { get; init; }
     internal IDataManager DataManager { get; init; }
     internal IClientState ClientState { get; init; }
@@ -71,7 +71,7 @@ public sealed class Plugin : IDalamudPlugin {
     internal bool DebugMode { get; set; }
 
     public Plugin(
-        DalamudPluginInterface pluginInterface,
+        IDalamudPluginInterface pluginInterface,
         ICommandManager commandManager,
         IDataManager dataManager,
         IClientState clientState,
@@ -138,12 +138,12 @@ public sealed class Plugin : IDalamudPlugin {
                 Log.Error(e, $"failed to initialize cc match manager");
             }
             try {
-                FLMatchManager = new(this);
+                //FLMatchManager = new(this);
             } catch(SignatureException e) {
                 Log.Error(e, $"failed to initialize fl match manager");
             }
             try {
-                RWMatchManager = new(this);
+                //RWMatchManager = new(this);
             } catch(SignatureException e) {
                 Log.Error(e, $"failed to initialize rw match manager");
             }
