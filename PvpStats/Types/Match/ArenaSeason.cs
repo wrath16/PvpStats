@@ -53,12 +53,12 @@ internal class ArenaSeason {
         { 10, new ArenaSeason() {
             SeasonNumber = 10,
             StartDate = new DateTime(2024,1,16),
-            EndDate = new DateTime(2024,3,19),
+            EndDate = new DateTime(2024,3,19,1,0,0,DateTimeKind.Utc),
         } },
         { 11, new ArenaSeason() {
             SeasonNumber = 11,
-            StartDate = new DateTime(2024,3,19),
-            EndDate = new DateTime(2024,7,2),
+            StartDate = new DateTime(2024,3,19,10,0,0,DateTimeKind.Utc),
+            EndDate = new DateTime(2024,6,26,11,0,0,DateTimeKind.Utc),
         } },
     };
 

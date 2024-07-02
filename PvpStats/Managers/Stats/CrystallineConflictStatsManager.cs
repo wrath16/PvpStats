@@ -482,7 +482,7 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
             Players = playerStats.Keys.ToList();
             PlayerStats = playerStats;
             ActiveLinks = activeLinks;
-            Jobs = jobStats.Keys.Where(x => x != Job.VPR && x != Job.PIC).ToList();
+            Jobs = jobStats.Keys.ToList();
             JobStats = jobStats;
             LocalPlayerStats = localPlayerStats;
             LocalPlayerJobStats = localPlayerJobStats.OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
