@@ -138,7 +138,7 @@ public sealed class Plugin : IDalamudPlugin {
                 Log.Error(e, $"failed to initialize cc match manager");
             }
             try {
-                //FLMatchManager = new(this);
+                FLMatchManager = new(this);
             } catch(SignatureException e) {
                 Log.Error(e, $"failed to initialize fl match manager");
             }

@@ -22,7 +22,7 @@ public class FrontlineMatch : PvpMatch {
     public FrontlinePlayer? LocalPlayerTeamMember => Players.FirstOrDefault(x => x.Name.Equals(LocalPlayer));
 
     [BsonIgnore]
-    public FrontlineTeamName? LocalPlayerTeam => Players.First(x => x.Name.Equals(LocalPlayer)).Team;
+    public FrontlineTeamName? LocalPlayerTeam => Players.FirstOrDefault(x => x.Name.Equals(LocalPlayer))?.Team;
     [BsonIgnore]
     public int? Result => LocalPlayerTeam != null ? Teams[(FrontlineTeamName)LocalPlayerTeam].Placement : null;
 

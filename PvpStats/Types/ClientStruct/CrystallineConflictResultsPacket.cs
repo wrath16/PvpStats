@@ -30,7 +30,7 @@ public unsafe struct CrystallineConflictResultsPacket {
     [StructLayout(LayoutKind.Explicit, Size = 0x50)]
     public struct CrystallineConflictPlayer {
         [FieldOffset(0x00)] public ulong AccountId;                          //assumed
-        [FieldOffset(0x08)] public ulong ContentId;                          
+        [FieldOffset(0x08)] public ulong ContentId;
 
         [FieldOffset(0x10)] public int DamageDealt;
         [FieldOffset(0x14)] public int DamageTaken;

@@ -8,7 +8,8 @@ public class CrystallineConflictPlayer {
     public uint? ClassJobId { get; set; }
     public PlayerRank? Rank { get; set; }
     public CrystallineConflictTeamName? Team { get; set; }
-    public ulong? LodestoneId { get; set; }
+    public ulong? AccountId { get; set; }
+    public ulong? ContentId { get; set; }
 
     public CrystallineConflictPlayer() {
         //should never persist

@@ -150,7 +150,7 @@ internal unsafe class DebugWindow : Window {
                     }
 
                     if(ImGui.Button("Print Object Table")) {
-                        foreach(IPlayerCharacter pc in _plugin.ObjectTable.Where(o => o. ObjectKind is ObjectKind.Player)) {
+                        foreach(IPlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
                             _plugin.Log.Debug($"0x{pc.GameObjectId.ToString("X2")} {pc.Name}");
                             //_plugin.Log.Debug($"team null? {isPlayerTeam is null} player team? {isPlayerTeam} is p member? {pc.StatusFlags.HasFlag(StatusFlags.PartyMember)} isSelf? {isSelf}");
                         }
