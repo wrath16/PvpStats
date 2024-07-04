@@ -47,7 +47,9 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
 
     //rw director ctor
     private delegate IntPtr RWDirectorCtorDelegate(IntPtr p1, IntPtr p2, IntPtr p3, IntPtr p4);
-    [Signature("48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 41 56 41 57 48 83 EC ?? 41 8B D9 48 8B F1", DetourName = nameof(RWDirectorCtorDetour))]
+    //48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 41 56 41 57 48 83 EC ?? 41 8B D9 48 8B F1
+    //48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 41 56 41 57 48 83 EC ?? 41 8B D9 48 8B F9 
+    [Signature("48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 41 56 41 57 48 83 EC ?? 41 8B D9 48 8B F9", DetourName = nameof(RWDirectorCtorDetour))]
     private readonly Hook<RWDirectorCtorDelegate> _rwDirectorCtorHook;
 
     //rw match end 10 (occurs ~8 seconds after match ends)
@@ -63,7 +65,9 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
 
     //leave duty
     private delegate void LeaveDutyDelegate(byte p1);
-    [Signature("E8 ?? ?? ?? ?? 48 8B 43 28 B1 01", DetourName = nameof(LeaveDutyDetour))]
+    //E8 ?? ?? ?? ?? 48 8B 43 28 B1 01
+    //E8 ?? ?? ?? ?? 48 8B 43 ?? 41 B2 
+    [Signature("E8 ?? ?? ?? ?? 48 8B 43 ?? 41 B2", DetourName = nameof(LeaveDutyDetour))]
     private readonly Hook<LeaveDutyDelegate> _leaveDutyHook;
 
     public RivalWingsMatchManager(Plugin plugin) : base(plugin) {
@@ -102,12 +106,17 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             Plugin.Log.Debug("rw director .ctor detour entered.");
             var dutyId = Plugin.GameState.GetCurrentDutyId();
             var territoryId = Plugin.ClientState.TerritoryType;
+            var arena = MatchHelper.GetRivalWingsMap(dutyId);
             Plugin.Log.Debug($"Current duty: {dutyId} Current territory: {territoryId}");
             Plugin.DataQueue.QueueDataOperation(() => {
+                //fail safe for new map
+                if(arena != RivalWingsMap.HiddenGorge) {
+                    return;
+                }
                 CurrentMatch = new() {
                     DutyId = dutyId,
                     TerritoryId = territoryId,
-                    Arena = MatchHelper.GetRivalWingsMap(dutyId),
+                    Arena = arena,
                 };
                 Plugin.Log.Information($"starting new match on {CurrentMatch.Arena}");
                 Plugin.DataQueue.QueueDataOperation(async () => {
