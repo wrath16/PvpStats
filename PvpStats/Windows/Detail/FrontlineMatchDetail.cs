@@ -10,6 +10,7 @@ using PvpStats.Types.Player;
 using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
@@ -58,7 +59,8 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
             var cursorPosBefore = ImGui.GetCursorPos();
             ImGui.SetCursorPosX(ImGui.GetWindowSize().X / 2 - (259 / 2 + 0f) * ImGuiHelpers.GlobalScale);
             ImGui.SetCursorPosY((ImGui.GetCursorPos().Y + 40f * ImGuiHelpers.GlobalScale));
-            ImGui.Image(Plugin.WindowManager.FLBannerImage.ImGuiHandle, new Vector2(259, 233) * ImGuiHelpers.GlobalScale, Vector2.Zero, Vector2.One, new Vector4(1, 1, 1, 0.1f));
+            ImGui.Image(Plugin.TextureProvider.GetFromFile(Path.Combine(Plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "fl_logo.png")).GetWrapOrEmpty().ImGuiHandle,
+                new Vector2(259, 233) * ImGuiHelpers.GlobalScale, Vector2.Zero, Vector2.One, new Vector4(1, 1, 1, 0.1f));
             ImGui.SetCursorPos(cursorPosBefore);
         }
         using(var table = ImRaii.Table("header", 3, ImGuiTableFlags.PadOuterX)) {
@@ -340,14 +342,13 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
             ImGui.TextColored(textColor, $"{alliance}");
             if(Match.MaxBattleHigh != null) {
                 if(ImGui.TableNextColumn()) {
-                    if(Match.MaxBattleHigh.TryGetValue(playerAlias, out var peakBattleHigh) && Plugin.WindowManager.BattleHighIcons.TryGetValue(peakBattleHigh, out var icon)) {
-                        //using var style = ImRaii.PushStyle(ImGuiStyleVar.CellPadding, new Vector2(ImGui.GetStyle().CellPadding.X * 0f, 0f * ImGuiHelpers.GlobalScale));
-                        //using var style2 = ImRaii.PushStyle(ImGuiStyleVar.FramePadding, Vector2.Zero);
-                        var size = 16f;
-                        var cursorBefore = ImGui.GetCursorPosY();
-                        //ImGui.SetCursorPosY(cursorBefore + 2f * ImGuiHelpers.GlobalScale);
-                        ImGui.Image(icon?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle, new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), new Vector2(0f), new Vector2(0.88f));
-                        //ImGui.SetCursorPosY(cursorBefore);
+                    if(Match.MaxBattleHigh.TryGetValue(playerAlias, out var peakBattleHigh)) {
+                        var icon = TextureHelper.GetBattleHighIcon((uint)peakBattleHigh);
+                        if(icon != null) {
+                            var size = 16f;
+                            var cursorBefore = ImGui.GetCursorPosY();
+                            ImGui.Image(Plugin.WindowManager.GetTextureHandle((uint)icon), new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), new Vector2(0f), new Vector2(0.88f));
+                        }
                     }
                 }
             }

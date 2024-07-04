@@ -1,19 +1,14 @@
 ﻿using Dalamud.Interface.GameFonts;
-using Dalamud.Interface.Internal;
 using Dalamud.Interface.ManagedFontAtlas;
 using Dalamud.Interface.Windowing;
 using LiteDB;
-using PvpStats.Helpers;
 using PvpStats.Services.DataCache;
 using PvpStats.Types.Match;
-using PvpStats.Types.Player;
 using PvpStats.Windows;
 using PvpStats.Windows.Detail;
 using PvpStats.Windows.Tracker;
 using System;
-using System.Collections.Generic;
 using System.Data;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -31,78 +26,11 @@ internal class WindowManager : IDisposable {
     internal DebugWindow? DebugWindow { get; private set; }
 #endif
 
-    //fallback icon for missing icons/textures
-    internal IDalamudTextureWrap Icon0 { get; private set; }
-
-    internal readonly Dictionary<Job, IDalamudTextureWrap?> JobIcons = new();
-    internal IDalamudTextureWrap CCBannerImage { get; private set; }
-    internal IDalamudTextureWrap FLBannerImage { get; private set; }
-    internal IDalamudTextureWrap RWBannerImage { get; private set; }
-    internal IDalamudTextureWrap? RWSuppliesTexture { get; private set; }
-    internal IDalamudTextureWrap? RWTeamIconTexture { get; private set; }
-    internal IDalamudTextureWrap? GoblinMercIcon { get; private set; }
-    internal IDalamudTextureWrap? TrainIcon { get; private set; }
-    internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> CoreIcons = [];
-    internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> Tower1Icons = [];
-    internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> Tower2Icons = [];
-    internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> ChaserIcons = [];
-    internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> OppressorIcons = [];
-    internal readonly Dictionary<RivalWingsTeamName, IDalamudTextureWrap?> JusticeIcons = [];
-    internal readonly Dictionary<int, IDalamudTextureWrap?> SoaringIcons = [];
-
-    internal readonly Dictionary<FrontlineTeamName, IDalamudTextureWrap?> FrontlineTeamIcons = [];
-    internal readonly Dictionary<int, IDalamudTextureWrap?> BattleHighIcons = [];
-
     internal IFontHandle LargeFont { get; private set; }
 
     internal WindowManager(Plugin plugin) {
         _plugin = plugin;
         WindowSystem = new("PvP Stats");
-
-        Icon0 = _plugin.TextureProvider.GetIcon(0)!;
-
-        foreach(var icon in PlayerJobHelper.JobIcons) {
-            JobIcons.Add(icon.Key, _plugin.TextureProvider.GetIcon(icon.Value));
-        }
-        //var rwTextureFile = _plugin.DataManager.GetFile("ui/uld/PVPSimulationHeader2_hr1.tex") as TexFile;
-        //RWSuppliesTexture = _plugin.TextureProvider.GetTexture(rwTextureFile);
-        RWSuppliesTexture = _plugin.TextureProvider.GetTextureFromGame("ui/uld/PVPSimulationHeader2_hr1.tex");
-        RWTeamIconTexture = _plugin.TextureProvider.GetTextureFromGame("ui/uld/PVPSimulationResult_hr1.tex");
-        GoblinMercIcon = _plugin.TextureProvider.GetIcon(60976);
-        TrainIcon = _plugin.TextureProvider.GetIcon(60980);
-        CoreIcons.Add(RivalWingsTeamName.Falcons, _plugin.TextureProvider.GetIcon(60947));
-        CoreIcons.Add(RivalWingsTeamName.Ravens, _plugin.TextureProvider.GetIcon(60948));
-        Tower1Icons.Add(RivalWingsTeamName.Falcons, _plugin.TextureProvider.GetIcon(60945));
-        Tower1Icons.Add(RivalWingsTeamName.Ravens, _plugin.TextureProvider.GetIcon(60946));
-        Tower2Icons.Add(RivalWingsTeamName.Falcons, _plugin.TextureProvider.GetIcon(60956));
-        Tower2Icons.Add(RivalWingsTeamName.Ravens, _plugin.TextureProvider.GetIcon(60957));
-        ChaserIcons.Add(RivalWingsTeamName.Unknown, _plugin.TextureProvider.GetIcon(60666));
-        ChaserIcons.Add(RivalWingsTeamName.Falcons, _plugin.TextureProvider.GetIcon(60939));
-        ChaserIcons.Add(RivalWingsTeamName.Ravens, _plugin.TextureProvider.GetIcon(60942));
-        OppressorIcons.Add(RivalWingsTeamName.Unknown, _plugin.TextureProvider.GetIcon(60667));
-        OppressorIcons.Add(RivalWingsTeamName.Falcons, _plugin.TextureProvider.GetIcon(60940));
-        OppressorIcons.Add(RivalWingsTeamName.Ravens, _plugin.TextureProvider.GetIcon(60943));
-        JusticeIcons.Add(RivalWingsTeamName.Unknown, _plugin.TextureProvider.GetIcon(60668));
-        JusticeIcons.Add(RivalWingsTeamName.Falcons, _plugin.TextureProvider.GetIcon(60941));
-        JusticeIcons.Add(RivalWingsTeamName.Ravens, _plugin.TextureProvider.GetIcon(60944));
-        for(int i = 1; i <= 19; i++) {
-            SoaringIcons.Add(i, _plugin.TextureProvider.GetIcon(19181 + (uint)i - 1));
-        }
-        SoaringIcons.Add(20, _plugin.TextureProvider.GetIcon(14845));
-
-        BattleHighIcons.Add(1, _plugin.TextureProvider.GetIcon(61483));
-        BattleHighIcons.Add(2, _plugin.TextureProvider.GetIcon(61484));
-        BattleHighIcons.Add(3, _plugin.TextureProvider.GetIcon(61485));
-        BattleHighIcons.Add(4, _plugin.TextureProvider.GetIcon(61486));
-        BattleHighIcons.Add(5, _plugin.TextureProvider.GetIcon(61487));
-
-        FrontlineTeamIcons.Add(FrontlineTeamName.Maelstrom, _plugin.TextureProvider.GetIcon(61526));
-        FrontlineTeamIcons.Add(FrontlineTeamName.Adders, _plugin.TextureProvider.GetIcon(61527));
-        FrontlineTeamIcons.Add(FrontlineTeamName.Flames, _plugin.TextureProvider.GetIcon(61528));
-
-        CCBannerImage = _plugin.PluginInterface.UiBuilder.LoadImage(Path.Combine(_plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "cc_logo_full.png"));
-        RWBannerImage = _plugin.PluginInterface.UiBuilder.LoadImage(Path.Combine(_plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "rw_logo.png"));
-        FLBannerImage = _plugin.PluginInterface.UiBuilder.LoadImage(Path.Combine(_plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "fl_logo.png"));
 
         CCTrackerWindow = new(plugin);
         FLTrackerWindow = new(plugin);
@@ -134,11 +62,6 @@ internal class WindowManager : IDisposable {
         WindowSystem.RemoveAllWindows();
         _plugin.PluginInterface.UiBuilder.Draw -= DrawUI;
         _plugin.PluginInterface.UiBuilder.OpenConfigUi -= OpenConfigWindow;
-        CCBannerImage.Dispose();
-        RWBannerImage.Dispose();
-        FLBannerImage.Dispose();
-        //GoblinMercIcon?.Dispose();
-        //RWSuppliesTexture?.Dispose();
 
         _plugin.ClientState.Login -= OnLogin;
     }
@@ -286,5 +209,13 @@ internal class WindowManager : IDisposable {
 
     public async Task RefreshRWWindow() {
         await RWTrackerWindow.Refresh();
+    }
+
+    public nint GetTextureHandle(uint iconId) {
+        return _plugin.TextureProvider.GetFromGameIcon(iconId).GetWrapOrEmpty().ImGuiHandle;
+    }
+
+    public nint GetTextureHandle(string path) {
+        return _plugin.TextureProvider.GetFromGame(path).GetWrapOrEmpty().ImGuiHandle;
     }
 }

@@ -24,6 +24,23 @@ internal class StorageService {
         _plugin = plugin;
         Database = new LiteDatabase(path);
 
+        //if(Database.UserVersion <= 0) {
+        //    //foreach(var x in GetCCMatches().Find("Teams")) {
+        //    //    foreach(var y in x.Teams) {
+        //    //        foreach(var z in y.Value.Players) {
+        //    //        }
+        //    //    }
+        //    //}
+
+        //    var x = Database.GetCollection(CCTable);
+        //    foreach(var doc in x.FindAll()) {
+        //        foreach(var team in doc["Teams"].AsDocument) {
+        //        }
+        //    }
+
+        //    //Database.UserVersion = 1;
+        //}
+
         //set mapper properties
         BsonMapper.Global.EmptyStringToNull = false;
 

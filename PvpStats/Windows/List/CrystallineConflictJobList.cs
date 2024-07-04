@@ -117,6 +117,7 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
                     });
                 });
             }
+            ImGuiHelper.WrappedTooltip("Copy CSV to clipboard");
         }
     }
 

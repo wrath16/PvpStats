@@ -31,19 +31,22 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
 
     //fl director ctor
     private delegate IntPtr FLDirectorCtorDelegate(IntPtr p1, IntPtr p2, IntPtr p3);
-    [Signature("E8 ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 07 48 8D 8F ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 87 ?? ?? ?? ?? 48 8D 05", DetourName = nameof(FLDirectorCtorDetour))]
+    [Signature("48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 48 8B F9 E8 ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? BA", DetourName = nameof(FLDirectorCtorDetour))]
     private readonly Hook<FLDirectorCtorDelegate> _flDirectorCtorHook;
 
     //p1 = director
     //p2 = data packet
-    private delegate void FLMatchEnd100Delegate(IntPtr p1, IntPtr p2);
-    [Signature("4C 8B DC 55 53 56 41 56 49 8D AB ?? ?? ?? ?? 48 81 EC ?? ?? ?? ?? 48 8B 05", DetourName = nameof(FLMatchEnd100Detour))]
-    private readonly Hook<FLMatchEnd100Delegate> _flMatchEndHook;
+    private delegate void FLMatchEnd10Delegate(IntPtr p1, IntPtr p2);
+    //4C 8B DC 55 53 56 41 56 49 8D AB ?? ?? ?? ?? 48 81 EC ?? ?? ?? ?? 48 8B 05
+    //4C 8B DC 55 56 57 41 55 49 8D AB ?? ?? ?? ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 45 
+    [Signature("4C 8B DC 55 56 57 41 55 49 8D AB ?? ?? ?? ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 45 ", DetourName = nameof(FLMatchEnd10Detour))]
+    private readonly Hook<FLMatchEnd10Delegate> _flMatchEndHook;
 
     //p1 = data packet
     private delegate void FlPlayerPayload10Delegate(IntPtr p1);
-    //40 53 48 83 EC ?? 48 8B D9 E8 ?? ?? ?? ?? 48 8B C8 E8 ?? ?? ?? ?? 4C 8B C0 48 85 C0
-    [Signature("40 53 48 83 EC ?? 48 8B D9 E8 ?? ?? ?? ?? 48 8B C8 E8 ?? ?? ?? ?? 4C 8B C0 48 85 C0", DetourName = nameof(FLPlayerPayload10Detour))]
+    //40 53 48 83 EC ?? 48 8B D9 E8 ?? ?? ?? ?? 48 8B C8 E8 ?? ?? ?? ?? 4C 8B C0 48 85 C0 
+    //40 53 48 83 EC ?? 48 8B D9 E8 ?? ?? ?? ?? 48 8B C8 E8 ?? ?? ?? ?? 4C 8B C0 48 85 C0 74 
+    [Signature("40 53 48 83 EC ?? 48 8B D9 E8 ?? ?? ?? ?? 48 8B C8 E8 ?? ?? ?? ?? 4C 8B C0 48 85 C0 74", DetourName = nameof(FLPlayerPayload10Detour))]
     private readonly Hook<FlPlayerPayload10Delegate> _flPlayerPayloadHook;
 
     public FrontlineMatchManager(Plugin plugin) : base(plugin) {
@@ -97,10 +100,12 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
         return _flDirectorCtorHook.Original(p1, p2, p3);
     }
 
-    private void FLMatchEnd100Detour(IntPtr p1, IntPtr p2) {
-        Plugin.Log.Debug("Fl match end 100 detour entered.");
+    private void FLMatchEnd10Detour(IntPtr p1, IntPtr p2) {
+        Plugin.Log.Debug("Fl match end 10 detour entered.");
         try {
-
+#if DEBUG
+            Plugin.Functions.CreateByteDump(p2, 0x400, "fl_match_results");
+#endif
             FrontlineResultsPacket resultsPacket;
             unsafe {
                 resultsPacket = *(FrontlineResultsPacket*)p2;
@@ -130,7 +135,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
             //printTeamStats(resultsPacket.AdderStats, "Adders");
             //printTeamStats(resultsPacket.FlameStats, "Flames");
         } catch(Exception e) {
-            Plugin.Log.Error(e, $"Error in FLMatchEnd100Detour");
+            Plugin.Log.Error(e, $"Error in FLMatchEnd10Detour");
         }
         _flMatchEndHook.Original(p1, p2);
     }
@@ -174,6 +179,9 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
     private void FLPlayerPayload10Detour(IntPtr p1) {
         Plugin.Log.Debug("Fl player payload 10 detour entered.");
         try {
+#if DEBUG
+            Plugin.Functions.CreateByteDump(p1, 0x400, "fl_player_payload");
+#endif
             FrontlinePlayerResultsPacket resultsPacket;
             unsafe {
                 resultsPacket = *(FrontlinePlayerResultsPacket*)p1;
@@ -218,6 +226,8 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
         FrontlinePlayer newPlayer = new(playerName, job, (FrontlineTeamName)results.Team) {
             ClassJobId = results.ClassJobId,
             Alliance = results.Alliance % 3,
+            AccountId = results.AccountId,
+            ContentId = results.ContentId,
         };
         FrontlineScoreboard newScoreboard = new() {
             Kills = results.Kills,
@@ -257,7 +267,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
         if(!IsMatchInProgress()) {
             return;
         }
-        foreach(PlayerCharacter pc in Plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player).Cast<PlayerCharacter>()) {
+        foreach(IPlayerCharacter pc in Plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player).Cast<IPlayerCharacter>()) {
             try {
                 var battleHigh = 0;
                 foreach(var battleHighLevel in BattleHighStatuses) {

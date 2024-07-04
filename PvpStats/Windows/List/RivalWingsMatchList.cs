@@ -1,4 +1,7 @@
-﻿using Dalamud.Interface.Utility;
+﻿using Dalamud.Interface;
+using Dalamud.Interface.Colors;
+using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PvpStats.Helpers;
 using PvpStats.Types.Match;
@@ -6,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
 internal class RivalWingsMatchList : MatchList<RivalWingsMatch> {
@@ -21,6 +25,35 @@ internal class RivalWingsMatchList : MatchList<RivalWingsMatch> {
 
     public RivalWingsMatchList(Plugin plugin, SemaphoreSlim? interlock = null) : base(plugin, plugin.RWCache, interlock) {
     }
+    protected override void PreChildDraw() {
+        ImGuiHelper.CSVButton(() => {
+            _plugin.DataQueue.QueueDataOperation(() => {
+                ListCSV = CSVHeader();
+                foreach(var row in DataModel) {
+                    ListCSV += CSVRow(row);
+                }
+                Task.Run(() => {
+                    ImGui.SetClipboardText(ListCSV);
+                });
+            });
+        });
+        ImGui.SameLine();
+        using(var font = ImRaii.PushFont(UiBuilder.IconFont)) {
+            if(ImGui.Button($"{FontAwesomeIcon.Ban.ToIconString()}##CloseAllMatches")) {
+                _plugin.DataQueue.QueueDataOperation(_plugin.WindowManager.CloseAllMatchWindows);
+            }
+        }
+        ImGuiHelper.WrappedTooltip("Close all open match windows");
+        ImGui.SameLine();
+        ImGui.TextColored(ImGuiColors.DalamudRed, "Rival Wings match tracking temporarily disabled!");
+        ImGuiHelper.HelpMarker("Due to the game-breaking changes introduced in 7.0 and a current lack of ability to test the game mode, the Rival Wings match tracker has been disabled for the time being.");
+        ImGui.SameLine();
+        using(var font = ImRaii.PushFont(UiBuilder.IconFont)) {
+            ImGuiHelper.RightAlignCursor(FontAwesomeIcon.Heart.ToIconString());
+            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetStyle().ItemSpacing.X);
+        }
+        ImGuiHelper.DonateButton();
+    }
 
     public override void DrawListItem(RivalWingsMatch item) {
         ImGui.SameLine(0f * ImGuiHelpers.GlobalScale);
@@ -33,9 +66,9 @@ internal class RivalWingsMatchList : MatchList<RivalWingsMatch> {
         ImGui.TextUnformatted(MatchHelper.GetArenaName(item.Arena));
 
         ImGui.TableNextColumn();
-        var localPlayerJob = item.LocalPlayerTeamMember!.Job;
-        ImGuiHelper.CenterAlignCursor(localPlayerJob.ToString() ?? "");
-        ImGui.TextColored(_plugin.Configuration.GetJobColor(localPlayerJob), localPlayerJob.ToString());
+        var localPlayerJob = item.LocalPlayerTeamMember?.Job;
+        ImGuiHelper.CenterAlignCursor(localPlayerJob?.ToString() ?? "");
+        ImGui.TextColored(_plugin.Configuration.GetJobColor(localPlayerJob), localPlayerJob?.ToString());
 
         ImGui.TableNextColumn();
         var teamColor = _plugin.Configuration.GetRivalWingsTeamColor(item.LocalPlayerTeam);

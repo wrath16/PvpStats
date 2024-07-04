@@ -10,6 +10,7 @@ using PvpStats.Types.Player;
 using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
@@ -69,7 +70,8 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             var cursorPosBefore = ImGui.GetCursorPos();
             ImGui.SetCursorPosX(ImGui.GetWindowSize().X / 2 - (250 / 2 + 0f) * ImGuiHelpers.GlobalScale);
             ImGui.SetCursorPosY((ImGui.GetCursorPos().Y + 40f * ImGuiHelpers.GlobalScale));
-            ImGui.Image(Plugin.WindowManager.RWBannerImage.ImGuiHandle, new Vector2(250, 240) * ImGuiHelpers.GlobalScale, Vector2.Zero, Vector2.One, new Vector4(1, 1, 1, 0.1f));
+            ImGui.Image(Plugin.TextureProvider.GetFromFile(Path.Combine(Plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "rw_logo.png")).GetWrapOrEmpty().ImGuiHandle,
+                new Vector2(250, 240) * ImGuiHelpers.GlobalScale, Vector2.Zero, Vector2.One, new Vector4(1, 1, 1, 0.1f));
             ImGui.SetCursorPos(cursorPosBefore);
         }
 
@@ -245,7 +247,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
 
             var drawIcon = (float size) => {
                 ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().X / 2 - size / 2 * ImGuiHelpers.GlobalScale);
-                var image = Plugin.WindowManager.CoreIcons[team]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle;
+                var image = Plugin.WindowManager.GetTextureHandle(TextureHelper.CoreIcons[team]);
                 ImGui.Image(image, new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), new Vector2(0f), new Vector2(1f));
             };
             var drawText = (RivalWingsStructure structure) => {
@@ -275,12 +277,12 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             var drawIcon = (RivalWingsStructure structure, float size) => {
                 ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().X / 2 - size / 2 * ImGuiHelpers.GlobalScale);
                 var image = structure switch {
-                    RivalWingsStructure.Core => Plugin.WindowManager.CoreIcons[team]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle,
-                    RivalWingsStructure.Tower1 => Plugin.WindowManager.Tower1Icons[team]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle,
-                    RivalWingsStructure.Tower2 => Plugin.WindowManager.Tower2Icons[team]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle,
-                    _ => Plugin.WindowManager.ChaserIcons[RivalWingsTeamName.Unknown]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle,
+                    RivalWingsStructure.Core => TextureHelper.CoreIcons[team],
+                    RivalWingsStructure.Tower1 => TextureHelper.Tower1Icons[team],
+                    RivalWingsStructure.Tower2 => TextureHelper.Tower2Icons[team],
+                    _ => TextureHelper.CoreIcons[team],
                 };
-                ImGui.Image(image, new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), new Vector2(0.1f), new Vector2(0.9f));
+                ImGui.Image(Plugin.WindowManager.GetTextureHandle(image), new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), new Vector2(0.1f), new Vector2(0.9f));
             };
             var drawText = (RivalWingsStructure structure) => {
                 string text = Match.StructureHealth[team][structure].ToString();
@@ -315,12 +317,12 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             var drawIcon = (RivalWingsMech mech, float size) => {
                 ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().X / 2 - size / 2 * ImGuiHelpers.GlobalScale);
                 var image = mech switch {
-                    RivalWingsMech.Chaser => Plugin.WindowManager.ChaserIcons[team]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle,
-                    RivalWingsMech.Oppressor => Plugin.WindowManager.OppressorIcons[team]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle,
-                    RivalWingsMech.Justice => Plugin.WindowManager.JusticeIcons[team]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle,
-                    _ => Plugin.WindowManager.ChaserIcons[RivalWingsTeamName.Unknown]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle,
+                    RivalWingsMech.Chaser => TextureHelper.ChaserIcons[team],
+                    RivalWingsMech.Oppressor => TextureHelper.OppressorIcons[team],
+                    RivalWingsMech.Justice => TextureHelper.JusticeIcons[team],
+                    _ => TextureHelper.ChaserIcons[team],
                 };
-                ImGui.Image(image, new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), new Vector2(0.1f), new Vector2(0.9f));
+                ImGui.Image(Plugin.WindowManager.GetTextureHandle(image), new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), new Vector2(0.1f), new Vector2(0.9f));
             };
             var drawText = (RivalWingsMech mech) => {
                 var uptime = mechTime[mech] / Match.MatchDuration.Value.TotalSeconds;
@@ -374,7 +376,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 ImGui.TableNextColumn();
                 drawText(Match.Mercs[RivalWingsTeamName.Falcons].ToString());
                 ImGui.TableNextColumn();
-                drawImage(Plugin.WindowManager.GoblinMercIcon?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle, 25f);
+                drawImage(Plugin.WindowManager.GetTextureHandle(TextureHelper.GoblinMercIcon), 25f);
                 ImGuiHelper.WrappedTooltip("Goblin Mercenary");
                 ImGui.TableNextColumn();
                 drawText(Match.Mercs[RivalWingsTeamName.Ravens].ToString());
@@ -418,7 +420,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 uv1 = new Vector2(0.1f, 1 / 3f);
                 break;
         };
-        ImGui.Image(Plugin.WindowManager.RWSuppliesTexture?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle, new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), uv0, uv1);
+        ImGui.Image(Plugin.WindowManager.GetTextureHandle(TextureHelper.RWSuppliesTexture), new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), uv0, uv1);
         ImGuiHelper.WrappedTooltip(MatchHelper.GetSuppliesName(supplies));
     }
 
@@ -715,9 +717,11 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 ImGui.TableNextColumn();
                 if(allianceStats.SoaringStacks > 0) {
                     var size = 40f;
-                    var handle = Plugin.WindowManager.SoaringIcons[allianceStats.SoaringStacks]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle;
-                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 10f * ImGuiHelpers.GlobalScale);
-                    ImGui.Image(handle, new Vector2(size * ImGuiHelpers.GlobalScale * 0.75f, size * ImGuiHelpers.GlobalScale), new Vector2(0f), new Vector2(1));
+                    var icon = TextureHelper.GetSoaringIcon((uint)allianceStats.SoaringStacks);
+                    if(icon != null) {
+                        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 10f * ImGuiHelpers.GlobalScale);
+                        ImGui.Image(Plugin.WindowManager.GetTextureHandle((uint)icon), new Vector2(size * ImGuiHelpers.GlobalScale * 0.75f, size * ImGuiHelpers.GlobalScale), new Vector2(0f), new Vector2(1));
+                    }
                 }
                 //ImGui.Image(Plugin.WindowManager.SoaringIcons[allianceStats.SoaringStacks].ImGuiHandle, new Vector2(25f * ImGuiHelpers.GlobalScale, 25f * ImGuiHelpers.GlobalScale));
                 //ImGui.TableNextColumn();

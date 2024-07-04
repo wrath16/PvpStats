@@ -31,7 +31,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
     private bool _matchEnded;
     private bool _resultPayloadReceived;
 
-    private Dictionary<uint, PlayerAlias> _objIdToPlayer = [];
+    private Dictionary<ulong, PlayerAlias> _objIdToPlayer = [];
     private Dictionary<RivalWingsTeamName, Dictionary<RivalWingsMech, double>> _mechTime = [];
     private Dictionary<RivalWingsTeamName, Dictionary<RivalWingsSupplies, int>> _midCounts = [];
     private Dictionary<RivalWingsTeamName, int> _mercCounts = [];
@@ -47,7 +47,9 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
 
     //rw director ctor
     private delegate IntPtr RWDirectorCtorDelegate(IntPtr p1, IntPtr p2, IntPtr p3, IntPtr p4);
-    [Signature("48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 41 56 41 57 48 83 EC ?? 41 8B D9 48 8B F1", DetourName = nameof(RWDirectorCtorDetour))]
+    //48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 41 56 41 57 48 83 EC ?? 41 8B D9 48 8B F1
+    //48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 41 56 41 57 48 83 EC ?? 41 8B D9 48 8B F9 
+    [Signature("48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 41 56 41 57 48 83 EC ?? 41 8B D9 48 8B F9", DetourName = nameof(RWDirectorCtorDetour))]
     private readonly Hook<RWDirectorCtorDelegate> _rwDirectorCtorHook;
 
     //rw match end 10 (occurs ~8 seconds after match ends)
@@ -57,13 +59,15 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
     [Signature("40 55 57 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 48 8B E9", DetourName = nameof(RWMatchEnd10Detour))]
     private readonly Hook<RWMatchEnd10Delegate> _rwMatchEndHook;
 
-    private delegate void MechDeployDelegate(IntPtr p1, IntPtr p2);
-    [Signature("48 89 54 24 ?? 48 89 4C 24 ?? 41 55 41 56 48 81 EC", DetourName = nameof(MechDeployDetour))]
-    private readonly Hook<MechDeployDelegate> _mechDeployHook;
+    //private delegate void MechDeployDelegate(IntPtr p1, IntPtr p2);
+    //[Signature("48 89 54 24 ?? 48 89 4C 24 ?? 41 55 41 56 48 81 EC", DetourName = nameof(MechDeployDetour))]
+    //private readonly Hook<MechDeployDelegate> _mechDeployHook;
 
     //leave duty
     private delegate void LeaveDutyDelegate(byte p1);
-    [Signature("E8 ?? ?? ?? ?? 48 8B 43 28 B1 01", DetourName = nameof(LeaveDutyDetour))]
+    //E8 ?? ?? ?? ?? 48 8B 43 28 B1 01
+    //E8 ?? ?? ?? ?? 48 8B 43 ?? 41 B2 
+    [Signature("E8 ?? ?? ?? ?? 48 8B 43 ?? 41 B2", DetourName = nameof(LeaveDutyDetour))]
     private readonly Hook<LeaveDutyDelegate> _leaveDutyHook;
 
     public RivalWingsMatchManager(Plugin plugin) : base(plugin) {
@@ -73,13 +77,13 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "ContentsFinderMenu", DutyMenuClose);
         plugin.Log.Debug($"rw director .ctor address: 0x{_rwDirectorCtorHook!.Address:X2}");
         plugin.Log.Debug($"rw match end 10 address: 0x{_rwMatchEndHook!.Address:X2}");
-        plugin.Log.Debug($"rw icd update address: 0x{_mechDeployHook!.Address:X2}");
+        //plugin.Log.Debug($"rw icd update address: 0x{_mechDeployHook!.Address:X2}");
         plugin.Log.Debug($"leave duty address: 0x{_leaveDutyHook!.Address:X2}");
         _rwDirectorCtorHook.Enable();
         _rwMatchEndHook.Enable();
         _leaveDutyHook.Enable();
 #if DEBUG
-        _mechDeployHook.Enable();
+        //_mechDeployHook.Enable();
 #endif
     }
 
@@ -92,7 +96,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         _rwMatchEndHook.Dispose();
         _leaveDutyHook.Dispose();
 #if DEBUG
-        _mechDeployHook.Dispose();
+        //_mechDeployHook.Dispose();
 #endif
         base.Dispose();
     }
@@ -102,12 +106,17 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             Plugin.Log.Debug("rw director .ctor detour entered.");
             var dutyId = Plugin.GameState.GetCurrentDutyId();
             var territoryId = Plugin.ClientState.TerritoryType;
+            var arena = MatchHelper.GetRivalWingsMap(dutyId);
             Plugin.Log.Debug($"Current duty: {dutyId} Current territory: {territoryId}");
             Plugin.DataQueue.QueueDataOperation(() => {
+                //fail safe for new map
+                if(arena != RivalWingsMap.HiddenGorge) {
+                    return;
+                }
                 CurrentMatch = new() {
                     DutyId = dutyId,
                     TerritoryId = territoryId,
-                    Arena = MatchHelper.GetRivalWingsMap(dutyId),
+                    Arena = arena,
                 };
                 Plugin.Log.Information($"starting new match on {CurrentMatch.Arena}");
                 Plugin.DataQueue.QueueDataOperation(async () => {
@@ -249,6 +258,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         CurrentMatch.PlayerScoreboards = [];
         for(int i = 0; i < results.PlayerCount; i++) {
             var player = results.PlayerSpan[i];
+            //check bounds here...
             //if(player.ClassJobId == 0) {
             //    Plugin.Log.Warning("invalid/missing player result.");
             //    continue;
@@ -339,7 +349,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         Plugin.Log.Debug("rw ICD update detour entered.");
         //Plugin.Functions.CreateByteDump(p2, 0x1000, "MECHDEPLOY");
         //Plugin.Functions.FindValue<ushort>(0, p2, 0x200, 0, true);
-        _mechDeployHook.Original(p1, p2);
+        //_mechDeployHook.Original(p1, p2);
     }
 
     private void LeaveDutyDetour(byte p1) {
@@ -383,20 +393,20 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                     _mouseOutEvent = Plugin.AddonEventManager.AddEvent((nint)addon, (nint)targetNode, AddonEventType.MouseOut, TooltipHandler);
                     _leaveDutyButton = (IntPtr)buttonNode;
                     _leaveDutyButtonOwnerNode = (IntPtr)targetNode;
-                    _addonId = addon->ID;
+                    _addonId = addon->Id;
                 }
             }
         }
     }
 
     private unsafe void TooltipHandler(AddonEventType type, IntPtr addon, IntPtr node) {
-        var addonId = ((AtkUnitBase*)addon)->ID;
+        var addonId = ((AtkUnitBase*)addon)->Id;
         switch(type) {
             case AddonEventType.MouseOver:
-                AtkStage.GetSingleton()->TooltipManager.ShowTooltip(addonId, (AtkResNode*)node, "Disabled by PvP Tracker until scoreboard payload received!");
+                AtkStage.Instance()->TooltipManager.ShowTooltip(addonId, (AtkResNode*)node, "Disabled by PvP Tracker until scoreboard payload received!");
                 break;
             case AddonEventType.MouseOut:
-                AtkStage.GetSingleton()->TooltipManager.HideTooltip(addonId);
+                AtkStage.Instance()->TooltipManager.HideTooltip(addonId);
                 break;
         }
     }
@@ -427,7 +437,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             ((AtkComponentNode*)_leaveDutyButtonOwnerNode)->AtkResNode.NodeFlags &= ~(NodeFlags.HasCollision | NodeFlags.EmitsEvents | NodeFlags.RespondToMouse);
         }
         if(_addonId != 0) {
-            AtkStage.GetSingleton()->TooltipManager.HideTooltip(_addonId);
+            AtkStage.Instance()->TooltipManager.HideTooltip(_addonId);
         }
     }
 
@@ -489,12 +499,12 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             }
 
             //associate player Ids with aliases
-            foreach(PlayerCharacter pc in Plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player).Cast<PlayerCharacter>()) {
-                if(!_objIdToPlayer.ContainsKey(pc.ObjectId)) {
+            foreach(IPlayerCharacter pc in Plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player).Cast<IPlayerCharacter>()) {
+                if(!_objIdToPlayer.ContainsKey(pc.GameObjectId)) {
                     try {
                         var worldName = Plugin.DataManager.GetExcelSheet<World>()?.GetRow(pc.HomeWorld.Id)?.Name;
                         var player = (PlayerAlias)$"{pc.Name} {worldName}";
-                        _objIdToPlayer.Add(pc.ObjectId, player);
+                        _objIdToPlayer.Add(pc.GameObjectId, player);
                     } catch {
                         //sometime encounter players with no object id...
                     }

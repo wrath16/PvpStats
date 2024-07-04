@@ -13,7 +13,7 @@ internal class AtkNodeService {
     }
 
     internal static unsafe AtkResNode* GetNodeByIDChain(string addon, params uint[] ids) {
-        AtkUnitBase* addonNode = AtkStage.GetSingleton()->RaptureAtkUnitManager->GetAddonByName(addon);
+        AtkUnitBase* addonNode = AtkStage.Instance()->RaptureAtkUnitManager->GetAddonByName(addon);
         if(addonNode == null || ids.Length <= 0) {
             return null;
         }
@@ -32,7 +32,7 @@ internal class AtkNodeService {
             return null;
         }
 
-        if(node->NodeID == ids[0]) {
+        if(node->NodeId == ids[0]) {
             if(ids.Length == 1) {
                 return node;
             }
@@ -68,10 +68,10 @@ internal class AtkNodeService {
     }
 
     internal unsafe void PrintTextNodes(string addon) {
-        AtkUnitBase* addonNode = AtkStage.GetSingleton()->RaptureAtkUnitManager->GetAddonByName(addon);
+        AtkUnitBase* addonNode = AtkStage.Instance()->RaptureAtkUnitManager->GetAddonByName(addon);
         if(addonNode != null) {
             //Log.Debug($"addon name: {Marshal.PtrToStringUTF8((nint)addonNode->Name)} ptr: {string.Format("0x{0:X8}", new IntPtr(addonNode).ToString())}");
-            _plugin.Log.Debug($"addon name: {Marshal.PtrToStringUTF8((nint)addonNode->Name)} ptr: 0x{new nint(addonNode).ToString("X8")}");
+            _plugin.Log.Debug($"addon name: {addonNode->NameString} ptr: 0x{new nint(addonNode).ToString("X8")}");
             PrintTextNodes(addonNode->RootNode);
         } else {
             _plugin.Log.Debug($"{addon} is null!");
@@ -89,12 +89,12 @@ internal class AtkNodeService {
         int type = (int)node->Type;
         int childCount = node->ChildCount;
         var parentNode = node->ParentNode;
-        uint parentNodeId = parentNode != null ? parentNode->NodeID : 0;
+        uint parentNodeId = parentNode != null ? parentNode->NodeId : 0;
 
         string parentNodeIDString = "";
         string parentNodeTypeString = "";
         while(parentNode != null) {
-            parentNodeIDString += parentNode->NodeID;
+            parentNodeIDString += parentNode->NodeId;
             parentNodeTypeString += parentNode->Type;
             parentNode = parentNode->ParentNode;
             if(parentNode != null) {
@@ -110,8 +110,8 @@ internal class AtkNodeService {
             var tNode = node->GetAsAtkTextNode();
             if(tNode != null) {
                 string nodeText = tNode->NodeText.ToString();
-                if(!nodeText.IsNullOrEmpty() && (node->IsVisible || !onlyVisible)) {
-                    _plugin.Log.Debug(string.Format("Visible: {5,-6} ID: {0,-8} type: {1,-6} childCount: {2,-4} parentID: {3,-25} parentType: {4}", node->NodeID, type, childCount, parentNodeIDString, parentNodeTypeString, node->IsVisible));
+                if(!nodeText.IsNullOrEmpty() && (node->IsVisible() || !onlyVisible)) {
+                    _plugin.Log.Debug(string.Format("Visible: {5,-6} ID: {0,-8} type: {1,-6} childCount: {2,-4} parentID: {3,-25} parentType: {4}", node->NodeId, type, childCount, parentNodeIDString, parentNodeTypeString, node->IsVisible));
                     _plugin.Log.Debug($"Text: {tNode->NodeText}");
                 }
             }
@@ -128,7 +128,7 @@ internal class AtkNodeService {
             var component = componentNode->Component;
             var uldManager = component->UldManager;
 
-            if(node->IsVisible || !onlyVisible) {
+            if(node->IsVisible() || !onlyVisible) {
                 for(int i = 0; i < uldManager.NodeListCount; i++) {
                     var childNode = uldManager.NodeList[i];
                     PrintTextNodes(childNode, false);
@@ -138,7 +138,7 @@ internal class AtkNodeService {
 
         //check child nodes
         var child = node->ChildNode;
-        if(child != null || !node->IsVisible && onlyVisible) {
+        if(child != null || !node->IsVisible() && onlyVisible) {
             PrintTextNodes(child, checkSiblings);
         }
 
@@ -173,7 +173,8 @@ internal class AtkNodeService {
             case ValueType.Bool:
                 return (value.Int != 0).ToString();
             case ValueType.String:
-            case ValueType.AllocatedString:
+            case ValueType.WideString:
+            case ValueType.ManagedString:
             case ValueType.String8:
                 return Marshal.PtrToStringUTF8((nint)value.String) ?? "";
             default:
@@ -187,7 +188,7 @@ internal class AtkNodeService {
         //var stringArray = AtkStage.GetSingleton()->GetStringArrayData()[index];
 
         int count = 0;
-        var stringArray = AtkStage.GetSingleton()->GetStringArrayData()[0];
+        var stringArray = AtkStage.Instance()->GetStringArrayData()[0];
         while(stringArray != null) {
 
             int internalCount = 0;
@@ -212,7 +213,7 @@ internal class AtkNodeService {
             _plugin.Log.Debug($"{count} Total strings: {internalCount}");
 
             count++;
-            stringArray = AtkStage.GetSingleton()->GetStringArrayData()[count];
+            stringArray = AtkStage.Instance()->GetStringArrayData()[count];
         }
 
         _plugin.Log.Debug($"Total AtkStageStringArrays: {count}");

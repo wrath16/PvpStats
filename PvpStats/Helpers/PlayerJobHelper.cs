@@ -27,7 +27,7 @@ internal static class PlayerJobHelper {
         { Job.BLM, "Black Mage" },
         { Job.SMN, "Summoner" },
         { Job.RDM, "Red Mage" },
-        { Job.PIC, "Pictomancer" },
+        { Job.PCT, "Pictomancer" },
     };
 
     internal static Dictionary<JobRole, string> JobRoleName = new Dictionary<JobRole, string>() {
@@ -42,28 +42,6 @@ internal static class PlayerJobHelper {
         { JobSubRole.MELEE, "Melee" },
         { JobSubRole.RANGED, "Ranged" },
         { JobSubRole.CASTER, "Caster" },
-    };
-
-    internal static Dictionary<Job, uint> JobIcons = new() {
-        { Job.PLD, 62119 },
-        { Job.WAR, 62121 },
-        { Job.DRK, 62132 },
-        { Job.GNB, 62137 },
-        { Job.MNK, 62120 },
-        { Job.DRG, 62122 },
-        { Job.NIN, 62130 },
-        { Job.SAM, 62134 },
-        { Job.RPR, 62139 },
-        { Job.WHM, 62124 },
-        { Job.SCH, 62128 },
-        { Job.AST, 62133 },
-        { Job.SGE, 62140 },
-        { Job.BRD, 62123 },
-        { Job.MCH, 62131 },
-        { Job.DNC, 62138 },
-        { Job.BLM, 62125 },
-        { Job.SMN, 62127 },
-        { Job.RDM, 62135 },
     };
 
     public static bool IsAbbreviatedAliasMatch(PlayerAlias abbreviatedPlayer, string fullName) {
@@ -148,20 +126,11 @@ internal static class PlayerJobHelper {
             case Job.BLM:
             case Job.SMN:
             case Job.RDM:
-            case Job.PIC:
+            case Job.PCT:
                 return JobSubRole.CASTER;
             default:
                 return null;
         }
-    }
-
-    internal static Job? GetJobFromIcon(uint iconId) {
-        foreach(var kvp in JobIcons) {
-            if(kvp.Value == iconId) {
-                return kvp.Key;
-            }
-        }
-        return null;
     }
 
     internal static Dictionary<uint, string> WorldNameMap = new();

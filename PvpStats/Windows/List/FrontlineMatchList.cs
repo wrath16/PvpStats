@@ -37,9 +37,9 @@ internal class FrontlineMatchList : MatchList<FrontlineMatch> {
         ImGui.TextUnformatted(MatchHelper.GetFrontlineArenaName(item.Arena));
 
         ImGui.TableNextColumn();
-        var localPlayerJob = item.LocalPlayerTeamMember!.Job;
-        ImGuiHelper.CenterAlignCursor(localPlayerJob.ToString() ?? "");
-        ImGui.TextColored(_plugin.Configuration.GetJobColor(localPlayerJob), localPlayerJob.ToString());
+        var localPlayerJob = item.LocalPlayerTeamMember?.Job;
+        ImGuiHelper.CenterAlignCursor(localPlayerJob?.ToString() ?? "");
+        ImGui.TextColored(_plugin.Configuration.GetJobColor(localPlayerJob), localPlayerJob?.ToString());
 
         ImGui.TableNextColumn();
         var teamColor = _plugin.Configuration.GetFrontlineTeamColor(item.LocalPlayerTeam);

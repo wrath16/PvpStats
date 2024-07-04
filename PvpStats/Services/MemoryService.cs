@@ -17,7 +17,7 @@ internal unsafe class MemoryService : IDisposable {
     private DateTime _lastSortTime;
     internal bool _qPopped = false;
 
-    private ushort[] _blacklistedOpcodes = [284, 328, 899, 125, 752, 893, 822, 570, 812, 605, 540, 443, 244, 679, 405, 924, 707, 952, 167, 619, 734, 152, 248, 472, 105, 238, 889, 193, 737, 669, 454, 444, 438, 473, 831, 159, 585];
+    private ushort[] _blacklistedOpcodes = [838, 321, 391, 747, 873, 505, 889, 126, 569, 773, 259, 456, 933, 795, 420, 241, 978, 159, 961, 862, 215, 562, 414, 754, 791, 482, 824, 553, 592, 768, 331, 142, 688, 516, 229, 676, 811];
 
     internal MemoryService(Plugin plugin) {
         _plugin = plugin;
@@ -49,7 +49,7 @@ internal unsafe class MemoryService : IDisposable {
         }
 
         if(!_blacklistedOpcodes.Contains(opCode)) {
-            //_plugin.Log.Debug($"OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
+            _plugin.Log.Debug($"OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
             //_plugin.Functions.PrintAllChars(dataPtr, 0x2000, 8);
             //_plugin.Functions.PrintAllStrings(dataPtr, 0x500);
         }

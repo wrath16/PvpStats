@@ -156,21 +156,21 @@ internal class RivalWingsSummary {
             var uv1 = new Vector2(0.9f);
 
             ImGui.TableNextColumn();
-            ImGui.Image(Plugin.WindowManager.ChaserIcons[RivalWingsTeamName.Unknown]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle, size, uv0, uv1);
+            ImGui.Image(Plugin.WindowManager.GetTextureHandle(TextureHelper.ChaserIcons[RivalWingsTeamName.Unknown]), size, uv0, uv1);
             ImGuiHelper.WrappedTooltip("Cruise Chaser");
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();
             ImGuiHelper.DrawNumericCell(Plugin.RWStatsEngine.LocalPlayerMechTime[RivalWingsMech.Chaser].ToString("P2"), -1f);
 
             ImGui.TableNextColumn();
-            ImGui.Image(Plugin.WindowManager.OppressorIcons[RivalWingsTeamName.Unknown]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle, size, uv0, uv1);
+            ImGui.Image(Plugin.WindowManager.GetTextureHandle(TextureHelper.OppressorIcons[RivalWingsTeamName.Unknown]), size, uv0, uv1);
             ImGuiHelper.WrappedTooltip("Oppressor");
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();
             ImGuiHelper.DrawNumericCell(Plugin.RWStatsEngine.LocalPlayerMechTime[RivalWingsMech.Oppressor].ToString("P2"), -1f);
 
             ImGui.TableNextColumn();
-            ImGui.Image(Plugin.WindowManager.JusticeIcons[RivalWingsTeamName.Unknown]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle, size, uv0, uv1);
+            ImGui.Image(Plugin.WindowManager.GetTextureHandle(TextureHelper.JusticeIcons[RivalWingsTeamName.Unknown]), size, uv0, uv1);
             ImGuiHelper.WrappedTooltip("Brute Justice");
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();
@@ -190,7 +190,7 @@ internal class RivalWingsSummary {
             var uv1 = new Vector2(0.85f);
 
             ImGui.TableNextColumn();
-            ImGui.Image(Plugin.WindowManager.GoblinMercIcon?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle, size, uv0, uv1);
+            ImGui.Image(Plugin.WindowManager.GetTextureHandle(TextureHelper.GoblinMercIcon), size, uv0, uv1);
             ImGuiHelper.WrappedTooltip("Mercenaries");
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();
@@ -199,7 +199,7 @@ internal class RivalWingsSummary {
             ImGui.TableNextColumn();
             uv0 = new Vector2(0.1f);
             uv1 = new Vector2(0.9f);
-            ImGui.Image(Plugin.WindowManager.TrainIcon?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle, size, uv0, uv1);
+            ImGui.Image(Plugin.WindowManager.GetTextureHandle(TextureHelper.TrainIcon), size, uv0, uv1);
             ImGuiHelper.WrappedTooltip("Supplies");
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();

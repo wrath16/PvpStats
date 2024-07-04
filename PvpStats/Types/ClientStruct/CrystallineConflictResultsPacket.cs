@@ -1,50 +1,53 @@
-﻿using FFXIVClientStructs.Interop.Attributes;
-using System;
+﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace PvpStats.Types.ClientStruct;
 
-[StructLayout(LayoutKind.Explicit, Size = 0x310)]
+[StructLayout(LayoutKind.Explicit)]
 public unsafe struct CrystallineConflictResultsPacket {
     //in seconds
-    [FieldOffset(0x00)] public ushort MatchLength;
+    [FieldOffset(0x10)] public ushort MatchLength;
 
-    [FieldOffset(0x12)] public byte ColosseumMatchRankIdBefore;
-    [FieldOffset(0x13)] public byte ColosseumMatchRankIdAfter;
-    [FieldOffset(0x14)] public byte RiserBefore;
-    [FieldOffset(0x15)] public byte RiserAfter;
-    [FieldOffset(0x16)] public byte StarsBefore;
-    [FieldOffset(0x17)] public byte StarsAfter;
-    [FieldOffset(0x18)] public ushort CreditBefore;
-    [FieldOffset(0x1A)] public ushort CreditAfter;
+    [FieldOffset(0x22)] public byte ColosseumMatchRankIdBefore;
+    [FieldOffset(0x23)] public byte ColosseumMatchRankIdAfter;
+    [FieldOffset(0x24)] public byte RiserBefore;
+    [FieldOffset(0x25)] public byte RiserAfter;
+    [FieldOffset(0x26)] public byte StarsBefore;
+    [FieldOffset(0x27)] public byte StarsAfter;
+    [FieldOffset(0x28)] public ushort CreditBefore;
+    [FieldOffset(0x2A)] public ushort CreditAfter;
 
     //1=victory, 2=defeat   1=astra victory on spectating, 2=umbra victory?
-    [FieldOffset(0x26)] public byte Result;
+    [FieldOffset(0x36)] public byte Result;
     //measured in 0.1%
-    [FieldOffset(0x28)] public uint AstraProgress;
-    [FieldOffset(0x2C)] public uint UmbraProgress;
+    [FieldOffset(0x38)] public uint AstraProgress;
+    [FieldOffset(0x3C)] public uint UmbraProgress;
 
-    [FixedSizeArray<CrystallineConflictPlayer>(10)]
-    [FieldOffset(0x38)] public fixed byte Player[0x48 * 10];
+    [FieldOffset(0x40)] public fixed byte Players[0x50 * 10];
+    public unsafe Span<CrystallineConflictPlayer> PlayerSpan => new(Unsafe.AsPointer(ref Players[0]), 10);
 
-    [StructLayout(LayoutKind.Explicit, Size = 0x48)]
+    [StructLayout(LayoutKind.Explicit, Size = 0x50)]
     public struct CrystallineConflictPlayer {
-        [FieldOffset(0x00)] public uint DamageDealt;
-        [FieldOffset(0x04)] public uint DamageTaken;
-        [FieldOffset(0x08)] public uint HPRestored;
-        [FieldOffset(0x0C)] public ushort WorldId;
-        [FieldOffset(0x0E)] public byte ClassJobId;
-        [FieldOffset(0x0F)] public byte Kills;
-        [FieldOffset(0x10)] public byte Deaths;
-        [FieldOffset(0x11)] public byte Assists;
-        //in seconds
-        [FieldOffset(0x12)] public ushort TimeOnCrystal;
-        [FieldOffset(0x14)] public byte ColosseumMatchRankId;
-        //astra = 0, umbra = 1
-        [FieldOffset(0x15)] public byte Team;
-        [FieldOffset(0x16)] public fixed byte PlayerName[32];
+        [FieldOffset(0x00)] public ulong AccountId;                          //assumed
+        [FieldOffset(0x08)] public ulong ContentId;
+
+        [FieldOffset(0x10)] public int DamageDealt;
+        [FieldOffset(0x14)] public int DamageTaken;
+        [FieldOffset(0x18)] public int HPRestored;
+        [FieldOffset(0x1C)] public short WorldId;
+        [FieldOffset(0x1E)] public byte ClassJobId;
+        [FieldOffset(0x1F)] public byte Kills;
+        [FieldOffset(0x20)] public byte Deaths;
+        [FieldOffset(0x21)] public byte Assists;
+        [FieldOffset(0x22)] public short TimeOnCrystal;                     //in seconds
+        [FieldOffset(0x24)] public byte ColosseumMatchRankId;
+        [FieldOffset(0x25)] public Team Team;
+        [FieldOffset(0x26)] public fixed byte PlayerName[42];
     }
 
-    public unsafe Span<CrystallineConflictPlayer> PlayerSpan => new Span<CrystallineConflictPlayer>(Unsafe.AsPointer(ref Player[0]), 10);
+    public enum Team : byte {
+        Astra = 0,
+        Umbra = 1,
+    }
 }

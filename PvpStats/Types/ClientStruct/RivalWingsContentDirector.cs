@@ -1,5 +1,4 @@
-﻿using FFXIVClientStructs.Interop.Attributes;
-using System;
+﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -7,8 +6,8 @@ namespace PvpStats.Types.ClientStruct;
 
 [StructLayout(LayoutKind.Explicit)]
 public unsafe struct RivalWingsContentDirector {
-    [FixedSizeArray<AllianceStatus>(6)]
     [FieldOffset(0x1D20)] public fixed byte PlayerAlliances[0x08 * 6];
+    public unsafe Span<AllianceStatus> AllianceSpan => new(Unsafe.AsPointer(ref PlayerAlliances[0]), 6);
 
     [FieldOffset(0x1D78)] public Structure FalconCore;
     [FieldOffset(0x1E18)] public Structure RavenCore;
@@ -34,13 +33,10 @@ public unsafe struct RivalWingsContentDirector {
     [FieldOffset(0x24E0)] public byte RavenOppressorCount;
     [FieldOffset(0x24E4)] public byte RavenJusticeCount;
 
-    [FixedSizeArray<Mech>(24)]
     [FieldOffset(0x24F0)] public fixed byte FriendlyMechs[0x08 * 24];
+    public unsafe Span<Mech> FriendlyMechSpan => new(Unsafe.AsPointer(ref FriendlyMechs[0]), 24);
 
     //[FieldOffset(0x2B40)] enemy mech hmm...
-
-    public unsafe Span<AllianceStatus> AllianceSpan => new(Unsafe.AsPointer(ref PlayerAlliances[0]), 6);
-    public unsafe Span<Mech> FriendlyMechSpan => new(Unsafe.AsPointer(ref FriendlyMechs[0]), 24);
 
     [StructLayout(LayoutKind.Explicit, Size = 0x08)]
     public unsafe struct AllianceStatus {
