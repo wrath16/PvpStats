@@ -17,6 +17,7 @@ internal abstract class MatchDetail<T> : Window where T : PvpMatch {
 
     protected string CSV = "";
     protected bool ShowPercentages;
+    protected bool ShowTeamRows;
     protected string CurrentTab = "";
 
     public MatchDetail(Plugin plugin, MatchCacheService<T> cache, T match) : base($"Match Details: {match.Id}") {
