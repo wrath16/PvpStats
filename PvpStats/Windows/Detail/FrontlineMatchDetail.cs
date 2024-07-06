@@ -163,9 +163,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         ImGui.SameLine();
         ImGui.Text("Show team totals");
         ImGui.SameLine();
-        if(ImGui.Checkbox("###showTeamRows", ref ShowTeamRows)) {
-
-        }
+        ImGui.Checkbox("###showTeamRows", ref ShowTeamRows);
         ImGui.SameLine();
         _teamQuickFilter.Draw();
         DrawPlayerStatsTable();
