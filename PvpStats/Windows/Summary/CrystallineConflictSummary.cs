@@ -126,7 +126,7 @@ internal class CrystallineConflictSummary {
     }
 
     private void DrawArenaTable(Dictionary<CrystallineConflictMap, CCAggregateStats> arenaStats) {
-        using(var table = ImRaii.Table($"ArenaTable", 4, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
+        using(var table = ImRaii.Table($"ArenaTable", 4, ImGuiTableFlags.PadOuterX | ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
             if(table) {
                 float offset = -1f;
                 ImGui.TableSetupColumn("Name");
