@@ -1,7 +1,7 @@
 ﻿using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
-using PvpStats.Types.Match;
+using PvpStats.Types;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,6 +17,7 @@ public enum TimeRange {
     LastYear,
     All,
     Season,
+    Expansion,
     Custom
 }
 
@@ -24,11 +25,12 @@ public class TimeFilter : DataFilter {
     public override string Name => "Time";
 
     public TimeRange StatRange { get; set; } = TimeRange.All;
-    public static string[] Range = { "Past 24 hours", "Past 7 days", "This month", "Last month", "This year", "Last year", "All-time", "By season", "Custom" };
+    public static string[] Range = { "Past 24 hours", "Past 7 days", "This month", "Last month", "This year", "Last year", "All-time", "By season", "By expansion", "Custom" };
 
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
-    public int Season { get; set; } = ArenaSeason.Season.Count - 1;
+    public int Season { get; set; } = GamePeriod.Season.Count - 1;
+    public int Expansion { get; set; } = GamePeriod.Expansion.Last().Key;
     private string _lastStartTime = "";
     private string _lastEndTime = "";
 
@@ -40,12 +42,14 @@ public class TimeFilter : DataFilter {
             StartTime = filter.StartTime;
             EndTime = filter.EndTime;
             Season = filter.Season;
+            Expansion = filter.Expansion;
         }
     }
 
     internal override void Draw() {
         int statRangeToInt = (int)StatRange;
         int seasonIndex = Season - 1;
+        int expansionIndex = Expansion - 6;
         //ImGui.SetNextItemWidth(float.Min(ImGui.GetContentRegionAvail().X / 2f, ImGuiHelpers.GlobalScale * 125f));
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
         if(ImGui.Combo($"##timeRangeCombo", ref statRangeToInt, Range, Range.Length)) {
@@ -97,9 +101,18 @@ public class TimeFilter : DataFilter {
         } else if(StatRange == TimeRange.Season) {
             ImGui.SameLine();
             ImGui.SetNextItemWidth(ImGuiHelpers.GlobalScale * 50f);
-            if(ImGui.Combo($"##seasonCombo", ref seasonIndex, ArenaSeason.Season.Keys.Select(x => x.ToString()).ToArray(), ArenaSeason.Season.Count)) {
+            if(ImGui.Combo($"##seasonCombo", ref seasonIndex, GamePeriod.Season.Keys.Select(x => x.ToString()).ToArray(), GamePeriod.Season.Count)) {
                 _plugin!.DataQueue.QueueDataOperation(async () => {
                     Season = seasonIndex + 1;
+                    await Refresh();
+                });
+            }
+        } else if(StatRange == TimeRange.Expansion) {
+            ImGui.SameLine();
+            ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
+            if(ImGui.Combo($"##expansionCombo", ref expansionIndex, GamePeriod.Expansion.Select(x => x.Value.Name).ToArray(), GamePeriod.Expansion.Count)) {
+                _plugin!.DataQueue.QueueDataOperation(async () => {
+                    Expansion = expansionIndex + 6;
                     await Refresh();
                 });
             }

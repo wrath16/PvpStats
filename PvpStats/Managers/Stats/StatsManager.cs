@@ -1,4 +1,5 @@
 ﻿using PvpStats.Services.DataCache;
+using PvpStats.Types;
 using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using PvpStats.Windows.Filter;
@@ -78,7 +79,10 @@ internal abstract class StatsManager<T> where T : PvpMatch {
                 filteredMatches = filteredMatches.Where(x => x.DutyStartTime > filter.StartTime && x.DutyStartTime < filter.EndTime).ToList();
                 break;
             case TimeRange.Season:
-                filteredMatches = filteredMatches.Where(x => x.DutyStartTime > ArenaSeason.Season[filter.Season].StartDate && x.DutyStartTime < ArenaSeason.Season[filter.Season].EndDate).ToList();
+                filteredMatches = filteredMatches.Where(x => x.DutyStartTime > GamePeriod.Season[filter.Season].StartDate && x.DutyStartTime < GamePeriod.Season[filter.Season].EndDate).ToList();
+                break;
+            case TimeRange.Expansion:
+                filteredMatches = filteredMatches.Where(x => x.DutyStartTime > GamePeriod.Expansion[filter.Expansion].StartDate && x.DutyStartTime < GamePeriod.Expansion[filter.Expansion].EndDate).ToList();
                 break;
             case TimeRange.All:
             default:
