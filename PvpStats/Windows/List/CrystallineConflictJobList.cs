@@ -69,7 +69,7 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
         new NumericColumnParams{    Name = "Median Damage Dealt Contrib.",                                              Id = (uint)"ScoreboardContrib.DamageDealt".GetHashCode(),           Width = 110f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Median Damage Taken Contrib.",                                              Id = (uint)"ScoreboardContrib.DamageTaken".GetHashCode(),           Width = 110f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Median HP Restored Contrib.",                                               Id = (uint)"ScoreboardContrib.HPRestored".GetHashCode(),            Width = 110f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
-        new NumericColumnParams{    Name = "Median Time on Crystal Contrib.",                                           Id = (uint)"ScoreboardContrib.TimeOnCrystalDouble".GetHashCode(),   Width = 110f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Median Time on Crystal Contrib.",                                           Id = (uint)"ScoreboardContrib.TimeOnCrystal".GetHashCode(),         Width = 110f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Median Kill/Assist Contrib.",   Header = "Median Kill and\nAssist Contrib", Id = (uint)"ScoreboardContrib.KillsAndAssists".GetHashCode(),       Width = 110f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Damage Dealt Per Kill/Assist",  Header = "Damage Dealt\nPer Kill/Assist",   Id = (uint)"ScoreboardTotal.DamageDealtPerKA".GetHashCode(),        Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Damage Dealt Per Life",                                                     Id = (uint)"ScoreboardTotal.DamageDealtPerLife".GetHashCode(),      Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
@@ -264,7 +264,7 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
             ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMatch.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 350000f, 1000000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            var tcpa = _plugin.CCStatsEngine.JobStats[item].ScoreboardPerMatch.TimeOnCrystal;
+            var tcpa = TimeSpan.FromSeconds(_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMatch.TimeOnCrystal);
             ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(tcpa), (float)tcpa.TotalSeconds, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 35f, 120f, _plugin.Configuration.ColorScaleStats, Offset);
         }
         if(ImGui.TableNextColumn()) {
@@ -291,7 +291,7 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
             ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMin.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 60000f, 185000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            var tcpm = _plugin.CCStatsEngine.JobStats[item].ScoreboardPerMin.TimeOnCrystal;
+            var tcpm = TimeSpan.FromSeconds(_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMin.TimeOnCrystal);
             ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(tcpm), (float)tcpm.TotalSeconds, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 6f, 20f, _plugin.Configuration.ColorScaleStats, Offset);
         }
         if(ImGui.TableNextColumn()) {
@@ -318,7 +318,7 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
             ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardContrib.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardContrib.TimeOnCrystalDouble, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
+            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardContrib.TimeOnCrystal, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
         }
         if(ImGui.TableNextColumn()) {
             ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardContrib.KillsAndAssists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);

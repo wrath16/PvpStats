@@ -6,6 +6,7 @@ using PvpStats.Helpers;
 using PvpStats.Types.Display;
 using PvpStats.Types.Match;
 using PvpStats.Types.Player;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -282,7 +283,7 @@ internal class CrystallineConflictSummary {
                 ImGui.TableNextColumn();
                 ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardPerMatch.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 350000f, 1000000f, _plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                var tcpa = _plugin.CCStatsEngine.LocalPlayerStats.ScoreboardPerMatch.TimeOnCrystal;
+                var tcpa = TimeSpan.FromSeconds(_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardPerMatch.TimeOnCrystal);
                 ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(tcpa), (float)tcpa.TotalSeconds, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 35f, 120f, _plugin.Configuration.ColorScaleStats, offset);
 
                 //per min
@@ -299,7 +300,7 @@ internal class CrystallineConflictSummary {
                 ImGui.TableNextColumn();
                 ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardPerMin.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 60000f, 185000f, _plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                var tcpm = _plugin.CCStatsEngine.LocalPlayerStats.ScoreboardPerMin.TimeOnCrystal;
+                var tcpm = TimeSpan.FromSeconds(_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardPerMin.TimeOnCrystal);
                 ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(tcpm), (float)tcpm.TotalSeconds, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 6f, 20f, _plugin.Configuration.ColorScaleStats, offset);
 
                 //team contrib
@@ -316,7 +317,7 @@ internal class CrystallineConflictSummary {
                 ImGui.TableNextColumn();
                 ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardContrib.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardContrib.TimeOnCrystalDouble, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardContrib.TimeOnCrystal, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", offset);
             }
         }
     }

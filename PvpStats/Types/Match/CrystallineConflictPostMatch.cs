@@ -36,13 +36,12 @@ public class CrystallineConflictPostMatchRow {
 
     public CCScoreboard ToScoreboard() {
         return new CCScoreboard() {
-            IsTeam = Player is null,
-            Kills = (ulong)Kills,
-            Deaths = (ulong)Deaths,
-            Assists = (ulong)Assists,
-            DamageDealt = (ulong)DamageDealt,
-            DamageTaken = (ulong)DamageTaken,
-            HPRestored = (ulong)HPRestored,
+            Kills = Kills,
+            Deaths = Deaths,
+            Assists = Assists,
+            DamageDealt = DamageDealt,
+            DamageTaken = DamageTaken,
+            HPRestored = HPRestored,
             TimeOnCrystal = TimeOnCrystal
         };
     }

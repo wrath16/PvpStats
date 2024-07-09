@@ -1,19 +1,34 @@
-﻿using System;
+﻿using PvpStats.Types.Match;
+using System;
 
 namespace PvpStats.Types.Display;
-public class CCScoreboardDouble {
-    public bool IsTeam { get; set; }
-    public double Kills { get; set; }
-    public double Deaths { get; set; }
-    public double Assists { get; set; }
-    public double DamageDealt { get; set; }
-    public double DamageTaken { get; set; }
-    public double HPRestored { get; set; }
-    public TimeSpan TimeOnCrystal { get; set; }
-    public double TimeOnCrystalDouble { get; set; }
-    public double KillsAndAssists { get; set; }
-    public double DamageDealtPerKA => DamageDealt / (Kills + Assists);
-    public double DamageDealtPerLife => DamageDealt / Deaths + (IsTeam ? 5 : 1);
-    public double DamageTakenPerLife => DamageTaken / Deaths + (IsTeam ? 5 : 1);
-    public double HPRestoredPerLife => HPRestored / Deaths + (IsTeam ? 5 : 1);
+public class CCScoreboardDouble : PvpScoreboardDouble {
+    //public TimeSpan TimeOnCrystal { get; set; }
+    public double TimeOnCrystal { get; set; }
+
+    public CCScoreboardDouble() {
+
+    }
+
+    public CCScoreboardDouble(PvpScoreboard playerScoreboard, PvpScoreboard teamScoreboard) : base(playerScoreboard, teamScoreboard) {
+        if(playerScoreboard is CCScoreboard && teamScoreboard is CCScoreboard) {
+            var playerCCScoreboard = playerScoreboard as CCScoreboard;
+            var teamCCScoreboard = teamScoreboard as CCScoreboard;
+
+            TimeOnCrystal = playerCCScoreboard!.TimeOnCrystal != TimeSpan.Zero ? playerCCScoreboard.TimeOnCrystal / teamCCScoreboard!.TimeOnCrystal : 0;
+        }
+    }
+
+    public static CCScoreboardDouble operator /(CCScoreboardDouble a, double b) {
+        var c = (PvpScoreboardDouble)a / b;
+        return new CCScoreboardDouble() {
+            Kills = c.Kills,
+            Deaths = c.Deaths,
+            Assists = c.Assists,
+            DamageDealt = c.DamageDealt,
+            DamageTaken = c.DamageTaken,
+            HPRestored = c.HPRestored,
+            TimeOnCrystal = a.TimeOnCrystal / b,
+        };
+    }
 }

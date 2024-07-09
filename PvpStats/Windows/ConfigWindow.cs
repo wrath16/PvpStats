@@ -137,12 +137,12 @@ internal class ConfigWindow : Window {
 
         ImGui.TextColored(_plugin.Configuration.Colors.Header, "Match Details Window");
 
-        bool resizeableWindow = _plugin.Configuration.ResizeableMatchWindow;
-        if(ImGui.Checkbox("Make window resizeable", ref resizeableWindow)) {
-            _plugin.Configuration.ResizeableMatchWindow = resizeableWindow;
-            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
-        }
-        ImGuiHelper.HelpMarker("Reopen windows to reflect changes.", true, true);
+        //bool resizeableWindow = _plugin.Configuration.ResizeableMatchWindow;
+        //if(ImGui.Checkbox("Make window resizeable", ref resizeableWindow)) {
+        //    _plugin.Configuration.ResizeableMatchWindow = resizeableWindow;
+        //    _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        //}
+        //ImGuiHelper.HelpMarker("Reopen windows to reflect changes.", true, true);
 
         bool showBackgroundImage = _plugin.Configuration.ShowBackgroundImage;
         if(ImGui.Checkbox("Show background image", ref showBackgroundImage)) {

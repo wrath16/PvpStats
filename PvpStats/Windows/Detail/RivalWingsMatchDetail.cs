@@ -527,8 +527,8 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
 
         if(ShowTeamRows && _teamScoreboard != null) {
             foreach(var row in _teamScoreboard.Where(x => _teamQuickFilter.FilterState[x.Key])) {
-                using var textColor = ImRaii.PushColor(ImGuiCol.Text, new Vector4(0f, 0f, 0f, 1f));
-                var rowColor = Plugin.Configuration.GetRivalWingsTeamColor(row.Key);
+                //using var textColor = ImRaii.PushColor(ImGuiCol.Text, new Vector4(0f, 0f, 0f, 1f));
+                var rowColor = Plugin.Configuration.GetRivalWingsTeamColor(row.Key) - new Vector4(0f, 0f, 0f, 0.4f);
                 ImGui.TableNextColumn();
                 ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(rowColor));
                 if(ImGui.TableNextColumn()) {
@@ -703,8 +703,10 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             : _scoreboard.OrderByDescending(comparator).ToDictionary();
         _unfilteredScoreboard = direction == ImGuiSortDirection.Ascending ? _unfilteredScoreboard.OrderBy(comparator).ToDictionary()
             : _unfilteredScoreboard.OrderByDescending(comparator).ToDictionary();
-        _teamScoreboard = direction == ImGuiSortDirection.Ascending ? _teamScoreboard?.OrderBy(teamComparator).ToDictionary()
-            : _teamScoreboard?.OrderByDescending(teamComparator).ToDictionary();
+        if(!Plugin.Configuration.AnchorTeamNames) {
+            _teamScoreboard = direction == ImGuiSortDirection.Ascending ? _teamScoreboard?.OrderBy(teamComparator).ToDictionary()
+                : _teamScoreboard?.OrderByDescending(teamComparator).ToDictionary();
+        }
     }
 
     private Task ApplyTeamFilter() {

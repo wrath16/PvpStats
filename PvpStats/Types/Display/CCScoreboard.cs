@@ -1,31 +1,21 @@
-﻿using System;
+﻿using PvpStats.Types.Match;
+using System;
 
 namespace PvpStats.Types.Display;
-public class CCScoreboard {
-    public bool IsTeam { get; set; }
+public class CCScoreboard : PvpScoreboard {
+    //this should honestly be moved
     public TimeSpan MatchTime { get; set; }
-    public ulong Kills { get; set; }
-    public ulong Deaths { get; set; }
-    public ulong Assists { get; set; }
-    public ulong DamageDealt { get; set; }
-    public ulong DamageTaken { get; set; }
-    public ulong HPRestored { get; set; }
     public TimeSpan TimeOnCrystal { get; set; }
-    public ulong KillsAndAssists => Kills + Assists;
-    public ulong DamageDealtPerKA => KillsAndAssists > 0 ? DamageDealt / KillsAndAssists : DamageDealt;
-    public ulong DamageDealtPerLife => DamageDealt / (Deaths + (IsTeam ? 5u : 1));
-    public ulong DamageTakenPerLife => DamageTaken / (Deaths + (IsTeam ? 5u : 1));
-    public ulong HPRestoredPerLife => HPRestored / (Deaths + (IsTeam ? 5u : 1));
-    public double KDA => (double)KillsAndAssists / ulong.Max(Deaths, 1);
 
     public static CCScoreboard operator +(CCScoreboard a, CCScoreboard b) {
+        var c = a + (PvpScoreboard)b;
         return new CCScoreboard() {
-            Kills = a.Kills + b.Kills,
-            Deaths = a.Deaths + b.Deaths,
-            Assists = a.Assists + b.Assists,
-            DamageDealt = a.DamageDealt + b.DamageDealt,
-            DamageTaken = a.DamageTaken + b.DamageDealt,
-            HPRestored = a.HPRestored + b.HPRestored,
+            Kills = c.Kills,
+            Deaths = c.Deaths,
+            Assists = c.Assists,
+            DamageDealt = c.DamageDealt,
+            DamageTaken = c.DamageTaken,
+            HPRestored = c.HPRestored,
             TimeOnCrystal = a.TimeOnCrystal + b.TimeOnCrystal,
             MatchTime = a.MatchTime + b.MatchTime,
         };

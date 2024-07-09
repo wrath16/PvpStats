@@ -549,12 +549,12 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
             var playerScoreboard = playerTeamScoreboard.PlayerStats.Where(x => x.Player?.Equals(player.Alias) ?? false).FirstOrDefault();
             if(playerScoreboard != null) {
                 statsModel.ScoreboardTotal.MatchTime += match.PostMatch.MatchDuration;
-                statsModel.ScoreboardTotal.Kills += (ulong)playerScoreboard.Kills;
-                statsModel.ScoreboardTotal.Deaths += (ulong)playerScoreboard.Deaths;
-                statsModel.ScoreboardTotal.Assists += (ulong)playerScoreboard.Assists;
-                statsModel.ScoreboardTotal.DamageDealt += (ulong)playerScoreboard.DamageDealt;
-                statsModel.ScoreboardTotal.DamageTaken += (ulong)playerScoreboard.DamageTaken;
-                statsModel.ScoreboardTotal.HPRestored += (ulong)playerScoreboard.HPRestored;
+                statsModel.ScoreboardTotal.Kills += playerScoreboard.Kills;
+                statsModel.ScoreboardTotal.Deaths += playerScoreboard.Deaths;
+                statsModel.ScoreboardTotal.Assists += playerScoreboard.Assists;
+                statsModel.ScoreboardTotal.DamageDealt += playerScoreboard.DamageDealt;
+                statsModel.ScoreboardTotal.DamageTaken += playerScoreboard.DamageTaken;
+                statsModel.ScoreboardTotal.HPRestored += playerScoreboard.HPRestored;
                 statsModel.ScoreboardTotal.TimeOnCrystal += playerScoreboard.TimeOnCrystal;
 
                 teamContributions.Add(new() {
@@ -564,7 +564,7 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
                     DamageDealt = playerTeamScoreboard.TeamStats.DamageDealt != 0 ? (double)playerScoreboard.DamageDealt / playerTeamScoreboard.TeamStats.DamageDealt : 0,
                     DamageTaken = playerTeamScoreboard.TeamStats.DamageTaken != 0 ? (double)playerScoreboard.DamageTaken / playerTeamScoreboard.TeamStats.DamageTaken : 0,
                     HPRestored = playerTeamScoreboard.TeamStats.HPRestored != 0 ? (double)playerScoreboard.HPRestored / playerTeamScoreboard.TeamStats.HPRestored : 0,
-                    TimeOnCrystalDouble = playerTeamScoreboard.TeamStats.TimeOnCrystal.Ticks != 0 ? playerScoreboard.TimeOnCrystal / playerTeamScoreboard.TeamStats.TimeOnCrystal : 0,
+                    TimeOnCrystal = playerTeamScoreboard.TeamStats.TimeOnCrystal.Ticks != 0 ? playerScoreboard.TimeOnCrystal / playerTeamScoreboard.TeamStats.TimeOnCrystal : 0,
                     KillsAndAssists = (playerTeamScoreboard.TeamStats.Kills + playerTeamScoreboard.TeamStats.Assists) != 0
                     ? (double)(playerScoreboard.Kills + playerScoreboard.Assists) / (playerTeamScoreboard.TeamStats.Assists + playerTeamScoreboard.TeamStats.Kills) : 0,
                 });
@@ -586,7 +586,7 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
             stats.ScoreboardPerMatch.DamageDealt = (double)stats.ScoreboardTotal.DamageDealt / statMatches;
             stats.ScoreboardPerMatch.DamageTaken = (double)stats.ScoreboardTotal.DamageTaken / statMatches;
             stats.ScoreboardPerMatch.HPRestored = (double)stats.ScoreboardTotal.HPRestored / statMatches;
-            stats.ScoreboardPerMatch.TimeOnCrystal = stats.ScoreboardTotal.TimeOnCrystal / statMatches;
+            stats.ScoreboardPerMatch.TimeOnCrystal = stats.ScoreboardTotal.TimeOnCrystal.TotalSeconds / statMatches;
             stats.ScoreboardPerMatch.KillsAndAssists = (double)stats.ScoreboardTotal.KillsAndAssists / statMatches;
 
             var matchTime = stats.ScoreboardTotal.MatchTime;
@@ -596,7 +596,7 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
             stats.ScoreboardPerMin.DamageDealt = stats.ScoreboardTotal.DamageDealt / matchTime.TotalMinutes;
             stats.ScoreboardPerMin.DamageTaken = stats.ScoreboardTotal.DamageTaken / matchTime.TotalMinutes;
             stats.ScoreboardPerMin.HPRestored = stats.ScoreboardTotal.HPRestored / matchTime.TotalMinutes;
-            stats.ScoreboardPerMin.TimeOnCrystal = stats.ScoreboardTotal.TimeOnCrystal / matchTime.TotalMinutes;
+            stats.ScoreboardPerMin.TimeOnCrystal = stats.ScoreboardTotal.TimeOnCrystal.TotalSeconds / matchTime.TotalMinutes;
             stats.ScoreboardPerMin.KillsAndAssists = stats.ScoreboardTotal.KillsAndAssists / matchTime.TotalMinutes;
 
             stats.ScoreboardContrib.Kills = teamContributions.OrderBy(x => x.Kills).ElementAt(statMatches / 2).Kills;
@@ -605,7 +605,7 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
             stats.ScoreboardContrib.DamageDealt = teamContributions.OrderBy(x => x.DamageDealt).ElementAt(statMatches / 2).DamageDealt;
             stats.ScoreboardContrib.DamageTaken = teamContributions.OrderBy(x => x.DamageTaken).ElementAt(statMatches / 2).DamageTaken;
             stats.ScoreboardContrib.HPRestored = teamContributions.OrderBy(x => x.HPRestored).ElementAt(statMatches / 2).HPRestored;
-            stats.ScoreboardContrib.TimeOnCrystalDouble = teamContributions.OrderBy(x => x.TimeOnCrystalDouble).ElementAt(statMatches / 2).TimeOnCrystalDouble;
+            stats.ScoreboardContrib.TimeOnCrystal = teamContributions.OrderBy(x => x.TimeOnCrystal).ElementAt(statMatches / 2).TimeOnCrystal;
             stats.ScoreboardContrib.KillsAndAssists = teamContributions.OrderBy(x => x.KillsAndAssists).ElementAt(statMatches / 2).KillsAndAssists;
         }
     }

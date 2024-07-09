@@ -29,6 +29,10 @@ internal static class TextureHelper {
         { Job.PCT, 62142 },
     };
 
+    internal static uint TeamIcon => 60563;
+    internal static uint EnemyIcon => 60562;
+    internal static string CCTeamIconTexture => "ui/uld/PVPMKSResult_hr1.tex";
+
     internal static uint GoblinMercIcon => 60976;
     internal static string RWTeamIconTexture => "ui/uld/PVPSimulationResult_hr1.tex";
     internal static string RWSuppliesTexture => "ui/uld/PVPSimulationHeader2_hr1.tex";

@@ -1,4 +1,6 @@
 ﻿using LiteDB;
+using PvpStats.Types.Display;
+using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -117,5 +119,50 @@ public class CrystallineConflictMatch : PvpMatch {
     public CrystallineConflictMatch() {
         Id = new();
         DutyStartTime = DateTime.Now;
+    }
+
+    public Dictionary<PlayerAlias, CCScoreboard>? GetPlayerScoreboards() {
+        if(PostMatch is null) {
+            return null;
+        }
+
+        Dictionary<PlayerAlias, CCScoreboard> scoreboard = new();
+        foreach(var team in PostMatch.Teams) {
+            foreach(var player in team.Value.PlayerStats) {
+                if(player.Team is null) {
+                    player.Team = team.Key;
+                }
+                scoreboard.Add(player.Player, player.ToScoreboard());
+            }
+        }
+        return scoreboard;
+    }
+
+    public Dictionary<CrystallineConflictTeamName, CCScoreboard>? GetTeamScoreboards() {
+        if(PostMatch is null) {
+            return null;
+        }
+        Dictionary<CrystallineConflictTeamName, CCScoreboard> scoreboards = new();
+        foreach(var team in PostMatch.Teams) {
+            var scoreboard = team.Value.TeamStats.ToScoreboard();
+            scoreboard.Size = team.Value.PlayerStats.Count;
+            scoreboards.Add(team.Key, scoreboard);
+        }
+        return scoreboards;
+    }
+
+    public Dictionary<PlayerAlias, CCScoreboardDouble>? GetPlayerContributions() {
+        var playerScoreboards = GetPlayerScoreboards();
+        var teamScoreboards = GetTeamScoreboards();
+        if(teamScoreboards is null || playerScoreboards is null) {
+            return null;
+        }
+        Dictionary<PlayerAlias, CCScoreboardDouble> contributions = [];
+        foreach(var player in Players) {
+            var scoreboard = playerScoreboards[player.Alias];
+            var team = player.Team;
+            contributions.Add(player.Alias, new(scoreboard, teamScoreboards[(CrystallineConflictTeamName)team]));
+        }
+        return contributions;
     }
 }
