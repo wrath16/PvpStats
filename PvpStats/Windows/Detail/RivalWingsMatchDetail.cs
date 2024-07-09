@@ -170,18 +170,24 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                     }
                     ImGuiHelper.HelpMarker("Right-click table header to show and hide columns including extra metrics.", false, true);
                     if(_playerContributions != null) {
+                        using(var _ = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing * 2.5f * ImGuiHelpers.GlobalScale)) {
+                            ImGui.SameLine();
+                        }
+                        ImGuiComponents.ToggleButton("##showPercentages", ref ShowPercentages);
                         ImGui.SameLine();
                         ImGui.Text("Show team contributions");
-                        ImGui.SameLine();
-                        ImGuiComponents.ToggleButton("##showPercentages", ref ShowPercentages);
                     }
                     if(_teamScoreboard != null) {
+                        using(var _ = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing * 2.5f * ImGuiHelpers.GlobalScale)) {
+                            ImGui.SameLine();
+                        }
+                        ImGui.Checkbox("###showTeamRows", ref ShowTeamRows);
                         ImGui.SameLine();
                         ImGui.Text("Show team totals");
-                        ImGui.SameLine();
-                        ImGui.Checkbox("###showTeamRows", ref ShowTeamRows);
                     }
-                    ImGui.SameLine();
+                    using(var _ = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing * 2.5f * ImGuiHelpers.GlobalScale)) {
+                        ImGui.SameLine();
+                    }
                     _teamQuickFilter.Draw();
                     DrawPlayerStatsTable();
                 }

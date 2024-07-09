@@ -57,22 +57,17 @@ internal class RWTeamQuickFilter : DataFilter {
 
             foreach(var category in FilterState) {
                 ImGui.TableNextColumn();
-                DrawTeamIcon(category.Key, 25f);
-                ImGui.SameLine();
+
+
                 bool filterState = category.Value;
                 if(ImGui.Checkbox($"##{category.Key}{GetHashCode()}", ref filterState)) {
-                    //if(CurrentRefresh is null || CurrentRefresh.Result.IsCompleted) {
-                    //    CurrentRefresh = _plugin!.DataQueue.QueueDataOperation(async () => {
-                    //        FilterState[category.Key] = filterState;
-                    //        UpdateAllSelected();
-                    //        await Refresh();
-                    //    });
-                    //}
                     RateLimitRefresh(() => {
                         FilterState[category.Key] = filterState;
                         UpdateAllSelected();
                     });
                 }
+                ImGui.SameLine();
+                DrawTeamIcon(category.Key, 25f);
             }
         }
     }

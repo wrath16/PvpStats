@@ -155,16 +155,22 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         ImGui.NewLine();
         ImGui.NewLine();
         ImGuiHelper.HelpMarker("Right-click table header to show and hide columns including extra metrics.", true, true);
-        ImGui.SameLine();
-        ImGui.AlignTextToFramePadding();
-        ImGui.Text("Show team contributions");
-        ImGui.SameLine();
+        using(var _ = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing * 2.5f * ImGuiHelpers.GlobalScale)) {
+            ImGui.SameLine();
+        }
+        //ImGui.AlignTextToFramePadding();
         ImGuiComponents.ToggleButton("##showPercentages", ref ShowPercentages);
         ImGui.SameLine();
-        ImGui.Text("Show team totals");
-        ImGui.SameLine();
+        ImGui.Text("Show team contributions");
+        using(var _ = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing * 2.5f * ImGuiHelpers.GlobalScale)) {
+            ImGui.SameLine();
+        }
         ImGui.Checkbox("###showTeamRows", ref ShowTeamRows);
         ImGui.SameLine();
+        ImGui.Text("Show team totals");
+        using(var _ = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing * 2.5f * ImGuiHelpers.GlobalScale)) {
+            ImGui.SameLine();
+        }
         _teamQuickFilter.Draw();
         DrawPlayerStatsTable();
     }

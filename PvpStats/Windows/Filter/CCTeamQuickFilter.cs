@@ -56,24 +56,16 @@ internal class CCTeamQuickFilter : DataFilter {
 
             foreach(var category in FilterState) {
                 ImGui.TableNextColumn();
-                DrawCCTeamIcon(category.Key, 25f);
-                ImGuiHelper.WrappedTooltip(category.Key.ToString());
-                ImGui.SameLine();
                 bool filterState = category.Value;
                 if(ImGui.Checkbox($"##{category.Key}{GetHashCode()}", ref filterState)) {
-                    //if(CurrentRefresh is null || CurrentRefresh.Result.IsCompleted) {
-                    //    CurrentRefresh = _plugin!.DataQueue.QueueDataOperation(async () => {
-                    //        FilterState[category.Key] = filterState;
-                    //        UpdateAllSelected();
-                    //        await Refresh();
-                    //    });
-                    //}
                     RateLimitRefresh(() => {
                         FilterState[category.Key] = filterState;
                         UpdateAllSelected();
                     });
                 }
-
+                ImGui.SameLine();
+                DrawCCTeamIcon(category.Key, 25f);
+                ImGuiHelper.WrappedTooltip(category.Key.ToString());
             }
         }
     }

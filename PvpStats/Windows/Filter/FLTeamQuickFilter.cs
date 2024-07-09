@@ -62,22 +62,17 @@ internal class FLTeamQuickFilter : DataFilter {
                 var size = 25f;
                 //ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 1f * ImGuiHelpers.GlobalScale);
                 //ImGui.AlignTextToFramePadding();
-                ImGui.Image(_plugin.WindowManager.GetTextureHandle(image), new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), new Vector2(0f), new Vector2(1f));
-                ImGui.SameLine();
+
                 bool filterState = category.Value;
                 if(ImGui.Checkbox($"##{category.Key}{GetHashCode()}", ref filterState)) {
-                    //if(CurrentRefresh is null || CurrentRefresh.Result.IsCompleted) {
-                    //    CurrentRefresh = _plugin!.DataQueue.QueueDataOperation(async () => {
-                    //        FilterState[category.Key] = filterState;
-                    //        UpdateAllSelected();
-                    //        await Refresh();
-                    //    });
-                    //}
                     RateLimitRefresh(() => {
                         FilterState[category.Key] = filterState;
                         UpdateAllSelected();
                     });
                 }
+                ImGui.SameLine();
+                ImGui.Image(_plugin.WindowManager.GetTextureHandle(image), new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), new Vector2(0f), new Vector2(1f));
+
             }
         }
     }
