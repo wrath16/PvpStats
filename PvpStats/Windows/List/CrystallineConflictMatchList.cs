@@ -42,7 +42,8 @@ internal class CrystallineConflictMatchList : MatchList<CrystallineConflictMatch
         ImGui.TableNextColumn();
         ImGui.Text($"{item.MatchType}");
         ImGui.TableNextColumn();
-        ImGui.Text(ImGuiHelper.GetTimeSpanString(item.MatchDuration ?? TimeSpan.Zero));
+        var timeSpanString = ImGuiHelper.GetTimeSpanString(item.MatchDuration ?? TimeSpan.Zero);
+        ImGuiHelper.DrawNumericCell(timeSpanString, -10f);
         ImGui.TableNextColumn();
         bool noWinner = item.MatchWinner is null;
         bool isWin = item.MatchWinner == item.LocalPlayerTeam?.TeamName;

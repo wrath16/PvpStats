@@ -71,7 +71,7 @@ internal abstract class FilteredList<T> {
             DataModel = dataModel;
             ListCSV = CSVHeader();
             await RefreshDataModel();
-            GoToPage();
+            GoToPage(0);
         } finally {
             RefreshLock.Release();
         }

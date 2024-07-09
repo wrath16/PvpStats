@@ -337,8 +337,9 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
 
         if(ShowTeamRows) {
             foreach(var row in _teamScoreboard.Where(x => _teamQuickFilter.FilterState[x.Key])) {
-                //using var textColor = ImRaii.PushColor(ImGuiCol.Text, new Vector4(0f,0f,0f,1f));
-                var rowColor = Plugin.Configuration.GetFrontlineTeamColor(row.Key) - new Vector4(0f, 0f, 0f, 0.4f);
+                using var textColor = ImRaii.PushColor(ImGuiCol.Text, Plugin.Configuration.Colors.TeamRowText);
+                var rowColor = Plugin.Configuration.GetFrontlineTeamColor(row.Key);
+                rowColor.W = Plugin.Configuration.TeamRowAlpha;
                 ImGui.TableNextColumn();
                 ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(rowColor));
                 ImGui.TableNextColumn();
@@ -404,8 +405,9 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
             var playerAlias = (PlayerAlias)row.Key;
             //bool isPlayer = row.Key.Player != null;
             //bool isPlayerTeam = row.Key.Team == _dataModel.LocalPlayerTeam?.TeamName;
-            var rowColor = Plugin.Configuration.GetFrontlineTeamColor(player.Team) - new Vector4(0f, 0f, 0f, 0.7f);
-            var textColor = Match.LocalPlayer is not null && Match.LocalPlayer.Equals(playerAlias) ? Plugin.Configuration.Colors.CCLocalPlayer : ImGuiColors.DalamudWhite;
+            var rowColor = Plugin.Configuration.GetFrontlineTeamColor(player.Team);
+            rowColor.W = Plugin.Configuration.PlayerRowAlpha;
+            var textColor = Match.LocalPlayer is not null && Match.LocalPlayer.Equals(playerAlias) ? Plugin.Configuration.Colors.CCLocalPlayer : Plugin.Configuration.Colors.PlayerRowText;
             ImGui.TableNextColumn();
             ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(rowColor));
             string alliance = MatchHelper.GetAllianceLetter(player.Alliance);

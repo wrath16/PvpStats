@@ -282,37 +282,6 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         }
     }
 
-    //private void DrawFunctions() {
-    //    //need to increment this for each function
-    //    int functionCount = 2;
-    //    //get width of strip
-    //    using(_ = ImRaii.PushFont(UiBuilder.IconFont)) {
-    //        string text = "";
-    //        for(int i = 0; i < functionCount; i++) {
-    //            text += $"{FontAwesomeIcon.Star.ToIconString()}";
-    //        }
-    //        //ImGuiHelpers.CenterCursorForText(text);
-    //        ImGuiHelper.CenterAlignCursor(text);
-    //        ImGui.SetCursorPosX(ImGui.GetCursorPosX() - ((ImGui.GetStyle().FramePadding.X - 3f) * 2.5f + 9f * (functionCount - 1)));
-    //    }
-
-    //    using(_ = ImRaii.PushFont(UiBuilder.IconFont)) {
-    //        var text = $"{FontAwesomeIcon.Star.ToIconString()}{FontAwesomeIcon.Copy.ToIconString()}";
-    //        var color = _dataModel.IsBookmarked ? _plugin.Configuration.Colors.Favorite : ImGuiColors.DalamudWhite;
-    //        using(_ = ImRaii.PushColor(ImGuiCol.Text, color)) {
-    //            if(ImGui.Button($"{FontAwesomeIcon.Star.ToIconString()}##--FavoriteMatch")) {
-    //                _dataModel.IsBookmarked = !_dataModel.IsBookmarked;
-    //                _plugin.DataQueue.QueueDataOperation(async () => {
-    //                    await _plugin.CCCache.UpdateMatch(_dataModel);
-    //                });
-    //            }
-    //        }
-    //    }
-    //    ImGuiHelper.WrappedTooltip("Favorite match");
-    //    ImGui.SameLine();
-    //    ImGuiHelper.CSVButton(CSV);
-    //}
-
     private void DrawStatsTable() {
         using var table = ImRaii.Table($"postmatchplayers##{_dataModel.Id}", 15, ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.ScrollX | ImGuiTableFlags.NoSavedSettings | ImGuiTableFlags.PadOuterX);
         if(!table) return;
@@ -386,14 +355,16 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         }
 
         if(ShowTeamRows && _teamScoreboard != null) {
+            using var textColor = ImRaii.PushColor(ImGuiCol.Text, Plugin.Configuration.Colors.TeamRowText);
             foreach(var row in _teamScoreboard.Where(x => _teamQuickFilter.FilterState[x.Key])) {
                 ImGui.TableNextColumn();
                 Vector4 rowColor = ImGuiColors.DalamudWhite;
                 if(row.Key == _dataModel.LocalPlayerTeam?.TeamName || (_dataModel.IsSpectated && row.Key == CrystallineConflictTeamName.Astra)) {
-                    rowColor = _plugin.Configuration.Colors.CCPlayerTeam - new Vector4(0f, 0f, 0f, 0.4f);
+                    rowColor = _plugin.Configuration.Colors.CCPlayerTeam;
                 } else {
-                    rowColor = _plugin.Configuration.Colors.CCEnemyTeam - new Vector4(0f, 0f, 0f, 0.4f);
+                    rowColor = _plugin.Configuration.Colors.CCEnemyTeam;
                 }
+                rowColor.W = _plugin.Configuration.TeamRowAlpha;
 
                 ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(rowColor));
                 ImGui.TextUnformatted(MatchHelper.GetTeamName(row.Key));
@@ -445,12 +416,13 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             ImGui.TableNextColumn();
             Vector4 rowColor = ImGuiColors.DalamudWhite;
             if(player?.Team == _dataModel.LocalPlayerTeam?.TeamName || (_dataModel.IsSpectated && player?.Team == CrystallineConflictTeamName.Astra)) {
-                rowColor = _plugin.Configuration.Colors.CCPlayerTeam - new Vector4(0f, 0f, 0f, 0.7f);
+                rowColor = _plugin.Configuration.Colors.CCPlayerTeam;
             } else {
-                rowColor = _plugin.Configuration.Colors.CCEnemyTeam - new Vector4(0f, 0f, 0f, 0.7f);
+                rowColor = _plugin.Configuration.Colors.CCEnemyTeam;
             }
+            rowColor.W = _plugin.Configuration.PlayerRowAlpha;
 
-            var textColor = _dataModel.LocalPlayer is not null && _dataModel.LocalPlayer.Equals(row.Key) ? _plugin.Configuration.Colors.CCLocalPlayer : ImGuiColors.DalamudWhite;
+            var textColor = _dataModel.LocalPlayer is not null && _dataModel.LocalPlayer.Equals(row.Key) ? _plugin.Configuration.Colors.CCLocalPlayer : Plugin.Configuration.Colors.PlayerRowText;
             ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(rowColor));
             ImGui.TextColored(textColor, $"{row.Key.Name}");
             if(ImGui.TableNextColumn()) {
@@ -521,19 +493,6 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         } else {
             bool propFound = false;
             if(ShowPercentages && _playerContributions != null) {
-                //var props = typeof(CCScoreboardDouble).GetProperties();
-                //foreach(var prop in props) {
-                //    var propId2 = prop.Name.GetHashCode();
-                //    if((uint)"TimeOnCrystal".GetHashCode() == columnId) {
-                //        comparator = (r) => r.Value.TimeOnCrystalDouble;
-                //        propFound = true;
-                //        break;
-                //    } else if((uint)propId2 == columnId) {
-                //        comparator = (r) => prop.GetValue(r.Value.Item2) ?? 0;
-                //        propFound = true;
-                //        break;
-                //    }
-                //}
                 var props = typeof(CCScoreboardDouble).GetProperties();
                 foreach(var prop in props) {
                     var propId = prop.Name.GetHashCode();
@@ -558,14 +517,6 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 }
             }
         }
-        //if(_plugin.Configuration.AnchorTeamNames) {
-        //    var teamList = _scoreboard.Where(x => x.Key.Player is null).ToList();
-        //    var playerList = _scoreboard.Where(x => x.Key.Player is not null).ToList();
-        //    _scoreboard = teamList.Concat(direction == ImGuiSortDirection.Ascending ? playerList.OrderBy(comparator) : playerList.OrderByDescending(comparator)).ToDictionary();
-        //} else {
-        //    _scoreboard = direction == ImGuiSortDirection.Ascending ? _scoreboard.ToList().OrderBy(comparator).ToDictionary()
-        //        : _scoreboard.ToList().OrderByDescending(comparator).ToDictionary();
-        //}
 
         _scoreboard = direction == ImGuiSortDirection.Ascending ? _scoreboard.OrderBy(comparator).ToDictionary()
             : _scoreboard.OrderByDescending(comparator).ToDictionary();

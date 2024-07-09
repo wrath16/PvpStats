@@ -28,4 +28,6 @@ public class ColorConfiguration {
     public Vector4 StatLow { get; set; } = new Vector4(1f, 0f, 0f, 1f);
 
     public Vector4 Favorite { get; set; } = ImGuiColors.DalamudYellow;
+    public Vector4 PlayerRowText { get; set; } = ImGuiColors.DalamudWhite;
+    public Vector4 TeamRowText { get; set; } = ImGuiColors.DalamudWhite;
 }

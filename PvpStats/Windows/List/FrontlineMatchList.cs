@@ -46,7 +46,8 @@ internal class FrontlineMatchList : MatchList<FrontlineMatch> {
         ImGui.TextColored(teamColor, item.LocalPlayerTeam.ToString());
 
         ImGui.TableNextColumn();
-        ImGui.Text(ImGuiHelper.GetTimeSpanString(item.MatchDuration ?? TimeSpan.Zero));
+        var timeSpanString = ImGuiHelper.GetTimeSpanString(item.MatchDuration ?? TimeSpan.Zero);
+        ImGuiHelper.DrawNumericCell(timeSpanString, -10f);
 
         ImGui.TableNextColumn();
         var color = item.Result switch {

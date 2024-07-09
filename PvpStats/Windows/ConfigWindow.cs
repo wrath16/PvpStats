@@ -6,6 +6,7 @@ using ImGuiNET;
 using PvpStats.Helpers;
 using PvpStats.Settings;
 using PvpStats.Types.Player;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -154,13 +155,43 @@ internal class ConfigWindow : Window {
             _plugin.Configuration.LeftPlayerTeam = playerTeamLeft;
             _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
-
+        ImGuiHelper.HelpMarker("Only affects Crystalline Conflict currently.", true, true);
         bool anchorTeamNames = _plugin.Configuration.AnchorTeamNames;
         if(ImGui.Checkbox("Anchor team stats", ref anchorTeamNames)) {
             _plugin.Configuration.AnchorTeamNames = anchorTeamNames;
             _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
         ImGuiHelper.HelpMarker("Team stat rows will not be affected by sorting.", true, true);
+        var teamRowAlpha = _plugin.Configuration.TeamRowAlpha;
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
+        if(ImGui.SliderFloat("Team row alpha", ref teamRowAlpha, 0f, 1f)) {
+            _plugin.Configuration.TeamRowAlpha = teamRowAlpha;
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+        ImGui.SameLine();
+        using(var font = ImRaii.PushFont(UiBuilder.IconFont)) {
+            if(ImGui.Button($"{FontAwesomeIcon.Undo.ToIconString()}###teamAlphaReset")) {
+                _plugin.Configuration.TeamRowAlpha = new Configuration().TeamRowAlpha;
+                _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+            }
+        }
+        ImGuiHelper.WrappedTooltip("Reset");
+        var playerRowAlpha = _plugin.Configuration.PlayerRowAlpha;
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
+        if(ImGui.SliderFloat("Player row alpha", ref playerRowAlpha, 0f, 1f)) {
+            _plugin.Configuration.PlayerRowAlpha = playerRowAlpha;
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+        ImGui.SameLine();
+        using(var font = ImRaii.PushFont(UiBuilder.IconFont)) {
+            if(ImGui.Button($"{FontAwesomeIcon.Undo.ToIconString()}###playerAlphaReset")) {
+                _plugin.Configuration.PlayerRowAlpha = new Configuration().PlayerRowAlpha;
+                _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+            }
+        }
+        ImGuiHelper.WrappedTooltip("Reset");
+
+
         ImGui.Separator();
         ImGui.TextColored(_plugin.Configuration.Colors.Header, "Colors");
         DrawColorSettings();
@@ -302,6 +333,20 @@ internal class ConfigWindow : Window {
         var statLowColor = _plugin.Configuration.Colors.StatLow;
         if(ImGui.ColorEdit4("Low stat", ref statLowColor, ImGuiColorEditFlags.NoInputs)) {
             _plugin.Configuration.Colors.StatLow = statLowColor;
+            //_plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+        ImGui.TableNextRow();
+        ImGui.TableNextRow();
+        ImGui.TableNextColumn();
+        var playerRowColor = _plugin.Configuration.Colors.PlayerRowText;
+        if(ImGui.ColorEdit4("Player row text", ref playerRowColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.PlayerRowText = playerRowColor;
+            //_plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+        ImGui.TableNextColumn();
+        var teamRowColor = _plugin.Configuration.Colors.TeamRowText;
+        if(ImGui.ColorEdit4("Team row text", ref teamRowColor, ImGuiColorEditFlags.NoInputs)) {
+            _plugin.Configuration.Colors.TeamRowText = teamRowColor;
             //_plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
     }

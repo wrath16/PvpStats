@@ -526,9 +526,10 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
         }
 
         if(ShowTeamRows && _teamScoreboard != null) {
+            using var textColor = ImRaii.PushColor(ImGuiCol.Text, Plugin.Configuration.Colors.TeamRowText);
             foreach(var row in _teamScoreboard.Where(x => _teamQuickFilter.FilterState[x.Key])) {
-                //using var textColor = ImRaii.PushColor(ImGuiCol.Text, new Vector4(0f, 0f, 0f, 1f));
-                var rowColor = Plugin.Configuration.GetRivalWingsTeamColor(row.Key) - new Vector4(0f, 0f, 0f, 0.4f);
+                var rowColor = Plugin.Configuration.GetRivalWingsTeamColor(row.Key);
+                rowColor.W = Plugin.Configuration.TeamRowAlpha;
                 ImGui.TableNextColumn();
                 ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(rowColor));
                 if(ImGui.TableNextColumn()) {
@@ -590,8 +591,9 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             ImGui.TableNextColumn();
             //bool isPlayer = row.Key.Player != null;
             //bool isPlayerTeam = row.Key.Team == _dataModel.LocalPlayerTeam?.TeamName;
-            var rowColor = Plugin.Configuration.GetRivalWingsTeamColor(player.Team) - new Vector4(0f, 0f, 0f, 0.7f);
-            var textColor = Match.LocalPlayer is not null && Match.LocalPlayer.Equals(playerAlias) ? Plugin.Configuration.Colors.CCLocalPlayer : ImGuiColors.DalamudWhite;
+            var rowColor = Plugin.Configuration.GetRivalWingsTeamColor(player.Team);
+            rowColor.W = Plugin.Configuration.PlayerRowAlpha;
+            var textColor = Match.LocalPlayer is not null && Match.LocalPlayer.Equals(playerAlias) ? Plugin.Configuration.Colors.CCLocalPlayer : Plugin.Configuration.Colors.PlayerRowText;
             ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(rowColor));
             string alliance = GetAllianceLetter(player.Alliance);
             ImGui.TextColored(textColor, $"{alliance}");

@@ -31,6 +31,9 @@ public class Configuration : IPluginConfiguration {
     public bool ResizeWindowLeft { get; set; } = false;
     public bool AdjustWindowHeightOnFilterCollapse { get; set; } = false;
     public bool ColorScaleStats { get; set; } = true;
+
+    public float TeamRowAlpha { get; set; } = 0.6f;
+    public float PlayerRowAlpha { get; set; } = 0.3f;
     public WindowConfiguration CCWindowConfig { get; set; } = new();
     public WindowConfiguration FLWindowConfig { get; set; } = new();
     public WindowConfiguration RWWindowConfig { get; set; } = new();
