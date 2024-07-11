@@ -15,7 +15,7 @@ internal class RivalWingsPvPProfile {
 
     public unsafe void Draw() {
         var pvpProfile = PvPProfile.Instance();
-        ImGuiHelper.HelpMarker("Uses game server-originating data from your PvP profile.", false);
+        ImGuiHelper.HelpMarker("This data comes from SE's game servers.", false);
         ImGui.TextColored(_plugin.Configuration.Colors.Header, "Overall Performance:");
         if(pvpProfile != null) {
             DrawTable(pvpProfile->RivalWingsTotalMatches, pvpProfile->RivalWingsTotalMatchesWon);
