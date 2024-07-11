@@ -292,7 +292,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     private void DrawStatsTable() {
         using var table = ImRaii.Table($"postmatchplayers##{_dataModel.Id}", 15, ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.ScrollX | ImGuiTableFlags.NoSavedSettings | ImGuiTableFlags.PadOuterX);
         if(!table) return;
-        ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, ImGuiHelpers.GlobalScale * 50f, 0);
+        ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, ImGuiHelpers.GlobalScale * 100f, 0);
         ImGui.TableSetupColumn("Home World", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 110f, 1);
         ImGui.TableSetupColumn("Job", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 50f, 2);
         ImGui.TableSetupColumn("Kills", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 52f, (uint)"Kills".GetHashCode());
@@ -412,7 +412,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                     ImGuiHelper.DrawNumericCell($"{row.Value.HPRestoredPerLife}", -11f);
                 }
                 if(ImGui.TableNextColumn()) {
-                    ImGuiHelper.DrawNumericCell($"{row.Value.KDA}", -11f);
+                    ImGuiHelper.DrawNumericCell($"{string.Format("{0:0.00}", row.Value.KDA)}", -11f);
                 }
             }
         }

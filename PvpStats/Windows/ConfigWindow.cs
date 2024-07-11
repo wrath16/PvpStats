@@ -143,7 +143,7 @@ internal class ConfigWindow : Window {
         //    _plugin.Configuration.ResizeableMatchWindow = resizeableWindow;
         //    _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         //}
-        //ImGuiHelper.HelpMarker("Reopen windows to reflect changes.", true, true);
+        //ImGuiHelper.HelpMarker("Only affects Crystalline Conflict currently. Reopen windows to reflect changes.", true, true);
 
         bool showBackgroundImage = _plugin.Configuration.ShowBackgroundImage;
         if(ImGui.Checkbox("Show background image", ref showBackgroundImage)) {
