@@ -159,9 +159,10 @@ public class CrystallineConflictMatch : PvpMatch {
         }
         Dictionary<PlayerAlias, CCScoreboardDouble> contributions = [];
         foreach(var player in Players) {
-            var scoreboard = playerScoreboards[player.Alias];
-            var team = player.Team;
-            contributions.Add(player.Alias, new(scoreboard, teamScoreboards[(CrystallineConflictTeamName)team]));
+            if(playerScoreboards.TryGetValue(player.Alias, out var scoreboard)) {
+                var team = player.Team;
+                contributions.Add(player.Alias, new(scoreboard, teamScoreboards[(CrystallineConflictTeamName)team]));
+            }
         }
         return contributions;
     }
