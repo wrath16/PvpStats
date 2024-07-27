@@ -348,7 +348,9 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
                 rowColor.W = Plugin.Configuration.TeamRowAlpha;
                 ImGui.TableNextColumn();
                 ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(rowColor));
-                ImGui.TableNextColumn();
+                if(Match.MaxBattleHigh != null) {
+                    ImGui.TableNextColumn();
+                }
                 if(ImGui.TableNextColumn()) {
                     ImGui.TextUnformatted(MatchHelper.GetTeamName(row.Key));
                 }
