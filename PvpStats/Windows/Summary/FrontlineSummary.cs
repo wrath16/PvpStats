@@ -220,7 +220,7 @@ internal class FrontlineSummary {
                 ImGui.TableNextColumn();
                 ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, 0.5f, 5.0f, Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 5f, 35f, Plugin.Configuration.ColorScaleStats, "0.00", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 5f, 50f, Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
                 ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMatch.DamageToPCs, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 100000f, 1800000f, Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
@@ -236,7 +236,7 @@ internal class FrontlineSummary {
                 ImGui.TableNextColumn();
                 ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMin.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, 0.5f / 15, 5.0f / 15, Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMin.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 5f / 15, 35f / 15, Plugin.Configuration.ColorScaleStats, "0.00", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMin.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 5f / 15, 50f / 15, Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
                 ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMin.DamageToPCs, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 100000f / 15, 1800000f / 15, Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();

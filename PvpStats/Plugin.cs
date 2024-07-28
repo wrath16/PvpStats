@@ -143,7 +143,7 @@ public sealed class Plugin : IDalamudPlugin {
                 Log.Error(e, $"failed to initialize fl match manager");
             }
             try {
-                //RWMatchManager = new(this);
+                RWMatchManager = new(this);
             } catch(SignatureException e) {
                 Log.Error(e, $"failed to initialize rw match manager");
             }

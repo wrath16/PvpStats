@@ -17,7 +17,8 @@ internal unsafe class MemoryService : IDisposable {
     private DateTime _lastSortTime;
     internal bool _qPopped = false;
 
-    private ushort[] _blacklistedOpcodes = [838, 321, 391, 747, 873, 505, 889, 126, 569, 773, 259, 456, 933, 795, 420, 241, 978, 159, 961, 862, 215, 562, 414, 754, 791, 482, 824, 553, 592, 768, 331, 142, 688, 516, 229, 676, 811, 866, 403, 751, 742];
+    private ushort[] _blacklistedOpcodes = [951,593,735,453,983,567,371,272,560,873,468,407,264,947,340,578,516,399,732,858,350,785,425,570,153,956,739,452,859,404,633,583,317,211,209,758,179,298,671,990,903,289];
+    
 
     internal MemoryService(Plugin plugin) {
         _plugin = plugin;
@@ -49,38 +50,10 @@ internal unsafe class MemoryService : IDisposable {
         }
 
         if(!_blacklistedOpcodes.Contains(opCode)) {
-            _plugin.Log.Verbose($"OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
+            _plugin.Log.Debug($"OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
             //_plugin.Functions.PrintAllChars(dataPtr, 0x2000, 8);
             //_plugin.Functions.PrintAllStrings(dataPtr, 0x500);
         }
-
-        if(opCode == 732) {
-            //player payload
-            //FrontlinePlayerResultsPacket resultsPacket = *(FrontlinePlayerResultsPacket*)(dataPtr);
-            //var playerName = (PlayerAlias)$"{MemoryService.ReadString(resultsPacket.PlayerName, 32)} {_plugin.DataManager.GetExcelSheet<World>()?.GetRow(resultsPacket.WorldId)?.Name}";
-            //var team = resultsPacket.Team == 0 ? "Maelstrom" : resultsPacket.Team == 1 ? "Adders" : "Flames";
-            //var job = PlayerJobHelper.GetJobFromName(_plugin.DataManager.GetExcelSheet<ClassJob>()?.GetRow(resultsPacket.ClassJobId)?.NameEnglish ?? "");
-            //_plugin.Log.Debug(string.Format("{0,-32} {1,-15} {2,-10} {3,-8} {4,-8} {5,-8} {6,-8} {7,-15} {8,-15} {9,-15} {10,-15} {11,-15} {12,-15}", "NAME", "TEAM", "ALLIANCE", "JOB", "KILLS", "DEATHS", "ASSISTS", "DAMAGE DEALT", "DAMAGE OTHER", "DAMAGE TAKEN", "HP RESTORED", "??? 1", "??? 2"));
-            //_plugin.Log.Debug(string.Format("{0,-32} {1,-15} {2,-10} {3,-8} {4,-8} {5,-8} {6,-8} {7,-15} {8,-15} {9,-15} {10,-15} {11,-15} {12,-15}", playerName, team, resultsPacket.Alliance, job, resultsPacket.Kills, resultsPacket.Deaths, resultsPacket.Assists, resultsPacket.DamageDealt, resultsPacket.DamageToOther, resultsPacket.DamageTaken, resultsPacket.HPRestored, resultsPacket.Unknown1, resultsPacket.Unknown2));
-
-            FindValue<byte>(0, dataPtr, 0x100, 0, true);
-            FindValue<ushort>(0, dataPtr, 0x100, 0, true);
-            FindValue<uint>(0, dataPtr, 0x100, 0, true);
-            FindValue<string>("", dataPtr, 0x100, 0, true);
-            //var agent = AgentModule.Instance()->GetAgentByInternalId(AgentId.ContentsFinderMenu);
-            //AtkComponentButton* x;
-            //x->Flags |= (uint)NodeFlags.Enabled;
-        } else if(opCode == 937) {
-            //FindValue<byte>(0, dataPtr, 0x30, 0, true);
-            //FindValue<ushort>(0, dataPtr, 0x30, 0, true);
-            //FindValue<uint>(0, dataPtr, 0x30, 0, true);
-            //FindValue<string>("", dataPtr, 0x20, 0, true);
-        }
-
-        ////643 has promise...
-        //if (opCode == 945 || opCode == 560) {
-        //    _plugin.Functions.FindValue<string>("", dataPtr, 0x500, 0, true);
-        //}
 
         if(DateTime.Now - _lastSortTime > TimeSpan.FromSeconds(60)) {
             _lastSortTime = DateTime.Now;

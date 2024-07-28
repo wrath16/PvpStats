@@ -19,25 +19,27 @@ public unsafe struct RivalWingsResultsPacket {
     [FieldOffset(0x24)] public short Unknown4;                  //sample value: 21064 (0x52,0x48), 16595 (0x40, 0xD3)
     [FieldOffset(0x26)] public short Unknown5;                  //sample value: 115
     [FieldOffset(0x28)] public short PlayerCount;
-    [FieldOffset(0x2A)] private fixed byte Players[0x40 * 48];
+    [FieldOffset(0x30)] private fixed byte Players[0x50 * 48];
     public unsafe Span<RivalWingsPlayer> PlayerSpan => new(Unsafe.AsPointer(ref Players[0]), 48);
 
-    [StructLayout(LayoutKind.Explicit, Size = 0x40)]
+    [StructLayout(LayoutKind.Explicit, Size = 0x50)]
     public struct RivalWingsPlayer {
-        [FieldOffset(0x00)] public short Unknown0;
-        [FieldOffset(0x02)] public int DamageDealt;
-        [FieldOffset(0x06)] public int DamageToOther;
-        [FieldOffset(0x0A)] public int DamageTaken;
-        [FieldOffset(0x0E)] public int HPRestored;
-        [FieldOffset(0x12)] public int Unknown1;                //related to healing
-        [FieldOffset(0x16)] public ushort WorldId;
-        [FieldOffset(0x18)] public byte ClassJobId;
-        [FieldOffset(0x19)] public byte Kills;
-        [FieldOffset(0x1A)] public byte Deaths;
-        [FieldOffset(0x1B)] public byte Team;                   //0 = falcons, 1 = ravens
-        [FieldOffset(0x1C)] public byte Alliance;               //0 = falcons A to 11 = ravens F
-        [FieldOffset(0x1D)] public byte Assists;
-        [FieldOffset(0x1E)] public byte Ceruleum;
-        [FieldOffset(0x20)] public fixed byte PlayerName[32];
+        [FieldOffset(0x00)] public ulong AccountId;                          
+        [FieldOffset(0x08)] public ulong ContentId;
+
+        [FieldOffset(0x10)] public int DamageDealt;
+        [FieldOffset(0x14)] public int DamageToOther;
+        [FieldOffset(0x18)] public int DamageTaken;
+        [FieldOffset(0x1C)] public int HPRestored;
+        [FieldOffset(0x20)] public int Unknown1;                //related to healing
+        [FieldOffset(0x24)] public ushort WorldId;
+        [FieldOffset(0x26)] public byte ClassJobId;
+        [FieldOffset(0x27)] public byte Kills;
+        [FieldOffset(0x28)] public byte Deaths;
+        [FieldOffset(0x29)] public byte Team;                   //0 = falcons, 1 = ravens
+        [FieldOffset(0x2A)] public byte Alliance;               //0 = falcons A to 11 = ravens F
+        [FieldOffset(0x2B)] public byte Assists;
+        [FieldOffset(0x2C)] public ushort Ceruleum;
+        [FieldOffset(0x2E)] public fixed byte PlayerName[32];
     }
 }

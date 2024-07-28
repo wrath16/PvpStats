@@ -55,8 +55,10 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
     //rw match end 10 (occurs ~8 seconds after match ends)
     //p1 = director
     //p2 = payload
+    //40 55 57 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 48 8B E9
+    //48 89 6C 24 ?? 56 48 81 EC ?? ?? ?? ?? 48 8B E9 
     private delegate void RWMatchEnd10Delegate(IntPtr p1, IntPtr p2);
-    [Signature("40 55 57 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 48 8B E9", DetourName = nameof(RWMatchEnd10Detour))]
+    [Signature("48 89 6C 24 ?? 56 48 81 EC ?? ?? ?? ?? 48 8B E9 ", DetourName = nameof(RWMatchEnd10Detour))]
     private readonly Hook<RWMatchEnd10Delegate> _rwMatchEndHook;
 
     //private delegate void MechDeployDelegate(IntPtr p1, IntPtr p2);
@@ -168,6 +170,11 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                 director = *(RivalWingsContentDirector*)EventFramework.Instance()->GetInstanceContentDirector();
                 resultsPacket = *(RivalWingsResultsPacket*)p2;
             }
+
+#if DEBUG
+            Plugin.Functions.CreateByteDump(p2, 0x3000, "rw_match_end");
+#endif
+
             Plugin.DataQueue.QueueDataOperation(async () => {
                 if(ProcessMatchResults(resultsPacket, director)) {
                     await Plugin.RWCache.UpdateMatch(CurrentMatch!);
@@ -449,7 +456,14 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         if(director == null) {
             return;
         }
+
         var now = DateTime.Now;
+
+#if DEBUG
+        if(now - _lastUpdate > TimeSpan.FromSeconds(30)) {
+            Plugin.Functions.CreateByteDump((nint)director, 0x3000, "RWICD");
+        }
+#endif
 
         try {
             //mech times

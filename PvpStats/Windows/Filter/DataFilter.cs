@@ -9,6 +9,8 @@ public abstract class DataFilter {
     public virtual string Name => "";
     [JsonIgnore]
     public virtual string? HelpMessage { get; set; }
+    [JsonIgnore]
+    public virtual int FilterPriority { get; set; } = 0;
     private Func<Task>? RefreshData { get; init; }
     [JsonIgnore]
     protected Task<Task>? CurrentRefresh { get; set; }
