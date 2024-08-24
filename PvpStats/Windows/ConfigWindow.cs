@@ -162,6 +162,16 @@ internal class ConfigWindow : Window {
             _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
         ImGuiHelper.HelpMarker("Team stat rows will not be affected by sorting.", true, true);
+
+        int stretchColumns = _plugin.Configuration.StretchScoreboardColumns ?? false ? 1 : 0;
+        string[] columnStyles = ["Fixed", "Stretch"];
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 4f);
+        if(ImGui.Combo("Scoreboard column style", ref stretchColumns, columnStyles, columnStyles.Length)) {
+            bool isStretch = Convert.ToBoolean(stretchColumns);
+            _plugin.Configuration.StretchScoreboardColumns = isStretch;
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+
         var teamRowAlpha = _plugin.Configuration.TeamRowAlpha;
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
         if(ImGui.SliderFloat("Team row alpha", ref teamRowAlpha, 0f, 1f)) {
@@ -190,7 +200,6 @@ internal class ConfigWindow : Window {
             }
         }
         ImGuiHelper.WrappedTooltip("Reset");
-
 
         ImGui.Separator();
         ImGui.TextColored(_plugin.Configuration.Colors.Header, "Colors");
