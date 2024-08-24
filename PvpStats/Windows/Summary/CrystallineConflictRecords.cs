@@ -23,16 +23,16 @@ internal class CrystallineConflictRecords {
             using(var table = ImRaii.Table("streaks", 2, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
                 if(table) {
                     ImGui.TableSetupColumn("title", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 185f);
-                    ImGui.TableSetupColumn($"value", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 50f);
+                    ImGui.TableSetupColumn($"value", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 60f);
 
                     ImGui.TableNextColumn();
                     ImGui.TextColored(_plugin.Configuration.Colors.Header, "Longest win streak:");
                     ImGui.TableNextColumn();
-                    ImGui.Text(_plugin.CCStatsEngine.LongestWinStreak.ToString());
+                    ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.LongestWinStreak.ToString());
                     ImGui.TableNextColumn();
                     ImGui.TextColored(_plugin.Configuration.Colors.Header, "Longest loss streak:");
                     ImGui.TableNextColumn();
-                    ImGui.Text(_plugin.CCStatsEngine.LongestLossStreak.ToString());
+                    ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.LongestLossStreak.ToString());
                 }
             }
             ImGui.Separator();
@@ -50,21 +50,26 @@ internal class CrystallineConflictRecords {
         using(var table = ImRaii.Table("headertable", 3, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
             if(table) {
                 ImGui.TableSetupColumn("title", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 185f);
-                ImGui.TableSetupColumn($"value", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 50f);
-                ImGui.TableSetupColumn($"examine", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 45f);
+                ImGui.TableSetupColumn($"value", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 60f);
+                ImGui.TableSetupColumn($"examine", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 40f);
 
                 for(int i = 0; i < superlatives.Length; i++) {
                     ImGui.TableNextColumn();
                     ImGui.AlignTextToFramePadding();
                     ImGui.TextColored(_plugin.Configuration.Colors.Header, superlatives[i] + ":");
                     ImGui.TableNextColumn();
-                    ImGui.Text(values[i]);
+                    ImGuiHelper.DrawNumericCell(values[i]);
+                    //ImGui.Text(values[i]);
                     ImGui.TableNextColumn();
                     if(i == superlatives.Length - 1) {
                         using(var font = ImRaii.PushFont(UiBuilder.IconFont)) {
+                            //ImGuiHelper.CenterAlignCursor(FontAwesomeIcon.Search.ToIconString());
+                            var buttonWidth = ImGui.GetStyle().FramePadding.X * 2 + ImGui.CalcTextSize(FontAwesomeIcon.Search.ToIconString()).X;
+                            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + (ImGui.GetColumnWidth() - buttonWidth) / 2f);
                             if(ImGui.Button($"{FontAwesomeIcon.Search.ToIconString()}##{match.GetHashCode()}--ViewDetails")) {
                                 _plugin.WindowManager.OpenMatchDetailsWindow(match);
                             }
+                            var x = ImGui.CalcItemWidth();
                         }
                     }
                 }
@@ -74,22 +79,25 @@ internal class CrystallineConflictRecords {
         using(var table = ImRaii.Table("match", 4, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
             if(table) {
                 ImGui.TableSetupColumn("Time", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 100f);
-                ImGui.TableSetupColumn("Arena", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 150f);
+                ImGui.TableSetupColumn("Arena", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 145f);
                 ImGui.TableSetupColumn("Job", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 40f);
                 ImGui.TableSetupColumn("Result", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 40f);
 
                 ImGui.TableNextColumn();
-                ImGui.Text($"{match.DutyStartTime:MM/dd/yyyy HH:mm}");
+                ImGui.Text($"{match.DutyStartTime:yyyy-MM-dd HH:mm}");
                 ImGui.TableNextColumn();
                 if(match.Arena != null) {
                     ImGui.Text(MatchHelper.GetArenaName((CrystallineConflictMap)match.Arena));
                 }
                 ImGui.TableNextColumn();
                 if(!match.IsSpectated) {
-                    ImGui.TextColored(_plugin.Configuration.GetJobColor(match.LocalPlayerTeamMember!.Job), $"{match.LocalPlayerTeamMember!.Job}");
+                    var localPlayerJob = match.LocalPlayerTeamMember!.Job;
+                    ImGuiHelper.CenterAlignCursor(localPlayerJob.ToString() ?? "");
+                    ImGui.TextColored(_plugin.Configuration.GetJobColor(localPlayerJob), localPlayerJob.ToString());
                     ImGui.TableNextColumn();
                     var color = match.IsWin ? _plugin.Configuration.Colors.Win : match.IsLoss ? _plugin.Configuration.Colors.Loss : _plugin.Configuration.Colors.Other;
                     var result = match.IsWin ? "WIN" : match.IsLoss ? "LOSS" : "???";
+                    ImGuiHelper.CenterAlignCursor(result);
                     ImGui.TextColored(color, result);
                 } else {
                     ImGui.Text($"Spectated");
