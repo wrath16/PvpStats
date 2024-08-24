@@ -24,7 +24,7 @@ public unsafe struct RivalWingsResultsPacket {
 
     [StructLayout(LayoutKind.Explicit, Size = 0x50)]
     public struct RivalWingsPlayer {
-        [FieldOffset(0x00)] public ulong AccountId;                          
+        [FieldOffset(0x00)] public ulong AccountId;
         [FieldOffset(0x08)] public ulong ContentId;
 
         [FieldOffset(0x10)] public int DamageDealt;

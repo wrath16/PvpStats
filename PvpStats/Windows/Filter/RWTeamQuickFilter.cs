@@ -58,7 +58,6 @@ internal class RWTeamQuickFilter : DataFilter {
             foreach(var category in FilterState) {
                 ImGui.TableNextColumn();
 
-
                 bool filterState = category.Value;
                 if(ImGui.Checkbox($"##{category.Key}{GetHashCode()}", ref filterState)) {
                     RateLimitRefresh(() => {
