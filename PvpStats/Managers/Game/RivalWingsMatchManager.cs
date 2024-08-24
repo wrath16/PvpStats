@@ -293,6 +293,8 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                 Team = (RivalWingsTeamName)player.Team,
                 ClassJobId = player.ClassJobId,
                 Alliance = player.Alliance % 6,
+                AccountId = player.AccountId,
+                ContentId = player.ContentId,
             });
             CurrentMatch.PlayerScoreboards.Add(playerName, playerScoreboard);
         }
