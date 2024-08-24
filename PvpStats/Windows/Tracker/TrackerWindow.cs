@@ -127,10 +127,10 @@ internal abstract class TrackerWindow : Window {
                         ImGui.SameLine();
                     }
                     string nameText = $"{filter.Name}:";
-                    ImGuiHelper.RightAlignCursor(nameText);
+                    ImGuiHelper.RightAlignCursor2(nameText, -5f * ImGuiHelpers.GlobalScale);
                     ImGui.AlignTextToFramePadding();
-                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + float.Max(0, 16f - 4f * ImGuiHelpers.GlobalScale));
-                    ImGui.Text($"{nameText}");
+                    //ImGui.SetCursorPosX(ImGui.GetCursorPosX() + float.Max(0, 16f - 4f * ImGuiHelpers.GlobalScale));
+                    ImGui.TextUnformatted(nameText);
                     ImGui.TableNextColumn();
                     filter.Draw();
                 }
