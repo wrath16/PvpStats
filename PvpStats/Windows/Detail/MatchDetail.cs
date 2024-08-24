@@ -54,13 +54,17 @@ internal abstract class MatchDetail<T> : Window where T : PvpMatch {
         int functionCount = 2;
         //get width of strip
         using(_ = ImRaii.PushFont(UiBuilder.IconFont)) {
-            string text = "";
-            for(int i = 0; i < functionCount; i++) {
-                text += $"{FontAwesomeIcon.Star.ToIconString()}";
-            }
-            //ImGuiHelpers.CenterCursorForText(text);
-            ImGuiHelper.CenterAlignCursor(text);
-            ImGui.SetCursorPosX(ImGui.GetCursorPosX() - ((ImGui.GetStyle().FramePadding.X - 3f) * 2.5f + 9f * (functionCount - 1)));
+            //string text = "";
+            //for(int i = 0; i < functionCount; i++) {
+            //    text += $"{FontAwesomeIcon.Star.ToIconString()}";
+            //}
+            ////ImGuiHelpers.CenterCursorForText(text);
+            //ImGuiHelper.CenterAlignCursor(text);
+            //ImGui.SetCursorPosX(ImGui.GetCursorPosX() - ((ImGui.GetStyle().FramePadding.X - 3f) * 2.5f + 9f * (functionCount - 1)));
+
+            var buttonWidth = ImGui.GetStyle().FramePadding.X * 2 + ImGui.CalcTextSize(FontAwesomeIcon.Search.ToIconString()).X;
+            var totalWidth = buttonWidth * functionCount + ImGui.GetStyle().ItemSpacing.X * (functionCount - 1);
+            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + (ImGui.GetColumnWidth() - totalWidth) / 2f);
         }
 
         using(_ = ImRaii.PushFont(UiBuilder.IconFont)) {
