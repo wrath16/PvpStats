@@ -373,6 +373,8 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
         using var style = ImRaii.PushStyle(ImGuiStyleVar.CellPadding, new Vector2(ImGui.GetStyle().CellPadding.X, 0));
         using(var table = ImRaii.Table($"MidMercTable", 3, ImGuiTableFlags.NoClip | ImGuiTableFlags.None,
             new Vector2(55f * ImGuiHelpers.GlobalScale + ImGui.GetStyle().CellPadding.X * 3, (25f * 5 + 1) * ImGuiHelpers.GlobalScale))) {
+            var firstTeam = (Plugin.Configuration.LeftPlayerTeam ? Match.LocalPlayerTeam ?? RivalWingsTeamName.Falcons : RivalWingsTeamName.Falcons);
+            var secondTeam = (RivalWingsTeamName)((int)(firstTeam + 1) % 2);
             ImGui.TableSetupColumn("c1", ImGuiTableColumnFlags.WidthFixed, 15f * ImGuiHelpers.GlobalScale);
             ImGui.TableSetupColumn("c2", ImGuiTableColumnFlags.WidthFixed, 25f * ImGuiHelpers.GlobalScale);
             ImGui.TableSetupColumn("c3", ImGuiTableColumnFlags.WidthFixed, 15f * ImGuiHelpers.GlobalScale);
@@ -389,24 +391,24 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
 
             if(Match.Mercs != null) {
                 ImGui.TableNextColumn();
-                drawText(Match.Mercs[RivalWingsTeamName.Falcons].ToString());
+                drawText(Match.Mercs[firstTeam].ToString());
                 ImGui.TableNextColumn();
                 drawImage(Plugin.WindowManager.GetTextureHandle(TextureHelper.GoblinMercIcon), 25f);
                 ImGuiHelper.WrappedTooltip("Goblin Mercenary");
                 ImGui.TableNextColumn();
-                drawText(Match.Mercs[RivalWingsTeamName.Ravens].ToString());
+                drawText(Match.Mercs[secondTeam].ToString());
             }
 
             if(Match.Supplies != null) {
                 RivalWingsSupplies[] supplies = { RivalWingsSupplies.Gobtank, RivalWingsSupplies.Ceruleum, RivalWingsSupplies.Gobbiejuice, RivalWingsSupplies.Gobcrate };
                 foreach(var supply in supplies) {
                     ImGui.TableNextColumn();
-                    drawText(Match.Supplies[RivalWingsTeamName.Falcons][supply].ToString());
+                    drawText(Match.Supplies[firstTeam][supply].ToString());
                     ImGui.TableNextColumn();
                     //ImGui.SetCursorPosX(ImGui.GetCursorPosX() - 2.5f * ImGuiHelpers.GlobalScale);
                     DrawSuppliesIcon(supply, 25f);
                     ImGui.TableNextColumn();
-                    drawText(Match.Supplies[RivalWingsTeamName.Ravens][supply].ToString());
+                    drawText(Match.Supplies[secondTeam][supply].ToString());
                 }
             }
         }
