@@ -72,8 +72,11 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             var cursorPosBefore = ImGui.GetCursorPos();
             ImGui.SetCursorPosX(ImGui.GetWindowSize().X / 2 - (250 / 2 + 0f) * ImGuiHelpers.GlobalScale);
             ImGui.SetCursorPosY((ImGui.GetCursorPos().Y + 40f * ImGuiHelpers.GlobalScale));
+            bool flipImage = Match.LocalPlayerTeam == RivalWingsTeamName.Ravens && Plugin.Configuration.LeftPlayerTeam;
+            var uv0 = flipImage ? new Vector2(1f, 0f) : Vector2.Zero;
+            var uv1 = flipImage ? new Vector2(0f, 1f) : Vector2.One;
             ImGui.Image(Plugin.TextureProvider.GetFromFile(Path.Combine(Plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "rw_logo.png")).GetWrapOrEmpty().ImGuiHandle,
-                new Vector2(250, 240) * ImGuiHelpers.GlobalScale, Vector2.Zero, Vector2.One, new Vector4(1, 1, 1, 0.1f));
+                new Vector2(250, 240) * ImGuiHelpers.GlobalScale, uv0, uv1, new Vector4(1, 1, 1, 0.1f));
             ImGui.SetCursorPos(cursorPosBefore);
         }
 
