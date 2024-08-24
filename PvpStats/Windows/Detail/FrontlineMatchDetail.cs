@@ -145,7 +145,15 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
                         DrawRowDescription("Kill/death point diff.:");
                     }
                 }
-                foreach(var team in Match.Teams) {
+                foreach(var team in Match.Teams.OrderBy(x => {
+                    if(Plugin.Configuration.OrderFrontlineTeamsByPlacement ?? false) {
+                        return x.Value.Placement;
+                    } else if(Plugin.Configuration.LeftPlayerTeam) {
+                        return Convert.ToInt32(x.Key != Match.LocalPlayerTeam);
+                    } else {
+                        return 1;
+                    }
+                })) {
                     ImGui.TableNextColumn();
                     DrawTeamStatTable(team.Key);
                 }
@@ -197,7 +205,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
     }
 
     private void DrawRowDescription(string desc) {
-        ImGuiHelper.RightAlignCursor2(desc, 0f);
+        ImGuiHelper.RightAlignCursor2(desc, -5f * ImGuiHelpers.GlobalScale);
         ImGui.TextUnformatted(desc);
     }
 

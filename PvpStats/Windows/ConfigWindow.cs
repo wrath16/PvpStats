@@ -155,7 +155,12 @@ internal class ConfigWindow : Window {
             _plugin.Configuration.LeftPlayerTeam = playerTeamLeft;
             _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
-        ImGuiHelper.HelpMarker("Only affects Crystalline Conflict currently.", true, true);
+        bool orderFLTeams = _plugin.Configuration.OrderFrontlineTeamsByPlacement ?? false;
+        if(ImGui.Checkbox("Order Frontline teams by placement", ref orderFLTeams)) {
+            _plugin.Configuration.OrderFrontlineTeamsByPlacement = orderFLTeams;
+            _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        }
+        ImGuiHelper.HelpMarker("This will override the preceding setting.", true, true);
         bool anchorTeamNames = _plugin.Configuration.AnchorTeamNames;
         if(ImGui.Checkbox("Anchor team stats", ref anchorTeamNames)) {
             _plugin.Configuration.AnchorTeamNames = anchorTeamNames;

@@ -116,12 +116,15 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
 
         using(var table = ImRaii.Table("teamTables", 3, ImGuiTableFlags.PadOuterX | ImGuiTableFlags.NoClip)) {
             if(table) {
+                var firstTeam = (Plugin.Configuration.LeftPlayerTeam ? Match.LocalPlayerTeam ?? RivalWingsTeamName.Falcons : RivalWingsTeamName.Falcons);
+                var secondTeam = (RivalWingsTeamName)((int)(firstTeam + 1) % 2);
+
                 ImGui.TableSetupColumn("c1", ImGuiTableColumnFlags.WidthStretch);
                 ImGui.TableSetupColumn("c2", ImGuiTableColumnFlags.WidthStretch);
                 ImGui.TableSetupColumn("c3", ImGuiTableColumnFlags.WidthStretch);
 
                 ImGui.TableNextColumn();
-                DrawTeamHeader(RivalWingsTeamName.Falcons);
+                DrawTeamHeader(firstTeam);
                 ImGui.TableNextColumn();
 
                 if(Match.TeamMechTime == null || Match.Mercs == null || Match.Supplies == null || Match.AllianceStats == null) {
@@ -132,10 +135,10 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 }
 
                 ImGui.TableNextColumn();
-                DrawTeamHeader(RivalWingsTeamName.Ravens);
+                DrawTeamHeader(secondTeam);
 
                 ImGui.TableNextColumn();
-                DrawTeamTable(RivalWingsTeamName.Falcons, false);
+                DrawTeamTable(firstTeam, false);
                 ImGui.TableNextColumn();
                 if(Match.Mercs != null && Match.Supplies != null) {
                     var tableWidth = 55f * ImGuiHelpers.GlobalScale + ImGui.GetStyle().CellPadding.X * 4;
@@ -145,7 +148,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                     DrawMidMercTable();
                 }
                 ImGui.TableNextColumn();
-                DrawTeamTable(RivalWingsTeamName.Ravens, true);
+                DrawTeamTable(secondTeam, true);
             }
         }
 

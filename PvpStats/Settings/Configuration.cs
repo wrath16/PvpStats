@@ -21,6 +21,7 @@ public class Configuration : IPluginConfiguration {
     public bool EnableAutoPlayerLinking { get; set; } = true;
     public bool EnableManualPlayerLinking { get; set; } = true;
     public bool LeftPlayerTeam { get; set; } = false;
+    public bool? OrderFrontlineTeamsByPlacement { get; set; }
     public bool AnchorTeamNames { get; set; } = true;
     public bool ResizeableMatchWindow { get; set; } = true;
     public bool ShowBackgroundImage { get; set; } = true;
