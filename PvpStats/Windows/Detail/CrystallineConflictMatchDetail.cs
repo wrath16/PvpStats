@@ -290,7 +290,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     }
 
     private void DrawStatsTable() {
-        using var table = ImRaii.Table($"postmatchplayers##{_dataModel.Id}", 15, ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.ScrollX | ImGuiTableFlags.NoSavedSettings | ImGuiTableFlags.PadOuterX);
+        using var table = ImRaii.Table($"postmatchplayers##{_dataModel.Id}", 15, ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.ScrollX | ImGuiTableFlags.NoSavedSettings | ImGuiTableFlags.PadOuterX | ImGuiTableFlags.NoClip);
         if(!table) return;
         ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, ImGuiHelpers.GlobalScale * 100f, 0);
         ImGui.TableSetupColumn("Home World", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 110f, 1);

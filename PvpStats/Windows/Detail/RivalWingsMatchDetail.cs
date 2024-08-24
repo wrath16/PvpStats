@@ -438,7 +438,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
 
     private void DrawPlayerStatsTable() {
         using var table = ImRaii.Table($"postmatchplayers##{Match.Id}", 19,
-            ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.ScrollX | ImGuiTableFlags.ScrollY | ImGuiTableFlags.NoSavedSettings | ImGuiTableFlags.PadOuterX
+            ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.ScrollX | ImGuiTableFlags.ScrollY | ImGuiTableFlags.NoSavedSettings | ImGuiTableFlags.PadOuterX | ImGuiTableFlags.NoClip
             , new Vector2(ImGui.GetContentRegionAvail().X, ImGui.GetContentRegionAvail().Y));
         //new Vector2(ImGui.GetContentRegionAvail().X, 550f * ImGuiHelpers.GlobalScale)
         if(!table) return;

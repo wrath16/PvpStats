@@ -198,13 +198,13 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
     }
 
     private void DrawRowDescription(string desc) {
-        ImGuiHelper.RightAlignCursor(desc);
+        ImGuiHelper.RightAlignCursor2(desc, 0f);
         ImGui.TextUnformatted(desc);
     }
 
     private void DrawPlayerStatsTable() {
         var tableFlags = ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.ScrollX
-            | ImGuiTableFlags.ScrollY | ImGuiTableFlags.NoSavedSettings | ImGuiTableFlags.PadOuterX;
+            | ImGuiTableFlags.ScrollY | ImGuiTableFlags.NoSavedSettings | ImGuiTableFlags.PadOuterX | ImGuiTableFlags.NoClip;
         //this is hacky
         int columnCount = 16;
         if(Match.Arena == FrontlineMap.FieldsOfGlory) {

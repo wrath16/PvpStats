@@ -177,7 +177,7 @@ internal class FrontlineSummary {
 
                 ImGui.TableNextColumn();
                 if(job.Value.Matches > 0) {
-                    var diffColor = job.Value.WinRate > 1 / 3f ? Plugin.Configuration.Colors.Win : job.Value.WinRate < 1 / 3f ? Plugin.Configuration.Colors.Loss : ImGuiColors.DalamudWhite;
+                    var diffColor = job.Value.FirstPlaces * 2 > job.Value.SecondPlaces + job.Value.ThirdPlaces ? Plugin.Configuration.Colors.Win : job.Value.FirstPlaces * 2 < job.Value.SecondPlaces + job.Value.ThirdPlaces ? Plugin.Configuration.Colors.Loss : ImGuiColors.DalamudWhite;
                     ImGuiHelper.DrawNumericCell(job.Value.WinRate.ToString("P2"), offset, diffColor);
                 }
 
