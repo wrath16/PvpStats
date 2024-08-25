@@ -1,6 +1,7 @@
 using Dalamud.Configuration;
 using Dalamud.Interface.Colors;
 using PvpStats.Helpers;
+using PvpStats.Types.Display;
 using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using System;
@@ -89,5 +90,9 @@ public class Configuration : IPluginConfiguration {
             RivalWingsTeamName.Ravens => Colors.Ravens,
             _ => ImGuiColors.DalamudWhite,
         };
+    }
+
+    public Vector4 GetFrontlineWinRateColor(FLAggregateStats stats) {
+        return stats.FirstPlaces * 2 > stats.SecondPlaces + stats.ThirdPlaces ? Colors.Win : stats.FirstPlaces * 2 < stats.SecondPlaces + stats.ThirdPlaces ? Colors.Loss : ImGuiColors.DalamudWhite;
     }
 }

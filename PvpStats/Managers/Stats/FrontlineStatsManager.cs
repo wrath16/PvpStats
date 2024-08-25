@@ -12,11 +12,29 @@ using System.Threading.Tasks;
 namespace PvpStats.Managers.Stats;
 internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
 
+    public static float[] KillsPerMatchRange = [0.5f, 8.0f];
+    public static float[] DeathsPerMatchRange = [0.5f, 5.0f];
+    public static float[] AssistsPerMatchRange = [10.0f, 35.0f];
+    public static float[] DamageDealtPerMatchRange = [300000f, 1500000f];
+    public static float[] DamageToOtherPerMatchRange = [100000f, 2000000f];
+    public static float[] DamageTakenPerMatchRange = [300000f, 1250000f];
+    public static float[] HPRestoredPerMatchRange = [300000f, 1800000f];
+    public static float AverageMatchLength = 15f;
+    public static float[] ContribRange = [0 / 48f, 4/ 48f];
+    public static float[] DamagePerKARange = [20000f, 50000f];
+    public static float[] DamagePerLifeRange = [100000f, 400000f];
+    public static float[] DamageTakenPerLifeRange = [120000f, 300000f];
+    public static float[] HPRestoredPerLifeRange = [120000f, 300000f];
+    public static float[] KDARange = [4.0f, 20.0f];
     internal FLAggregateStats OverallResults { get; private set; } = new();
     internal Dictionary<FrontlineMap, FLAggregateStats> MapResults { get; private set; } = new();
     internal FLPlayerJobStats LocalPlayerStats { get; private set; } = new();
     internal Dictionary<Job, FLAggregateStats> LocalPlayerJobResults { get; private set; } = new();
     internal TimeSpan AverageMatchDuration { get; private set; } = new();
+
+    //jobs
+    internal List<Job> Jobs { get; private set; } = new();
+    internal Dictionary<Job, FLPlayerJobStats> JobStats { get; private set; } = new();
 
     internal FrontlineStatsManager(Plugin plugin) : base(plugin, plugin.FLCache) {
     }
@@ -31,7 +49,20 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
         List<FLScoreboardDouble> localPlayerTeamContributions = [];
         FLPlayerJobStats shatterLocalPlayerStats = new();
         List<FLScoreboardDouble> shatterLocalPlayerTeamContributions = [];
+
+        List<Job> jobs = new();
+        Dictionary<Job, FLPlayerJobStats> jobStats = new();
+        Dictionary<Job, List<FLScoreboardDouble>> jobTeamContributions = new();
+        Dictionary<Job, TimeSpan> jobTimes = new();
+
         TimeSpan totalMatchTime = TimeSpan.Zero, totalShatterTime = TimeSpan.Zero;
+
+        var allJobs = Enum.GetValues(typeof(Job)).Cast<Job>();
+        foreach(var job in allJobs) {
+            jobStats.Add(job, new());
+            jobTimes.Add(job, TimeSpan.Zero);
+            jobTeamContributions.Add(job, new());
+        }
 
         foreach(var match in matches) {
             var teamScoreboards = match.GetTeamScoreboards();
@@ -58,16 +89,29 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
                 }
             }
 
-            if(match.PlayerScoreboards != null && match.LocalPlayerTeam != null) {
-                //scoreboardEligibleTime += match.MatchDuration ?? TimeSpan.Zero;
-                FrontlineScoreboard? localPlayerTeamScoreboard = null;
-                teamScoreboards?.TryGetValue((FrontlineTeamName)match.LocalPlayerTeam, out localPlayerTeamScoreboard);
-                AddPlayerJobStat(localPlayerStats, localPlayerTeamContributions, match, match.LocalPlayerTeamMember!, localPlayerTeamScoreboard);
-
-                if(match.Arena == FrontlineMap.FieldsOfGlory) {
-                    totalShatterTime += match.MatchDuration ?? TimeSpan.Zero;
+            if(match.PlayerScoreboards != null) {
+                if(match.LocalPlayerTeam != null) {
+                    //scoreboardEligibleTime += match.MatchDuration ?? TimeSpan.Zero;
+                    FrontlineScoreboard? localPlayerTeamScoreboard = null;
                     teamScoreboards?.TryGetValue((FrontlineTeamName)match.LocalPlayerTeam, out localPlayerTeamScoreboard);
-                    AddPlayerJobStat(shatterLocalPlayerStats, shatterLocalPlayerTeamContributions, match, match.LocalPlayerTeamMember!, localPlayerTeamScoreboard);
+                    AddPlayerJobStat(localPlayerStats, localPlayerTeamContributions, match, match.LocalPlayerTeamMember!, localPlayerTeamScoreboard);
+
+                    if(match.Arena == FrontlineMap.FieldsOfGlory) {
+                        totalShatterTime += match.MatchDuration ?? TimeSpan.Zero;
+                        teamScoreboards?.TryGetValue((FrontlineTeamName)match.LocalPlayerTeam, out localPlayerTeamScoreboard);
+                        AddPlayerJobStat(shatterLocalPlayerStats, shatterLocalPlayerTeamContributions, match, match.LocalPlayerTeamMember!, localPlayerTeamScoreboard);
+                    }
+                }
+                foreach(var playerScoreboard in match.PlayerScoreboards) {
+                    var player = match.Players.FirstOrDefault(x => x.Name.Equals(playerScoreboard.Key));
+                    if(player?.Job != null && player?.Team != null) {
+                        //Plugin.Log.Debug($"Adding job stats..{player.Name} {player.Job}");
+                        var teamScoreboard = match.GetTeamScoreboards()[player.Team];
+                        var job = (Job)player.Job;
+                        //apply filters here...
+                        jobTimes[job] += match.MatchDuration ?? TimeSpan.Zero;
+                        AddPlayerJobStat(jobStats[job], jobTeamContributions[job], match, player, teamScoreboard);
+                    }
                 }
             }
         }
@@ -78,6 +122,9 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
         localPlayerStats.ScoreboardPerMatch.DamageToOther = shatterLocalPlayerStats.ScoreboardPerMatch.DamageToOther;
         localPlayerStats.ScoreboardPerMin.DamageToOther = shatterLocalPlayerStats.ScoreboardPerMin.DamageToOther;
         localPlayerStats.ScoreboardContrib.DamageToOther = shatterLocalPlayerStats.ScoreboardContrib.DamageToOther;
+        foreach(var jobStat in jobStats) {
+            SetScoreboardStats(jobStat.Value, jobTeamContributions[jobStat.Key], jobTimes[jobStat.Key]);
+        }
 
         try {
             await RefreshLock.WaitAsync();
@@ -87,6 +134,8 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
             LocalPlayerStats = localPlayerStats;
             LocalPlayerJobResults = localPlayerJobResults;
             AverageMatchDuration = matches.Count > 0 ? totalMatchTime / matches.Count : TimeSpan.Zero;
+            Jobs = jobStats.Keys.ToList();
+            JobStats = jobStats;
         } finally {
             RefreshLock.Release();
         }
@@ -115,11 +164,29 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
         //    IncrementAggregateStats(statsModel.StatsOpponent, match);
         //}
 
+        statsModel.StatsAll.Matches++;
+        if(match.Teams.ContainsKey(player.Team)) {
+            switch(match.Teams[player.Team].Placement) {
+                case 0:
+                    statsModel.StatsAll.FirstPlaces++;
+                    break;
+                case 1:
+                    statsModel.StatsAll.SecondPlaces++;
+                    break;
+                case 2:
+                    statsModel.StatsAll.ThirdPlaces++;
+                    break;
+                default:
+                    break;
+            }
+        }
+
         if(match.PlayerScoreboards != null) {
             var playerScoreboard = match.PlayerScoreboards[player.Name];
             if(playerScoreboard != null && teamScoreboard != null) {
                 //statsModel.ScoreboardTotal.MatchTime += match.PostMatch.MatchDuration;
                 statsModel.ScoreboardTotal += playerScoreboard;
+                statsModel.ScoreboardTotal.Size = statsModel.StatsAll.Matches;
                 teamContributions.Add(new(playerScoreboard, teamScoreboard));
             }
         }
@@ -145,6 +212,7 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
             stats.ScoreboardContrib.DamageToOther = teamContributions.OrderBy(x => x.DamageToOther).ElementAt(statMatches / 2).DamageToOther;
             stats.ScoreboardContrib.Occupations = teamContributions.OrderBy(x => x.Occupations).ElementAt(statMatches / 2).Occupations;
             stats.ScoreboardContrib.Special1 = teamContributions.OrderBy(x => x.Special1).ElementAt(statMatches / 2).Special1;
+            stats.ScoreboardContrib.KillsAndAssists = teamContributions.OrderBy(x => x.KillsAndAssists).ElementAt(statMatches / 2).KillsAndAssists;
         }
     }
 

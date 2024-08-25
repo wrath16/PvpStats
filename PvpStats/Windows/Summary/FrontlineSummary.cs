@@ -3,6 +3,7 @@ using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PvpStats.Helpers;
+using PvpStats.Managers.Stats;
 using PvpStats.Types.Display;
 using PvpStats.Types.Player;
 using System.Collections.Generic;
@@ -129,7 +130,7 @@ internal class FrontlineSummary {
 
                 ImGui.TableNextColumn();
                 if(map.Value.Matches > 0) {
-                    var diffColor = map.Value.WinRate > 1 / 3f ? Plugin.Configuration.Colors.Win : map.Value.WinRate < 1 / 3f ? Plugin.Configuration.Colors.Loss : ImGuiColors.DalamudWhite;
+                    var diffColor = Plugin.Configuration.GetFrontlineWinRateColor(map.Value);
                     ImGuiHelper.DrawNumericCell(map.Value.WinRate.ToString("P2"), offset, diffColor);
                 }
 
@@ -177,7 +178,7 @@ internal class FrontlineSummary {
 
                 ImGui.TableNextColumn();
                 if(job.Value.Matches > 0) {
-                    var diffColor = job.Value.FirstPlaces * 2 > job.Value.SecondPlaces + job.Value.ThirdPlaces ? Plugin.Configuration.Colors.Win : job.Value.FirstPlaces * 2 < job.Value.SecondPlaces + job.Value.ThirdPlaces ? Plugin.Configuration.Colors.Loss : ImGuiColors.DalamudWhite;
+                    var diffColor = Plugin.Configuration.GetFrontlineWinRateColor(job.Value);
                     ImGuiHelper.DrawNumericCell(job.Value.WinRate.ToString("P2"), offset, diffColor);
                 }
 
@@ -216,51 +217,51 @@ internal class FrontlineSummary {
 
                 //per match
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Kills, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 0.5f, 10f, Plugin.Configuration.ColorScaleStats, "0.00", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Kills, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.KillsPerMatchRange[0], FrontlineStatsManager.KillsPerMatchRange[1], Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, 0.5f, 5.0f, Plugin.Configuration.ColorScaleStats, "0.00", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, FrontlineStatsManager.DeathsPerMatchRange[0], FrontlineStatsManager.DeathsPerMatchRange[1], Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 5f, 50f, Plugin.Configuration.ColorScaleStats, "0.00", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.AssistsPerMatchRange[0], FrontlineStatsManager.AssistsPerMatchRange[1], Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMatch.DamageToPCs, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 100000f, 1800000f, Plugin.Configuration.ColorScaleStats, "#", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMatch.DamageToPCs, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.DamageDealtPerMatchRange[0], FrontlineStatsManager.DamageDealtPerMatchRange[1], Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMatch.DamageToOther, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 100000f, 2000000f, Plugin.Configuration.ColorScaleStats, "#", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMatch.DamageToOther, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.DamageToOtherPerMatchRange[0], FrontlineStatsManager.DamageToOtherPerMatchRange[1], Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMatch.DamageTaken, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 300000f, 1500000f, Plugin.Configuration.ColorScaleStats, "#", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMatch.DamageTaken, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.DamageTakenPerMatchRange[0], FrontlineStatsManager.DamageTakenPerMatchRange[1], Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMatch.HPRestored, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 100000f, 1750000f, Plugin.Configuration.ColorScaleStats, "#", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMatch.HPRestored, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.HPRestoredPerMatchRange[0], FrontlineStatsManager.HPRestoredPerMatchRange[1], Plugin.Configuration.ColorScaleStats, "#", offset);
 
                 //per min
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMin.Kills, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 0.5f / 15, 10f / 15, Plugin.Configuration.ColorScaleStats, "0.00", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMin.Kills, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.KillsPerMatchRange[0] / FrontlineStatsManager.AverageMatchLength, FrontlineStatsManager.KillsPerMatchRange[1] / FrontlineStatsManager.AverageMatchLength, Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMin.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, 0.5f / 15, 5.0f / 15, Plugin.Configuration.ColorScaleStats, "0.00", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMin.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, FrontlineStatsManager.DeathsPerMatchRange[0] / FrontlineStatsManager.AverageMatchLength, FrontlineStatsManager.DeathsPerMatchRange[1] / FrontlineStatsManager.AverageMatchLength, Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMin.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 5f / 15, 50f / 15, Plugin.Configuration.ColorScaleStats, "0.00", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMin.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.AssistsPerMatchRange[0] / FrontlineStatsManager.AverageMatchLength, FrontlineStatsManager.AssistsPerMatchRange[1] / FrontlineStatsManager.AverageMatchLength, Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMin.DamageToPCs, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 100000f / 15, 1800000f / 15, Plugin.Configuration.ColorScaleStats, "#", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMin.DamageToPCs, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.DamageDealtPerMatchRange[0] / FrontlineStatsManager.AverageMatchLength, FrontlineStatsManager.DamageDealtPerMatchRange[1] / FrontlineStatsManager.AverageMatchLength, Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMin.DamageToOther, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 100000f / 15, 2000000f / 15, Plugin.Configuration.ColorScaleStats, "#", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMin.DamageToOther, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.DamageToOtherPerMatchRange[0] / FrontlineStatsManager.AverageMatchLength, FrontlineStatsManager.DamageToOtherPerMatchRange[1] / FrontlineStatsManager.AverageMatchLength, Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMin.DamageTaken, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 300000f / 15, 1500000f / 15, Plugin.Configuration.ColorScaleStats, "#", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMin.DamageTaken, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.DamageTakenPerMatchRange[0] / FrontlineStatsManager.AverageMatchLength, FrontlineStatsManager.DamageTakenPerMatchRange[1] / FrontlineStatsManager.AverageMatchLength, Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMin.HPRestored, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 100000f / 15, 1750000f / 15, Plugin.Configuration.ColorScaleStats, "#", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardPerMin.HPRestored, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.HPRestoredPerMatchRange[0] / FrontlineStatsManager.AverageMatchLength, FrontlineStatsManager.HPRestoredPerMatchRange[1] / FrontlineStatsManager.AverageMatchLength, Plugin.Configuration.ColorScaleStats, "#", offset);
 
                 //team contrib
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardContrib.Kills, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 0 / 48f, 4 / 48f, Plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardContrib.Kills, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.ContribRange[0], FrontlineStatsManager.ContribRange[1], Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardContrib.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, 0 / 48f, 4 / 48f, Plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardContrib.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, FrontlineStatsManager.ContribRange[0], FrontlineStatsManager.ContribRange[1], Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardContrib.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 0 / 48f, 4 / 48f, Plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardContrib.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.ContribRange[0], FrontlineStatsManager.ContribRange[1], Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardContrib.DamageToPCs, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 0 / 48f, 4 / 48f, Plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardContrib.DamageToPCs, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.ContribRange[0], FrontlineStatsManager.ContribRange[1], Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardContrib.DamageToOther, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 0 / 48f, 4 / 48f, Plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardContrib.DamageToOther, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.ContribRange[0], FrontlineStatsManager.ContribRange[1], Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardContrib.DamageTaken, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 0 / 48f, 4 / 48f, Plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardContrib.DamageTaken, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.ContribRange[0], FrontlineStatsManager.ContribRange[1], Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardContrib.HPRestored, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 0 / 48f, 4 / 48f, Plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardContrib.HPRestored, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.ContribRange[0], FrontlineStatsManager.ContribRange[1], Plugin.Configuration.ColorScaleStats, "P1", offset);
             }
         }
     }

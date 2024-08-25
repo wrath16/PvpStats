@@ -11,13 +11,13 @@ namespace PvpStats.Windows.Tracker;
 
 internal class CCTrackerWindow : TrackerWindow {
 
-    private CrystallineConflictMatchList ccMatches;
-    private CrystallineConflictSummary ccSummary;
-    private CrystallineConflictRecords ccRecords;
-    private CrystallineConflictPlayerList ccPlayers;
-    private CrystallineConflictJobList ccJobs;
-    private CrystallineConflictPvPProfile ccProfile;
-    private CrystallineConflictRankGraph ccRank;
+    private readonly CrystallineConflictMatchList _ccMatches;
+    private readonly CrystallineConflictSummary _ccSummary;
+    private readonly CrystallineConflictRecords _ccRecords;
+    private readonly CrystallineConflictPlayerList _ccPlayers;
+    private readonly CrystallineConflictJobList _ccJobs;
+    private readonly CrystallineConflictPvPProfile _ccProfile;
+    private readonly CrystallineConflictRankGraph _ccRank;
 
     internal CCTrackerWindow(Plugin plugin) : base(plugin, plugin.Configuration.CCWindowConfig, "Crystalline Conflict Tracker") {
         //SizeConstraints = new WindowSizeConstraints {
@@ -37,13 +37,13 @@ internal class CCTrackerWindow : TrackerWindow {
         MatchFilters.Add(new BookmarkFilter(plugin, Refresh));
         MatchFilters.Add(new MiscFilter(plugin, Refresh, plugin.Configuration.CCWindowConfig.MatchFilters.MiscFilter));
 
-        ccMatches = new(plugin);
-        ccSummary = new(plugin);
-        ccRecords = new(plugin);
-        ccJobs = new(plugin, this);
-        ccPlayers = new(plugin, this);
-        ccProfile = new(plugin);
-        ccRank = new(plugin);
+        _ccMatches = new(plugin);
+        _ccSummary = new(plugin);
+        _ccRecords = new(plugin);
+        _ccJobs = new(plugin, this);
+        _ccPlayers = new(plugin, this);
+        _ccProfile = new(plugin);
+        _ccRank = new(plugin);
         //Plugin.DataQueue.QueueDataOperation(Refresh);
     }
 
@@ -56,14 +56,14 @@ internal class CCTrackerWindow : TrackerWindow {
         s0.Start();
         try {
             await RefreshLock.WaitAsync();
-            await Plugin.CCStatsEngine.Refresh(MatchFilters, ccJobs.StatSourceFilter, ccPlayers.StatSourceFilter.InheritFromPlayerFilter);
+            await Plugin.CCStatsEngine.Refresh(MatchFilters, _ccJobs.StatSourceFilter, _ccPlayers.StatSourceFilter.InheritFromPlayerFilter);
             Stopwatch s1 = new();
             s1.Start();
             Task.WaitAll([
-                ccMatches.Refresh(Plugin.CCStatsEngine.Matches),
-                ccPlayers.Refresh(Plugin.CCStatsEngine.Players),
-                ccJobs.Refresh(Plugin.CCStatsEngine.Jobs),
-                ccRank.Refresh(Plugin.CCStatsEngine.Matches),
+                _ccMatches.Refresh(Plugin.CCStatsEngine.Matches),
+                _ccPlayers.Refresh(Plugin.CCStatsEngine.Players),
+                _ccJobs.Refresh(Plugin.CCStatsEngine.Jobs),
+                _ccRank.Refresh(Plugin.CCStatsEngine.Matches),
             ]);
             Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"all window modules", s1.ElapsedMilliseconds.ToString()));
             s1.Restart();
@@ -87,27 +87,27 @@ internal class CCTrackerWindow : TrackerWindow {
                 if(Plugin.Configuration.ResizeWindowLeft) {
                     ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 20f * ImGuiHelpers.GlobalScale);
                 }
-                Tab("Matches", ccMatches.Draw);
+                Tab("Matches", _ccMatches.Draw);
                 Tab("Summary", () => {
                     using(ImRaii.Child("SummaryChild")) {
-                        ccSummary.Draw();
+                        _ccSummary.Draw();
                     }
                 });
                 Tab("Records", () => {
                     using(ImRaii.Child("RecordsChild")) {
-                        ccRecords.Draw();
+                        _ccRecords.Draw();
                     }
                 });
-                Tab("Jobs", ccJobs.Draw);
-                Tab("Players", ccPlayers.Draw);
+                Tab("Jobs", _ccJobs.Draw);
+                Tab("Players", _ccPlayers.Draw);
                 Tab("Credit", () => {
                     using(ImRaii.Child("CreditChild")) {
-                        ccRank.Draw();
+                        _ccRank.Draw();
                     }
                 });
                 Tab("Profile", () => {
                     using(ImRaii.Child("ProfileChild")) {
-                        ccProfile.Draw();
+                        _ccProfile.Draw();
                     }
                 });
             }

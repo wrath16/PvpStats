@@ -37,6 +37,7 @@ public class PvpScoreboardDouble {
             DamageDealt = a.DamageDealt / b,
             DamageTaken = a.DamageTaken / b,
             HPRestored = a.HPRestored / b,
+            KillsAndAssists = a.KillsAndAssists / b,
         };
     }
 
@@ -48,6 +49,7 @@ public class PvpScoreboardDouble {
             DamageDealt = a.DamageDealt,
             DamageTaken = a.DamageTaken,
             HPRestored = a.HPRestored,
+            KillsAndAssists = a.KillsAndAssists,
         };
     }
 }

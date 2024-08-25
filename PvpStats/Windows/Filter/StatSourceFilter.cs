@@ -47,7 +47,7 @@ public class StatSourceFilter : DataFilter {
         UpdateAllSelected();
     }
 
-    private void UpdateAllSelected() {
+    protected void UpdateAllSelected() {
         AllSelected = true;
         foreach(var category in FilterState) {
             AllSelected = AllSelected && category.Value;

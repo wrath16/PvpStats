@@ -12,6 +12,7 @@ internal class FLTrackerWindow : TrackerWindow {
 
     private readonly FrontlineMatchList _matchList;
     private readonly FrontlineSummary _summary;
+    private readonly FrontlineJobList _jobStats;
     private readonly FrontlinePvPProfile _profile;
 
     public FLTrackerWindow(Plugin plugin) : base(plugin, plugin.Configuration.FLWindowConfig, "Frontline Tracker") {
@@ -31,6 +32,7 @@ internal class FLTrackerWindow : TrackerWindow {
 
         _matchList = new(plugin);
         _summary = new(plugin);
+        _jobStats = new(plugin, this);
         _profile = new(plugin);
     }
 
@@ -45,6 +47,7 @@ internal class FLTrackerWindow : TrackerWindow {
                         _summary.Draw();
                     }
                 });
+                Tab("Jobs", _jobStats.Draw);
                 Tab("Profile", () => {
                     using(ImRaii.Child("ProfileChild")) {
                         _profile.Draw();
@@ -64,6 +67,7 @@ internal class FLTrackerWindow : TrackerWindow {
             s1.Start();
             Task.WaitAll([
                 _matchList.Refresh(Plugin.FLStatsEngine.Matches),
+                _jobStats.Refresh(Plugin.FLStatsEngine.Jobs),
             ]);
             Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"all window modules", s1.ElapsedMilliseconds.ToString()));
             s1.Restart();
