@@ -17,7 +17,7 @@ internal class FrontlineJobList : FLStatsList<Job> {
 
     protected override string TableId => "###FLJobStatsTable";
 
-    //internal StatSourceFilter StatSourceFilter { get; private set; }
+    internal FLStatSourceFilter StatSourceFilter { get; private set; }
 
     protected override List<ColumnParams> Columns { get; set; } = new() {
         new ColumnParams{           Name = "Job",                                                                       Id = 0,                                                             Width = 85f,                                    Flags = ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoHide },
@@ -75,12 +75,13 @@ internal class FrontlineJobList : FLStatsList<Job> {
         new NumericColumnParams{    Name = "Damage Dealt Per Life",                                                     Id = (uint)"ScoreboardTotal.DamageDealtPerLife".GetHashCode(),      Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Damage Taken Per Life",                                                     Id = (uint)"ScoreboardTotal.DamageTakenPerLife".GetHashCode(),      Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "HP Restored Per Life",                                                      Id = (uint)"ScoreboardTotal.HPRestoredPerLife".GetHashCode(),       Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Battle High Per Life",                                                      Id = (uint)"BattleHighPerLife".GetHashCode(),                       Width = 75f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "KDA Ratio",                                                                 Id = (uint)"ScoreboardTotal.KDA".GetHashCode(),                     Width = 45f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
     };
 
     public FrontlineJobList(Plugin plugin, FLTrackerWindow window) : base(plugin, window) {
         //ListModel = listModel;
-        //StatSourceFilter = new StatSourceFilter(plugin, window.Refresh, plugin.Configuration.CCWindowConfig.JobStatFilters.StatSourceFilter);
+        StatSourceFilter = new FLStatSourceFilter(plugin, window.Refresh);
         //window.JobStatFilters.Add(StatSourceFilter);
         //OtherPlayerFilter = playerFilter;
     }
@@ -156,7 +157,7 @@ internal class FrontlineJobList : FLStatsList<Job> {
             ImGuiHelper.DrawNumericCell(_plugin.FLStatsEngine.JobStats[item].StatsAll.WinRate.ToString("P1"), Offset, jobWinDiffColor);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.FLStatsEngine.JobStats[item].StatsAll.AveragePlace, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 1.75f, 2.25f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
+            ImGuiHelper.DrawNumericCell((float)_plugin.FLStatsEngine.JobStats[item].StatsAll.AveragePlace, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 1.5f, 2.5f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
         }
 
         //total
@@ -228,7 +229,6 @@ internal class FrontlineJobList : FLStatsList<Job> {
             ImGuiHelper.DrawNumericCell((float)_plugin.FLStatsEngine.JobStats[item].ScoreboardPerMin.KillsAndAssists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, (FrontlineStatsManager.KillsPerMatchRange[0] + FrontlineStatsManager.AssistsPerMatchRange[0]) / FrontlineStatsManager.AverageMatchLength, (FrontlineStatsManager.KillsPerMatchRange[1] + FrontlineStatsManager.AssistsPerMatchRange[1]) / FrontlineStatsManager.AverageMatchLength, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
         }
 
-
         //team contrib
         if(ImGui.TableNextColumn()) {
             ImGuiHelper.DrawNumericCell((float)_plugin.FLStatsEngine.JobStats[item].ScoreboardContrib.Kills, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.ContribRange[0], FrontlineStatsManager.ContribRange[1], _plugin.Configuration.ColorScaleStats, "P1", Offset);
@@ -266,6 +266,9 @@ internal class FrontlineJobList : FLStatsList<Job> {
             ImGuiHelper.DrawNumericCell(_plugin.FLStatsEngine.JobStats[item].ScoreboardTotal.HPRestoredPerLife, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.HPRestoredPerLifeRange[0], FrontlineStatsManager.HPRestoredPerLifeRange[1], _plugin.Configuration.ColorScaleStats, "#", Offset);
         }
         if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)_plugin.FLStatsEngine.JobStats[item].BattleHighPerLife, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.BattleHighPerLifeRange[0], FrontlineStatsManager.BattleHighPerLifeRange[1], _plugin.Configuration.ColorScaleStats, "0.00", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
             ImGuiHelper.DrawNumericCell((float)_plugin.FLStatsEngine.JobStats[item].ScoreboardTotal.KDA, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.KDARange[0], FrontlineStatsManager.KDARange[1], _plugin.Configuration.ColorScaleStats, "0.00", Offset);
         }
     }
@@ -282,7 +285,10 @@ internal class FrontlineJobList : FLStatsList<Job> {
             comparator = (r) => PlayerJobHelper.GetSubRoleFromJob(r) ?? 0;
         } else {
             (var p1, var p2) = GetStatsPropertyFromId(columnId);
-            if(p1 != null && p2 != null) {
+
+            if(p1 != null && p2 == null) {
+                comparator = (r) => p1.GetValue(_plugin.FLStatsEngine.JobStats[r]) ?? 0;
+            } else if(p1 != null && p2 != null) {
                 comparator = (r) => p2.GetValue(p1.GetValue(_plugin.FLStatsEngine.JobStats[r])) ?? 0;
             }
         }

@@ -405,8 +405,7 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
     public override async Task RefreshDataModel() {
         DataModelUntruncated = DataModel;
         ApplyQuickFilters(MinMatchFilter.MinMatches, PlayerQuickSearchFilter.SearchText);
-        TriggerSort = true;
-        await Task.CompletedTask;
+        await base.RefreshDataModel();
     }
 
     private void ApplyQuickFilters(uint minMatches, string searchText) {

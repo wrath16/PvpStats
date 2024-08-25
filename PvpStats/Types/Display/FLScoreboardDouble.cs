@@ -3,10 +3,15 @@
 namespace PvpStats.Types.Display;
 public class FLScoreboardDouble : PvpScoreboardDouble {
 
+    public static int BattleHighPerKill => 10;
+    public static int BattleHighPerAssist => 2;
+
     public double Occupations { get; set; }
     public double DamageToOther { get; set; }
     public double DamageToPCs { get; set; }
     public double Special1 { get; set; }
+
+    public double BattleHigh => (Kills * BattleHighPerKill + Assists * BattleHighPerAssist);
 
     public FLScoreboardDouble() {
 

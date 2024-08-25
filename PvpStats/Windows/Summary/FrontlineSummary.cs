@@ -1,5 +1,4 @@
-﻿using Dalamud.Interface.Colors;
-using Dalamud.Interface.Utility;
+﻿using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PvpStats.Helpers;
@@ -30,6 +29,9 @@ internal class FrontlineSummary {
             ImGui.Separator();
             ImGui.TextColored(Plugin.Configuration.Colors.Header, "Average Performance:");
             ImGuiHelper.HelpMarker("1st row: average per match.\n2nd row: average per minute.\n3rd row: median team contribution per match.\n\n'Damage to Other' only counts Shatter matches.");
+            ImGui.Text("KDA: ");
+            ImGui.SameLine();
+            ImGuiHelper.DrawColorScale((float)Plugin.FLStatsEngine.LocalPlayerStats.ScoreboardTotal.KDA, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.KDARange[0], FrontlineStatsManager.KDARange[1], Plugin.Configuration.ColorScaleStats, "0.00");
             DrawMatchStatsTable();
             if(Plugin.FLStatsEngine.MapResults.Count > 0) {
                 ImGui.Separator();

@@ -349,15 +349,6 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
     public override void OpenItemDetail(Job item) {
     }
 
-    public override async Task RefreshDataModel() {
-        TriggerSort = true;
-        await Task.CompletedTask;
-    }
-
-    //private async Task RefreshMainWindow() {
-    //    await _plugin.WindowManager.Refresh();
-    //}
-
     private string CSVRow(Dictionary<Job, CCPlayerJobStats> model, Job key) {
         string csv = "";
         foreach(var col in Columns) {

@@ -62,7 +62,7 @@ internal class FLTrackerWindow : TrackerWindow {
         s0.Start();
         try {
             await RefreshLock.WaitAsync();
-            await Plugin.FLStatsEngine.Refresh(MatchFilters, new(), new());
+            await Plugin.FLStatsEngine.Refresh(MatchFilters, [_jobStats.StatSourceFilter], new());
             Stopwatch s1 = new();
             s1.Start();
             Task.WaitAll([

@@ -1,6 +1,7 @@
 ﻿using ImGuiNET;
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
 internal class StatsList<T> : FilteredList<T> {
@@ -23,5 +24,10 @@ internal class StatsList<T> : FilteredList<T> {
     }
 
     public override void OpenItemDetail(T item) {
+    }
+
+    public override async Task RefreshDataModel() {
+        TriggerSort = true;
+        await Task.CompletedTask;
     }
 }

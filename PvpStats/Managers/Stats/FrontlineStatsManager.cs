@@ -20,12 +20,13 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
     public static float[] DamageTakenPerMatchRange = [300000f, 1250000f];
     public static float[] HPRestoredPerMatchRange = [300000f, 1800000f];
     public static float AverageMatchLength = 15f;
-    public static float[] ContribRange = [0 / 48f, 4/ 48f];
+    public static float[] ContribRange = [0 / 48f, 4 / 48f];
     public static float[] DamagePerKARange = [20000f, 50000f];
     public static float[] DamagePerLifeRange = [100000f, 400000f];
     public static float[] DamageTakenPerLifeRange = [120000f, 300000f];
     public static float[] HPRestoredPerLifeRange = [120000f, 300000f];
     public static float[] KDARange = [4.0f, 20.0f];
+    public static float[] BattleHighPerLifeRange = [10.0f, 60.0f];
     internal FLAggregateStats OverallResults { get; private set; } = new();
     internal Dictionary<FrontlineMap, FLAggregateStats> MapResults { get; private set; } = new();
     internal FLPlayerJobStats LocalPlayerStats { get; private set; } = new();
@@ -56,6 +57,11 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
         Dictionary<Job, TimeSpan> jobTimes = new();
 
         TimeSpan totalMatchTime = TimeSpan.Zero, totalShatterTime = TimeSpan.Zero;
+
+        //this is kinda shit
+        var jobStatSourceFilter = jobStatFilters[0] as FLStatSourceFilter;
+        var playerFilter = (OtherPlayerFilter)matchFilters.First(x => x.GetType() == typeof(OtherPlayerFilter));
+        var linkedPlayerAliases = Plugin.PlayerLinksService.GetAllLinkedAliases(playerFilter.PlayerNamesRaw);
 
         var allJobs = Enum.GetValues(typeof(Job)).Cast<Job>();
         foreach(var job in allJobs) {
@@ -104,11 +110,37 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
                 }
                 foreach(var playerScoreboard in match.PlayerScoreboards) {
                     var player = match.Players.FirstOrDefault(x => x.Name.Equals(playerScoreboard.Key));
-                    if(player?.Job != null && player?.Team != null) {
+                    if(player is null) continue;
+                    bool isLocalPlayer = player.Name.Equals(match.LocalPlayer);
+                    bool isTeammate = !isLocalPlayer && player.Team == match.LocalPlayerTeam;
+                    bool isOpponent = !isLocalPlayer && !isTeammate;
+
+                    bool jobStatsEligible = true;
+                    bool nameMatch = player.Name.FullName.Contains(playerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase);
+                    if(Plugin.Configuration.EnablePlayerLinking && !nameMatch) {
+                        nameMatch = linkedPlayerAliases.Contains(player.Name);
+                    }
+                    bool sideMatch = playerFilter.TeamStatus == TeamStatus.Any
+                        || playerFilter.TeamStatus == TeamStatus.Teammate && isTeammate
+                        || playerFilter.TeamStatus == TeamStatus.Opponent && !isTeammate && !isLocalPlayer;
+                    bool jobMatch = playerFilter.AnyJob || playerFilter.PlayerJob == player.Job;
+                    if(!nameMatch || !sideMatch || !jobMatch) {
+                        if(jobStatSourceFilter.InheritFromPlayerFilter) {
+                            jobStatsEligible = false;
+                        }
+                    }
+                    if(!jobStatSourceFilter.FilterState[StatSource.LocalPlayer] && isLocalPlayer) {
+                        jobStatsEligible = false;
+                    } else if(!jobStatSourceFilter.FilterState[StatSource.Teammate] && isTeammate) {
+                        jobStatsEligible = false;
+                    } else if(!jobStatSourceFilter.FilterState[StatSource.Opponent] && !isTeammate && !isLocalPlayer) {
+                        jobStatsEligible = false;
+                    }
+
+                    if(player?.Job != null && player?.Team != null && jobStatsEligible) {
                         //Plugin.Log.Debug($"Adding job stats..{player.Name} {player.Job}");
                         var teamScoreboard = match.GetTeamScoreboards()[player.Team];
                         var job = (Job)player.Job;
-                        //apply filters here...
                         jobTimes[job] += match.MatchDuration ?? TimeSpan.Zero;
                         AddPlayerJobStat(jobStats[job], jobTeamContributions[job], match, player, teamScoreboard);
                     }
