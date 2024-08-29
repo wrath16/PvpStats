@@ -16,9 +16,9 @@ internal abstract class StatsList<T, U> : FilteredList<T> where T : notnull wher
     public StatsList(Plugin plugin, SemaphoreSlim? interlock = null) : base(plugin, interlock) {
     }
 
-    protected List<T> DataModelUntruncated { get; set; } = new();
+    protected List<T> DataModelUntruncated { get; set; } = [];
 
-    protected Dictionary<T, U> StatsModel { get; set; }
+    protected Dictionary<T, U> StatsModel { get; set; } = [];
 
     protected override ImGuiTableFlags TableFlags { get; set; } = ImGuiTableFlags.Reorderable | ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable
     | ImGuiTableFlags.Borders | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX | ImGuiTableFlags.PadOuterX;

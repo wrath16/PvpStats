@@ -337,43 +337,4 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
 
     public override void OpenItemDetail(Job item) {
     }
-
-    //private string CSVRow(Dictionary<Job, CCPlayerJobStats> model, Job key) {
-    //    string csv = "";
-    //    foreach(var col in Columns) {
-    //        if(col.Id == 0) {
-    //            csv += PlayerJobHelper.GetNameFromJob(key);
-    //        } else if(col.Id == 1) {
-    //            csv += PlayerJobHelper.GetSubRoleFromJob(key);
-    //        } else {
-    //            //find property
-    //            (var p1, var p2) = GetStatsPropertyFromId(col.Id);
-    //            if(p1 != null && p2 != null) {
-    //                csv += p2.GetValue(p1.GetValue(model[key])) ?? 0;
-    //            }
-    //        }
-    //        csv += ",";
-    //    }
-    //    csv += "\n";
-    //    return csv;
-    //}
-
-    //private void SortByColumn(uint columnId, ImGuiSortDirection direction) {
-    //    //_plugin.Log.Debug($"Sorting by {columnId}");
-    //    Func<Job, object> comparator = (r) => 0;
-
-    //    //0 = job
-    //    //1 = role
-    //    if(columnId == 0) {
-    //        comparator = (r) => r;
-    //    } else if(columnId == 1) {
-    //        comparator = (r) => PlayerJobHelper.GetSubRoleFromJob(r) ?? 0;
-    //    } else {
-    //        (var p1, var p2) = GetStatsPropertyFromId(columnId);
-    //        if(p1 != null && p2 != null) {
-    //            comparator = (r) => p2.GetValue(p1.GetValue(StatsModel[r])) ?? 0;
-    //        }
-    //    }
-    //    DataModel = direction == ImGuiSortDirection.Ascending ? DataModel.OrderBy(comparator).ToList() : DataModel.OrderByDescending(comparator).ToList();
-    //}
 }

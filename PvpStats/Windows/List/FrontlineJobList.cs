@@ -25,21 +25,6 @@ internal class FrontlineJobList : FLStatsList<Job> {
         new NumericColumnParams{    Name = "3rd Places",                                                                Id = (uint)"StatsAll.ThirdPlaces".GetHashCode(),                    Width = 45f + Offset,                           Flags = ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Win Rate",                                                                  Id = (uint)"StatsAll.WinRate".GetHashCode(),                        Width = 55f + Offset,                           Flags = ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Average Place",                                                             Id = (uint)"StatsAll.AveragePlace".GetHashCode(),                   Width = 55f + Offset,                           Flags = ImGuiTableColumnFlags.WidthFixed },
-        //new NumericColumnParams{    Name = "Your Matches",                                                              Id = (uint)"StatsPersonal.Matches".GetHashCode(),                   Width = 60f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
-        //new NumericColumnParams{    Name = "Your Wins",                                                                 Id = (uint)"StatsPersonal.Wins".GetHashCode(),                      Width = 50f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
-        //new NumericColumnParams{    Name = "Your Losses",                                                               Id = (uint)"StatsPersonal.Losses".GetHashCode(),                    Width = 50f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
-        //new NumericColumnParams{    Name = "Your Win Diff.",                                                            Id = (uint)"StatsPersonal.WinDiff".GetHashCode(),                   Width = 63f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
-        //new NumericColumnParams{    Name = "Your Win Rate",                                                             Id = (uint)"StatsPersonal.WinRate".GetHashCode(),                   Width = 63f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
-        //new NumericColumnParams{    Name = "Teammate Matches",                                                          Id = (uint)"StatsTeammate.Matches".GetHashCode(),                   Width = 70f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
-        //new NumericColumnParams{    Name = "Teammate Wins",                                                             Id = (uint)"StatsTeammate.Wins".GetHashCode(),                      Width = 70f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
-        //new NumericColumnParams{    Name = "Teammate Losses",                                                           Id = (uint)"StatsTeammate.Losses".GetHashCode(),                    Width = 70f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
-        //new NumericColumnParams{    Name = "Teammate Win Diff.",                                                        Id = (uint)"StatsTeammate.WinDiff".GetHashCode(),                   Width = 70f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
-        //new NumericColumnParams{    Name = "Teammate Win Rate",                                                         Id = (uint)"StatsTeammate.WinRate".GetHashCode(),                   Width = 70f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
-        //new NumericColumnParams{    Name = "Opponent Matches",                                                          Id = (uint)"StatsOpponent.Matches".GetHashCode(),                   Width = 70f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
-        //new NumericColumnParams{    Name = "Opponent Wins",                                                             Id = (uint)"StatsOpponent.Wins".GetHashCode(),                      Width = 70f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
-        //new NumericColumnParams{    Name = "Opponent Losses",                                                           Id = (uint)"StatsOpponent.Losses".GetHashCode(),                    Width = 70f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
-        //new NumericColumnParams{    Name = "Opponent Win Diff.",                                                        Id = (uint)"StatsOpponent.WinDiff".GetHashCode(),                   Width = 70f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
-        //new NumericColumnParams{    Name = "Opponent Win Rate",                                                         Id = (uint)"StatsOpponent.WinRate".GetHashCode(),                   Width = 70f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Total Kills",                                                               Id = (uint)"ScoreboardTotal.Kills".GetHashCode(),                   Width = 50f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Total Deaths",                                                              Id = (uint)"ScoreboardTotal.Deaths".GetHashCode(),                  Width = 50f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Total Assists",                                                             Id = (uint)"ScoreboardTotal.Assists".GetHashCode(),                 Width = 50f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
@@ -261,48 +246,4 @@ internal class FrontlineJobList : FLStatsList<Job> {
         StatsModel = _plugin.FLStatsEngine.JobStats;
         await base.RefreshDataModel();
     }
-
-    //private void SortByColumn(uint columnId, ImGuiSortDirection direction) {
-    //    //_plugin.Log.Debug($"Sorting by {columnId}");
-    //    Func<Job, object> comparator = (r) => 0;
-
-    //    //0 = job
-    //    //1 = role
-    //    if(columnId == 0) {
-    //        comparator = (r) => r;
-    //    } else if(columnId == 1) {
-    //        comparator = (r) => PlayerJobHelper.GetSubRoleFromJob(r) ?? 0;
-    //    } else {
-    //        (var p1, var p2) = GetStatsPropertyFromId(columnId);
-
-    //        if(p1 != null && p2 == null) {
-    //            comparator = (r) => p1.GetValue(StatsModel[r]) ?? 0;
-    //        } else if(p1 != null && p2 != null) {
-    //            comparator = (r) => p2.GetValue(p1.GetValue(StatsModel[r])) ?? 0;
-    //        }
-    //    }
-    //    DataModel = direction == ImGuiSortDirection.Ascending ? DataModel.OrderBy(comparator).ToList() : DataModel.OrderByDescending(comparator).ToList();
-    //}
-
-    //private string CSVRow(Dictionary<Job, FLPlayerJobStats> model, Job key) {
-    //    string csv = "";
-    //    foreach(var col in Columns) {
-    //        if(col.Id == 0) {
-    //            csv += PlayerJobHelper.GetNameFromJob(key);
-    //        } else if(col.Id == 1) {
-    //            csv += PlayerJobHelper.GetSubRoleFromJob(key);
-    //        } else {
-    //            //find property
-    //            (var p1, var p2) = GetStatsPropertyFromId(col.Id);
-    //            if(p1 != null && p2 == null) {
-    //                csv += p1.GetValue(model[key]) ?? 0;
-    //            } else if(p1 != null && p2 != null) {
-    //                csv += p2.GetValue(p1.GetValue(model[key])) ?? 0;
-    //            }
-    //        }
-    //        csv += ",";
-    //    }
-    //    csv += "\n";
-    //    return csv;
-    //}
 }

@@ -406,44 +406,4 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
         DataModel = DataModelTruncated;
         GoToPage(0);
     }
-
-    //private string CSVRow(Dictionary<PlayerAlias, CCPlayerJobStats> model, PlayerAlias key) {
-    //    string csv = "";
-    //    foreach(var col in Columns) {
-    //        if(col.Id == 0) {
-    //            csv += key.Name;
-    //        } else if(col.Id == 1) {
-    //            csv += key.HomeWorld;
-    //        } else {
-    //            //find property
-    //            (var p1, var p2) = GetStatsPropertyFromId(col.Id);
-    //            if(p1 != null && p2 != null) {
-    //                csv += p2.GetValue(p1.GetValue(model[key])) ?? 0;
-    //            }
-    //        }
-    //        csv += ",";
-    //    }
-    //    csv += "\n";
-    //    return csv;
-    //}
-
-    //private void SortByColumn(uint columnId, ImGuiSortDirection direction) {
-    //    //_plugin.Log.Debug($"Sorting by {columnId}");
-    //    Func<PlayerAlias, object> comparator = (r) => 0;
-
-    //    //0 = name
-    //    //1 = homeworld
-    //    if(columnId == 0) {
-    //        comparator = (r) => r.Name;
-    //    } else if(columnId == 1) {
-    //        comparator = (r) => r.HomeWorld;
-    //    } else {
-    //        (var p1, var p2) = GetStatsPropertyFromId(columnId);
-    //        if(p1 != null && p2 != null) {
-    //            comparator = (r) => p2.GetValue(p1.GetValue(StatsModel[r])) ?? 0;
-    //        }
-    //    }
-    //    DataModel = direction == ImGuiSortDirection.Ascending ? DataModel.OrderBy(comparator).ToList() : DataModel.OrderByDescending(comparator).ToList();
-    //    DataModelUntruncated = direction == ImGuiSortDirection.Ascending ? DataModelUntruncated.OrderBy(comparator).ToList() : DataModelUntruncated.OrderByDescending(comparator).ToList();
-    //}
 }
