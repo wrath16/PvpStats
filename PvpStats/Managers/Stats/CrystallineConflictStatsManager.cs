@@ -556,6 +556,7 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
                 statsModel.ScoreboardTotal.DamageTaken += playerScoreboard.DamageTaken;
                 statsModel.ScoreboardTotal.HPRestored += playerScoreboard.HPRestored;
                 statsModel.ScoreboardTotal.TimeOnCrystal += playerScoreboard.TimeOnCrystal;
+                statsModel.ScoreboardTotal.Size = (int)statsModel.StatsAll.Matches;
 
                 teamContributions.Add(new() {
                     Kills = playerTeamScoreboard.TeamStats.Kills != 0 ? (double)playerScoreboard.Kills / playerTeamScoreboard.TeamStats.Kills : 0,
