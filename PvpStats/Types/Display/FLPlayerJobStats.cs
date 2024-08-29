@@ -1,7 +1,7 @@
 ﻿using PvpStats.Types.Match;
 
 namespace PvpStats.Types.Display;
-internal class FLPlayerJobStats {
+internal class FLPlayerJobStats : PlayerJobStats {
     public FLAggregateStats StatsAll { get; set; } = new();
     public FrontlineScoreboard ScoreboardTotal { get; set; } = new();
     public FLScoreboardDouble ScoreboardPerMatch { get; set; } = new();

@@ -29,7 +29,7 @@ public class NumericColumnParams : ColumnParams {
     }
 }
 
-internal abstract class FilteredList<T> {
+internal abstract class FilteredList<T> where T : notnull {
 
     protected SemaphoreSlim RefreshLock = new SemaphoreSlim(1);
     protected SemaphoreSlim? Interlock;

@@ -1,16 +1,13 @@
-﻿using Dalamud.Interface;
-using Dalamud.Interface.Colors;
+﻿using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PvpStats.Helpers;
-using PvpStats.Types.Display;
 using PvpStats.Types.Player;
 using PvpStats.Windows.Filter;
 using PvpStats.Windows.Tracker;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
@@ -105,20 +102,7 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
         ImGui.AlignTextToFramePadding();
         ImGuiHelper.HelpMarker("Right-click table header for column options.", false, true);
         ImGui.SameLine();
-        using(ImRaii.PushFont(UiBuilder.IconFont)) {
-            if(ImGui.Button($"{FontAwesomeIcon.Copy.ToIconString()}##--CopyCSV")) {
-                _plugin.DataQueue.QueueDataOperation(() => {
-                    ListCSV = CSVHeader();
-                    foreach(var stat in _plugin.CCStatsEngine.JobStats) {
-                        ListCSV += CSVRow(_plugin.CCStatsEngine.JobStats, stat.Key);
-                    }
-                    Task.Run(() => {
-                        ImGui.SetClipboardText(ListCSV);
-                    });
-                });
-            }
-            ImGuiHelper.WrappedTooltip("Copy CSV to clipboard");
-        }
+        CSVButton();
     }
 
     protected override void PostColumnSetup() {
@@ -144,202 +128,207 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
 
         //job
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].StatsAll.Matches.ToString(), Offset);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].StatsAll.Matches.ToString(), Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].StatsAll.Wins.ToString(), Offset);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].StatsAll.Wins.ToString(), Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].StatsAll.Losses.ToString(), Offset);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].StatsAll.Losses.ToString(), Offset);
         }
-        var jobWinDiff = _plugin.CCStatsEngine.JobStats[item].StatsAll.WinDiff;
+        var jobWinDiff = StatsModel[item].StatsAll.WinDiff;
         var jobWinDiffColor = jobWinDiff > 0 ? _plugin.Configuration.Colors.Win : jobWinDiff < 0 ? _plugin.Configuration.Colors.Loss : ImGuiColors.DalamudWhite;
         if(ImGui.TableNextColumn()) {
             ImGuiHelper.DrawNumericCell(jobWinDiff.ToString(), Offset, jobWinDiffColor);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].StatsAll.WinRate.ToString("P1"), Offset, jobWinDiffColor);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].StatsAll.WinRate.ToString("P1"), Offset, jobWinDiffColor);
         }
 
         //personal
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].StatsPersonal.Matches.ToString(), Offset);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].StatsPersonal.Matches.ToString(), Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].StatsPersonal.Wins.ToString(), Offset);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].StatsPersonal.Wins.ToString(), Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].StatsPersonal.Losses.ToString(), Offset);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].StatsPersonal.Losses.ToString(), Offset);
         }
-        var personalWinDiff = _plugin.CCStatsEngine.JobStats[item].StatsPersonal.WinDiff;
+        var personalWinDiff = StatsModel[item].StatsPersonal.WinDiff;
         var personalWinDiffColor = personalWinDiff > 0 ? _plugin.Configuration.Colors.Win : personalWinDiff < 0 ? _plugin.Configuration.Colors.Loss : ImGuiColors.DalamudWhite;
         if(ImGui.TableNextColumn()) {
             ImGuiHelper.DrawNumericCell(personalWinDiff.ToString(), Offset, personalWinDiffColor);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].StatsPersonal.WinRate.ToString("P1"), Offset, personalWinDiffColor);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].StatsPersonal.WinRate.ToString("P1"), Offset, personalWinDiffColor);
         }
 
         //teammate
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].StatsTeammate.Matches.ToString(), Offset);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].StatsTeammate.Matches.ToString(), Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].StatsTeammate.Wins.ToString(), Offset);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].StatsTeammate.Wins.ToString(), Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].StatsTeammate.Losses.ToString(), Offset);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].StatsTeammate.Losses.ToString(), Offset);
         }
-        var teammateWinDiff = _plugin.CCStatsEngine.JobStats[item].StatsTeammate.WinDiff;
+        var teammateWinDiff = StatsModel[item].StatsTeammate.WinDiff;
         var teammateWinDiffColor = teammateWinDiff > 0 ? _plugin.Configuration.Colors.Win : teammateWinDiff < 0 ? _plugin.Configuration.Colors.Loss : ImGuiColors.DalamudWhite;
         if(ImGui.TableNextColumn()) {
             ImGuiHelper.DrawNumericCell(teammateWinDiff.ToString(), Offset, teammateWinDiffColor);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].StatsTeammate.WinRate.ToString("P1"), Offset, teammateWinDiffColor);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].StatsTeammate.WinRate.ToString("P1"), Offset, teammateWinDiffColor);
         }
 
         //opponent
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].StatsOpponent.Matches.ToString(), Offset);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].StatsOpponent.Matches.ToString(), Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].StatsOpponent.Wins.ToString(), Offset);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].StatsOpponent.Wins.ToString(), Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].StatsOpponent.Losses.ToString(), Offset);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].StatsOpponent.Losses.ToString(), Offset);
         }
-        var opponentWinDiff = _plugin.CCStatsEngine.JobStats[item].StatsOpponent.WinDiff;
+        var opponentWinDiff = StatsModel[item].StatsOpponent.WinDiff;
         var opponentWinDiffColor = opponentWinDiff > 0 ? _plugin.Configuration.Colors.Win : opponentWinDiff < 0 ? _plugin.Configuration.Colors.Loss : ImGuiColors.DalamudWhite;
         if(ImGui.TableNextColumn()) {
             ImGuiHelper.DrawNumericCell(opponentWinDiff.ToString(), Offset, opponentWinDiffColor);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].StatsOpponent.WinRate.ToString("P1"), Offset, opponentWinDiffColor);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].StatsOpponent.WinRate.ToString("P1"), Offset, opponentWinDiffColor);
         }
 
         //total
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.Kills.ToString("N0"), Offset);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].ScoreboardTotal.Kills.ToString("N0"), Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.Deaths.ToString("N0"), Offset);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].ScoreboardTotal.Deaths.ToString("N0"), Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.Assists.ToString("N0"), Offset);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].ScoreboardTotal.Assists.ToString("N0"), Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.DamageDealt.ToString("N0"), Offset);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].ScoreboardTotal.DamageDealt.ToString("N0"), Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.DamageTaken.ToString("N0"), Offset);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].ScoreboardTotal.DamageTaken.ToString("N0"), Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.HPRestored.ToString("N0"), Offset);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].ScoreboardTotal.HPRestored.ToString("N0"), Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.TimeOnCrystal), Offset);
+            ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(StatsModel[item].ScoreboardTotal.TimeOnCrystal), Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.KillsAndAssists.ToString("N0"), Offset);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].ScoreboardTotal.KillsAndAssists.ToString("N0"), Offset);
         }
 
         //per match
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMatch.Kills, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 1.0f, 4.5f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMatch.Kills, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 1.0f, 4.5f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMatch.Deaths, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 1.5f, 3.5f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMatch.Deaths, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 1.5f, 3.5f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMatch.Assists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 5.0f, 7.5f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMatch.Assists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 5.0f, 7.5f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMatch.DamageDealt, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 400000f, 850000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMatch.DamageDealt, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 400000f, 850000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMatch.DamageTaken, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 400000f, 850000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMatch.DamageTaken, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 400000f, 850000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMatch.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 350000f, 1000000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMatch.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 350000f, 1000000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            var tcpa = TimeSpan.FromSeconds(_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMatch.TimeOnCrystal);
+            var tcpa = TimeSpan.FromSeconds(StatsModel[item].ScoreboardPerMatch.TimeOnCrystal);
             ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(tcpa), (float)tcpa.TotalSeconds, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 35f, 120f, _plugin.Configuration.ColorScaleStats, Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMatch.KillsAndAssists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 6.0f, 10.0f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMatch.KillsAndAssists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 6.0f, 10.0f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
         }
 
         //per min
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMin.Kills, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.1f, 0.7f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.Kills, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.1f, 0.7f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMin.Deaths, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 0.25f, 0.55f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.Deaths, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 0.25f, 0.55f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMin.Assists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.75f, 1.5f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.Assists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.75f, 1.5f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMin.DamageDealt, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 75000f, 140000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.DamageDealt, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 75000f, 140000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMin.DamageTaken, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 75000f, 140000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.DamageTaken, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 75000f, 140000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMin.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 60000f, 185000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 60000f, 185000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            var tcpm = TimeSpan.FromSeconds(_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMin.TimeOnCrystal);
+            var tcpm = TimeSpan.FromSeconds(StatsModel[item].ScoreboardPerMin.TimeOnCrystal);
             ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(tcpm), (float)tcpm.TotalSeconds, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 6f, 20f, _plugin.Configuration.ColorScaleStats, Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardPerMin.KillsAndAssists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 1.0f, 2.0f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.KillsAndAssists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 1.0f, 2.0f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
         }
 
         //team contrib
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardContrib.Kills, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardContrib.Kills, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardContrib.Deaths, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardContrib.Deaths, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardContrib.Assists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardContrib.Assists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardContrib.DamageDealt, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardContrib.DamageDealt, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardContrib.DamageTaken, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardContrib.DamageTaken, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardContrib.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardContrib.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardContrib.TimeOnCrystal, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardContrib.TimeOnCrystal, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardContrib.KillsAndAssists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardContrib.KillsAndAssists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", Offset);
         }
 
         //special
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.DamageDealtPerKA, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 52000f, 100000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].ScoreboardTotal.DamageDealtPerKA, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 52000f, 100000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.DamageDealtPerLife, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 190000f, 400000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].ScoreboardTotal.DamageDealtPerLife, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 190000f, 400000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.DamageTakenPerLife, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 190000f, 400000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].ScoreboardTotal.DamageTakenPerLife, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 190000f, 400000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.HPRestoredPerLife, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 120000f, 600000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
+            ImGuiHelper.DrawNumericCell(StatsModel[item].ScoreboardTotal.HPRestoredPerLife, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 120000f, 600000f, _plugin.Configuration.ColorScaleStats, "#", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.JobStats[item].ScoreboardTotal.KDA, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 2.25f, 6.25f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardTotal.KDA, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 2.25f, 6.25f, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
         }
+    }
+
+    public override async Task RefreshDataModel() {
+        StatsModel = _plugin.CCStatsEngine.JobStats;
+        await base.RefreshDataModel();
     }
 
     public override void OpenFullEditDetail(Job item) {
@@ -349,42 +338,42 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
     public override void OpenItemDetail(Job item) {
     }
 
-    private string CSVRow(Dictionary<Job, CCPlayerJobStats> model, Job key) {
-        string csv = "";
-        foreach(var col in Columns) {
-            if(col.Id == 0) {
-                csv += PlayerJobHelper.GetNameFromJob(key);
-            } else if(col.Id == 1) {
-                csv += PlayerJobHelper.GetSubRoleFromJob(key);
-            } else {
-                //find property
-                (var p1, var p2) = GetStatsPropertyFromId(col.Id);
-                if(p1 != null && p2 != null) {
-                    csv += p2.GetValue(p1.GetValue(model[key])) ?? 0;
-                }
-            }
-            csv += ",";
-        }
-        csv += "\n";
-        return csv;
-    }
+    //private string CSVRow(Dictionary<Job, CCPlayerJobStats> model, Job key) {
+    //    string csv = "";
+    //    foreach(var col in Columns) {
+    //        if(col.Id == 0) {
+    //            csv += PlayerJobHelper.GetNameFromJob(key);
+    //        } else if(col.Id == 1) {
+    //            csv += PlayerJobHelper.GetSubRoleFromJob(key);
+    //        } else {
+    //            //find property
+    //            (var p1, var p2) = GetStatsPropertyFromId(col.Id);
+    //            if(p1 != null && p2 != null) {
+    //                csv += p2.GetValue(p1.GetValue(model[key])) ?? 0;
+    //            }
+    //        }
+    //        csv += ",";
+    //    }
+    //    csv += "\n";
+    //    return csv;
+    //}
 
-    private void SortByColumn(uint columnId, ImGuiSortDirection direction) {
-        //_plugin.Log.Debug($"Sorting by {columnId}");
-        Func<Job, object> comparator = (r) => 0;
+    //private void SortByColumn(uint columnId, ImGuiSortDirection direction) {
+    //    //_plugin.Log.Debug($"Sorting by {columnId}");
+    //    Func<Job, object> comparator = (r) => 0;
 
-        //0 = job
-        //1 = role
-        if(columnId == 0) {
-            comparator = (r) => r;
-        } else if(columnId == 1) {
-            comparator = (r) => PlayerJobHelper.GetSubRoleFromJob(r) ?? 0;
-        } else {
-            (var p1, var p2) = GetStatsPropertyFromId(columnId);
-            if(p1 != null && p2 != null) {
-                comparator = (r) => p2.GetValue(p1.GetValue(_plugin.CCStatsEngine.JobStats[r])) ?? 0;
-            }
-        }
-        DataModel = direction == ImGuiSortDirection.Ascending ? DataModel.OrderBy(comparator).ToList() : DataModel.OrderByDescending(comparator).ToList();
-    }
+    //    //0 = job
+    //    //1 = role
+    //    if(columnId == 0) {
+    //        comparator = (r) => r;
+    //    } else if(columnId == 1) {
+    //        comparator = (r) => PlayerJobHelper.GetSubRoleFromJob(r) ?? 0;
+    //    } else {
+    //        (var p1, var p2) = GetStatsPropertyFromId(columnId);
+    //        if(p1 != null && p2 != null) {
+    //            comparator = (r) => p2.GetValue(p1.GetValue(StatsModel[r])) ?? 0;
+    //        }
+    //    }
+    //    DataModel = direction == ImGuiSortDirection.Ascending ? DataModel.OrderBy(comparator).ToList() : DataModel.OrderByDescending(comparator).ToList();
+    //}
 }

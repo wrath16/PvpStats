@@ -1,5 +1,5 @@
 ﻿namespace PvpStats.Types.Display;
-public class CCPlayerJobStats {
+public class CCPlayerJobStats : PlayerJobStats {
     public CCAggregateStats StatsAll { get; set; } = new();
     public CCAggregateStats StatsPersonal { get; set; } = new();
     //CCAggregateStats StatsLocalPlayer { get; set; } = new();
