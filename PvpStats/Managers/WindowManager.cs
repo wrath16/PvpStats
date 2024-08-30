@@ -1,7 +1,11 @@
 ﻿using Dalamud.Interface.GameFonts;
 using Dalamud.Interface.ManagedFontAtlas;
+using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
+using ImGuiNET;
 using LiteDB;
+using PvpStats.Helpers;
 using PvpStats.Services.DataCache;
 using PvpStats.Types.Match;
 using PvpStats.Windows;
@@ -186,6 +190,26 @@ internal class WindowManager : IDisposable {
             var itemDetail = new FullEditDetail<T>(_plugin, matchCache, match);
             itemDetail.IsOpen = true;
             _plugin.WindowManager.AddWindow(itemDetail);
+        }
+    }
+
+    internal void SetTagsPopup<T>(T match, MatchCacheService<T> cache, ref bool opened) where T : PvpMatch {
+        using(var popup = ImRaii.Popup($"{match.Id}--TagsPopup")) {
+            if(popup) {
+                string tagsText = match.Tags;
+                ImGuiHelper.HelpMarker("Comma-separate tags. Changes will persist on popup closing.", true, true);
+                ImGui.SameLine();
+                ImGui.SetNextItemWidth(200f * ImGuiHelpers.GlobalScale);
+                if(ImGui.InputTextWithHint("##TagsInput", "Enter tags...", ref tagsText, 100)) {
+                    match.Tags = tagsText;
+                }
+            } else if(opened) {
+                _plugin.DataQueue.QueueDataOperation(async () => {
+                    match.Tags = match.Tags.Trim();
+                    await cache.UpdateMatch(match);
+                });
+            }
+            opened = popup.Success;
         }
     }
 

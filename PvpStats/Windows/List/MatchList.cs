@@ -1,9 +1,11 @@
 ﻿using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
+using LiteDB;
 using PvpStats.Helpers;
 using PvpStats.Services.DataCache;
 using PvpStats.Types.Match;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,6 +18,9 @@ internal abstract class MatchList<T> : FilteredList<T> where T : PvpMatch {
     protected override ImGuiWindowFlags ChildFlags { get; set; } = ImGuiWindowFlags.AlwaysVerticalScrollbar;
     protected override bool ContextMenu { get; set; } = true;
     protected override bool DynamicColumns { get; set; } = true;
+
+    private bool _tagPopupOpen = false;
+    private Dictionary<ObjectId, uint> _popupIds = new();
 
     protected abstract string CSVRow(T match);
 
@@ -52,6 +57,14 @@ internal abstract class MatchList<T> : FilteredList<T> where T : PvpMatch {
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetStyle().ItemSpacing.X);
         }
         ImGuiHelper.DonateButton();
+
+        //using(var popup = ImRaii.Popup("testPopup")) {
+        //    if(popup) {
+        //        ImGui.Text("test2");
+        //        _plugin.Log.Debug("OPAIN!");
+        //    }
+        //}
+        //_popupId = ImGui.GetID("testPopup");
     }
 
     public override void OpenItemDetail(T item) {
@@ -68,11 +81,16 @@ internal abstract class MatchList<T> : FilteredList<T> where T : PvpMatch {
 
     protected override void ContextMenuItems(T item) {
         bool isBookmarked = item.IsBookmarked;
+        string tags = item.Tags;
         if(ImGui.MenuItem($"Favorite##{item!.GetHashCode()}--AddBookmark", null, isBookmarked)) {
             item.IsBookmarked = !item.IsBookmarked;
             _plugin.DataQueue.QueueDataOperation(async () => {
                 await Cache.UpdateMatch(item);
             });
+        }
+        if(ImGui.MenuItem($"Set tags##{item!.GetHashCode()}--SetTags")) {
+            //_plugin.Log.Debug($"Opening tags popup {item.Id}--TagsPopup");
+            ImGui.OpenPopup(_popupIds[item.Id]);
         }
 
 #if DEBUG
@@ -80,5 +98,10 @@ internal abstract class MatchList<T> : FilteredList<T> where T : PvpMatch {
             OpenFullEditDetail(item);
         }
 #endif
+    }
+
+    protected override void PreListItemDraw(T item) {
+        _plugin.WindowManager.SetTagsPopup(item, Cache, ref _tagPopupOpen);
+        _popupIds.TryAdd(item.Id, ImGui.GetID($"{item.Id}--TagsPopup"));
     }
 }

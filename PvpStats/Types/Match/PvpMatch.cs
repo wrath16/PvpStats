@@ -11,6 +11,7 @@ public abstract class PvpMatch {
     public bool IsDeleted { get; set; }
     public bool IsPickup { get; set; }
     public bool IsBookmarked { get; set; }
+    public string Tags { get; set; } = "";
     public DateTime DutyStartTime { get; init; }
     public DateTime? MatchStartTime { get; set; }
     public DateTime? MatchEndTime { get; set; }

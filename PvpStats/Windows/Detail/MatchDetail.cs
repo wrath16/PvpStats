@@ -2,6 +2,7 @@
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
+using Dalamud.Utility;
 using ImGuiNET;
 using PvpStats.Helpers;
 using PvpStats.Services.DataCache;
@@ -19,6 +20,8 @@ internal abstract class MatchDetail<T> : Window where T : PvpMatch {
     protected bool ShowPercentages;
     protected bool ShowTeamRows = true;
     protected string CurrentTab = "";
+
+    private bool _popupOpen = false;
 
     public MatchDetail(Plugin plugin, MatchCacheService<T> cache, T match) : base($"Match Details: {match.Id}") {
         Plugin = plugin;
@@ -51,24 +54,17 @@ internal abstract class MatchDetail<T> : Window where T : PvpMatch {
 
     protected void DrawFunctions() {
         //need to increment this for each function
-        int functionCount = 2;
+        int functionCount = 3;
         //get width of strip
         using(_ = ImRaii.PushFont(UiBuilder.IconFont)) {
-            //string text = "";
-            //for(int i = 0; i < functionCount; i++) {
-            //    text += $"{FontAwesomeIcon.Star.ToIconString()}";
-            //}
-            ////ImGuiHelpers.CenterCursorForText(text);
-            //ImGuiHelper.CenterAlignCursor(text);
-            //ImGui.SetCursorPosX(ImGui.GetCursorPosX() - ((ImGui.GetStyle().FramePadding.X - 3f) * 2.5f + 9f * (functionCount - 1)));
-
             var buttonWidth = ImGui.GetStyle().FramePadding.X * 2 + ImGui.CalcTextSize(FontAwesomeIcon.Search.ToIconString()).X;
             var totalWidth = buttonWidth * functionCount + ImGui.GetStyle().ItemSpacing.X * (functionCount - 1);
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + (ImGui.GetColumnWidth() - totalWidth) / 2f);
         }
+        ImGuiHelper.CSVButton(CSV);
 
+        ImGui.SameLine();
         using(_ = ImRaii.PushFont(UiBuilder.IconFont)) {
-            var text = $"{FontAwesomeIcon.Star.ToIconString()}{FontAwesomeIcon.Copy.ToIconString()}";
             var color = Match.IsBookmarked ? Plugin.Configuration.Colors.Favorite : ImGuiColors.DalamudWhite;
             using(_ = ImRaii.PushColor(ImGuiCol.Text, color)) {
                 if(ImGui.Button($"{FontAwesomeIcon.Star.ToIconString()}##--FavoriteMatch")) {
@@ -80,8 +76,18 @@ internal abstract class MatchDetail<T> : Window where T : PvpMatch {
             }
         }
         ImGuiHelper.WrappedTooltip("Favorite match");
+
         ImGui.SameLine();
-        ImGuiHelper.CSVButton(CSV);
+        using(var font = ImRaii.PushFont(UiBuilder.IconFont)) {
+            var color = !Match.Tags.IsNullOrEmpty() ? Plugin.Configuration.Colors.Favorite : ImGuiColors.DalamudWhite;
+            using(_ = ImRaii.PushColor(ImGuiCol.Text, color)) {
+                if(ImGui.Button($"{FontAwesomeIcon.Tags.ToIconString()}##--Tags")) {
+                    ImGui.OpenPopup($"{Match.Id}--TagsPopup");
+                }
+            }
+        }
+        ImGuiHelper.WrappedTooltip("Set tags");
+        Plugin.WindowManager.SetTagsPopup(Match, Cache, ref _popupOpen);
     }
 
     protected void SetWindowSize(Vector2 size) {

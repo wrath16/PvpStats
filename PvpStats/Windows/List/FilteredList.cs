@@ -148,21 +148,15 @@ internal abstract class FilteredList<T> where T : notnull {
         }
     }
 
-    protected virtual void PreChildDraw() {
+    protected virtual void PreChildDraw() { }
 
-    }
+    protected virtual void PreTableDraw() { }
 
-    protected virtual void PreTableDraw() {
+    protected virtual void PostColumnSetup() { }
 
-    }
+    protected virtual void ContextMenuItems(T item) { }
 
-    protected virtual void PostColumnSetup() {
-
-    }
-
-    protected virtual void ContextMenuItems(T item) {
-
-    }
+    protected virtual void PreListItemDraw(T item) { }
 
     private void DrawTable() {
         using var table = ImRaii.Table(TableId, Columns.Count, TableFlags);
@@ -179,22 +173,12 @@ internal abstract class FilteredList<T> where T : notnull {
             //ImGui.TableSetupScrollFreeze(1, 1);
             //ImGui.TableHeadersRow();
             foreach(var i in clipper.Columns) {
-
                 if(ImGui.TableNextColumn()) {
                     var column = Columns[i];
                     var tableHeader = column.Header ?? ImGuiHelper.WrappedString(column.Name, 2);
                     //ImGui.TableHeader(tableHeader);
                     ImGuiHelper.DrawTableHeader(tableHeader, column.Alignment, true, true, -5f);
                 }
-                //var tableHeader = ImGuiHelper.WrappedString(column.Name, 80f);
-
-                //ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 1f);
-                ////this is stupid!
-                //if(ImGui.GetColumnIndex() == 0) {
-                //    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 4f * ImGuiHelpers.GlobalScale);
-                //}
-                //ImGuiHelper.CenterAlignCursor(tableHeader);
-
             }
         }
         //ImGui.TableNextRow();
@@ -223,6 +207,7 @@ internal abstract class FilteredList<T> where T : notnull {
                     ContextMenuItems(item);
                 }
             }
+            PreListItemDraw(item);
             DrawListItem(item);
         }
     }
