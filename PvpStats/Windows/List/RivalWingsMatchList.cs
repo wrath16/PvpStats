@@ -17,6 +17,7 @@ internal class RivalWingsMatchList : MatchList<RivalWingsMatch> {
         new ColumnParams{Name = "Team", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 55f },
         new ColumnParams{Name = "Duration", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 40f, Priority = 2 },
         new ColumnParams{Name = "Result", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 40f },
+        new ColumnParams{Name = "Tags", Flags = ImGuiTableColumnFlags.WidthStretch, Width = 80f, Priority = 3 },
     };
 
     public RivalWingsMatchList(Plugin plugin, SemaphoreSlim? interlock = null) : base(plugin, plugin.RWCache, interlock) {
@@ -53,6 +54,9 @@ internal class RivalWingsMatchList : MatchList<RivalWingsMatch> {
         string resultText = isWin ? "WIN" : isLoss ? "LOSS" : "???";
         ImGuiHelper.CenterAlignCursor(resultText);
         ImGui.TextColored(color, resultText);
+
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted(item.Tags);
     }
 
     protected override string CSVRow(RivalWingsMatch match) {

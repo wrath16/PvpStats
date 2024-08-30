@@ -35,6 +35,7 @@ internal class CCTrackerWindow : TrackerWindow {
         MatchFilters.Add(new ResultFilter(plugin, Refresh));
         MatchFilters.Add(new DurationFilter(plugin, Refresh));
         MatchFilters.Add(new BookmarkFilter(plugin, Refresh));
+        MatchFilters.Add(new TagFilter(plugin, Refresh));
         MatchFilters.Add(new MiscFilter(plugin, Refresh, plugin.Configuration.CCWindowConfig.MatchFilters.MiscFilter));
 
         _ccMatches = new(plugin);

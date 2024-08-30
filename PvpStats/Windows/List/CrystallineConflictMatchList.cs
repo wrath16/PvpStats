@@ -18,6 +18,7 @@ internal class CrystallineConflictMatchList : MatchList<CrystallineConflictMatch
         new ColumnParams{Name = "Duration", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 40f, Priority = 2 },
         new ColumnParams{Name = "Result", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 40f },
         new ColumnParams{Name = "RankAfter", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 125f, Priority = 3 },
+        new ColumnParams{Name = "Tags", Flags = ImGuiTableColumnFlags.WidthStretch, Width = 80f, Priority = 4 },
     };
 
     public CrystallineConflictMatchList(Plugin plugin) : base(plugin, plugin.CCCache, plugin.CCStatsEngine.RefreshLock) {
@@ -67,6 +68,9 @@ internal class CrystallineConflictMatchList : MatchList<CrystallineConflictMatch
         }
         //ImGui.TableNextColumn();
         //ImGui.TableNextRow();
+
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted(item.Tags);
     }
 
     protected override string CSVRow(CrystallineConflictMatch match) {

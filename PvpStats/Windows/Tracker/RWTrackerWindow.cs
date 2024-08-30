@@ -26,6 +26,7 @@ internal class RWTrackerWindow : TrackerWindow {
         MatchFilters.Add(new ResultFilter(plugin, Refresh));
         MatchFilters.Add(new DurationFilter(plugin, Refresh));
         MatchFilters.Add(new BookmarkFilter(plugin, Refresh));
+        MatchFilters.Add(new TagFilter(plugin, Refresh));
 
         _matchList = new(plugin);
         _summary = new(plugin);

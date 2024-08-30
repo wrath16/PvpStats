@@ -197,20 +197,30 @@ internal class WindowManager : IDisposable {
         using(var popup = ImRaii.Popup($"{match.Id}--TagsPopup")) {
             if(popup) {
                 string tagsText = match.Tags;
-                ImGuiHelper.HelpMarker("Comma-separate tags. Changes will persist on popup closing.", true, true);
+                ImGuiHelper.HelpMarker("Comma-separate tags. Hit enter to save and close.", true, true);
                 ImGui.SameLine();
                 ImGui.SetNextItemWidth(200f * ImGuiHelpers.GlobalScale);
-                if(ImGui.InputTextWithHint("##TagsInput", "Enter tags...", ref tagsText, 100)) {
+                if(!opened) {
+                    _plugin.Log.Debug("setting keyboard focus...");
+                    ImGui.SetKeyboardFocusHere(0);
+                }
+                if(ImGui.InputTextWithHint("##TagsInput", "Enter tags...", ref tagsText, 100, ImGuiInputTextFlags.EnterReturnsTrue)) {
                     match.Tags = tagsText;
+                    ImGui.CloseCurrentPopup();
+                    _plugin.DataQueue.QueueDataOperation(async () => {
+                        match.Tags = match.Tags.Trim();
+                        await cache.UpdateMatch(match);
+                    });
                 }
             } else if(opened) {
-                _plugin.DataQueue.QueueDataOperation(async () => {
-                    match.Tags = match.Tags.Trim();
-                    await cache.UpdateMatch(match);
-                });
+                //_plugin.DataQueue.QueueDataOperation(async () => {
+                //    _plugin.Log.Debug("closing popup");
+                //    match.Tags = match.Tags.Trim();
+                //    await cache.UpdateMatch(match);
+                //});
             }
-            opened = popup.Success;
         }
+        opened = ImGui.IsPopupOpen($"{match.Id}--TagsPopup");
     }
 
     public async Task RefreshAll() {

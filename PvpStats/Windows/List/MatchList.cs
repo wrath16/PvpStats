@@ -19,8 +19,8 @@ internal abstract class MatchList<T> : FilteredList<T> where T : PvpMatch {
     protected override bool ContextMenu { get; set; } = true;
     protected override bool DynamicColumns { get; set; } = true;
 
-    private bool _tagPopupOpen = false;
     private Dictionary<ObjectId, uint> _popupIds = new();
+    private Dictionary<ObjectId, bool> _popupStates = new();
 
     protected abstract string CSVRow(T match);
 
@@ -101,7 +101,11 @@ internal abstract class MatchList<T> : FilteredList<T> where T : PvpMatch {
     }
 
     protected override void PreListItemDraw(T item) {
-        _plugin.WindowManager.SetTagsPopup(item, Cache, ref _tagPopupOpen);
-        _popupIds.TryAdd(item.Id, ImGui.GetID($"{item.Id}--TagsPopup"));
+        _popupStates.TryGetValue(item.Id, out var popupOpen);
+        _plugin.WindowManager.SetTagsPopup(item, Cache, ref popupOpen);
+        if(!_popupStates.TryAdd(item.Id, popupOpen)) {
+            _popupStates[item.Id] = popupOpen;
+        }
+        _popupIds.TryAdd(item.Id, (ImGui.GetID($"{item.Id}--TagsPopup")));
     }
 }

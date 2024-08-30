@@ -21,6 +21,7 @@ internal class FrontlineMatchList : MatchList<FrontlineMatch> {
         new ColumnParams{Name = "Team", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 65f },
         new ColumnParams{Name = "Duration", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 40f, Priority = 2 },
         new ColumnParams{Name = "Result", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 40f },
+        new ColumnParams{Name = "Tags", Flags = ImGuiTableColumnFlags.WidthStretch, Width = 80f, Priority = 3 },
     };
 
     public FrontlineMatchList(Plugin plugin, SemaphoreSlim? interlock = null) : base(plugin, plugin.FLCache, interlock) {
@@ -58,6 +59,9 @@ internal class FrontlineMatchList : MatchList<FrontlineMatch> {
         string resultText = item.Result != null ? ImGuiHelper.AddOrdinal((int)item.Result + 1).ToUpper() : "???";
         ImGuiHelper.CenterAlignCursor(resultText);
         ImGui.TextColored(color, resultText);
+
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted(item.Tags);
     }
 
     protected override string CSVRow(FrontlineMatch match) {

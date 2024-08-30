@@ -1,4 +1,5 @@
-﻿using PvpStats.Services.DataCache;
+﻿using Dalamud.Utility;
+using PvpStats.Services.DataCache;
 using PvpStats.Types;
 using PvpStats.Types.Match;
 using PvpStats.Types.Player;
@@ -119,6 +120,28 @@ internal abstract class StatsManager<T> where T : PvpMatch {
         if(filter.BookmarkedOnly) {
             filteredMatches = filteredMatches.Where(x => x.IsBookmarked).ToList();
         }
+        return filteredMatches;
+    }
+
+    protected virtual List<T> ApplyFilter(TagFilter filter, List<T> matches) {
+        List<T> filteredMatches = new(matches);
+        if(filter.TagsRaw.Trim().IsNullOrEmpty()) {
+            return filteredMatches;
+        }
+        var tags = filter.TagsRaw.Split(",");
+        filteredMatches = filteredMatches.Where(x => {
+            var matchTags = x.Tags.Split(",");
+            foreach(var tag in tags) {
+                if(matchTags.Any(y => y.Trim().Equals(tag.Trim(), StringComparison.OrdinalIgnoreCase))) {
+                    if(filter.OrLogic) {
+                        return true;
+                    }
+                } else if(!filter.OrLogic) {
+                    return false;
+                }
+            }
+            return !filter.OrLogic;
+        }).ToList();
         return filteredMatches;
     }
 }

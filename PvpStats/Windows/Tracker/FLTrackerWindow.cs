@@ -29,6 +29,7 @@ internal class FLTrackerWindow : TrackerWindow {
         MatchFilters.Add(new FLResultFilter(plugin, Refresh));
         MatchFilters.Add(new DurationFilter(plugin, Refresh));
         MatchFilters.Add(new BookmarkFilter(plugin, Refresh));
+        MatchFilters.Add(new TagFilter(plugin, Refresh));
 
         _matchList = new(plugin);
         _summary = new(plugin);
