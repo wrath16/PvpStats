@@ -201,7 +201,6 @@ internal class WindowManager : IDisposable {
                 ImGui.SameLine();
                 ImGui.SetNextItemWidth(200f * ImGuiHelpers.GlobalScale);
                 if(!opened) {
-                    _plugin.Log.Debug("setting keyboard focus...");
                     ImGui.SetKeyboardFocusHere(0);
                 }
                 if(ImGui.InputTextWithHint("##TagsInput", "Enter tags...", ref tagsText, 100, ImGuiInputTextFlags.EnterReturnsTrue)) {
