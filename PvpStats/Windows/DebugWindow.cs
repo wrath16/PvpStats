@@ -2,6 +2,9 @@
 #if DEBUG
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
+using Dalamud.Interface;
+using Dalamud.Interface.Colors;
+using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
@@ -219,6 +222,32 @@ internal unsafe class DebugWindow : Window {
                     if(ImGui.Button("Enable Duty Leave Button")) {
                         _plugin.RWMatchManager.EnableLeaveDutyButton();
                     }
+
+                    //var cursorBefore = ImGui.GetCursorPos();
+                    //Vector2 barSize = new Vector2(100f, 50f);
+
+                    //ImGui.SetCursorPos(new Vector2(50f, 50f));
+                    //ImGui.Text("overwritesssssssssssss!");
+
+                    ////ImGui.SetCursorPos(new Vector2((ImGui.GetWindowSize().X - barSize.X) / 2, ImGui.GetWindowSize().Y / 2));
+                    //ImGui.SetCursorPos(new Vector2(20f, 50f));
+                    //using var color = ImRaii.PushColor(ImGuiCol.PlotHistogram, ImGuiColors.DalamudGrey2);
+                    //using var color2 = ImRaii.PushColor(ImGuiCol.FrameBg, ImGui.GetStyle().Colors[(int)ImGuiCol.FrameBg] + new Vector4(0f, 0f, 0f, 1f));
+                    ////using var color2 = ImRaii.PushColor(ImGuiCol.FrameBg, ImGui.GetStyle().);
+                    //ImGui.ProgressBar(0.45f, barSize * ImGuiHelpers.GlobalScale);
+
+
+
+                    //ImGui.SetCursorPos(cursorBefore);
+                    //using(var table = ImRaii.Table("##testoverlay", 1)) {
+                    //    if(table) {
+                    //        ImGui.TableSetupColumn("c1");
+                    //        if(ImGui.TableNextColumn()) {
+                    //            ImGui.Text("hello");
+                    //        }
+                    //    }
+                    //}
+                    //ImGui.Separator();
                 }
             }
         }

@@ -24,7 +24,7 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
     public RivalWingsStatsManager(Plugin plugin) : base(plugin, plugin.RWCache) {
     }
 
-    public override async Task Refresh(List<DataFilter> matchFilters, List<DataFilter> jobStatFilters, List<DataFilter> playerStatFilters) {
+    protected override async Task RefreshInner(List<DataFilter> matchFilters, List<DataFilter> jobStatFilters, List<DataFilter> playerStatFilters) {
         var matches = MatchCache.Matches.Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
         matches = FilterMatches(matchFilters, matches);
         CCAggregateStats overallResults = new();
@@ -42,6 +42,7 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
         TimeSpan scoreboardEligibleTime = TimeSpan.Zero;
         int midWins = 0, midLosses = 0;
         int mercWins = 0, mercLosses = 0;
+        int matchesProcessed = 0;
 
         foreach(var match in matches) {
             var teamScoreboards = match.GetTeamScoreboards();
@@ -105,6 +106,7 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
                     }
                 }
             }
+            RefreshProgress = (float)matchesProcessed++ / matches.Count;
         }
 
         //foreach(var mech in localPlayerMechTime) {
@@ -128,6 +130,14 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
             RefreshLock.Release();
         }
     }
+
+    //private void AddMatch(RivalWingsMatch match) {
+
+    //}
+
+    //private void RemoveMatch(RivalWingsMatch match) {
+
+    //}
 
     internal void IncrementAggregateStats(CCAggregateStats stats, RivalWingsMatch match) {
         stats.Matches++;

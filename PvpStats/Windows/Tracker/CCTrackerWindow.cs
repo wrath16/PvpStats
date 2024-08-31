@@ -1,6 +1,7 @@
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
+using PvpStats.Types.Match;
 using PvpStats.Windows.Filter;
 using PvpStats.Windows.List;
 using PvpStats.Windows.Summary;
@@ -9,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Tracker;
 
-internal class CCTrackerWindow : TrackerWindow {
+internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
 
     private readonly CrystallineConflictMatchList _ccMatches;
     private readonly CrystallineConflictSummary _ccSummary;
@@ -19,7 +20,7 @@ internal class CCTrackerWindow : TrackerWindow {
     private readonly CrystallineConflictPvPProfile _ccProfile;
     private readonly CrystallineConflictRankGraph _ccRank;
 
-    internal CCTrackerWindow(Plugin plugin) : base(plugin, plugin.Configuration.CCWindowConfig, "Crystalline Conflict Tracker") {
+    internal CCTrackerWindow(Plugin plugin) : base(plugin, plugin.CCStatsEngine, plugin.Configuration.CCWindowConfig, "Crystalline Conflict Tracker") {
         //SizeConstraints = new WindowSizeConstraints {
         //    MinimumSize = new Vector2(425, 400),
         //    MaximumSize = new Vector2(5000, 5000)
@@ -57,7 +58,8 @@ internal class CCTrackerWindow : TrackerWindow {
         s0.Start();
         try {
             await RefreshLock.WaitAsync();
-            await Plugin.CCStatsEngine.Refresh(MatchFilters, _ccJobs.StatSourceFilter, _ccPlayers.StatSourceFilter.InheritFromPlayerFilter);
+            RefreshActive = true;
+            await Plugin.CCStatsEngine.Refresh(MatchFilters, [_ccJobs.StatSourceFilter], [_ccPlayers.StatSourceFilter]);
             Stopwatch s1 = new();
             s1.Start();
             Task.WaitAll([
@@ -75,14 +77,13 @@ internal class CCTrackerWindow : TrackerWindow {
             throw;
         } finally {
             RefreshLock.Release();
+            RefreshActive = false;
             Plugin.Log.Information(string.Format("{0,-25}: {1,4} ms", $"CC tracker refresh time", s0.ElapsedMilliseconds.ToString()));
         }
     }
 
     public override void DrawInternal() {
-
         DrawFilters();
-
         using(var tabBar = ImRaii.TabBar("TabBar", ImGuiTabBarFlags.None)) {
             if(tabBar) {
                 if(Plugin.Configuration.ResizeWindowLeft) {

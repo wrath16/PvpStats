@@ -39,7 +39,7 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
     internal CrystallineConflictStatsManager(Plugin plugin) : base(plugin, plugin.CCCache) {
     }
 
-    internal async Task Refresh(List<DataFilter> matchFilters, StatSourceFilter jobStatSourceFilter, bool playerStatSourceInherit) {
+    protected override async Task RefreshInner(List<DataFilter> matchFilters, List<DataFilter> jobStatFilters, List<DataFilter> playerStatFilters) {
         Stopwatch s0 = new();
         s0.Start();
         List<Job> jobs = new();
@@ -78,6 +78,8 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
         s1.Restart();
 
         var playerFilter = (OtherPlayerFilter)matchFilters.First(x => x.GetType() == typeof(OtherPlayerFilter));
+        var jobStatSourceFilter = jobStatFilters[0] as StatSourceFilter ?? new();
+        bool playerStatSourceInherit = (playerStatFilters[0] as StatSourceFilter ?? new()).InheritFromPlayerFilter;
         var linkedPlayerAliases = Plugin.PlayerLinksService.GetAllLinkedAliases(playerFilter.PlayerNamesRaw);
         var allJobs = Enum.GetValues(typeof(Job)).Cast<Job>();
         foreach(var job in allJobs) {
@@ -92,6 +94,8 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
         Stopwatch teamPlayerWatch = new();
         Stopwatch aggregateStatsWatch = new();
         Stopwatch playerJobWatch = new();
+
+        int matchesProcessed = 0;
 
         foreach(var match in matches) {
             totalMatchTime += match.MatchDuration ?? TimeSpan.Zero;
@@ -331,6 +335,7 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
                 }
             }
             teamPlayerWatch.Stop();
+            RefreshProgress = (float)matchesProcessed++ / matches.Count;
         }
         Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"records", recordsWatch.ElapsedMilliseconds.ToString()));
         Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"arena stats", arenaWatch.ElapsedMilliseconds.ToString()));

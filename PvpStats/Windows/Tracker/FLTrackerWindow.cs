@@ -1,5 +1,6 @@
 ﻿using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
+using PvpStats.Types.Match;
 using PvpStats.Windows.Filter;
 using PvpStats.Windows.List;
 using PvpStats.Windows.Summary;
@@ -8,14 +9,14 @@ using System.Numerics;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Tracker;
-internal class FLTrackerWindow : TrackerWindow {
+internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
 
     private readonly FrontlineMatchList _matchList;
     private readonly FrontlineSummary _summary;
     private readonly FrontlineJobList _jobStats;
     private readonly FrontlinePvPProfile _profile;
 
-    public FLTrackerWindow(Plugin plugin) : base(plugin, plugin.Configuration.FLWindowConfig, "Frontline Tracker") {
+    public FLTrackerWindow(Plugin plugin) : base(plugin, plugin.FLStatsEngine, plugin.Configuration.FLWindowConfig, "Frontline Tracker") {
         SizeConstraints = new WindowSizeConstraints {
             MinimumSize = new Vector2(435, 400),
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
@@ -63,6 +64,7 @@ internal class FLTrackerWindow : TrackerWindow {
         s0.Start();
         try {
             await RefreshLock.WaitAsync();
+            RefreshActive = true;
             await Plugin.FLStatsEngine.Refresh(MatchFilters, [_jobStats.StatSourceFilter], new());
             Stopwatch s1 = new();
             s1.Start();
@@ -79,6 +81,7 @@ internal class FLTrackerWindow : TrackerWindow {
             throw;
         } finally {
             RefreshLock.Release();
+            RefreshActive = false;
             Plugin.Log.Information(string.Format("{0,-25}: {1,4} ms", $"FL tracker refresh time", s0.ElapsedMilliseconds.ToString()));
         }
     }

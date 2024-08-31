@@ -3,7 +3,7 @@ using PvpStats.Types.Player;
 using System;
 
 namespace PvpStats.Types.Match;
-public abstract class PvpMatch {
+public abstract class PvpMatch : IEquatable<PvpMatch> {
     [BsonId]
     public ObjectId Id { get; init; }
     public int Version { get; init; }
@@ -33,5 +33,9 @@ public abstract class PvpMatch {
 
     public override int GetHashCode() {
         return Id.GetHashCode();
+    }
+
+    public bool Equals(PvpMatch? other) {
+        return Id.Equals(other?.Id);
     }
 }

@@ -16,6 +16,8 @@ internal abstract class StatsManager<T> where T : PvpMatch {
     protected readonly Plugin Plugin;
     protected readonly MatchCacheService<T> MatchCache;
     internal SemaphoreSlim RefreshLock { get; private set; } = new SemaphoreSlim(1);
+    public bool RefreshActive { get; private set; }
+    public float RefreshProgress { get; protected set; }
 
     public List<T> Matches { get; protected set; } = new();
     public List<PlayerAlias> Players { get; protected set; } = new();
@@ -25,14 +27,15 @@ internal abstract class StatsManager<T> where T : PvpMatch {
         MatchCache = cache;
     }
 
+    protected abstract Task RefreshInner(List<DataFilter> matchFilters, List<DataFilter> jobStatFilters, List<DataFilter> playerStatFilters);
+
     public virtual async Task Refresh(List<DataFilter> matchFilters, List<DataFilter> jobStatFilters, List<DataFilter> playerStatFilters) {
-        var matches = MatchCache.Matches.Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
-        matches = FilterMatches(matchFilters, matches);
         try {
-            await RefreshLock.WaitAsync();
-            Matches = matches;
+            RefreshProgress = 0f;
+            RefreshActive = true;
+            await RefreshInner(matchFilters, jobStatFilters, playerStatFilters);
         } finally {
-            RefreshLock.Release();
+            RefreshActive = false;
         }
     }
 

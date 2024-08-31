@@ -69,6 +69,7 @@ internal class CrystallineConflictRankGraph {
         }
         try {
             if(RankData.Count <= 0) {
+                ImGui.TextDisabled("No ranked matches for given filters.");
                 return;
             }
 

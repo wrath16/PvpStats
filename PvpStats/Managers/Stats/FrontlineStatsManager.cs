@@ -40,9 +40,14 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
     internal FrontlineStatsManager(Plugin plugin) : base(plugin, plugin.FLCache) {
     }
 
-    public override async Task Refresh(List<DataFilter> matchFilters, List<DataFilter> jobStatFilters, List<DataFilter> playerStatFilters) {
+    protected override async Task RefreshInner(List<DataFilter> matchFilters, List<DataFilter> jobStatFilters, List<DataFilter> playerStatFilters) {
         var matches = MatchCache.Matches.Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
         matches = FilterMatches(matchFilters, matches);
+        //var x = matches.Except(Matches).ToList();
+        //var y = Matches.Except(matches).ToList();
+        //Plugin.Log.Debug($"matches added: {x.Count}");
+        //Plugin.Log.Debug($"matches subtracted: {y.Count}");
+
         FLAggregateStats overallResults = new();
         Dictionary<FrontlineMap, FLAggregateStats> mapResults = new();
         Dictionary<Job, FLAggregateStats> localPlayerJobResults = new();
@@ -69,6 +74,8 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
             jobTimes.Add(job, TimeSpan.Zero);
             jobTeamContributions.Add(job, new());
         }
+
+        int matchesProcessed = 0;
 
         foreach(var match in matches) {
             var teamScoreboards = match.GetTeamScoreboards();
@@ -146,6 +153,7 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
                     }
                 }
             }
+            RefreshProgress = (float)matchesProcessed++ / matches.Count;
         }
 
         SetScoreboardStats(localPlayerStats, localPlayerTeamContributions, totalMatchTime);

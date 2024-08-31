@@ -1,5 +1,6 @@
 ﻿using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
+using PvpStats.Types.Match;
 using PvpStats.Windows.Filter;
 using PvpStats.Windows.List;
 using PvpStats.Windows.Summary;
@@ -8,13 +9,13 @@ using System.Numerics;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Tracker;
-internal class RWTrackerWindow : TrackerWindow {
+internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
 
     private readonly RivalWingsMatchList _matchList;
     private readonly RivalWingsSummary _summary;
     private readonly RivalWingsPvPProfile _profile;
 
-    public RWTrackerWindow(Plugin plugin) : base(plugin, plugin.Configuration.RWWindowConfig, "Rival Wings Tracker") {
+    public RWTrackerWindow(Plugin plugin) : base(plugin, plugin.RWStatsEngine, plugin.Configuration.RWWindowConfig, "Rival Wings Tracker") {
         SizeConstraints = new WindowSizeConstraints {
             MinimumSize = new Vector2(435, 400),
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
@@ -58,6 +59,7 @@ internal class RWTrackerWindow : TrackerWindow {
         s0.Start();
         try {
             await RefreshLock.WaitAsync();
+            RefreshActive = true;
             await Plugin.RWStatsEngine.Refresh(MatchFilters, new(), new());
             Stopwatch s1 = new();
             s1.Start();
@@ -73,6 +75,7 @@ internal class RWTrackerWindow : TrackerWindow {
             throw;
         } finally {
             RefreshLock.Release();
+            RefreshActive = false;
             Plugin.Log.Information(string.Format("{0,-25}: {1,4} ms", $"RW tracker refresh time", s0.ElapsedMilliseconds.ToString()));
         }
     }

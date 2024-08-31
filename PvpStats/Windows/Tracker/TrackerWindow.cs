@@ -4,7 +4,9 @@ using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using PvpStats.Helpers;
+using PvpStats.Managers.Stats;
 using PvpStats.Settings;
+using PvpStats.Types.Match;
 using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Generic;
@@ -14,9 +16,10 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Tracker;
-internal abstract class TrackerWindow : Window {
-    protected Plugin Plugin;
-    protected WindowConfiguration WindowConfig;
+internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
+    protected readonly Plugin Plugin;
+    protected readonly StatsManager<T> StatsEngine;
+    protected readonly WindowConfiguration WindowConfig;
     protected bool CollapseFilters;
     protected string CurrentTab = "";
 
@@ -29,9 +32,12 @@ internal abstract class TrackerWindow : Window {
     internal List<DataFilter> JobStatFilters { get; private set; } = new();
     internal List<DataFilter> PlayerStatFilters { get; private set; } = new();
     internal SemaphoreSlim RefreshLock { get; init; } = new SemaphoreSlim(1);
+    public bool RefreshActive { get; protected set; }
+    public float RefreshProgress { get; protected set; }
 
-    protected TrackerWindow(Plugin plugin, WindowConfiguration config, string name) : base(name) {
+    protected TrackerWindow(Plugin plugin, StatsManager<T> statsManager, WindowConfiguration config, string name) : base(name) {
         Plugin = plugin;
+        StatsEngine = statsManager;
         CollapseFilters = config.FiltersCollapsed;
         WindowConfig = config;
 
@@ -94,7 +100,12 @@ internal abstract class TrackerWindow : Window {
         }
         _lastWindowSize = ImGui.GetWindowSize();
         _lastWindowPosition = ImGui.GetWindowPos();
+        RefreshProgress = StatsEngine.RefreshProgress;
         DrawInternal();
+        if(RefreshActive) {
+            ImGuiHelper.DrawRefreshProgressBar(RefreshProgress);
+        }
+
         s1.Stop();
         if(_drawCycles % 5000 == 0) {
             _drawCycles = 0;
