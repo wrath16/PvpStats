@@ -1,7 +1,8 @@
 ﻿using PvpStats.Types.Match;
+using System;
 
 namespace PvpStats.Types.Display;
-public class RWScoreboardDouble : PvpScoreboardDouble {
+public class RWScoreboardDouble : PvpScoreboardDouble, IEquatable<RWScoreboardDouble> {
 
     public double Ceruleum { get; set; }
     public double DamageToOther { get; set; }
@@ -56,5 +57,18 @@ public class RWScoreboardDouble : PvpScoreboardDouble {
             DamageToOther = a.DamageToOther,
             Special1 = a.Special1,
         };
+    }
+
+    public bool Equals(RWScoreboardDouble? other) {
+        if(other is null) {
+            return false;
+        }
+        var thisPvPScoreboard = (PvpScoreboardDouble)this;
+        var otherPvPScoreboard = (PvpScoreboardDouble)other;
+        return thisPvPScoreboard.Equals(otherPvPScoreboard)
+            && Ceruleum == other.Ceruleum
+            && DamageToPCs == other.DamageToPCs
+            && DamageToOther == other.DamageToOther
+            && Special1 == other.Special1;
     }
 }

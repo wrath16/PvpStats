@@ -1,7 +1,8 @@
 ﻿using PvpStats.Types.Match;
+using System;
 
 namespace PvpStats.Types.Display;
-public class PvpScoreboardDouble {
+public class PvpScoreboardDouble : IEquatable<PvpScoreboardDouble> {
     public int LifeCount { get; set; } = 1;
     public double Kills { get; set; }
     public double Deaths { get; set; }
@@ -51,5 +52,15 @@ public class PvpScoreboardDouble {
             HPRestored = a.HPRestored,
             KillsAndAssists = a.KillsAndAssists,
         };
+    }
+
+    public bool Equals(PvpScoreboardDouble? other) {
+        return Kills == other?.Kills
+            && Deaths == other?.Deaths
+            && Assists == other?.Assists
+            && DamageDealt == other?.DamageDealt
+            && DamageTaken == other?.DamageTaken
+            && HPRestored == other?.HPRestored
+            && KillsAndAssists == other?.KillsAndAssists;
     }
 }

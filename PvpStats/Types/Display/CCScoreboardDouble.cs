@@ -2,7 +2,7 @@
 using System;
 
 namespace PvpStats.Types.Display;
-public class CCScoreboardDouble : PvpScoreboardDouble {
+public class CCScoreboardDouble : PvpScoreboardDouble, IEquatable<CCScoreboardDouble> {
     //public TimeSpan TimeOnCrystal { get; set; }
     public double TimeOnCrystal { get; set; }
 
@@ -30,5 +30,15 @@ public class CCScoreboardDouble : PvpScoreboardDouble {
             HPRestored = c.HPRestored,
             TimeOnCrystal = a.TimeOnCrystal / b,
         };
+    }
+
+    public bool Equals(CCScoreboardDouble? other) {
+        if(other is null) {
+            return false;
+        }
+        var thisPvPScoreboard = (PvpScoreboardDouble)this;
+        var otherPvPScoreboard = (PvpScoreboardDouble)other;
+        return thisPvPScoreboard.Equals(otherPvPScoreboard)
+            && TimeOnCrystal == other.TimeOnCrystal;
     }
 }

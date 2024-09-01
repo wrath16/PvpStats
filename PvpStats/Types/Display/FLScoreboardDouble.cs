@@ -1,7 +1,8 @@
 ﻿using PvpStats.Types.Match;
+using System;
 
 namespace PvpStats.Types.Display;
-public class FLScoreboardDouble : PvpScoreboardDouble {
+public class FLScoreboardDouble : PvpScoreboardDouble, IEquatable<FrontlineScoreboard> {
 
     public static int BattleHighPerKill => 10;
     public static int BattleHighPerAssist => 2;
@@ -11,7 +12,7 @@ public class FLScoreboardDouble : PvpScoreboardDouble {
     public double DamageToPCs { get; set; }
     public double Special1 { get; set; }
 
-    public double BattleHigh => (Kills * BattleHighPerKill + Assists * BattleHighPerAssist);
+    public double BattleHigh => Kills * BattleHighPerKill + Assists * BattleHighPerAssist;
 
     public FLScoreboardDouble() {
 
@@ -61,5 +62,18 @@ public class FLScoreboardDouble : PvpScoreboardDouble {
             DamageToOther = a.DamageToOther,
             Special1 = a.Special1,
         };
+    }
+
+    public bool Equals(FrontlineScoreboard? other) {
+        if(other is null) {
+            return false;
+        }
+        var thisPvPScoreboard = (PvpScoreboardDouble)this;
+        var otherPvPScoreboard = (PvpScoreboardDouble)other;
+        return thisPvPScoreboard.Equals(otherPvPScoreboard)
+            && Occupations == other.Occupations
+            && DamageToPCs == other.DamageToPCs
+            && DamageToOther == other.DamageToOther
+            && Special1 == other.Special1;
     }
 }
