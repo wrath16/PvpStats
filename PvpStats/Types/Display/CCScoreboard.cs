@@ -20,4 +20,18 @@ public class CCScoreboard : PvpScoreboard {
             MatchTime = a.MatchTime + b.MatchTime,
         };
     }
+
+    public static CCScoreboard operator -(CCScoreboard a, CCScoreboard b) {
+        var c = a - (PvpScoreboard)b;
+        return new CCScoreboard() {
+            Kills = c.Kills,
+            Deaths = c.Deaths,
+            Assists = c.Assists,
+            DamageDealt = c.DamageDealt,
+            DamageTaken = c.DamageTaken,
+            HPRestored = c.HPRestored,
+            TimeOnCrystal = a.TimeOnCrystal - b.TimeOnCrystal,
+            MatchTime = a.MatchTime - b.MatchTime,
+        };
+    }
 }

@@ -12,7 +12,7 @@ public class PvpScoreboard {
     [BsonIgnore]
     public long KillsAndAssists => Kills + Assists;
     [BsonIgnore]
-    public long DamageDealtPerKA => KillsAndAssists > 0 ? DamageDealt / KillsAndAssists : DamageDealt;
+    public virtual long DamageDealtPerKA => KillsAndAssists > 0 ? DamageDealt / KillsAndAssists : DamageDealt;
     [BsonIgnore]
     public long DamageDealtPerLife => DamageDealt / (Deaths + Size);
     [BsonIgnore]
@@ -30,6 +30,17 @@ public class PvpScoreboard {
             DamageDealt = a.DamageDealt + b.DamageDealt,
             DamageTaken = a.DamageTaken + b.DamageTaken,
             HPRestored = a.HPRestored + b.HPRestored,
+        };
+    }
+
+    public static PvpScoreboard operator -(PvpScoreboard a, PvpScoreboard b) {
+        return new PvpScoreboard() {
+            Kills = a.Kills - b.Kills,
+            Deaths = a.Deaths - b.Deaths,
+            Assists = a.Assists - b.Assists,
+            DamageDealt = a.DamageDealt - b.DamageDealt,
+            DamageTaken = a.DamageTaken - b.DamageTaken,
+            HPRestored = a.HPRestored - b.HPRestored,
         };
     }
 }
