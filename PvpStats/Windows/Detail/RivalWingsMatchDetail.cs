@@ -699,7 +699,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 foreach(var prop in props) {
                     var propId = prop.Name.GetHashCode();
                     if((uint)propId == columnId) {
-                        Plugin.Log.Debug($"sorting by {prop.Name}");
+                        //Plugin.Log.Debug($"sorting by {prop.Name}");
                         comparator = (r) => prop.GetValue(_playerContributions[(PlayerAlias)r.Key]) ?? 0;
                         propFound = true;
                         break;
@@ -711,7 +711,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 foreach(var prop in props) {
                     var propId = prop.Name.GetHashCode();
                     if((uint)propId == columnId) {
-                        Plugin.Log.Debug($"sorting by {prop.Name}");
+                        //Plugin.Log.Debug($"sorting by {prop.Name}");
                         comparator = (r) => prop.GetValue(r.Value) ?? 0;
                         teamComparator = (r) => prop.GetValue(r.Value) ?? 0;
                         break;

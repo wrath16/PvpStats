@@ -509,7 +509,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 foreach(var prop in props) {
                     var propId = prop.Name.GetHashCode();
                     if((uint)propId == columnId) {
-                        Plugin.Log.Debug($"sorting by {prop.Name}");
+                        //Plugin.Log.Debug($"sorting by {prop.Name}");
                         comparator = (r) => prop.GetValue(_playerContributions[r.Key]) ?? 0;
                         propFound = true;
                         break;
