@@ -7,6 +7,7 @@ internal class FLPlayerJobStats : PlayerJobStats {
     public FLScoreboardDouble ScoreboardPerMatch { get; set; } = new();
     public FLScoreboardDouble ScoreboardPerMin { get; set; } = new();
     public FLScoreboardDouble ScoreboardContrib { get; set; } = new();
+    public FrontlineScoreboard ScoreboardShatter { get; set; } = new();
 
     public double BattleHighPerLife => ScoreboardPerMin.Deaths != 0 ? ScoreboardPerMin.BattleHigh / ScoreboardPerMin.Deaths : ScoreboardPerMatch.BattleHigh;
 

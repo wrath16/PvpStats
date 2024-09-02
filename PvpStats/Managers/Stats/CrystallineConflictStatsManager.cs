@@ -13,6 +13,29 @@ using System.Threading.Tasks;
 namespace PvpStats.Managers.Stats;
 internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflictMatch> {
 
+    public static float[] KillsPerMatchRange = [1.0f, 4.5f];
+    public static float[] DeathsPerMatchRange = [1.5f, 3.5f];
+    public static float[] AssistsPerMatchRange = [4.0f, 8.0f];
+    public static float[] DamageDealtPerMatchRange = [400000f, 850000f];
+    public static float[] DamageTakenPerMatchRange = [400000f, 850000f];
+    public static float[] HPRestoredPerMatchRange = [350000f, 1000000f];
+    public static float[] TimeOnCrystalPerMatchRange = [35f, 120f];
+    public static float AverageMatchLength = 5f;
+    public static float[] KillsPerMinRange = [KillsPerMatchRange[0] / AverageMatchLength, KillsPerMatchRange[1] / AverageMatchLength];
+    public static float[] DeathsPerMinRange = [DeathsPerMatchRange[0] / AverageMatchLength, DeathsPerMatchRange[1] / AverageMatchLength];
+    public static float[] AssistsPerMinRange = [AssistsPerMatchRange[0] / AverageMatchLength, AssistsPerMatchRange[1] / AverageMatchLength];
+    public static float[] DamageDealtPerMinRange = [DamageDealtPerMatchRange[0] / AverageMatchLength, DamageDealtPerMatchRange[1] / AverageMatchLength];
+    public static float[] DamageTakenPerMinRange = [DamageTakenPerMatchRange[0] / AverageMatchLength, DamageTakenPerMatchRange[1] / AverageMatchLength];
+    public static float[] HPRestoredPerMinRange = [HPRestoredPerMatchRange[0] / AverageMatchLength, HPRestoredPerMatchRange[1] / AverageMatchLength];
+    public static float[] TimeOnCrystalPerMinRange = [TimeOnCrystalPerMatchRange[0] / AverageMatchLength, TimeOnCrystalPerMatchRange[1] / AverageMatchLength];
+
+    public static float[] ContribRange = [0.15f, 0.25f];
+    public static float[] DamagePerKARange = [52000f, 100000f];
+    public static float[] DamagePerLifeRange = [190000f, 400000f];
+    public static float[] DamageTakenPerLifeRange = [100000f, 300000f];
+    public static float[] HPRestoredPerLifeRange = [120000f, 600000f];
+    public static float[] KDARange = [4.0f, 20.0f];
+
     //summary
     internal CCPlayerJobStats LocalPlayerStats { get; private set; } = new();
     internal Dictionary<Job, CCAggregateStats> LocalPlayerJobStats { get; private set; } = new();

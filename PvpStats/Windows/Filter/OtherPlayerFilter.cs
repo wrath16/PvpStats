@@ -15,7 +15,7 @@ public enum TeamStatus {
     Opponent,
 }
 
-public class OtherPlayerFilter : DataFilter {
+public class OtherPlayerFilter : DataFilter, IEquatable<OtherPlayerFilter> {
     public override string Name => "Player";
     //public override string HelpMessage => "Comma-separate multiple party members.";
     public string PlayerNamesRaw { get; set; } = "";
@@ -29,6 +29,14 @@ public class OtherPlayerFilter : DataFilter {
     private string[] _teamStatusCombo = { "Any Side", "Teammate", "Opponent" };
 
     public OtherPlayerFilter() { }
+
+    public OtherPlayerFilter(OtherPlayerFilter filter) {
+        PlayerNamesRaw = filter.PlayerNamesRaw;
+        _lastRefreshedValue = PlayerNamesRaw;
+        AnyJob = filter.AnyJob;
+        PlayerJob = filter.PlayerJob;
+        _lastTextValue = PlayerNamesRaw;
+    }
 
     internal OtherPlayerFilter(Plugin plugin, Func<Task> action, OtherPlayerFilter? filter = null) : base(plugin, action) {
         var allJobs = Enum.GetValues(typeof(Job)).Cast<Job>();
@@ -95,5 +103,9 @@ public class OtherPlayerFilter : DataFilter {
                 await Refresh();
             });
         }
+    }
+
+    public bool Equals(OtherPlayerFilter? other) {
+        return PlayerNamesRaw.Equals(other?.PlayerNamesRaw) && TeamStatus == other?.TeamStatus && AnyJob == other.AnyJob && (AnyJob || PlayerJob == other?.PlayerJob);
     }
 }

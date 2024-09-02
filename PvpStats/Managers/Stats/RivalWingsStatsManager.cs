@@ -12,6 +12,32 @@ using System.Threading.Tasks;
 namespace PvpStats.Managers.Stats;
 internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
 
+    public static float[] KillsPerMatchRange = [1.0f, 7.0f];
+    public static float[] DeathsPerMatchRange = [1.0f, 7.0f];
+    public static float[] AssistsPerMatchRange = [7f, 25f];
+    public static float[] DamageDealtToPCsPerMatchRange = [300000f, 2000000f];
+    public static float[] DamageDealtToOtherPerMatchRange = [100000f, 3000000f];
+    public static float[] DamageTakenPerMatchRange = [400000f, 1500000f];
+    public static float[] HPRestoredPerMatchRange = [100000f, 1200000f];
+    public static float[] CeruleumPerMatchRange = [20f, 140f];
+    public static float AverageMatchLength = 10f;
+    public static float[] KillsPerMinRange = [KillsPerMatchRange[0] / AverageMatchLength, KillsPerMatchRange[1] / AverageMatchLength];
+    public static float[] DeathsPerMinRange = [DeathsPerMatchRange[0] / AverageMatchLength, DeathsPerMatchRange[1] / AverageMatchLength];
+    public static float[] AssistsPerMinRange = [AssistsPerMatchRange[0] / AverageMatchLength, AssistsPerMatchRange[1] / AverageMatchLength];
+    public static float[] DamageDealtToPCsPerMinRange = [DamageDealtToPCsPerMatchRange[0] / AverageMatchLength, DamageDealtToPCsPerMatchRange[1] / AverageMatchLength];
+    public static float[] DamageDealtToOtherPerMinRange = [DamageDealtToOtherPerMatchRange[0] / AverageMatchLength, DamageDealtToOtherPerMatchRange[1] / AverageMatchLength];
+    public static float[] DamageTakenPerMinRange = [DamageTakenPerMatchRange[0] / AverageMatchLength, DamageTakenPerMatchRange[1] / AverageMatchLength];
+    public static float[] HPRestoredPerMinRange = [HPRestoredPerMatchRange[0] / AverageMatchLength, HPRestoredPerMatchRange[1] / AverageMatchLength];
+    public static float[] CeruleumPerMinRange = [CeruleumPerMatchRange[0] / AverageMatchLength, CeruleumPerMatchRange[1] / AverageMatchLength];
+
+    public static float[] ContribRange = [0 / 24f, 2 / 24f];
+    public static float[] DamagePerKARange = [40000f, 150000f];
+    public static float[] DamagePerLifeRange = [190000f, 400000f];
+    public static float[] DamageTakenPerLifeRange = [100000f, 300000f];
+    public static float[] HPRestoredPerLifeRange = [120000f, 600000f];
+    public static float[] KDARange = [2.0f, 15.0f];
+
+    //for external use
     internal CCAggregateStats OverallResults { get; private set; } = new();
     internal RWPlayerJobStats LocalPlayerStats { get; private set; } = new();
     internal Dictionary<Job, CCAggregateStats> LocalPlayerJobResults { get; private set; } = new();
@@ -21,123 +47,210 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
     internal double LocalPlayerMercWinRate { get; private set; }
     internal TimeSpan AverageMatchDuration { get; private set; } = new();
 
+    //internal state
+    CCAggregateStats _overallResults = new();
+    Dictionary<Job, CCAggregateStats> _localPlayerJobResults = [];
+    RWPlayerJobStats _localPlayerStats = new();
+    List<RWScoreboardDouble> _localPlayerTeamContributions = [];
+    Dictionary<RivalWingsMech, double> _localPlayerMechTime = new() {
+            { RivalWingsMech.Chaser, 0},
+            { RivalWingsMech.Oppressor, 0},
+            { RivalWingsMech.Justice, 0}
+        };
+    uint _localPlayerMechMatches = 0;
+    TimeSpan _totalMatchTime = TimeSpan.Zero;
+    TimeSpan _mechEligibleTime = TimeSpan.Zero;
+    TimeSpan _scoreboardEligibleTime = TimeSpan.Zero;
+    int _midWins = 0, _midLosses = 0;
+    int _mercWins = 0, _mercLosses = 0;
+
     public RivalWingsStatsManager(Plugin plugin) : base(plugin, plugin.RWCache) {
+        Reset();
     }
 
     protected override async Task RefreshInner(List<DataFilter> matchFilters, List<DataFilter> jobStatFilters, List<DataFilter> playerStatFilters) {
         var matches = MatchCache.Matches.Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
         matches = FilterMatches(matchFilters, matches);
-        CCAggregateStats overallResults = new();
-        Dictionary<Job, CCAggregateStats> localPlayerJobResults = [];
-        RWPlayerJobStats localPlayerStats = new();
-        List<RWScoreboardDouble> localPlayerTeamContributions = [];
-        Dictionary<RivalWingsMech, double> localPlayerMechTime = new() {
-            { RivalWingsMech.Chaser, 0},
-            { RivalWingsMech.Oppressor, 0},
-            { RivalWingsMech.Justice, 0}
-        };
-        uint localPlayerMechMatches = 0;
-        TimeSpan totalMatchTime = TimeSpan.Zero;
-        TimeSpan mechEligibleTime = TimeSpan.Zero;
-        TimeSpan scoreboardEligibleTime = TimeSpan.Zero;
-        int midWins = 0, midLosses = 0;
-        int mercWins = 0, mercLosses = 0;
+
+        var toAdd = matches.Except(Matches).ToList();
+        var toSubtract = Matches.Except(matches).ToList();
+
         int matchesProcessed = 0;
-
-        foreach(var match in matches) {
-            var teamScoreboards = match.GetTeamScoreboards();
-            IncrementAggregateStats(overallResults, match);
-            totalMatchTime += match.MatchDuration ?? TimeSpan.Zero;
-
-            if(match.LocalPlayerTeamMember != null && match.LocalPlayerTeamMember.Job != null) {
-                var job = (Job)match.LocalPlayerTeamMember.Job;
-                if(localPlayerJobResults.TryGetValue(job, out CCAggregateStats? val)) {
-                    IncrementAggregateStats(val, match);
-                } else {
-                    localPlayerJobResults.Add(job, new());
-                    IncrementAggregateStats(localPlayerJobResults[job], match);
-                }
-            }
-
-            if(match.PlayerScoreboards != null) {
-                scoreboardEligibleTime += match.MatchDuration ?? TimeSpan.Zero;
-                RivalWingsScoreboard? localPlayerTeamScoreboard = null;
-                teamScoreboards?.TryGetValue(match.LocalPlayerTeam ?? RivalWingsTeamName.Unknown, out localPlayerTeamScoreboard);
-                AddPlayerJobStat(localPlayerStats, localPlayerTeamContributions, match, match.LocalPlayerTeamMember, localPlayerTeamScoreboard);
-                //if(match.LocalPlayerTeamMember!.Job != null) {
-                //    var job = (Job)match.LocalPlayerTeamMember!.Job;
-                //    if(!localPlayerJobStats.ContainsKey(job)) {
-                //        localPlayerJobStats.Add(job, new());
-                //    }
-                //    IncrementAggregateStats(localPlayerJobStats[job], match);
-                //}
-            }
-
-            if(match.PlayerMechTime != null && match.LocalPlayer != null) {
-                localPlayerMechMatches++;
-                mechEligibleTime += match.MatchDuration ?? TimeSpan.Zero;
-                if(match.PlayerMechTime.TryGetValue(match.LocalPlayer, out var playerMechTime)) {
-                    foreach(var mech in playerMechTime) {
-                        localPlayerMechTime[mech.Key] += mech.Value;
-                    }
-                }
-            }
-
-            if(match.Mercs != null) {
-                foreach(var team in match.Mercs) {
-                    if(team.Key == match.LocalPlayerTeam) {
-                        mercWins += team.Value;
-                    } else {
-                        mercLosses += team.Value;
-                    }
-                }
-            }
-
-            if(match.Supplies != null) {
-                foreach(var team in match.Supplies) {
-                    if(team.Key == match.LocalPlayerTeam) {
-                        foreach(var supply in team.Value) {
-                            midWins += supply.Value;
-                        }
-                    } else {
-                        foreach(var supply in team.Value) {
-                            midLosses += supply.Value;
-                        }
-                    }
-                }
-            }
-            RefreshProgress = (float)matchesProcessed++ / matches.Count;
+        if(toSubtract.Count * 2 >= Matches.Count) {
+            //force full build
+            Reset();
+            int totalMatches = matches.Count;
+            Plugin.Log.Debug($"Full re-build: {totalMatches}");
+            matches.ForEach(x => {
+                AddMatch(x);
+                RefreshProgress = (float)matchesProcessed++ / totalMatches;
+            });
+        } else {
+            int totalMatches = toAdd.Count + toSubtract.Count;
+            Plugin.Log.Debug($"Removing: {toSubtract.Count}");
+            toSubtract.ForEach(x=> {
+                RemoveMatch(x);
+                RefreshProgress = (float)matchesProcessed++ / totalMatches;
+            });
+            Plugin.Log.Debug($"Adding: {toAdd.Count}");
+            toAdd.ForEach(x => {
+                AddMatch(x);
+                RefreshProgress = (float)matchesProcessed++ / totalMatches;
+            });
         }
 
-        //foreach(var mech in localPlayerMechTime) {
-        //    mech.Value /= mechEligibleTime;
-        //}
-
-        SetScoreboardStats(localPlayerStats, localPlayerTeamContributions, scoreboardEligibleTime);
+        SetScoreboardStats(_localPlayerStats, _localPlayerTeamContributions, _scoreboardEligibleTime);
 
         try {
             await RefreshLock.WaitAsync();
             Matches = matches;
-            OverallResults = overallResults;
-            LocalPlayerStats = localPlayerStats;
-            LocalPlayerJobResults = localPlayerJobResults;
-            LocalPlayerMechTime = localPlayerMechTime.Select(x => (x.Key, x.Value / mechEligibleTime.TotalSeconds)).ToDictionary();
-            LocalPlayerMechMatches = localPlayerMechMatches;
-            LocalPlayerMercWinRate = (double)mercWins / (mercWins + mercLosses);
-            LocalPlayerMidWinRate = (double)midWins / (midWins + midLosses);
-            AverageMatchDuration = matches.Count > 0 ? totalMatchTime / matches.Count : TimeSpan.Zero;
+            OverallResults = _overallResults;
+            LocalPlayerStats = _localPlayerStats;
+            LocalPlayerJobResults = _localPlayerJobResults;
+            LocalPlayerMechTime = _localPlayerMechTime.Select(x => (x.Key, x.Value / _mechEligibleTime.TotalSeconds)).ToDictionary();
+            LocalPlayerMechMatches = _localPlayerMechMatches;
+            LocalPlayerMercWinRate = (double)_mercWins / (_mercWins + _mercLosses);
+            LocalPlayerMidWinRate = (double)_midWins / (_midWins + _midLosses);
+            AverageMatchDuration = matches.Count > 0 ? _totalMatchTime / matches.Count : TimeSpan.Zero;
         } finally {
             RefreshLock.Release();
         }
     }
 
-    //private void AddMatch(RivalWingsMatch match) {
+    private void Reset() {
+        _overallResults = new();
+        _localPlayerJobResults = [];
+        _localPlayerStats = new();
+        _localPlayerTeamContributions = [];
+        _localPlayerMechTime = new() {
+            { RivalWingsMech.Chaser, 0},
+            { RivalWingsMech.Oppressor, 0},
+            { RivalWingsMech.Justice, 0}
+        };
+        _localPlayerMechMatches = 0;
+        _totalMatchTime = TimeSpan.Zero;
+        _mechEligibleTime = TimeSpan.Zero;
+        _scoreboardEligibleTime = TimeSpan.Zero;
+        _midWins = 0;
+        _midLosses = 0;
+        _mercWins = 0; 
+        _mercLosses = 0;
+    }
 
-    //}
 
-    //private void RemoveMatch(RivalWingsMatch match) {
+    private void AddMatch(RivalWingsMatch match) {
+        var teamScoreboards = match.GetTeamScoreboards();
+        IncrementAggregateStats(_overallResults, match);
+        _totalMatchTime += match.MatchDuration ?? TimeSpan.Zero;
 
-    //}
+        if(match.LocalPlayerTeamMember != null && match.LocalPlayerTeamMember.Job != null) {
+            var job = (Job)match.LocalPlayerTeamMember.Job;
+            if(_localPlayerJobResults.TryGetValue(job, out CCAggregateStats? val)) {
+                IncrementAggregateStats(val, match);
+            } else {
+                _localPlayerJobResults.Add(job, new());
+                IncrementAggregateStats(_localPlayerJobResults[job], match);
+            }
+        }
+
+        if(match.PlayerScoreboards != null) {
+            _scoreboardEligibleTime += match.MatchDuration ?? TimeSpan.Zero;
+            RivalWingsScoreboard? localPlayerTeamScoreboard = null;
+            teamScoreboards?.TryGetValue(match.LocalPlayerTeam ?? RivalWingsTeamName.Unknown, out localPlayerTeamScoreboard);
+            AddPlayerJobStat(_localPlayerStats, _localPlayerTeamContributions, match, match.LocalPlayerTeamMember, localPlayerTeamScoreboard);
+        }
+
+        if(match.PlayerMechTime != null && match.LocalPlayer != null) {
+            _localPlayerMechMatches++;
+            _mechEligibleTime += match.MatchDuration ?? TimeSpan.Zero;
+            if(match.PlayerMechTime.TryGetValue(match.LocalPlayer, out var playerMechTime)) {
+                foreach(var mech in playerMechTime) {
+                    _localPlayerMechTime[mech.Key] += mech.Value;
+                }
+            }
+        }
+
+        if(match.Mercs != null) {
+            foreach(var team in match.Mercs) {
+                if(team.Key == match.LocalPlayerTeam) {
+                    _mercWins += team.Value;
+                } else {
+                    _mercLosses += team.Value;
+                }
+            }
+        }
+
+        if(match.Supplies != null) {
+            foreach(var team in match.Supplies) {
+                if(team.Key == match.LocalPlayerTeam) {
+                    foreach(var supply in team.Value) {
+                        _midWins += supply.Value;
+                    }
+                } else {
+                    foreach(var supply in team.Value) {
+                        _midLosses += supply.Value;
+                    }
+                }
+            }
+        }
+    }
+
+    private void RemoveMatch(RivalWingsMatch match) {
+        var teamScoreboards = match.GetTeamScoreboards();
+        DecrementAggregateStats(_overallResults, match);
+        _totalMatchTime += match.MatchDuration ?? TimeSpan.Zero;
+
+        if(match.LocalPlayerTeamMember != null && match.LocalPlayerTeamMember.Job != null) {
+            var job = (Job)match.LocalPlayerTeamMember.Job;
+            if(_localPlayerJobResults.TryGetValue(job, out CCAggregateStats? val)) {
+                DecrementAggregateStats(val, match);
+            } else {
+                _localPlayerJobResults.Add(job, new());
+                DecrementAggregateStats(_localPlayerJobResults[job], match);
+            }
+        }
+
+        if(match.PlayerScoreboards != null) {
+            _scoreboardEligibleTime -= match.MatchDuration ?? TimeSpan.Zero;
+            RivalWingsScoreboard? localPlayerTeamScoreboard = null;
+            teamScoreboards?.TryGetValue(match.LocalPlayerTeam ?? RivalWingsTeamName.Unknown, out localPlayerTeamScoreboard);
+            RemovePlayerJobStat(_localPlayerStats, _localPlayerTeamContributions, match, match.LocalPlayerTeamMember, localPlayerTeamScoreboard);
+        }
+
+        if(match.PlayerMechTime != null && match.LocalPlayer != null) {
+            _localPlayerMechMatches--;
+            _mechEligibleTime -= match.MatchDuration ?? TimeSpan.Zero;
+            if(match.PlayerMechTime.TryGetValue(match.LocalPlayer, out var playerMechTime)) {
+                foreach(var mech in playerMechTime) {
+                    _localPlayerMechTime[mech.Key] -= mech.Value;
+                }
+            }
+        }
+
+        if(match.Mercs != null) {
+            foreach(var team in match.Mercs) {
+                if(team.Key == match.LocalPlayerTeam) {
+                    _mercWins -= team.Value;
+                } else {
+                    _mercLosses -= team.Value;
+                }
+            }
+        }
+
+        if(match.Supplies != null) {
+            foreach(var team in match.Supplies) {
+                if(team.Key == match.LocalPlayerTeam) {
+                    foreach(var supply in team.Value) {
+                        _midWins -= supply.Value;
+                    }
+                } else {
+                    foreach(var supply in team.Value) {
+                        _midLosses -= supply.Value;
+                    }
+                }
+            }
+        }
+    }
 
     internal void IncrementAggregateStats(CCAggregateStats stats, RivalWingsMatch match) {
         stats.Matches++;
@@ -148,11 +261,20 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
         }
     }
 
+    internal void DecrementAggregateStats(CCAggregateStats stats, RivalWingsMatch match) {
+        stats.Matches--;
+        if(match.IsWin) {
+            stats.Wins--;
+        } else if(match.IsLoss) {
+            stats.Losses--;
+        }
+    }
+
     internal void AddPlayerJobStat(RWPlayerJobStats statsModel, List<RWScoreboardDouble> teamContributions,
     RivalWingsMatch match, RivalWingsPlayer player, RivalWingsScoreboard? teamScoreboard) {
-        bool isLocalPlayer = player.Name.Equals(match.LocalPlayer);
-        bool isTeammate = !isLocalPlayer && player.Team == match.LocalPlayerTeam!;
-        bool isOpponent = !isLocalPlayer && !isTeammate;
+        //bool isLocalPlayer = player.Name.Equals(match.LocalPlayer);
+        //bool isTeammate = !isLocalPlayer && player.Team == match.LocalPlayerTeam!;
+        //bool isOpponent = !isLocalPlayer && !isTeammate;
 
         statsModel.StatsAll.Matches++;
         if(match.MatchWinner == player.Team) {
@@ -173,6 +295,28 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
                 //statsModel.ScoreboardTotal.MatchTime += match.PostMatch.MatchDuration;
                 statsModel.ScoreboardTotal += playerScoreboard;
                 teamContributions.Add(new(playerScoreboard, teamScoreboard));
+            }
+        }
+    }
+
+    internal void RemovePlayerJobStat(RWPlayerJobStats statsModel, List<RWScoreboardDouble> teamContributions,
+    RivalWingsMatch match, RivalWingsPlayer player, RivalWingsScoreboard? teamScoreboard) {
+        //bool isLocalPlayer = player.Name.Equals(match.LocalPlayer);
+        //bool isTeammate = !isLocalPlayer && player.Team == match.LocalPlayerTeam!;
+        //bool isOpponent = !isLocalPlayer && !isTeammate;
+
+        statsModel.StatsAll.Matches--;
+        if(match.MatchWinner == player.Team) {
+            statsModel.StatsAll.Wins--;
+        } else if(match.MatchWinner != null) {
+            statsModel.StatsAll.Losses--;
+        }
+
+        if(match.PlayerScoreboards != null) {
+            var playerScoreboard = match.PlayerScoreboards[player.Name];
+            if(playerScoreboard != null && teamScoreboard != null) {
+                statsModel.ScoreboardTotal -= playerScoreboard;
+                teamContributions.Remove(new(playerScoreboard, teamScoreboard));
             }
         }
     }

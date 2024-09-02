@@ -3,6 +3,7 @@ using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PvpStats.Helpers;
+using PvpStats.Managers.Stats;
 using PvpStats.Types.Display;
 using PvpStats.Types.Match;
 using PvpStats.Types.Player;
@@ -239,57 +240,57 @@ internal class RivalWingsSummary {
 
                 //per match
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Kills, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 2.0f, 8.0f, Plugin.Configuration.ColorScaleStats, "0.00", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Kills, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, RivalWingsStatsManager.KillsPerMatchRange[0], RivalWingsStatsManager.KillsPerMatchRange[1], Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, 2.0f, 5.0f, Plugin.Configuration.ColorScaleStats, "0.00", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, RivalWingsStatsManager.DeathsPerMatchRange[0], RivalWingsStatsManager.DeathsPerMatchRange[1], Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 10f, 25f, Plugin.Configuration.ColorScaleStats, "0.00", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, RivalWingsStatsManager.AssistsPerMatchRange[0], RivalWingsStatsManager.AssistsPerMatchRange[1], Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.DamageToPCs, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 300000f, 2000000f, Plugin.Configuration.ColorScaleStats, "#", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.DamageToPCs, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, RivalWingsStatsManager.DamageDealtToPCsPerMatchRange[0], RivalWingsStatsManager.DamageDealtToPCsPerMatchRange[1], Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.DamageToOther, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 100000f, 3000000f, Plugin.Configuration.ColorScaleStats, "#", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.DamageToOther, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, RivalWingsStatsManager.DamageDealtToOtherPerMatchRange[0], RivalWingsStatsManager.DamageDealtToOtherPerMatchRange[1], Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.DamageTaken, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 400000f, 1500000f, Plugin.Configuration.ColorScaleStats, "#", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.DamageTaken, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, RivalWingsStatsManager.DamageTakenPerMatchRange[0], RivalWingsStatsManager.DamageTakenPerMatchRange[1], Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.HPRestored, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 100000f, 1500000f, Plugin.Configuration.ColorScaleStats, "#", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.HPRestored, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, RivalWingsStatsManager.HPRestoredPerMatchRange[0], RivalWingsStatsManager.HPRestoredPerMatchRange[1], Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Ceruleum, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 10f, 100f, Plugin.Configuration.ColorScaleStats, "#", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Ceruleum, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, RivalWingsStatsManager.CeruleumPerMatchRange[0], RivalWingsStatsManager.CeruleumPerMatchRange[1], Plugin.Configuration.ColorScaleStats, "#", offset);
 
                 //per min
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.Kills, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 0.2f, 0.8f, Plugin.Configuration.ColorScaleStats, "0.00", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.Kills, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, RivalWingsStatsManager.KillsPerMinRange[0], RivalWingsStatsManager.KillsPerMinRange[1], Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, 0.2f, 0.5f, Plugin.Configuration.ColorScaleStats, "0.00", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, RivalWingsStatsManager.DeathsPerMinRange[0], RivalWingsStatsManager.DeathsPerMinRange[1], Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1.0f, 2.5f, Plugin.Configuration.ColorScaleStats, "0.00", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, RivalWingsStatsManager.AssistsPerMinRange[0], RivalWingsStatsManager.AssistsPerMinRange[1], Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.DamageToPCs, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 30000f, 200000f, Plugin.Configuration.ColorScaleStats, "#", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.DamageToPCs, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, RivalWingsStatsManager.DamageDealtToPCsPerMinRange[0], RivalWingsStatsManager.DamageDealtToPCsPerMinRange[1], Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.DamageToOther, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 10000f, 300000f, Plugin.Configuration.ColorScaleStats, "#", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.DamageToOther, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, RivalWingsStatsManager.DamageDealtToOtherPerMinRange[0], RivalWingsStatsManager.DamageDealtToOtherPerMinRange[1], Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.DamageTaken, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 40000f, 150000f, Plugin.Configuration.ColorScaleStats, "#", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.DamageTaken, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, RivalWingsStatsManager.DamageTakenPerMinRange[0], RivalWingsStatsManager.DamageTakenPerMinRange[1], Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.HPRestored, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 10000f, 150000f, Plugin.Configuration.ColorScaleStats, "#", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.HPRestored, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, RivalWingsStatsManager.HPRestoredPerMinRange[0], RivalWingsStatsManager.HPRestoredPerMinRange[1], Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.Ceruleum, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1f, 10f, Plugin.Configuration.ColorScaleStats, "0.00", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardPerMin.Ceruleum, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, RivalWingsStatsManager.CeruleumPerMinRange[0], RivalWingsStatsManager.CeruleumPerMinRange[1], Plugin.Configuration.ColorScaleStats, "0.00", offset);
 
                 //team contrib
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.Kills, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1 / 48f, 3 / 48f, Plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.Kills, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, RivalWingsStatsManager.ContribRange[0], RivalWingsStatsManager.ContribRange[1], Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, 1 / 48f, 3 / 48f, Plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, RivalWingsStatsManager.ContribRange[0], RivalWingsStatsManager.ContribRange[1], Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1 / 48f, 3 / 48f, Plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, RivalWingsStatsManager.ContribRange[0], RivalWingsStatsManager.ContribRange[1], Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.DamageToPCs, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1 / 48f, 3 / 48f, Plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.DamageToPCs, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, RivalWingsStatsManager.ContribRange[0], RivalWingsStatsManager.ContribRange[1], Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.DamageToOther, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1 / 48f, 3 / 48f, Plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.DamageToOther, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, RivalWingsStatsManager.ContribRange[0], RivalWingsStatsManager.ContribRange[1], Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.DamageTaken, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1 / 48f, 3 / 48f, Plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.DamageTaken, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, RivalWingsStatsManager.ContribRange[0], RivalWingsStatsManager.ContribRange[1], Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.HPRestored, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1 / 48f, 3 / 48f, Plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.HPRestored, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, RivalWingsStatsManager.ContribRange[0], RivalWingsStatsManager.ContribRange[1], Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.Ceruleum, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 1 / 48f, 3 / 48f, Plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGuiHelper.DrawNumericCell((float)Plugin.RWStatsEngine.LocalPlayerStats.ScoreboardContrib.Ceruleum, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, RivalWingsStatsManager.ContribRange[0], RivalWingsStatsManager.ContribRange[1], Plugin.Configuration.ColorScaleStats, "P1", offset);
             }
         }
     }

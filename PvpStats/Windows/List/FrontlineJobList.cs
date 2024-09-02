@@ -64,7 +64,7 @@ internal class FrontlineJobList : FLStatsList<Job> {
     public FrontlineJobList(Plugin plugin, FLTrackerWindow window) : base(plugin, window) {
         //ListModel = listModel;
         StatSourceFilter = new FLStatSourceFilter(plugin, window.Refresh);
-        //window.JobStatFilters.Add(StatSourceFilter);
+        window.JobStatFilters.Add(StatSourceFilter);
         //OtherPlayerFilter = playerFilter;
     }
 
