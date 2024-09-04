@@ -16,8 +16,24 @@ internal abstract class StatsManager<T> where T : PvpMatch {
     protected readonly Plugin Plugin;
     protected readonly MatchCacheService<T> MatchCache;
     internal SemaphoreSlim RefreshLock { get; private set; } = new SemaphoreSlim(1);
+
     public bool RefreshActive { get; private set; }
     public float RefreshProgress { get; protected set; }
+
+    public bool MatchRefreshActive { get; protected set; }
+    public float MatchRefreshProgress { get; protected set; }
+
+    public bool SummaryRefreshActive { get; protected set; }
+    public int SummaryRefreshMatchesProcessed { get; protected set; }
+
+    public bool RecordsRefreshActive { get; protected set; }
+    public int RecordsRefreshMatchesProcessed { get; protected set; }
+
+    public bool JobsRefreshActive { get; protected set; }
+    public int JobsRefreshMatchesProcessed { get; protected set; }
+
+    public bool PlayersRefreshActive { get; protected set; }
+    public int PlayersRefreshMatchesProcessed { get; protected set; }
 
     public List<T> Matches { get; protected set; } = new();
     public List<PlayerAlias> Players { get; protected set; } = new();
@@ -33,9 +49,24 @@ internal abstract class StatsManager<T> where T : PvpMatch {
         try {
             RefreshProgress = 0f;
             RefreshActive = true;
+            MatchRefreshProgress = 0f;
+            MatchRefreshActive = true;
+            SummaryRefreshMatchesProcessed = 0;
+            SummaryRefreshActive = true;
+            RecordsRefreshMatchesProcessed = 0;
+            RecordsRefreshActive = true;
+            JobsRefreshMatchesProcessed = 0;
+            JobsRefreshActive = true;
+            PlayersRefreshMatchesProcessed = 0;
+            PlayersRefreshActive = true;
             await RefreshInner(matchFilters, jobStatFilters, playerStatFilters);
         } finally {
             RefreshActive = false;
+            MatchRefreshActive = false;
+            SummaryRefreshActive = false;
+            RecordsRefreshActive = false;
+            JobsRefreshActive = false;
+            PlayersRefreshActive = false;
         }
     }
 

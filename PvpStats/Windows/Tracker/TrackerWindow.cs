@@ -100,11 +100,11 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
         }
         _lastWindowSize = ImGui.GetWindowSize();
         _lastWindowPosition = ImGui.GetWindowPos();
-        RefreshProgress = StatsEngine.RefreshProgress;
+        //RefreshProgress = StatsEngine.RefreshProgress;
         DrawInternal();
-        if(RefreshActive) {
-            ImGuiHelper.DrawRefreshProgressBar(RefreshProgress);
-        }
+        //if(RefreshActive) {
+        //    ImGuiHelper.DrawRefreshProgressBar(RefreshProgress);
+        //}
 
         s1.Stop();
         if(_drawCycles % 5000 == 0) {

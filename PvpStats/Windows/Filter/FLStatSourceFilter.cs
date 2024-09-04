@@ -17,31 +17,29 @@ public class FLStatSourceFilter : StatSourceFilter, IEquatable<FLStatSourceFilte
     }
 
     public FLStatSourceFilter(FLStatSourceFilter filter) {
-        Initialize();
-        foreach(var category in filter.FilterState) {
-            FilterState[category.Key] = category.Value;
-        }
+        Initialize(filter);
     }
 
     internal FLStatSourceFilter(Plugin plugin, Func<Task> action, FLStatSourceFilter? filter = null) : base(plugin, action) {
-        Initialize();
-        if(filter is not null) {
-            foreach(var category in filter.FilterState) {
-                FilterState[category.Key] = category.Value;
-            }
-        }
-        UpdateAllSelected();
+        Initialize(filter);
     }
 
-    private void Initialize() {
+    private void Initialize(FLStatSourceFilter? filter = null) {
         FilterState = new() {
                 {StatSource.LocalPlayer, true },
                 {StatSource.Teammate, true },
                 {StatSource.Opponent, true },
         };
+        if(filter is not null) {
+            foreach(var category in filter.FilterState) {
+                FilterState[category.Key] = category.Value;
+            }
+            InheritFromPlayerFilter = filter.InheritFromPlayerFilter;
+        }
+        UpdateAllSelected();
     }
 
     public bool Equals(FLStatSourceFilter? other) {
-        return FilterState.All(x => x.Value == other?.FilterState[x.Key]) && InheritFromPlayerFilter == other?.InheritFromPlayerFilter;
+        return FilterState.All(x => x.Value == other?.FilterState[x.Key]) && (InheritFromPlayerFilter == other?.InheritFromPlayerFilter);
     }
 }

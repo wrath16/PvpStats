@@ -88,7 +88,7 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
         } else {
             int totalMatches = toAdd.Count + toSubtract.Count;
             Plugin.Log.Debug($"Removing: {toSubtract.Count}");
-            toSubtract.ForEach(x=> {
+            toSubtract.ForEach(x => {
                 RemoveMatch(x);
                 RefreshProgress = (float)matchesProcessed++ / totalMatches;
             });
@@ -133,10 +133,9 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
         _scoreboardEligibleTime = TimeSpan.Zero;
         _midWins = 0;
         _midLosses = 0;
-        _mercWins = 0; 
+        _mercWins = 0;
         _mercLosses = 0;
     }
-
 
     private void AddMatch(RivalWingsMatch match) {
         var teamScoreboards = match.GetTeamScoreboards();

@@ -299,7 +299,6 @@ internal static class ImGuiHelper {
     }
 
     public static void DrawRefreshProgressBar(float value) {
-
         var cursorBefore = ImGui.GetCursorPos();
         Vector2 barSize = new Vector2(200f, 100f);
         ImGui.SetCursorPos(new Vector2((ImGui.GetWindowSize().X - barSize.X) / 2, ImGui.GetWindowSize().Y / 2));
@@ -308,7 +307,6 @@ internal static class ImGuiHelper {
             using var color = ImRaii.PushColor(ImGuiCol.PlotHistogram, ImGuiColors.DalamudGrey2);
             using var color2 = ImRaii.PushColor(ImGuiCol.FrameBg, ImGui.GetStyle().Colors[(int)ImGuiCol.FrameBg] + new Vector4(0f, 0f, 0f, 1f));
             ImGui.ProgressBar(value, barSize * ImGuiHelpers.GlobalScale);
-
         }
         ImGui.SetCursorPos(cursorBefore);
     }
