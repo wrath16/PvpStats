@@ -49,7 +49,6 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
     FLPlayerJobStats _shatterLocalPlayerStats;
     List<FLScoreboardDouble> _shatterLocalPlayerTeamContributions;
 
-    List<Job> _jobs;
     Dictionary<Job, FLPlayerJobStats> _jobStats;
     Dictionary<Job, List<FLScoreboardDouble>> _jobTeamContributions;
     Dictionary<Job, TimeSpan> _jobTimes;
@@ -57,15 +56,46 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
     TimeSpan _totalMatchTime;
     TimeSpan _totalShatterTime;
 
-    FLStatSourceFilter _lastJobStatSourceFilter;
+    FLStatSourceFilter _lastJobStatSourceFilter = new();
     FLStatSourceFilter _jobStatSourceFilter = new();
-    OtherPlayerFilter _lastPlayerFilter;
+    OtherPlayerFilter _lastPlayerFilter = new();
     OtherPlayerFilter _playerFilter = new();
 
     List<PlayerAlias> _linkedPlayerAliases = [];
 
     internal FrontlineStatsManager(Plugin plugin) : base(plugin, plugin.FLCache) {
         Reset();
+    }
+
+    private void Reset() {
+        ResetSummary();
+        ResetJobs();
+    }
+
+    private void ResetSummary() {
+        _overallResults = new();
+        _mapResults = [];
+        _localPlayerJobResults = [];
+        _localPlayerStats = new();
+        _localPlayerTeamContributions = [];
+        _shatterLocalPlayerStats = new();
+        _shatterLocalPlayerTeamContributions = [];
+
+        _totalMatchTime = TimeSpan.Zero;
+        _totalShatterTime = TimeSpan.Zero;
+    }
+
+    private void ResetJobs() {
+        _jobStats = [];
+        _jobTeamContributions = [];
+        _jobTimes = [];
+
+        var allJobs = Enum.GetValues(typeof(Job)).Cast<Job>();
+        foreach(var job in allJobs) {
+            _jobStats.Add(job, new());
+            _jobTimes.Add(job, TimeSpan.Zero);
+            _jobTeamContributions.Add(job, new());
+        }
     }
 
     protected override async Task RefreshInner(List<DataFilter> matchFilters, List<DataFilter> jobStatFilters, List<DataFilter> playerStatFilters) {
@@ -95,8 +125,8 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
         Stopwatch summaryTimer = Stopwatch.StartNew();
         Stopwatch jobTimer = Stopwatch.StartNew();
 
-        if(toSubtract.Count * 2 >= Matches.Count || jobStatFilterChange || playerFilterChange) {
-            //force full build
+        //force full build
+        if(toSubtract.Count * 2 >= Matches.Count) {
             Reset();
             int totalMatches = matches.Count;
             Plugin.Log.Debug($"Full re-build: {totalMatches}");
@@ -105,13 +135,19 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
         } else {
             int totalMatches = toAdd.Count + toSubtract.Count;
             Plugin.Log.Debug($"Removing: {toSubtract.Count} Adding: {toAdd.Count}");
+            //force rebuild of job stats
+            if(jobStatFilterChange || playerFilterChange) {
+                ResetJobs();
+                jobTask = Task.Run(() => BuildJobStats(matches));
+            } else {
+                jobTask = Task.Run(() => {
+                    BuildJobStats(toSubtract, true);
+                    BuildJobStats(toAdd);
+                });
+            }
             summaryTask = Task.Run(() => {
                 BuildSummaryStats(toSubtract, true);
                 BuildSummaryStats(toAdd);
-            });
-            jobTask = Task.Run(() => {
-                BuildJobStats(toSubtract, true);
-                BuildJobStats(toAdd);
             });
         }
         summaryTask = summaryTask.ContinueWith(x => {
@@ -131,38 +167,6 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
 
         _lastJobStatSourceFilter = new(_jobStatSourceFilter!);
         _lastPlayerFilter = new(_playerFilter);
-    }
-
-    private void Reset() {
-        _overallResults = new();
-        _mapResults = [];
-        _localPlayerJobResults = [];
-        _localPlayerStats = new();
-        _localPlayerTeamContributions = [];
-        _shatterLocalPlayerStats = new();
-        _shatterLocalPlayerTeamContributions = [];
-
-        _jobs = [];
-        _jobStats = [];
-        _jobTeamContributions = [];
-        _jobTimes = [];
-
-        _totalMatchTime = TimeSpan.Zero;
-        _totalShatterTime = TimeSpan.Zero;
-
-        _lastJobStatSourceFilter = new();
-        //_jobStatSourceFilter = new();
-        _lastPlayerFilter = new();
-        //_playerFilter = new();
-
-        //_linkedPlayerAliases = [];
-
-        var allJobs = Enum.GetValues(typeof(Job)).Cast<Job>();
-        foreach(var job in allJobs) {
-            _jobStats.Add(job, new());
-            _jobTimes.Add(job, TimeSpan.Zero);
-            _jobTeamContributions.Add(job, new());
-        }
     }
 
     private void BuildSummaryStats(List<FrontlineMatch> matches, bool remove = false) {
