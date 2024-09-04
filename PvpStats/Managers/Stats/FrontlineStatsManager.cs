@@ -74,43 +74,58 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
         _playerFilter = (OtherPlayerFilter)matchFilters.First(x => x.GetType() == typeof(OtherPlayerFilter));
         _linkedPlayerAliases = Plugin.PlayerLinksService.GetAllLinkedAliases(_playerFilter.PlayerNamesRaw);
 
+        Stopwatch matchesTimer = Stopwatch.StartNew();
         var matches = MatchCache.Matches.Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
         matches = FilterMatches(matchFilters, matches);
         var toAdd = matches.Except(Matches).ToList();
         var toSubtract = Matches.Except(matches).ToList();
-
-        try {
-            await RefreshLock.WaitAsync();
-            Matches = matches;
-        } finally {
-            RefreshLock.Release();
-            MatchRefreshActive = false;
-        }
+        Matches = matches;
+        MatchRefreshActive = false;
+        matchesTimer.Stop();
+        Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"Matches Refresh", matchesTimer.ElapsedMilliseconds.ToString()));
 
         bool jobStatFilterChange = !_jobStatSourceFilter.Equals(_lastJobStatSourceFilter);
         bool playerFilterChange = _jobStatSourceFilter!.InheritFromPlayerFilter && !_playerFilter.Equals(_lastPlayerFilter);
         bool bigSubtract = toSubtract.Count * 2 >= Matches.Count;
-        int matchesProcessed = 0;
+
         Plugin.Log.Debug($"big subtract: {bigSubtract} jobStatSource change: {jobStatFilterChange} playerFilterInheritChange: {playerFilterChange}");
 
         Task summaryTask = Task.CompletedTask;
         Task jobTask = Task.CompletedTask;
+        Stopwatch summaryTimer = Stopwatch.StartNew();
+        Stopwatch jobTimer = Stopwatch.StartNew();
 
         if(toSubtract.Count * 2 >= Matches.Count || jobStatFilterChange || playerFilterChange) {
             //force full build
             Reset();
             int totalMatches = matches.Count;
             Plugin.Log.Debug($"Full re-build: {totalMatches}");
-            summaryTask = BuildSummaryStats(matches);
-            jobTask = BuildJobStats(matches);
+            summaryTask = Task.Run(() => BuildSummaryStats(matches));
+            jobTask = Task.Run(() => BuildJobStats(matches));
         } else {
             int totalMatches = toAdd.Count + toSubtract.Count;
             Plugin.Log.Debug($"Removing: {toSubtract.Count} Adding: {toAdd.Count}");
-            summaryTask = BuildSummaryStats(toSubtract, true).ContinueWith(x => Task.WaitAll([BuildSummaryStats(toAdd)]));
-            jobTask = BuildJobStats(toSubtract, true).ContinueWith(x => Task.WaitAll([BuildJobStats(toAdd)]));
+            summaryTask = Task.Run(() => {
+                BuildSummaryStats(toSubtract, true);
+                BuildSummaryStats(toAdd);
+            });
+            jobTask = Task.Run(() => {
+                BuildJobStats(toSubtract, true);
+                BuildJobStats(toAdd);
+            });
         }
-        summaryTask = summaryTask.ContinueWith(x => Task.WaitAll([CommitSummaryStats()]));
-        jobTask = jobTask.ContinueWith(x => Task.WaitAll([CommitJobStats()]));
+        summaryTask = summaryTask.ContinueWith(x => {
+            CommitSummaryStats();
+            summaryTimer.Stop();
+            Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"Summary Refresh", summaryTimer.ElapsedMilliseconds.ToString()));
+            SummaryRefreshActive = false;
+        });
+        jobTask = jobTask.ContinueWith(x => {
+            CommitJobStats();
+            jobTimer.Stop();
+            Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"Jobs Refresh", jobTimer.ElapsedMilliseconds.ToString()));
+            JobsRefreshActive = false;
+        });
 
         Task.WaitAll([summaryTask, jobTask]);
 
@@ -150,69 +165,55 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
         }
     }
 
-    private Task BuildSummaryStats(List<FrontlineMatch> matches, bool remove = false) {
-        return Task.Run(() => {
-            Stopwatch s0 = new();
-            s0.Start();
-            matches.ForEach(x => {
-                if(remove) SummaryRemoveMatch(x);
-                else SummaryAddMatch(x);
-                //RefreshProgress = (float)matchesProcessed++ / totalMatches;
-                SummaryRefreshMatchesProcessed++;
-            });
-            s0.Stop();
-            Plugin.Log.Debug($"Summary Refresh time: {s0.ElapsedMilliseconds} count: {matches.Count} remove: {remove}");
+    private void BuildSummaryStats(List<FrontlineMatch> matches, bool remove = false) {
+        //Stopwatch s0 = new();
+        //s0.Start();
+        matches.ForEach(x => {
+            if(remove) SummaryRemoveMatch(x);
+            else SummaryAddMatch(x);
+            //RefreshProgress = (float)matchesProcessed++ / totalMatches;
+            SummaryRefreshMatchesProcessed++;
         });
+        //s0.Stop();
+        //Plugin.Log.Debug($"Summary Refresh time: {s0.ElapsedMilliseconds} count: {matches.Count} remove: {remove}");
     }
 
-    private async Task CommitSummaryStats() {
-        try {
-            await RefreshLock.WaitAsync();
-            Plugin.Log.Debug("Committing summary stats");
-            SetScoreboardStats(_localPlayerStats, _localPlayerTeamContributions, _totalMatchTime);
-            SetScoreboardStats(_shatterLocalPlayerStats, _shatterLocalPlayerTeamContributions, _totalShatterTime);
-            _localPlayerStats.ScoreboardTotal.DamageToOther = _shatterLocalPlayerStats.ScoreboardTotal.DamageToOther;
-            _localPlayerStats.ScoreboardPerMatch.DamageToOther = _shatterLocalPlayerStats.ScoreboardPerMatch.DamageToOther;
-            _localPlayerStats.ScoreboardPerMin.DamageToOther = _shatterLocalPlayerStats.ScoreboardPerMin.DamageToOther;
-            _localPlayerStats.ScoreboardContrib.DamageToOther = _shatterLocalPlayerStats.ScoreboardContrib.DamageToOther;
+    private void CommitSummaryStats() {
+        Plugin.Log.Debug("Committing summary stats");
+        SetScoreboardStats(_localPlayerStats, _localPlayerTeamContributions, _totalMatchTime);
+        SetScoreboardStats(_shatterLocalPlayerStats, _shatterLocalPlayerTeamContributions, _totalShatterTime);
+        _localPlayerStats.ScoreboardTotal.DamageToOther = _shatterLocalPlayerStats.ScoreboardTotal.DamageToOther;
+        _localPlayerStats.ScoreboardPerMatch.DamageToOther = _shatterLocalPlayerStats.ScoreboardPerMatch.DamageToOther;
+        _localPlayerStats.ScoreboardPerMin.DamageToOther = _shatterLocalPlayerStats.ScoreboardPerMin.DamageToOther;
+        _localPlayerStats.ScoreboardContrib.DamageToOther = _shatterLocalPlayerStats.ScoreboardContrib.DamageToOther;
 
-            OverallResults = _overallResults;
-            MapResults = _mapResults;
-            LocalPlayerStats = _localPlayerStats;
-            LocalPlayerJobResults = _localPlayerJobResults;
-            AverageMatchDuration = Matches.Count > 0 ? _totalMatchTime / Matches.Count : TimeSpan.Zero;
-        } finally {
-            RefreshLock.Release();
-        }
+        OverallResults = _overallResults;
+        MapResults = _mapResults;
+        LocalPlayerStats = _localPlayerStats;
+        LocalPlayerJobResults = _localPlayerJobResults;
+        AverageMatchDuration = Matches.Count > 0 ? _totalMatchTime / Matches.Count : TimeSpan.Zero;
     }
 
-    private Task BuildJobStats(List<FrontlineMatch> matches, bool remove = false) {
-        return Task.Run(() => {
-            Stopwatch s0 = new();
-            s0.Start();
-            matches.ForEach(x => {
-                if(remove) JobStatsRemoveMatch(x);
-                else JobStatsAddMatch(x);
-                //RefreshProgress = (float)matchesProcessed++ / totalMatches;
-                JobsRefreshMatchesProcessed++;
-            });
-            s0.Stop();
-            Plugin.Log.Debug($"JobStats Refresh time: {s0.ElapsedMilliseconds} count: {matches.Count} remove: {remove}");
+    private void BuildJobStats(List<FrontlineMatch> matches, bool remove = false) {
+        //Stopwatch s0 = new();
+        //s0.Start();
+        matches.ForEach(x => {
+            if(remove) JobStatsRemoveMatch(x);
+            else JobStatsAddMatch(x);
+            //RefreshProgress = (float)matchesProcessed++ / totalMatches;
+            JobsRefreshMatchesProcessed++;
         });
+        //s0.Stop();
+        //Plugin.Log.Debug($"JobStats Refresh time: {s0.ElapsedMilliseconds} count: {matches.Count} remove: {remove}");
     }
 
-    private async Task CommitJobStats() {
-        try {
-            await RefreshLock.WaitAsync();
-            Plugin.Log.Debug("Committing job stats");
-            foreach(var jobStat in _jobStats) {
-                SetScoreboardStats(jobStat.Value, _jobTeamContributions[jobStat.Key], _jobTimes[jobStat.Key]);
-            }
-            Jobs = _jobStats.Keys.ToList();
-            JobStats = _jobStats;
-        } finally {
-            RefreshLock.Release();
+    private void CommitJobStats() {
+        Plugin.Log.Debug("Committing job stats");
+        foreach(var jobStat in _jobStats) {
+            SetScoreboardStats(jobStat.Value, _jobTeamContributions[jobStat.Key], _jobTimes[jobStat.Key]);
         }
+        Jobs = _jobStats.Keys.ToList();
+        JobStats = _jobStats;
     }
 
     private void SummaryAddMatch(FrontlineMatch match) {

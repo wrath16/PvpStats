@@ -39,7 +39,9 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
 
         using(var tabBar = ImRaii.TabBar("TabBar", ImGuiTabBarFlags.None)) {
             if(tabBar) {
-                Tab("Matches", _matchList.Draw);
+                Tab("Matches", () => {
+                    _matchList.Draw();
+                });
                 Tab("Summary", () => {
                     using(ImRaii.Child("SummaryChild")) {
                         _summary.Draw();

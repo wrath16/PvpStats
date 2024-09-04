@@ -184,6 +184,37 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
                 if(refreshLockAcquired) {
                     RefreshLock.Release();
                 }
+
+                //progress bar
+                switch(name) {
+                    case "Matches":
+                        if(StatsEngine.MatchRefreshActive) {
+                            ImGuiHelper.DrawRefreshProgressBar(StatsEngine.MatchRefreshProgress);
+                        }
+                        break;
+                    case "Summary":
+                        if(StatsEngine.SummaryRefreshActive) {
+                            ImGuiHelper.DrawRefreshProgressBar((float)StatsEngine.SummaryRefreshMatchesProcessed / StatsEngine.Matches.Count);
+                        }
+                        break;
+                    case "Records":
+                        if(StatsEngine.RecordsRefreshActive) {
+                            ImGuiHelper.DrawRefreshProgressBar((float)StatsEngine.RecordsRefreshMatchesProcessed / StatsEngine.Matches.Count);
+                        }
+                        break;
+                    case "Jobs":
+                        if(StatsEngine.JobsRefreshActive) {
+                            ImGuiHelper.DrawRefreshProgressBar((float)StatsEngine.JobsRefreshMatchesProcessed / StatsEngine.Matches.Count);
+                        }
+                        break;
+                    case "Players":
+                        if(StatsEngine.PlayersRefreshActive) {
+                            ImGuiHelper.DrawRefreshProgressBar((float)StatsEngine.PlayersRefreshMatchesProcessed / StatsEngine.Matches.Count);
+                        }
+                        break;
+                    default:
+                        break;
+                }
             }
         }
     }

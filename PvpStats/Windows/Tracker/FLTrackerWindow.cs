@@ -1,6 +1,5 @@
 ﻿using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
-using PvpStats.Helpers;
 using PvpStats.Types.Match;
 using PvpStats.Windows.Filter;
 using PvpStats.Windows.List;
@@ -46,23 +45,14 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
             if(tabBar) {
                 Tab("Matches", () => {
                     _matchList.Draw();
-                    if(StatsEngine.MatchRefreshActive) {
-                        ImGuiHelper.DrawRefreshProgressBar(StatsEngine.MatchRefreshProgress);
-                    }
                 });
                 Tab("Summary", () => {
                     using(ImRaii.Child("SummaryChild")) {
                         _summary.Draw();
                     }
-                    if(StatsEngine.SummaryRefreshActive) {
-                        ImGuiHelper.DrawRefreshProgressBar((float)StatsEngine.SummaryRefreshMatchesProcessed / StatsEngine.Matches.Count);
-                    }
                 });
                 Tab("Jobs", () => {
                     _jobStats.Draw();
-                    if(StatsEngine.JobsRefreshActive) {
-                        ImGuiHelper.DrawRefreshProgressBar((float)StatsEngine.JobsRefreshMatchesProcessed / StatsEngine.Matches.Count);
-                    }
                 });
                 Tab("Profile", () => {
                     using(ImRaii.Child("ProfileChild")) {

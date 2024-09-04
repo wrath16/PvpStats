@@ -6,6 +6,7 @@ using PvpStats.Types.Player;
 using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -69,52 +70,41 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
     }
 
     protected override async Task RefreshInner(List<DataFilter> matchFilters, List<DataFilter> jobStatFilters, List<DataFilter> playerStatFilters) {
+        Stopwatch matchesTimer = Stopwatch.StartNew();
         var matches = MatchCache.Matches.Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
         matches = FilterMatches(matchFilters, matches);
-
         var toAdd = matches.Except(Matches).ToList();
         var toSubtract = Matches.Except(matches).ToList();
+        Matches = matches;
+        MatchRefreshActive = false;
+        matchesTimer.Stop();
+        Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"Matches Refresh", matchesTimer.ElapsedMilliseconds.ToString()));
 
-        int matchesProcessed = 0;
+        Task summaryTask = Task.CompletedTask;
+        Stopwatch summaryTimer = Stopwatch.StartNew();
+
         if(toSubtract.Count * 2 >= Matches.Count) {
             //force full build
             Reset();
             int totalMatches = matches.Count;
             Plugin.Log.Debug($"Full re-build: {totalMatches}");
-            matches.ForEach(x => {
-                AddMatch(x);
-                RefreshProgress = (float)matchesProcessed++ / totalMatches;
-            });
+            summaryTask = Task.Run(() => BuildSummaryStats(matches));
         } else {
             int totalMatches = toAdd.Count + toSubtract.Count;
-            Plugin.Log.Debug($"Removing: {toSubtract.Count}");
-            toSubtract.ForEach(x => {
-                RemoveMatch(x);
-                RefreshProgress = (float)matchesProcessed++ / totalMatches;
-            });
-            Plugin.Log.Debug($"Adding: {toAdd.Count}");
-            toAdd.ForEach(x => {
-                AddMatch(x);
-                RefreshProgress = (float)matchesProcessed++ / totalMatches;
+            Plugin.Log.Debug($"Removing: {toSubtract.Count} Adding: {toAdd.Count}");
+            summaryTask = Task.Run(() => {
+                BuildSummaryStats(toSubtract, true);
+                BuildSummaryStats(toAdd);
             });
         }
+        summaryTask = summaryTask.ContinueWith(x => {
+            CommitSummaryStats();
+            summaryTimer.Stop();
+            Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"Summary Refresh", summaryTimer.ElapsedMilliseconds.ToString()));
+            SummaryRefreshActive = false;
+        });
 
-        SetScoreboardStats(_localPlayerStats, _localPlayerTeamContributions, _scoreboardEligibleTime);
-
-        try {
-            await RefreshLock.WaitAsync();
-            Matches = matches;
-            OverallResults = _overallResults;
-            LocalPlayerStats = _localPlayerStats;
-            LocalPlayerJobResults = _localPlayerJobResults;
-            LocalPlayerMechTime = _localPlayerMechTime.Select(x => (x.Key, x.Value / _mechEligibleTime.TotalSeconds)).ToDictionary();
-            LocalPlayerMechMatches = _localPlayerMechMatches;
-            LocalPlayerMercWinRate = (double)_mercWins / (_mercWins + _mercLosses);
-            LocalPlayerMidWinRate = (double)_midWins / (_midWins + _midLosses);
-            AverageMatchDuration = matches.Count > 0 ? _totalMatchTime / matches.Count : TimeSpan.Zero;
-        } finally {
-            RefreshLock.Release();
-        }
+        Task.WaitAll([summaryTask]);
     }
 
     private void Reset() {
@@ -137,7 +127,7 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
         _mercLosses = 0;
     }
 
-    private void AddMatch(RivalWingsMatch match) {
+    private void SummaryAddMatch(RivalWingsMatch match) {
         var teamScoreboards = match.GetTeamScoreboards();
         IncrementAggregateStats(_overallResults, match);
         _totalMatchTime += match.MatchDuration ?? TimeSpan.Zero;
@@ -194,7 +184,29 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
         }
     }
 
-    private void RemoveMatch(RivalWingsMatch match) {
+    private void BuildSummaryStats(List<RivalWingsMatch> matches, bool remove = false) {
+        matches.ForEach(x => {
+            if(remove) SummaryRemoveMatch(x);
+            else SummaryAddMatch(x);
+            SummaryRefreshMatchesProcessed++;
+        });
+    }
+
+    private void CommitSummaryStats() {
+        Plugin.Log.Debug("Committing summary stats");
+        SetScoreboardStats(_localPlayerStats, _localPlayerTeamContributions, _scoreboardEligibleTime);
+
+        OverallResults = _overallResults;
+        LocalPlayerStats = _localPlayerStats;
+        LocalPlayerJobResults = _localPlayerJobResults;
+        LocalPlayerMechTime = _localPlayerMechTime.Select(x => (x.Key, x.Value / _mechEligibleTime.TotalSeconds)).ToDictionary();
+        LocalPlayerMechMatches = _localPlayerMechMatches;
+        LocalPlayerMercWinRate = (double)_mercWins / (_mercWins + _mercLosses);
+        LocalPlayerMidWinRate = (double)_midWins / (_midWins + _midLosses);
+        AverageMatchDuration = Matches.Count > 0 ? _totalMatchTime / Matches.Count : TimeSpan.Zero;
+    }
+
+    private void SummaryRemoveMatch(RivalWingsMatch match) {
         var teamScoreboards = match.GetTeamScoreboards();
         DecrementAggregateStats(_overallResults, match);
         _totalMatchTime += match.MatchDuration ?? TimeSpan.Zero;
