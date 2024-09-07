@@ -28,7 +28,22 @@ public class CCScoreboardDouble : PvpScoreboardDouble, IEquatable<CCScoreboardDo
             DamageDealt = c.DamageDealt,
             DamageTaken = c.DamageTaken,
             HPRestored = c.HPRestored,
+            KillsAndAssists = c.KillsAndAssists,
             TimeOnCrystal = a.TimeOnCrystal / b,
+        };
+    }
+
+    public static explicit operator CCScoreboardDouble(CCScoreboard a) {
+        var c = (PvpScoreboardDouble)a;
+        return new CCScoreboardDouble() {
+            Kills = c.Kills,
+            Deaths = c.Deaths,
+            Assists = c.Assists,
+            DamageDealt = c.DamageDealt,
+            DamageTaken = c.DamageTaken,
+            HPRestored = c.HPRestored,
+            KillsAndAssists = c.KillsAndAssists,
+            TimeOnCrystal = a.TimeOnCrystal.TotalSeconds
         };
     }
 
