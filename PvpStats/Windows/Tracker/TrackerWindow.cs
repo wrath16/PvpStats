@@ -52,10 +52,13 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
     public abstract void DrawInternal();
 
     protected void SaveFilters() {
+        Stopwatch s1 = Stopwatch.StartNew();
         WindowConfig.MatchFilters.SetFilters(MatchFilters);
         WindowConfig.JobStatFilters.SetFilters(JobStatFilters);
         WindowConfig.PlayerStatFilters.SetFilters(PlayerStatFilters);
         Plugin.Configuration.Save();
+        s1.Stop();
+        Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"save config", s1.ElapsedMilliseconds.ToString()));
     }
 
     public override void PreDraw() {
@@ -162,7 +165,7 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
         ImGuiHelper.WrappedTooltip($"{(CollapseFilters ? "Show filters" : "Hide filters")}");
     }
 
-    protected unsafe void Tab(string name, Action action) {
+    protected unsafe void Tab(string name, Action action, bool refreshActive = false, float refreshProgress = 0f) {
         var flags = ImGuiTabItemFlags.None;
         if(Plugin.Configuration.ResizeWindowLeft) {
             flags |= ImGuiTabItemFlags.Trailing;
@@ -185,35 +188,8 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
                     RefreshLock.Release();
                 }
 
-                //progress bar
-                switch(name) {
-                    case "Matches":
-                        if(StatsEngine.MatchRefreshActive) {
-                            ImGuiHelper.DrawRefreshProgressBar(StatsEngine.MatchRefreshProgress);
-                        }
-                        break;
-                    case "Summary":
-                        if(StatsEngine.SummaryRefreshActive) {
-                            ImGuiHelper.DrawRefreshProgressBar((float)StatsEngine.SummaryRefreshMatchesProcessed / StatsEngine.Matches.Count);
-                        }
-                        break;
-                    case "Records":
-                        if(StatsEngine.RecordsRefreshActive) {
-                            ImGuiHelper.DrawRefreshProgressBar((float)StatsEngine.RecordsRefreshMatchesProcessed / StatsEngine.Matches.Count);
-                        }
-                        break;
-                    case "Jobs":
-                        if(StatsEngine.JobsRefreshActive) {
-                            ImGuiHelper.DrawRefreshProgressBar((float)StatsEngine.JobsRefreshMatchesProcessed / StatsEngine.Matches.Count);
-                        }
-                        break;
-                    case "Players":
-                        if(StatsEngine.PlayersRefreshActive) {
-                            ImGuiHelper.DrawRefreshProgressBar((float)StatsEngine.PlayersRefreshMatchesProcessed / StatsEngine.Matches.Count);
-                        }
-                        break;
-                    default:
-                        break;
+                if(refreshActive) {
+                    ImGuiHelper.DrawRefreshProgressBar(refreshProgress);
                 }
             }
         }

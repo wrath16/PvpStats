@@ -15,6 +15,9 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
     private readonly RivalWingsSummary _summary;
     private readonly RivalWingsPvPProfile _profile;
 
+    private bool _matchRefreshActive = true;
+    private bool _summaryRefreshActive = true;
+
     public RWTrackerWindow(Plugin plugin) : base(plugin, plugin.RWStatsEngine, plugin.Configuration.RWWindowConfig, "Rival Wings Tracker") {
         SizeConstraints = new WindowSizeConstraints {
             MinimumSize = new Vector2(435, 400),
@@ -41,12 +44,12 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
             if(tabBar) {
                 Tab("Matches", () => {
                     _matchList.Draw();
-                });
+                }, _matchRefreshActive, 0f);
                 Tab("Summary", () => {
                     using(ImRaii.Child("SummaryChild")) {
                         _summary.Draw();
                     }
-                });
+                }, _summaryRefreshActive, _summary.RefreshProgress);
                 Tab("Profile", () => {
                     using(ImRaii.Child("ProfileChild")) {
                         _profile.Draw();
@@ -59,25 +62,25 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
     public override async Task Refresh() {
         Stopwatch s0 = new();
         s0.Start();
+        _summaryRefreshActive = true;
+        _matchRefreshActive = true;
         try {
             await RefreshLock.WaitAsync();
-            RefreshActive = true;
-            await Plugin.RWStatsEngine.Refresh(MatchFilters, new(), new());
-            Stopwatch s1 = new();
-            s1.Start();
+            //RefreshActive = true;
+            var updatedSet = Plugin.RWStatsEngine.Refresh2(MatchFilters);
             Task.WaitAll([
-                _matchList.Refresh(Plugin.RWStatsEngine.Matches),
+                _matchList.Refresh(updatedSet.Matches).ContinueWith(x => _matchRefreshActive = false),
+                _summary.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals).ContinueWith(x => _summaryRefreshActive = false),
+                Task.Run(SaveFilters)
             ]);
-            Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"all window modules", s1.ElapsedMilliseconds.ToString()));
-            s1.Restart();
-            SaveFilters();
-            Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"save config", s1.ElapsedMilliseconds.ToString()));
         } catch {
-            Plugin.Log.Error("Refresh on rw stats window failed.");
+            Plugin.Log.Error("RW tracker refresh failed.");
             throw;
         } finally {
+            _matchRefreshActive = false;
+            _summaryRefreshActive = false;
             RefreshLock.Release();
-            RefreshActive = false;
+            //RefreshActive = false;
             Plugin.Log.Information(string.Format("{0,-25}: {1,4} ms", $"RW tracker refresh time", s0.ElapsedMilliseconds.ToString()));
         }
     }

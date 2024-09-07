@@ -3,10 +3,14 @@ using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PvpStats.Helpers;
 using PvpStats.Managers.Stats;
+using PvpStats.Types.Display;
+using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using PvpStats.Windows.Filter;
-using PvpStats.Windows.Tracker;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
@@ -14,7 +18,24 @@ internal class FrontlineJobList : FLStatsList<Job> {
 
     protected override string TableId => "###FLJobStatsTable";
 
+    public float RefreshProgress { get; private set; } = 0f;
+
     internal FLStatSourceFilter StatSourceFilter { get; private set; }
+    internal OtherPlayerFilter PlayerFilter { get; private set; }
+
+    //internal state
+    List<FrontlineMatch> _matches = new();
+    int _matchesProcessed = 0;
+    int _matchesTotal = 100;
+
+    Dictionary<Job, FLPlayerJobStats> _jobStats;
+    Dictionary<Job, List<FLScoreboardDouble>> _jobTeamContributions;
+    Dictionary<Job, TimeSpan> _jobTimes;
+
+    FLStatSourceFilter _lastJobStatSourceFilter = new();
+    OtherPlayerFilter _lastPlayerFilter = new();
+
+    List<PlayerAlias> _linkedPlayerAliases = [];
 
     protected override List<ColumnParams> Columns { get; set; } = new() {
         new ColumnParams{           Name = "Job",                                                                       Id = 0,                                                             Width = 85f,                                    Flags = ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoHide },
@@ -61,11 +82,110 @@ internal class FrontlineJobList : FLStatsList<Job> {
         new NumericColumnParams{    Name = "KDA Ratio",                                                                 Id = (uint)"ScoreboardTotal.KDA".GetHashCode(),                     Width = 50f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
     };
 
-    public FrontlineJobList(Plugin plugin, FLTrackerWindow window) : base(plugin, window) {
-        //ListModel = listModel;
-        StatSourceFilter = new FLStatSourceFilter(plugin, window.Refresh);
-        window.JobStatFilters.Add(StatSourceFilter);
-        //OtherPlayerFilter = playerFilter;
+    public FrontlineJobList(Plugin plugin, FLStatSourceFilter statSourceFilter, OtherPlayerFilter playerFilter) : base(plugin) {
+        StatSourceFilter = statSourceFilter;
+        PlayerFilter = playerFilter;
+        Reset();
+    }
+
+    private void Reset() {
+        _jobStats = [];
+        _jobTeamContributions = [];
+        _jobTimes = [];
+
+        var allJobs = Enum.GetValues(typeof(Job)).Cast<Job>();
+        foreach(var job in allJobs) {
+            _jobStats.Add(job, new());
+            _jobTimes.Add(job, TimeSpan.Zero);
+            _jobTeamContributions.Add(job, new());
+        }
+    }
+
+    internal Task Refresh(List<FrontlineMatch> matches, List<FrontlineMatch> additions, List<FrontlineMatch> removals) {
+        _matchesProcessed = 0;
+        Stopwatch s1 = Stopwatch.StartNew();
+        bool jobStatFilterChange = !StatSourceFilter.Equals(_lastJobStatSourceFilter);
+        bool playerFilterChange = StatSourceFilter!.InheritFromPlayerFilter && !PlayerFilter.Equals(_lastPlayerFilter);
+        try {
+            if(removals.Count * 2 >= _matches.Count || jobStatFilterChange || playerFilterChange) {
+                //force full build
+                Reset();
+                _matchesTotal = matches.Count;
+                ProcessMatches(matches);
+            } else {
+                _matchesTotal = removals.Count + additions.Count;
+                ProcessMatches(removals, true);
+                ProcessMatches(additions);
+            }
+            foreach(var jobStat in _jobStats) {
+                FrontlineStatsManager.SetScoreboardStats(jobStat.Value, _jobTeamContributions[jobStat.Key], _jobTimes[jobStat.Key]);
+            }
+            DataModel = _jobStats.Keys.ToList();
+            StatsModel = _jobStats;
+            GoToPage(0);
+            _matches = matches;
+
+            _lastJobStatSourceFilter = new(StatSourceFilter!);
+            _lastPlayerFilter = new(PlayerFilter);
+        } finally {
+            s1.Stop();
+            _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"Summary Refresh", s1.ElapsedMilliseconds.ToString()));
+            _matchesProcessed = 0;
+        }
+        return Task.CompletedTask;
+    }
+
+    private void ProcessMatch(FrontlineMatch match, bool remove = false) {
+        if(match.PlayerScoreboards != null) {
+            var teamScoreboards = match.GetTeamScoreboards();
+            foreach(var playerScoreboard in match.PlayerScoreboards) {
+                var player = match.Players.FirstOrDefault(x => x.Name.Equals(playerScoreboard.Key));
+                if(player is null) continue;
+                bool isLocalPlayer = player.Name.Equals(match.LocalPlayer);
+                bool isTeammate = !isLocalPlayer && player.Team == match.LocalPlayerTeam;
+                bool isOpponent = !isLocalPlayer && !isTeammate;
+
+                bool jobStatsEligible = true;
+                bool nameMatch = player.Name.FullName.Contains(PlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase);
+                if(_plugin.Configuration.EnablePlayerLinking && !nameMatch) {
+                    nameMatch = _linkedPlayerAliases.Contains(player.Name);
+                }
+                bool sideMatch = PlayerFilter.TeamStatus == TeamStatus.Any
+                    || PlayerFilter.TeamStatus == TeamStatus.Teammate && isTeammate
+                    || PlayerFilter.TeamStatus == TeamStatus.Opponent && !isTeammate && !isLocalPlayer;
+                bool jobMatch = PlayerFilter.AnyJob || PlayerFilter.PlayerJob == player.Job;
+                if(!nameMatch || !sideMatch || !jobMatch) {
+                    if(StatSourceFilter.InheritFromPlayerFilter) {
+                        jobStatsEligible = false;
+                    }
+                }
+                if(!StatSourceFilter.FilterState[StatSource.LocalPlayer] && isLocalPlayer) {
+                    jobStatsEligible = false;
+                } else if(!StatSourceFilter.FilterState[StatSource.Teammate] && isTeammate) {
+                    jobStatsEligible = false;
+                } else if(!StatSourceFilter.FilterState[StatSource.Opponent] && !isTeammate && !isLocalPlayer) {
+                    jobStatsEligible = false;
+                }
+
+                if(player?.Job != null && player?.Team != null && jobStatsEligible) {
+                    //Plugin.Log.Debug($"Adding job stats..{player.Name} {player.Job}");
+                    var teamScoreboard = match.GetTeamScoreboards()[player.Team];
+                    var job = (Job)player.Job;
+                    if(remove) {
+                        _jobTimes[job] -= match.MatchDuration ?? TimeSpan.Zero;
+                    } else {
+                        _jobTimes[job] += match.MatchDuration ?? TimeSpan.Zero;
+                    }
+                    FrontlineStatsManager.AddPlayerJobStat(_jobStats[job], _jobTeamContributions[job], match, player, teamScoreboard, remove);
+                }
+            }
+        }
+    }
+    private void ProcessMatches(List<FrontlineMatch> matches, bool remove = false) {
+        matches.ForEach(x => {
+            ProcessMatch(x, remove);
+            RefreshProgress = (float)_matchesProcessed++ / _matchesTotal;
+        });
     }
 
     protected override void PreTableDraw() {
@@ -242,8 +362,8 @@ internal class FrontlineJobList : FLStatsList<Job> {
         }
     }
 
-    public override async Task RefreshDataModel() {
-        StatsModel = _plugin.FLStatsEngine.JobStats;
-        await base.RefreshDataModel();
-    }
+    //public override async Task RefreshDataModel() {
+    //    StatsModel = _plugin.FLStatsEngine.JobStats;
+    //    await base.RefreshDataModel();
+    //}
 }

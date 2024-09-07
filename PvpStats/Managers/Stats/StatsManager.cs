@@ -6,6 +6,7 @@ using PvpStats.Types.Player;
 using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -17,7 +18,7 @@ internal abstract class StatsManager<T> where T : PvpMatch {
     protected readonly MatchCacheService<T> MatchCache;
     internal SemaphoreSlim RefreshLock { get; private set; } = new SemaphoreSlim(1);
 
-    public bool RefreshActive { get; private set; }
+    public bool RefreshActive { get; protected set; }
     public float RefreshProgress { get; protected set; }
 
     public bool MatchRefreshActive { get; protected set; }
@@ -67,6 +68,23 @@ internal abstract class StatsManager<T> where T : PvpMatch {
             RecordsRefreshActive = false;
             JobsRefreshActive = false;
             PlayersRefreshActive = false;
+        }
+    }
+
+    public (List<T> Matches, List<T> Additions, List<T> Removals) Refresh2(List<DataFilter> matchFilters) {
+        try {
+            RefreshActive = true;
+            Stopwatch matchesTimer = Stopwatch.StartNew();
+            var matches = MatchCache.Matches.Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
+            matches = FilterMatches(matchFilters, matches);
+            var toAdd = matches.Except(Matches).ToList();
+            var toSubtract = Matches.Except(matches).ToList();
+            Matches = matches;
+            matchesTimer.Stop();
+            Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"Matches Refresh", matchesTimer.ElapsedMilliseconds.ToString()));
+            return (matches, toAdd, toSubtract);
+        } finally {
+            RefreshActive = false;
         }
     }
 
