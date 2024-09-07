@@ -123,13 +123,15 @@ internal class FrontlineJobList : FLStatsList<Job> {
             DataModel = _jobStats.Keys.ToList();
             StatsModel = _jobStats;
             GoToPage(0);
+            TriggerSort = true;
+
             _matches = matches;
 
             _lastJobStatSourceFilter = new(StatSourceFilter!);
             _lastPlayerFilter = new(PlayerFilter);
         } finally {
             s1.Stop();
-            _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"Summary Refresh", s1.ElapsedMilliseconds.ToString()));
+            _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"Jobs Refresh", s1.ElapsedMilliseconds.ToString()));
             _matchesProcessed = 0;
         }
         return Task.CompletedTask;
