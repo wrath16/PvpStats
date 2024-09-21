@@ -1,14 +1,9 @@
 ﻿using Dalamud.Interface;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
-using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using ImGuiNET;
 using PvpStats.Helpers;
-using PvpStats.Managers.Stats;
-using PvpStats.Types.Display;
 using PvpStats.Types.Match;
-using PvpStats.Types.Player;
-using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,7 +32,7 @@ internal class CrystallineConflictRecords {
         CrystallineConflictMatch? longestMatch = null, shortestMatch = null, highestLoserProg = null, lowestWinnerProg = null,
             mostKills = null, mostDeaths = null, mostAssists = null, mostDamageDealt = null, mostDamageTaken = null, mostHPRestored = null, mostTimeOnCrystal = null,
             highestKillsPerMin = null, highestDeathsPerMin = null, highestAssistsPerMin = null, highestDamageDealtPerMin = null, highestDamageTakenPerMin = null, highestHPRestoredPerMin = null, highestTimeOnCrystalPerMin = null;
-        int longestWinStreak = 0, longestLossStreak = 0,  currentWinStreak = 0, currentLossStreak = 0;
+        int longestWinStreak = 0, longestLossStreak = 0, currentWinStreak = 0, currentLossStreak = 0;
 
         _matchesProcessed = 0;
         _matchesTotal = matches.Count;
@@ -133,6 +128,9 @@ internal class CrystallineConflictRecords {
             }
             RefreshProgress = (float)_matchesProcessed++ / _matchesTotal;
         }
+
+        LongestWinStreak = longestWinStreak;
+        LongestLossStreak = longestLossStreak;
 
         Superlatives = new();
         if(longestMatch != null) {

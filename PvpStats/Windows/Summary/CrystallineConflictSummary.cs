@@ -231,6 +231,9 @@ internal class CrystallineConflictSummary {
                 ImGui.Separator();
                 ImGui.TextColored(Plugin.Configuration.Colors.Header, "Average Performance:");
                 ImGuiHelper.HelpMarker("1st row: average per match.\n2nd row: average per minute.\n3rd row: median team contribution per match.");
+                ImGui.Text("KDA: ");
+                ImGui.SameLine();
+                ImGuiHelper.DrawColorScale((float)LocalPlayerStats.ScoreboardTotal.KDA, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.KDARange[0], CrystallineConflictStatsManager.KDARange[1], Plugin.Configuration.ColorScaleStats, "0.00");
                 DrawMatchStatsTable();
             }
 

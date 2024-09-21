@@ -13,13 +13,13 @@ using System.Threading.Tasks;
 namespace PvpStats.Managers.Stats;
 internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflictMatch> {
 
-    public static float[] KillsPerMatchRange = [1.0f, 4.5f];
+    public static float[] KillsPerMatchRange = [1.0f, 4.0f];
     public static float[] DeathsPerMatchRange = [1.5f, 3.5f];
     public static float[] AssistsPerMatchRange = [4.0f, 8.0f];
-    public static float[] DamageDealtPerMatchRange = [400000f, 850000f];
-    public static float[] DamageTakenPerMatchRange = [400000f, 850000f];
+    public static float[] DamageDealtPerMatchRange = [400000f, 800000f];
+    public static float[] DamageTakenPerMatchRange = [400000f, 800000f];
     public static float[] HPRestoredPerMatchRange = [350000f, 1000000f];
-    public static float[] TimeOnCrystalPerMatchRange = [35f, 120f];
+    public static float[] TimeOnCrystalPerMatchRange = [35f, 110f];
     public static float AverageMatchLength = 5f;
     public static float[] KillsPerMinRange = [KillsPerMatchRange[0] / AverageMatchLength, KillsPerMatchRange[1] / AverageMatchLength];
     public static float[] DeathsPerMinRange = [DeathsPerMatchRange[0] / AverageMatchLength, DeathsPerMatchRange[1] / AverageMatchLength];
@@ -28,13 +28,12 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
     public static float[] DamageTakenPerMinRange = [DamageTakenPerMatchRange[0] / AverageMatchLength, DamageTakenPerMatchRange[1] / AverageMatchLength];
     public static float[] HPRestoredPerMinRange = [HPRestoredPerMatchRange[0] / AverageMatchLength, HPRestoredPerMatchRange[1] / AverageMatchLength];
     public static float[] TimeOnCrystalPerMinRange = [TimeOnCrystalPerMatchRange[0] / AverageMatchLength, TimeOnCrystalPerMatchRange[1] / AverageMatchLength];
-
     public static float[] ContribRange = [0.15f, 0.25f];
     public static float[] DamagePerKARange = [52000f, 100000f];
     public static float[] DamagePerLifeRange = [190000f, 400000f];
-    public static float[] DamageTakenPerLifeRange = [100000f, 300000f];
+    public static float[] DamageTakenPerLifeRange = [180000f, 380000f];
     public static float[] HPRestoredPerLifeRange = [120000f, 600000f];
-    public static float[] KDARange = [4.0f, 20.0f];
+    public static float[] KDARange = [(KillsPerMatchRange[0] + AssistsPerMatchRange[0]) / DeathsPerMatchRange[1], (KillsPerMatchRange[1] + AssistsPerMatchRange[1]) / DeathsPerMatchRange[0]];
 
     //summary
     internal CCPlayerJobStats LocalPlayerStats { get; private set; } = new();

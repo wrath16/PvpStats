@@ -176,7 +176,7 @@ internal class PlayerLinkService {
                 //detect loop
                 if(prevAliases.Contains(link.CurrentAlias!)) {
                     //_plugin.Log.Warning($"Player alias link loop detected! {alias} to {link.CurrentAlias}");
-                    return alias; 
+                    return alias;
                 }
                 //search recursively
                 return GetMainAlias(link.CurrentAlias!, [.. prevAliases, alias]);
