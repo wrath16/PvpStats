@@ -136,6 +136,11 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
         filteredMatches = filteredMatches.Where(x => {
             if(x.Players == null) return false;
             foreach(var player in x.Players) {
+                if(filter.TeamStatus == TeamStatus.Teammate && player.Team != x.LocalPlayerTeamMember?.Team) {
+                    continue;
+                } else if(filter.TeamStatus == TeamStatus.Opponent && player.Team == x.LocalPlayerTeamMember?.Team) {
+                    continue;
+                }
                 if(!filter.AnyJob && player.Job != filter.PlayerJob) {
                     continue;
                 }

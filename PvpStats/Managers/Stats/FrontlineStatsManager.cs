@@ -164,6 +164,11 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
         }
         filteredMatches = filteredMatches.Where(x => {
             foreach(var player in x.Players) {
+                if(filter.TeamStatus == TeamStatus.Teammate && player.Team != x.LocalPlayerTeamMember?.Team) {
+                    continue;
+                } else if(filter.TeamStatus == TeamStatus.Opponent && player.Team == x.LocalPlayerTeamMember?.Team) {
+                    continue;
+                }
                 if(!filter.AnyJob && player.Job != filter.PlayerJob) {
                     continue;
                 }
