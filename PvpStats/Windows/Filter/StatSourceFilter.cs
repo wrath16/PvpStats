@@ -4,6 +4,7 @@ using ImGuiNET;
 using PvpStats.Helpers;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Filter;
@@ -15,7 +16,7 @@ public enum StatSource {
     Spectated
 }
 
-public class StatSourceFilter : DataFilter {
+public class StatSourceFilter : DataFilter, IEquatable<StatSourceFilter> {
 
     public override string Name => "Stat Source";
     internal bool AllSelected { get; set; }
@@ -29,9 +30,19 @@ public class StatSourceFilter : DataFilter {
         { StatSource.Spectated, "Spectated Matches" }
     };
 
-    public StatSourceFilter() { }
+    public StatSourceFilter() {
+        Initialize();
+    }
+
+    public StatSourceFilter(StatSourceFilter filter) {
+        Initialize(filter);
+    }
 
     internal StatSourceFilter(Plugin plugin, Func<Task> action, StatSourceFilter? filter = null) : base(plugin, action) {
+        Initialize(filter);
+    }
+
+    private void Initialize(StatSourceFilter? filter = null) {
         FilterState = new() {
                 {StatSource.LocalPlayer, true },
                 {StatSource.Teammate, true },
@@ -43,6 +54,7 @@ public class StatSourceFilter : DataFilter {
             foreach(var category in filter.FilterState) {
                 FilterState[category.Key] = category.Value;
             }
+            InheritFromPlayerFilter = filter.InheritFromPlayerFilter;
         }
         UpdateAllSelected();
     }
@@ -97,5 +109,9 @@ public class StatSourceFilter : DataFilter {
                 }
             }
         }
+    }
+
+    public bool Equals(StatSourceFilter? other) {
+        return FilterState.All(x => x.Value == other?.FilterState[x.Key]) && (InheritFromPlayerFilter == other?.InheritFromPlayerFilter);
     }
 }

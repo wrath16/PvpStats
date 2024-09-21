@@ -18,7 +18,7 @@ namespace PvpStats.Windows.Summary;
 internal class RivalWingsSummary {
     private readonly Plugin Plugin;
 
-    public float RefreshProgress { get; private set; } = 0f;
+    public float RefreshProgress { get; set; } = 0f;
 
     public CCAggregateStats OverallResults { get; private set; } = new();
     public RWPlayerJobStats LocalPlayerStats { get; private set; } = new();

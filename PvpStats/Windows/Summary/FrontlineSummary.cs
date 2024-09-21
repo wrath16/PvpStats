@@ -17,7 +17,7 @@ internal class FrontlineSummary {
 
     private readonly Plugin Plugin;
 
-    public float RefreshProgress { get; private set; } = 0f;
+    public float RefreshProgress { get; set; } = 0f;
 
     internal FLAggregateStats OverallResults { get; private set; } = new();
     internal Dictionary<FrontlineMap, FLAggregateStats> MapResults { get; private set; } = new();

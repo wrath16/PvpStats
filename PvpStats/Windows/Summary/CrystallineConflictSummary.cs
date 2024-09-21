@@ -3,22 +3,211 @@ using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PvpStats.Helpers;
+using PvpStats.Managers.Stats;
 using PvpStats.Types.Display;
 using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Summary;
 internal class CrystallineConflictSummary {
 
-    private readonly Plugin _plugin;
+    private readonly Plugin Plugin;
     internal protected SemaphoreSlim RefreshLock { get; private set; } = new SemaphoreSlim(1);
+    public float RefreshProgress { get; set; } = 0f;
+
+    internal CCPlayerJobStats LocalPlayerStats { get; private set; } = new();
+    internal Dictionary<Job, CCAggregateStats> LocalPlayerJobStats { get; private set; } = new();
+    internal Dictionary<CrystallineConflictMap, CCAggregateStats> ArenaStats { get; private set; } = new();
+    internal Dictionary<PlayerAlias, CCAggregateStats> TeammateStats { get; private set; } = new();
+    internal Dictionary<PlayerAlias, CCAggregateStats> OpponentStats { get; private set; } = new();
+    internal Dictionary<Job, CCAggregateStats> TeammateJobStats { get; private set; } = new();
+    internal Dictionary<Job, CCAggregateStats> OpponentJobStats { get; private set; } = new();
+    internal TimeSpan AverageMatchDuration { get; private set; } = new();
+
+    //internal state
+    List<CrystallineConflictMatch> _matches = new();
+    int _matchesProcessed = 0;
+    int _matchesTotal = 100;
+
+    TimeSpan _totalMatchTime;
+
+    CCPlayerJobStats _localPlayerStats = new();
+    List<CCScoreboardDouble> _localPlayerTeamContributions = [];
+    TimeSpan _localPlayerMatchTime;
+    Dictionary<Job, CCAggregateStats> _localPlayerJobStats = [];
+    Dictionary<CrystallineConflictMap, CCAggregateStats> _arenaStats = [];
+    Dictionary<PlayerAlias, CCAggregateStats> _teammateStats = [];
+    Dictionary<PlayerAlias, CCAggregateStats> _opponentStats = [];
+    Dictionary<Job, CCAggregateStats> _teammateJobStats = [];
+    Dictionary<Job, CCAggregateStats> _opponentJobStats = [];
+    Dictionary<PlayerAlias, Dictionary<Job, CCAggregateStats>> _teammateJobStatsLookup = [];
+    Dictionary<PlayerAlias, Dictionary<Job, CCAggregateStats>> _opponentJobStatsLookup = [];
 
     public CrystallineConflictSummary(Plugin plugin) {
-        _plugin = plugin;
+        Plugin = plugin;
+        Reset();
+    }
+
+    private void Reset() {
+        _totalMatchTime = TimeSpan.Zero;
+        _localPlayerStats = new();
+        _localPlayerTeamContributions = [];
+        _localPlayerMatchTime = TimeSpan.Zero;
+        _localPlayerJobStats = [];
+        _arenaStats = [];
+        _teammateStats = [];
+        _opponentStats = [];
+        _teammateJobStats = [];
+        _opponentJobStats = [];
+        _teammateJobStatsLookup = [];
+        _opponentJobStatsLookup = [];
+    }
+
+    internal Task Refresh(List<CrystallineConflictMatch> matches, List<CrystallineConflictMatch> additions, List<CrystallineConflictMatch> removals) {
+        _matchesProcessed = 0;
+        Stopwatch s1 = Stopwatch.StartNew();
+        try {
+            if(removals.Count * 2 >= _matches.Count) {
+                //force full build
+                Reset();
+                _matchesTotal = matches.Count;
+                ProcessMatches(matches);
+            } else {
+                _matchesTotal = removals.Count + additions.Count;
+                ProcessMatches(removals, true);
+                ProcessMatches(additions);
+            }
+            CrystallineConflictStatsManager.SetScoreboardStats(_localPlayerStats, _localPlayerTeamContributions, _localPlayerMatchTime);
+            foreach(var teammateStat in _teammateStats) {
+                teammateStat.Value.Job = _teammateJobStatsLookup[teammateStat.Key].OrderByDescending(x => x.Value.WinDiff).FirstOrDefault().Key;
+            }
+            foreach(var opponentStat in _opponentStats) {
+                opponentStat.Value.Job = _opponentJobStatsLookup[opponentStat.Key].OrderBy(x => x.Value.WinDiff).FirstOrDefault().Key;
+            }
+
+            LocalPlayerStats = _localPlayerStats;
+            LocalPlayerJobStats = _localPlayerJobStats.Where(x => x.Value.Matches > 0).OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            ArenaStats = _arenaStats.Where(x => x.Value.Matches > 0).OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            TeammateStats = _teammateStats.Where(x => x.Value.Matches > 0).OrderBy(x => x.Value.Matches).OrderByDescending(x => x.Value.WinDiff).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            TeammateJobStats = _teammateJobStats.Where(x => x.Value.Matches > 0).OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            OpponentStats = _opponentStats.Where(x => x.Value.Matches > 0).OrderBy(x => x.Value.Matches).OrderBy(x => x.Value.WinDiff).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            OpponentJobStats = _opponentJobStats.Where(x => x.Value.Matches > 0).OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            AverageMatchDuration = matches.Count > 0 ? _totalMatchTime / matches.Count : TimeSpan.Zero;
+            _matches = matches;
+        } finally {
+            s1.Stop();
+            Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"Summary Refresh", s1.ElapsedMilliseconds.ToString()));
+            _matchesProcessed = 0;
+        }
+        return Task.CompletedTask;
+    }
+
+    private void ProcessMatch(CrystallineConflictMatch match, bool remove = false) {
+        if(remove) {
+            _totalMatchTime -= match.MatchDuration ?? TimeSpan.Zero;
+        } else {
+            _totalMatchTime += match.MatchDuration ?? TimeSpan.Zero;
+        }
+
+        //local player stats
+        if(!match.IsSpectated && match.PostMatch != null) {
+            if(remove) {
+                _localPlayerMatchTime -= match.MatchDuration ?? TimeSpan.Zero;
+            } else {
+                _localPlayerMatchTime += match.MatchDuration ?? TimeSpan.Zero;
+            }
+            CrystallineConflictStatsManager.AddPlayerJobStat(_localPlayerStats, _localPlayerTeamContributions, match, match.LocalPlayerTeam!, match.LocalPlayerTeamMember!, remove);
+
+            if(match.LocalPlayerTeamMember!.Job != null) {
+                var job = (Job)match.LocalPlayerTeamMember!.Job;
+                if(!_localPlayerJobStats.TryGetValue(job, out CCAggregateStats? jobStat)) {
+                    jobStat = new();
+                    _localPlayerJobStats.Add(job, jobStat);
+                }
+                CrystallineConflictStatsManager.IncrementAggregateStats(jobStat, match, remove);
+            }
+        }
+
+        //arena stats
+        if(match.Arena != null) {
+            var arena = (CrystallineConflictMap)match.Arena;
+            if(!_arenaStats.TryGetValue(arena, out CCAggregateStats? arenaStat)) {
+                arenaStat = new();
+                _arenaStats.Add(arena, arenaStat);
+            }
+            CrystallineConflictStatsManager.IncrementAggregateStats(arenaStat, match, remove);
+        }
+
+        //process player and job stats
+        foreach(var team in match.Teams) {
+            foreach(var player in team.Value.Players) {
+                bool isLocalPlayer = player.Alias.Equals(match.LocalPlayer);
+                bool isTeammate = !match.IsSpectated && !isLocalPlayer && team.Key == match.LocalPlayerTeam!.TeamName;
+                bool isOpponent = !match.IsSpectated && !isLocalPlayer && !isTeammate;
+
+                var job = (Job)player.Job!;
+                var alias = Plugin.PlayerLinksService.GetMainAlias(player.Alias);
+
+                if(isTeammate) {
+                    if(!_teammateStats.TryGetValue(alias, out CCAggregateStats? teammateStat)) {
+                        teammateStat = new();
+                        _teammateStats.Add(alias, teammateStat);
+                    }
+                    CrystallineConflictStatsManager.IncrementAggregateStats(teammateStat, match, remove);
+                    if(player.Job != null) {
+                        if(!_teammateJobStats.TryGetValue(job, out CCAggregateStats? teammateJobStat)) {
+                            teammateJobStat = new();
+                            _teammateJobStats.Add(job, teammateJobStat);
+                        }
+                        CrystallineConflictStatsManager.IncrementAggregateStats(teammateJobStat, match, remove);
+                        if(!_teammateJobStatsLookup.TryGetValue(alias, out Dictionary<Job, CCAggregateStats>? teammateJobStatLookup)) {
+                            teammateJobStatLookup = new();
+                            _teammateJobStatsLookup.Add(alias, teammateJobStatLookup);
+                        }
+                        if(!teammateJobStatLookup!.TryGetValue(job, out CCAggregateStats? teammateJobStatLookupJobStat)) {
+                            teammateJobStatLookupJobStat = new();
+                            teammateJobStatLookup.Add(job, teammateJobStatLookupJobStat);
+                        }
+                        CrystallineConflictStatsManager.IncrementAggregateStats(teammateJobStatLookupJobStat, match, remove);
+                    }
+                } else if(isOpponent) {
+                    if(!_opponentStats.TryGetValue(alias, out CCAggregateStats? opponentStat)) {
+                        opponentStat = new();
+                        _opponentStats.Add(alias, opponentStat);
+                    }
+                    CrystallineConflictStatsManager.IncrementAggregateStats(opponentStat, match, remove);
+                    if(player.Job != null) {
+                        if(!_opponentJobStats.TryGetValue(job, out CCAggregateStats? opponentJobStat)) {
+                            opponentJobStat = new();
+                            _opponentJobStats.Add(job, opponentJobStat);
+                        }
+                        CrystallineConflictStatsManager.IncrementAggregateStats(opponentJobStat, match, remove);
+                    }
+                    if(!_opponentJobStatsLookup.TryGetValue(alias, out Dictionary<Job, CCAggregateStats>? opponentJobStatLookup)) {
+                        opponentJobStatLookup = new();
+                        _opponentJobStatsLookup.Add(alias, opponentJobStatLookup);
+                    }
+                    if(!opponentJobStatLookup!.TryGetValue(job, out CCAggregateStats? opponentJobStatLookupJobStat)) {
+                        opponentJobStatLookupJobStat = new();
+                        opponentJobStatLookup.Add(job, opponentJobStatLookupJobStat);
+                    }
+                    CrystallineConflictStatsManager.IncrementAggregateStats(opponentJobStatLookupJobStat, match, remove);
+                }
+            }
+        }
+    }
+
+    private void ProcessMatches(List<CrystallineConflictMatch> matches, bool remove = false) {
+        matches.ForEach(x => {
+            ProcessMatch(x, remove);
+            RefreshProgress = (float)_matchesProcessed++ / _matchesTotal;
+        });
     }
 
     public void Draw() {
@@ -26,53 +215,53 @@ internal class CrystallineConflictSummary {
             return;
         }
         try {
-            if(_plugin.CCStatsEngine.LocalPlayerStats.StatsAll.Matches > 0) {
+            if(LocalPlayerStats.StatsAll.Matches > 0) {
                 DrawResultTable();
             } else {
                 ImGui.TextDisabled("No matches for given filters.");
             }
 
-            if(_plugin.CCStatsEngine.LocalPlayerJobStats.Count > 0) {
+            if(LocalPlayerJobStats.Count > 0) {
                 ImGui.Separator();
-                ImGui.TextColored(_plugin.Configuration.Colors.Header, "Jobs Played:");
-                DrawJobTable(_plugin.CCStatsEngine.LocalPlayerJobStats);
+                ImGui.TextColored(Plugin.Configuration.Colors.Header, "Jobs Played:");
+                DrawJobTable(LocalPlayerJobStats);
             }
 
-            if(_plugin.CCStatsEngine.LocalPlayerStats.StatsAll.Matches > 0) {
+            if(LocalPlayerStats.StatsAll.Matches > 0) {
                 ImGui.Separator();
-                ImGui.TextColored(_plugin.Configuration.Colors.Header, "Average Performance:");
+                ImGui.TextColored(Plugin.Configuration.Colors.Header, "Average Performance:");
                 ImGuiHelper.HelpMarker("1st row: average per match.\n2nd row: average per minute.\n3rd row: median team contribution per match.");
                 DrawMatchStatsTable();
             }
 
-            if(_plugin.CCStatsEngine.ArenaStats.Count > 0) {
+            if(ArenaStats.Count > 0) {
                 ImGui.Separator();
-                ImGui.TextColored(_plugin.Configuration.Colors.Header, "Arenas:");
-                DrawArenaTable(_plugin.CCStatsEngine.ArenaStats);
+                ImGui.TextColored(Plugin.Configuration.Colors.Header, "Arenas:");
+                DrawArenaTable(ArenaStats);
             }
 
-            if(_plugin.CCStatsEngine.TeammateJobStats.Count > 0) {
+            if(TeammateJobStats.Count > 0) {
                 ImGui.Separator();
-                ImGui.TextColored(_plugin.Configuration.Colors.Header, "Teammates' Jobs Played:");
-                DrawJobTable(_plugin.CCStatsEngine.TeammateJobStats);
+                ImGui.TextColored(Plugin.Configuration.Colors.Header, "Teammates' Jobs Played:");
+                DrawJobTable(TeammateJobStats);
             }
 
-            if(_plugin.CCStatsEngine.OpponentJobStats.Count > 0) {
+            if(OpponentJobStats.Count > 0) {
                 ImGui.Separator();
-                ImGui.TextColored(_plugin.Configuration.Colors.Header, "Opponents' Jobs Played:");
-                DrawJobTable(_plugin.CCStatsEngine.OpponentJobStats);
+                ImGui.TextColored(Plugin.Configuration.Colors.Header, "Opponents' Jobs Played:");
+                DrawJobTable(OpponentJobStats);
             }
 
-            if(_plugin.CCStatsEngine.TeammateStats.Count > 0) {
+            if(TeammateStats.Count > 0) {
                 ImGui.Separator();
-                ImGui.TextColored(_plugin.Configuration.Colors.Header, "Top Teammates:");
-                DrawPlayerTable(_plugin.CCStatsEngine.TeammateStats);
+                ImGui.TextColored(Plugin.Configuration.Colors.Header, "Top Teammates:");
+                DrawPlayerTable(TeammateStats);
             }
 
-            if(_plugin.CCStatsEngine.OpponentStats.Count > 0) {
+            if(OpponentStats.Count > 0) {
                 ImGui.Separator();
-                ImGui.TextColored(_plugin.Configuration.Colors.Header, "Top Opponents:");
-                DrawPlayerTable(_plugin.CCStatsEngine.OpponentStats);
+                ImGui.TextColored(Plugin.Configuration.Colors.Header, "Top Opponents:");
+                DrawPlayerTable(OpponentStats);
             }
         } finally {
             RefreshLock.Release();
@@ -89,28 +278,28 @@ internal class CrystallineConflictSummary {
                 ImGui.TableNextColumn();
                 ImGuiHelper.DrawNumericCell("Matches: ", -10f);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell($"{_plugin.CCStatsEngine.LocalPlayerStats.StatsAll.Matches:N0}");
+                ImGuiHelper.DrawNumericCell($"{LocalPlayerStats.StatsAll.Matches:N0}");
                 ImGui.TableNextColumn();
 
-                if(_plugin.CCStatsEngine.LocalPlayerStats.StatsAll.Matches > 0) {
+                if(LocalPlayerStats.StatsAll.Matches > 0) {
                     ImGui.TableNextColumn();
                     ImGuiHelper.DrawNumericCell("Wins: ", -10f);
                     ImGui.TableNextColumn();
-                    ImGuiHelper.DrawNumericCell($"{_plugin.CCStatsEngine.LocalPlayerStats.StatsAll.Wins:N0}");
+                    ImGuiHelper.DrawNumericCell($"{LocalPlayerStats.StatsAll.Wins:N0}");
                     ImGui.TableNextColumn();
-                    ImGuiHelper.DrawNumericCell(_plugin.CCStatsEngine.LocalPlayerStats.StatsAll.WinRate.ToString("P2"));
+                    ImGuiHelper.DrawNumericCell(LocalPlayerStats.StatsAll.WinRate.ToString("P2"));
 
                     ImGui.TableNextColumn();
                     ImGuiHelper.DrawNumericCell("Losses: ", -10f);
                     ImGui.TableNextColumn();
-                    ImGuiHelper.DrawNumericCell($"{_plugin.CCStatsEngine.LocalPlayerStats.StatsAll.Losses:N0}");
+                    ImGuiHelper.DrawNumericCell($"{LocalPlayerStats.StatsAll.Losses:N0}");
                     ImGui.TableNextColumn();
 
-                    if(_plugin.CCStatsEngine.LocalPlayerStats.StatsAll.OtherResult > 0) {
+                    if(LocalPlayerStats.StatsAll.OtherResult > 0) {
                         ImGui.TableNextColumn();
                         ImGuiHelper.DrawNumericCell("Other: ", -10f);
                         ImGui.TableNextColumn();
-                        ImGuiHelper.DrawNumericCell($"{_plugin.CCStatsEngine.LocalPlayerStats.StatsAll.OtherResult:N0}");
+                        ImGuiHelper.DrawNumericCell($"{LocalPlayerStats.StatsAll.OtherResult:N0}");
                         ImGui.TableNextColumn();
                     }
                     ImGui.TableNextRow();
@@ -119,7 +308,7 @@ internal class CrystallineConflictSummary {
                     ImGui.TableNextColumn();
                     ImGuiHelper.DrawNumericCell("Average match length: ", -10f);
                     ImGui.TableNextColumn();
-                    ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(_plugin.CCStatsEngine.AverageMatchDuration));
+                    ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(AverageMatchDuration));
                     ImGui.TableNextColumn();
                 }
             }
@@ -154,7 +343,7 @@ internal class CrystallineConflictSummary {
 
                     ImGui.TableNextColumn();
                     if(arena.Value.Matches > 0) {
-                        var diffColor = arena.Value.WinDiff > 0 ? _plugin.Configuration.Colors.Win : arena.Value.WinDiff < 0 ? _plugin.Configuration.Colors.Loss : ImGuiColors.DalamudWhite;
+                        var diffColor = arena.Value.WinDiff > 0 ? Plugin.Configuration.Colors.Win : arena.Value.WinDiff < 0 ? Plugin.Configuration.Colors.Loss : ImGuiColors.DalamudWhite;
                         ImGuiHelper.DrawNumericCell(arena.Value.WinRate.ToString("P2"), offset, diffColor);
                     }
                 }
@@ -186,7 +375,7 @@ internal class CrystallineConflictSummary {
                     ImGui.Text($"{PlayerJobHelper.GetNameFromJob(job.Key)}");
 
                     ImGui.TableNextColumn();
-                    ImGui.TextColored(_plugin.Configuration.GetJobColor(job.Key), $"{PlayerJobHelper.GetSubRoleFromJob(job.Key)}");
+                    ImGui.TextColored(Plugin.Configuration.GetJobColor(job.Key), $"{PlayerJobHelper.GetSubRoleFromJob(job.Key)}");
 
                     ImGui.TableNextColumn();
                     ImGuiHelper.DrawNumericCell(job.Value.Matches.ToString(), offset);
@@ -196,7 +385,7 @@ internal class CrystallineConflictSummary {
 
                     ImGui.TableNextColumn();
                     if(job.Value.Matches > 0) {
-                        var diffColor = job.Value.WinDiff > 0 ? _plugin.Configuration.Colors.Win : job.Value.WinDiff < 0 ? _plugin.Configuration.Colors.Loss : ImGuiColors.DalamudWhite;
+                        var diffColor = job.Value.WinDiff > 0 ? Plugin.Configuration.Colors.Win : job.Value.WinDiff < 0 ? Plugin.Configuration.Colors.Loss : ImGuiColors.DalamudWhite;
                         ImGuiHelper.DrawNumericCell(job.Value.WinRate.ToString("P2"), offset, diffColor);
                     }
                 }
@@ -230,7 +419,7 @@ internal class CrystallineConflictSummary {
                     ImGui.TableNextColumn();
                     var jobString = player.Value.Job.ToString() ?? "";
                     ImGuiHelper.CenterAlignCursor(jobString);
-                    ImGui.TextColored(_plugin.Configuration.GetJobColor(player.Value.Job), player.Value.Job.ToString());
+                    ImGui.TextColored(Plugin.Configuration.GetJobColor(player.Value.Job), player.Value.Job.ToString());
 
                     ImGui.TableNextColumn();
                     ImGuiHelper.DrawNumericCell(player.Value.Matches.ToString(), offset);
@@ -271,53 +460,53 @@ internal class CrystallineConflictSummary {
 
                 //per match
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Kills, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 1.0f, 4.5f, _plugin.Configuration.ColorScaleStats, "0.00", offset);
+                ImGuiHelper.DrawNumericCell((float)LocalPlayerStats.ScoreboardPerMatch.Kills, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.KillsPerMatchRange[0], CrystallineConflictStatsManager.KillsPerMatchRange[1], Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Deaths, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 1.5f, 3.5f, _plugin.Configuration.ColorScaleStats, "0.00", offset);
+                ImGuiHelper.DrawNumericCell((float)LocalPlayerStats.ScoreboardPerMatch.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, CrystallineConflictStatsManager.DeathsPerMatchRange[0], CrystallineConflictStatsManager.DeathsPerMatchRange[1], Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardPerMatch.Assists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 5.0f, 7.5f, _plugin.Configuration.ColorScaleStats, "0.00", offset);
+                ImGuiHelper.DrawNumericCell((float)LocalPlayerStats.ScoreboardPerMatch.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.AssistsPerMatchRange[0], CrystallineConflictStatsManager.AssistsPerMatchRange[1], Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardPerMatch.DamageDealt, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 400000f, 850000f, _plugin.Configuration.ColorScaleStats, "#", offset);
+                ImGuiHelper.DrawNumericCell((float)LocalPlayerStats.ScoreboardPerMatch.DamageDealt, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.DamageDealtPerMatchRange[0], CrystallineConflictStatsManager.DamageDealtPerMatchRange[1], Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardPerMatch.DamageTaken, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 400000f, 850000f, _plugin.Configuration.ColorScaleStats, "#", offset);
+                ImGuiHelper.DrawNumericCell((float)LocalPlayerStats.ScoreboardPerMatch.DamageTaken, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.DamageTakenPerMatchRange[0], CrystallineConflictStatsManager.DamageTakenPerMatchRange[1], Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardPerMatch.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 350000f, 1000000f, _plugin.Configuration.ColorScaleStats, "#", offset);
+                ImGuiHelper.DrawNumericCell((float)LocalPlayerStats.ScoreboardPerMatch.HPRestored, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.HPRestoredPerMatchRange[0], CrystallineConflictStatsManager.HPRestoredPerMatchRange[1], Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                var tcpa = TimeSpan.FromSeconds(_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardPerMatch.TimeOnCrystal);
-                ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(tcpa), (float)tcpa.TotalSeconds, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 35f, 120f, _plugin.Configuration.ColorScaleStats, offset);
+                var tcpa = TimeSpan.FromSeconds(LocalPlayerStats.ScoreboardPerMatch.TimeOnCrystal);
+                ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(tcpa), (float)tcpa.TotalSeconds, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.TimeOnCrystalPerMatchRange[0], CrystallineConflictStatsManager.TimeOnCrystalPerMatchRange[1], Plugin.Configuration.ColorScaleStats, offset);
 
                 //per min
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardPerMin.Kills, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.1f, 0.7f, _plugin.Configuration.ColorScaleStats, "0.00", offset);
+                ImGuiHelper.DrawNumericCell((float)LocalPlayerStats.ScoreboardPerMin.Kills, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.KillsPerMinRange[0], CrystallineConflictStatsManager.KillsPerMinRange[1], Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardPerMin.Deaths, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 0.25f, 0.55f, _plugin.Configuration.ColorScaleStats, "0.00", offset);
+                ImGuiHelper.DrawNumericCell((float)LocalPlayerStats.ScoreboardPerMin.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, CrystallineConflictStatsManager.DeathsPerMinRange[0], CrystallineConflictStatsManager.DeathsPerMinRange[1], Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardPerMin.Assists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.75f, 1.5f, _plugin.Configuration.ColorScaleStats, "0.00", offset);
+                ImGuiHelper.DrawNumericCell((float)LocalPlayerStats.ScoreboardPerMin.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.AssistsPerMinRange[0], CrystallineConflictStatsManager.AssistsPerMinRange[1], Plugin.Configuration.ColorScaleStats, "0.00", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardPerMin.DamageDealt, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 75000f, 140000f, _plugin.Configuration.ColorScaleStats, "#", offset);
+                ImGuiHelper.DrawNumericCell((float)LocalPlayerStats.ScoreboardPerMin.DamageDealt, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.DamageDealtPerMinRange[0], CrystallineConflictStatsManager.DamageDealtPerMinRange[1], Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardPerMin.DamageTaken, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 75000f, 140000f, _plugin.Configuration.ColorScaleStats, "#", offset);
+                ImGuiHelper.DrawNumericCell((float)LocalPlayerStats.ScoreboardPerMin.DamageTaken, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.DamageTakenPerMinRange[0], CrystallineConflictStatsManager.DamageTakenPerMinRange[1], Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardPerMin.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 60000f, 185000f, _plugin.Configuration.ColorScaleStats, "#", offset);
+                ImGuiHelper.DrawNumericCell((float)LocalPlayerStats.ScoreboardPerMin.HPRestored, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.HPRestoredPerMinRange[0], CrystallineConflictStatsManager.HPRestoredPerMinRange[1], Plugin.Configuration.ColorScaleStats, "#", offset);
                 ImGui.TableNextColumn();
-                var tcpm = TimeSpan.FromSeconds(_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardPerMin.TimeOnCrystal);
-                ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(tcpm), (float)tcpm.TotalSeconds, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 6f, 20f, _plugin.Configuration.ColorScaleStats, offset);
+                var tcpm = TimeSpan.FromSeconds(LocalPlayerStats.ScoreboardPerMin.TimeOnCrystal);
+                ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(tcpm), (float)tcpm.TotalSeconds, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.TimeOnCrystalPerMinRange[0], CrystallineConflictStatsManager.TimeOnCrystalPerMinRange[1], Plugin.Configuration.ColorScaleStats, offset);
 
                 //team contrib
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardContrib.Kills, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGuiHelper.DrawNumericCell((float)LocalPlayerStats.ScoreboardContrib.Kills, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.ContribRange[0], CrystallineConflictStatsManager.ContribRange[1], Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardContrib.Deaths, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGuiHelper.DrawNumericCell((float)LocalPlayerStats.ScoreboardContrib.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, CrystallineConflictStatsManager.ContribRange[0], CrystallineConflictStatsManager.ContribRange[1], Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardContrib.Assists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGuiHelper.DrawNumericCell((float)LocalPlayerStats.ScoreboardContrib.Assists, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.ContribRange[0], CrystallineConflictStatsManager.ContribRange[1], Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardContrib.DamageDealt, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGuiHelper.DrawNumericCell((float)LocalPlayerStats.ScoreboardContrib.DamageDealt, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.ContribRange[0], CrystallineConflictStatsManager.ContribRange[1], Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardContrib.DamageTaken, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGuiHelper.DrawNumericCell((float)LocalPlayerStats.ScoreboardContrib.DamageTaken, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.ContribRange[0], CrystallineConflictStatsManager.ContribRange[1], Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardContrib.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGuiHelper.DrawNumericCell((float)LocalPlayerStats.ScoreboardContrib.HPRestored, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.ContribRange[0], CrystallineConflictStatsManager.ContribRange[1], Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)_plugin.CCStatsEngine.LocalPlayerStats.ScoreboardContrib.TimeOnCrystal, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, 0.15f, 0.25f, _plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGuiHelper.DrawNumericCell((float)LocalPlayerStats.ScoreboardContrib.TimeOnCrystal, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.ContribRange[0], CrystallineConflictStatsManager.ContribRange[1], Plugin.Configuration.ColorScaleStats, "P1", offset);
             }
         }
     }

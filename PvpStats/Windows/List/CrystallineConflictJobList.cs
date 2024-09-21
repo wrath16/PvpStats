@@ -3,15 +3,38 @@ using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PvpStats.Helpers;
+using PvpStats.Managers.Stats;
+using PvpStats.Types.Display;
+using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using PvpStats.Windows.Filter;
-using PvpStats.Windows.Tracker;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
 internal class CrystallineConflictJobList : CCStatsList<Job> {
+
+    protected override string TableId => "###CCJobStatsTable";
+
+    internal StatSourceFilter StatSourceFilter { get; private set; }
+    internal OtherPlayerFilter PlayerFilter { get; private set; }
+
+    //internal state
+    List<CrystallineConflictMatch> _matches = new();
+    int _matchesProcessed = 0;
+    int _matchesTotal = 100;
+
+    Dictionary<Job, CCPlayerJobStats> _jobStats;
+    Dictionary<Job, List<CCScoreboardDouble>> _jobTeamContributions;
+    Dictionary<Job, TimeSpan> _jobTimes;
+
+    StatSourceFilter _lastJobStatSourceFilter = new();
+    OtherPlayerFilter _lastPlayerFilter = new();
+
+    List<PlayerAlias> _linkedPlayerAliases = [];
 
     protected override List<ColumnParams> Columns { get; set; } = new() {
         new ColumnParams{           Name = "Job",                                                                       Id = 0,                                                             Width = 85f,                                    Flags = ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoHide },
@@ -75,15 +98,114 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
         new NumericColumnParams{    Name = "KDA Ratio",                                                                 Id = (uint)"ScoreboardTotal.KDA".GetHashCode(),                     Width = 50f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
     };
 
-    protected override string TableId => "###CCJobStatsTable";
+    public CrystallineConflictJobList(Plugin plugin, StatSourceFilter statSourceFilter, OtherPlayerFilter playerFilter) : base(plugin) {
+        StatSourceFilter = statSourceFilter;
+        PlayerFilter = playerFilter;
+        Reset();
+    }
 
-    internal StatSourceFilter StatSourceFilter { get; private set; }
+    private void Reset() {
+        _jobStats = [];
+        _jobTeamContributions = [];
+        _jobTimes = [];
 
-    public CrystallineConflictJobList(Plugin plugin, CCTrackerWindow window) : base(plugin, window) {
-        //ListModel = listModel;
-        StatSourceFilter = new StatSourceFilter(plugin, window.Refresh, plugin.Configuration.CCWindowConfig.JobStatFilters.StatSourceFilter);
-        window.JobStatFilters.Add(StatSourceFilter);
-        //OtherPlayerFilter = playerFilter;
+        var allJobs = Enum.GetValues(typeof(Job)).Cast<Job>();
+        foreach(var job in allJobs) {
+            _jobStats.Add(job, new());
+            _jobTimes.Add(job, TimeSpan.Zero);
+            _jobTeamContributions.Add(job, new());
+        }
+    }
+
+    internal Task Refresh(List<CrystallineConflictMatch> matches, List<CrystallineConflictMatch> additions, List<CrystallineConflictMatch> removals) {
+        _matchesProcessed = 0;
+        Stopwatch s1 = Stopwatch.StartNew();
+        _linkedPlayerAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(PlayerFilter.PlayerNamesRaw);
+        bool jobStatFilterChange = !StatSourceFilter.Equals(_lastJobStatSourceFilter);
+        bool playerFilterChange = StatSourceFilter!.InheritFromPlayerFilter && !PlayerFilter.Equals(_lastPlayerFilter);
+        try {
+            if(removals.Count * 2 >= _matches.Count || jobStatFilterChange || playerFilterChange) {
+                //force full build
+                Reset();
+                _matchesTotal = matches.Count;
+                ProcessMatches(matches);
+            } else {
+                _matchesTotal = removals.Count + additions.Count;
+                ProcessMatches(removals, true);
+                ProcessMatches(additions);
+            }
+            foreach(var jobStat in _jobStats) {
+                CrystallineConflictStatsManager.SetScoreboardStats(jobStat.Value, _jobTeamContributions[jobStat.Key], _jobTimes[jobStat.Key]);
+            }
+            DataModel = _jobStats.Keys.ToList();
+            StatsModel = _jobStats;
+            GoToPage(0);
+            TriggerSort = true;
+
+            _matches = matches;
+
+            _lastJobStatSourceFilter = new(StatSourceFilter!);
+            _lastPlayerFilter = new(PlayerFilter);
+        } finally {
+            s1.Stop();
+            _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"Jobs Refresh", s1.ElapsedMilliseconds.ToString()));
+            _matchesProcessed = 0;
+        }
+        return Task.CompletedTask;
+    }
+
+    private void ProcessMatch(CrystallineConflictMatch match, bool remove = false) {
+        foreach(var team in match.Teams) {
+            foreach(var player in team.Value.Players) {
+                bool isLocalPlayer = player.Alias.Equals(match.LocalPlayer);
+                bool isTeammate = !match.IsSpectated && !isLocalPlayer && team.Key == match.LocalPlayerTeam!.TeamName;
+                bool isOpponent = !match.IsSpectated && !isLocalPlayer && !isTeammate;
+                bool jobStatsEligible = true;
+                bool nameMatch = player.Alias.FullName.Contains(PlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase);
+                if(_plugin.Configuration.EnablePlayerLinking && !nameMatch) {
+                    nameMatch = _linkedPlayerAliases.Contains(player.Alias);
+                }
+                bool sideMatch = PlayerFilter.TeamStatus == TeamStatus.Any
+                    || PlayerFilter.TeamStatus == TeamStatus.Teammate && isTeammate
+                    || PlayerFilter.TeamStatus == TeamStatus.Opponent && isOpponent;
+                bool jobMatch = PlayerFilter.AnyJob || PlayerFilter.PlayerJob == player.Job;
+                if(!nameMatch || !sideMatch || !jobMatch) {
+                    if(StatSourceFilter.InheritFromPlayerFilter) {
+                        jobStatsEligible = false;
+                    }
+                }
+                if(player.Job == null) {
+                    jobStatsEligible = false;
+                }
+
+                if(!StatSourceFilter.FilterState[StatSource.LocalPlayer] && isLocalPlayer) {
+                    jobStatsEligible = false;
+                } else if(!StatSourceFilter.FilterState[StatSource.Teammate] && isTeammate) {
+                    jobStatsEligible = false;
+                } else if(!StatSourceFilter.FilterState[StatSource.Opponent] && !isTeammate && !isLocalPlayer) {
+                    jobStatsEligible = false;
+                } else if(!StatSourceFilter.FilterState[StatSource.Spectated] && match.IsSpectated) {
+                    jobStatsEligible = false;
+                }
+                var job = (Job)player.Job!;
+
+                if(jobStatsEligible) {
+                    if(remove) {
+                        _jobTimes[job] -= match.MatchDuration ?? TimeSpan.Zero;
+                    } else {
+                        _jobTimes[job] += match.MatchDuration ?? TimeSpan.Zero;
+                    }
+                    CrystallineConflictStatsManager.AddPlayerJobStat(_jobStats[job], _jobTeamContributions[job], match, team.Value, player, remove);
+                }
+            }
+        }
+    }
+
+    private void ProcessMatches(List<CrystallineConflictMatch> matches, bool remove = false) {
+        matches.ForEach(x => {
+            ProcessMatch(x, remove);
+            RefreshProgress = (float)_matchesProcessed++ / _matchesTotal;
+        });
     }
 
     protected override void PreTableDraw() {
@@ -326,10 +448,10 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
         }
     }
 
-    public override async Task RefreshDataModel() {
-        StatsModel = _plugin.CCStatsEngine.JobStats;
-        await base.RefreshDataModel();
-    }
+    //public override async Task RefreshDataModel() {
+    //    StatsModel = _plugin.CCStatsEngine.JobStats;
+    //    await base.RefreshDataModel();
+    //}
 
     public override void OpenFullEditDetail(Job item) {
         throw new NotImplementedException();

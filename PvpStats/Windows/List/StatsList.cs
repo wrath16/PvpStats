@@ -13,8 +13,8 @@ using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
 internal abstract class StatsList<T, U> : FilteredList<T> where T : notnull where U : PlayerJobStats {
-    public StatsList(Plugin plugin, SemaphoreSlim? interlock = null) : base(plugin, interlock) {
-    }
+
+    public float RefreshProgress { get; set; } = 0f;
 
     protected List<T> DataModelUntruncated { get; set; } = [];
 
@@ -26,6 +26,9 @@ internal abstract class StatsList<T, U> : FilteredList<T> where T : notnull wher
     protected override bool ChildWindow { get; set; } = false;
     protected bool TriggerSort { get; set; }
     protected static float Offset => -5f;
+
+    public StatsList(Plugin plugin, SemaphoreSlim? interlock = null) : base(plugin, interlock) {
+    }
 
     public override void DrawListItem(T item) {
         throw new NotImplementedException();

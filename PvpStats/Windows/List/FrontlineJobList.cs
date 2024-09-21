@@ -18,8 +18,6 @@ internal class FrontlineJobList : FLStatsList<Job> {
 
     protected override string TableId => "###FLJobStatsTable";
 
-    public float RefreshProgress { get; private set; } = 0f;
-
     internal FLStatSourceFilter StatSourceFilter { get; private set; }
     internal OtherPlayerFilter PlayerFilter { get; private set; }
 
@@ -104,10 +102,12 @@ internal class FrontlineJobList : FLStatsList<Job> {
     internal Task Refresh(List<FrontlineMatch> matches, List<FrontlineMatch> additions, List<FrontlineMatch> removals) {
         _matchesProcessed = 0;
         Stopwatch s1 = Stopwatch.StartNew();
-        bool jobStatFilterChange = !StatSourceFilter.Equals(_lastJobStatSourceFilter);
+        _linkedPlayerAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(PlayerFilter.PlayerNamesRaw);
+        bool statFilterChange = !StatSourceFilter.Equals(_lastJobStatSourceFilter);
         bool playerFilterChange = StatSourceFilter!.InheritFromPlayerFilter && !PlayerFilter.Equals(_lastPlayerFilter);
+        //_plugin.Log.Debug($"total old: {_matches.Count} additions: {additions.Count} removals: {removals.Count} jsfc: {statFilterChange} pfc: {playerFilterChange}");
         try {
-            if(removals.Count * 2 >= _matches.Count || jobStatFilterChange || playerFilterChange) {
+            if(removals.Count * 2 >= _matches.Count || statFilterChange || playerFilterChange) {
                 //force full build
                 Reset();
                 _matchesTotal = matches.Count;
@@ -183,6 +183,7 @@ internal class FrontlineJobList : FLStatsList<Job> {
             }
         }
     }
+
     private void ProcessMatches(List<FrontlineMatch> matches, bool remove = false) {
         matches.ForEach(x => {
             ProcessMatch(x, remove);

@@ -43,7 +43,7 @@ internal class ConfigWindow : Window {
                 flattenedList.Add(new() {
                     CurrentAlias = playerLink.CurrentAlias,
                     IsUnlink = playerLink.IsUnlink,
-                    LinkedAliases = new() { linkedAlias }
+                    LinkedAliases = [linkedAlias]
                 });
             }
         }
@@ -451,7 +451,6 @@ internal class ConfigWindow : Window {
                         } catch {
                             //suppress remove elements
                         }
-
                     }
                 }
             }

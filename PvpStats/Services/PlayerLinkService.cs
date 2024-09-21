@@ -152,4 +152,38 @@ internal class PlayerLinkService {
         }
         return linkedAliases;
     }
+
+    internal PlayerAlias GetMainAlias(PlayerAlias alias) {
+        return GetMainAlias(alias, new());
+    }
+
+    private PlayerAlias GetMainAlias(PlayerAlias alias, List<PlayerAlias> prevAliases) {
+        var unLinks = ManualPlayerLinksCache.Where(x => x.IsUnlink).ToList();
+        List<PlayerAliasLink> allLinks = [.. AutoPlayerLinksCache.Where(x => x.CurrentAlias != null), .. ManualPlayerLinksCache.Where(x => !x.IsUnlink && x.CurrentAlias != null)];
+        foreach(var link in allLinks) {
+            bool unlinkFound = false;
+            foreach(var unlink in unLinks) {
+                var unlinkActive1 = unlink.LinkedAliases.Contains(alias) && unlink.CurrentAlias.Equals(link.CurrentAlias);
+                var unlinkActive2 = unlink.LinkedAliases.Contains(link.CurrentAlias) && unlink.CurrentAlias.Equals(alias);
+                if(unlinkActive1 || unlinkActive2) {
+                    unlinkFound = true;
+                    break;
+                }
+            }
+            if(unlinkFound) continue;
+
+            if(link.LinkedAliases.Contains(alias)) {
+                //detect loop
+                if(prevAliases.Contains(link.CurrentAlias!)) {
+                    //_plugin.Log.Warning($"Player alias link loop detected! {alias} to {link.CurrentAlias}");
+                    return alias; 
+                }
+                //search recursively
+                return GetMainAlias(link.CurrentAlias!, [.. prevAliases, alias]);
+            }
+        }
+
+        //not found
+        return alias;
+    }
 }

@@ -75,6 +75,9 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
     public override async Task Refresh() {
         Stopwatch s0 = new();
         s0.Start();
+        _summary.RefreshProgress = 0f;
+        _jobStats.RefreshProgress = 0f;
+
         _summaryRefreshActive = true;
         _matchRefreshActive = true;
         _jobRefreshActive = true;
@@ -83,9 +86,9 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
             //RefreshActive = true;
             var updatedSet = Plugin.FLStatsEngine.Refresh2(MatchFilters);
             Task.WaitAll([
-                _matchList.Refresh(updatedSet.Matches).ContinueWith(x => _matchRefreshActive = false),
-                _summary.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals).ContinueWith(x => _summaryRefreshActive = false),
-                _jobStats.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals).ContinueWith(x => _jobRefreshActive = false),
+                Task.Run(() => _matchList.Refresh(updatedSet.Matches).ContinueWith(x => _matchRefreshActive = false)),
+                Task.Run(() => _summary.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals).ContinueWith(x => _summaryRefreshActive = false)),
+                Task.Run(() => _jobStats.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals).ContinueWith(x => _jobRefreshActive = false)),
                 Task.Run(SaveFilters)
             ]);
         } catch {

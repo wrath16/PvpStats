@@ -1,8 +1,8 @@
 ﻿using Dalamud.Utility;
+using PvpStats.Helpers.Comparers;
 using PvpStats.Services.DataCache;
 using PvpStats.Types;
 using PvpStats.Types.Match;
-using PvpStats.Types.Player;
 using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Generic;
@@ -21,23 +21,9 @@ internal abstract class StatsManager<T> where T : PvpMatch {
     public bool RefreshActive { get; protected set; }
     public float RefreshProgress { get; protected set; }
 
-    public bool MatchRefreshActive { get; protected set; }
-    public float MatchRefreshProgress { get; protected set; }
-
-    public bool SummaryRefreshActive { get; protected set; }
-    public int SummaryRefreshMatchesProcessed { get; protected set; }
-
-    public bool RecordsRefreshActive { get; protected set; }
-    public int RecordsRefreshMatchesProcessed { get; protected set; }
-
-    public bool JobsRefreshActive { get; protected set; }
-    public int JobsRefreshMatchesProcessed { get; protected set; }
-
-    public bool PlayersRefreshActive { get; protected set; }
-    public int PlayersRefreshMatchesProcessed { get; protected set; }
-
     public List<T> Matches { get; protected set; } = new();
-    public List<PlayerAlias> Players { get; protected set; } = new();
+
+    //public List<PlayerAlias> Players { get; protected set; } = new();
 
     internal StatsManager(Plugin plugin, MatchCacheService<T> cache) {
         Plugin = plugin;
@@ -47,28 +33,28 @@ internal abstract class StatsManager<T> where T : PvpMatch {
     protected abstract Task RefreshInner(List<DataFilter> matchFilters, List<DataFilter> jobStatFilters, List<DataFilter> playerStatFilters);
 
     public virtual async Task Refresh(List<DataFilter> matchFilters, List<DataFilter> jobStatFilters, List<DataFilter> playerStatFilters) {
-        try {
-            RefreshProgress = 0f;
-            RefreshActive = true;
-            MatchRefreshProgress = 0f;
-            MatchRefreshActive = true;
-            SummaryRefreshMatchesProcessed = 0;
-            SummaryRefreshActive = true;
-            RecordsRefreshMatchesProcessed = 0;
-            RecordsRefreshActive = true;
-            JobsRefreshMatchesProcessed = 0;
-            JobsRefreshActive = true;
-            PlayersRefreshMatchesProcessed = 0;
-            PlayersRefreshActive = true;
-            await RefreshInner(matchFilters, jobStatFilters, playerStatFilters);
-        } finally {
-            RefreshActive = false;
-            MatchRefreshActive = false;
-            SummaryRefreshActive = false;
-            RecordsRefreshActive = false;
-            JobsRefreshActive = false;
-            PlayersRefreshActive = false;
-        }
+        //try {
+        //    RefreshProgress = 0f;
+        //    RefreshActive = true;
+        //    MatchRefreshProgress = 0f;
+        //    MatchRefreshActive = true;
+        //    SummaryRefreshMatchesProcessed = 0;
+        //    SummaryRefreshActive = true;
+        //    RecordsRefreshMatchesProcessed = 0;
+        //    RecordsRefreshActive = true;
+        //    JobsRefreshMatchesProcessed = 0;
+        //    JobsRefreshActive = true;
+        //    PlayersRefreshMatchesProcessed = 0;
+        //    PlayersRefreshActive = true;
+        //    await RefreshInner(matchFilters, jobStatFilters, playerStatFilters);
+        //} finally {
+        //    RefreshActive = false;
+        //    MatchRefreshActive = false;
+        //    SummaryRefreshActive = false;
+        //    RecordsRefreshActive = false;
+        //    JobsRefreshActive = false;
+        //    PlayersRefreshActive = false;
+        //}
     }
 
     public (List<T> Matches, List<T> Additions, List<T> Removals) Refresh2(List<DataFilter> matchFilters) {
@@ -77,11 +63,12 @@ internal abstract class StatsManager<T> where T : PvpMatch {
             Stopwatch matchesTimer = Stopwatch.StartNew();
             var matches = MatchCache.Matches.Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
             matches = FilterMatches(matchFilters, matches);
-            var toAdd = matches.Except(Matches).ToList();
-            var toSubtract = Matches.Except(matches).ToList();
+            var toAdd = matches.Except(Matches, new PvpMatchComparer<T>()).ToList();
+            var toSubtract = Matches.Except(matches, new PvpMatchComparer<T>()).ToList();
             Matches = matches;
             matchesTimer.Stop();
             Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"Matches Refresh", matchesTimer.ElapsedMilliseconds.ToString()));
+            //Plugin.Log.Debug($"additions: {toAdd.Count} removals: {toSubtract.Count}");
             return (matches, toAdd, toSubtract);
         } finally {
             RefreshActive = false;

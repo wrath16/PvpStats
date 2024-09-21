@@ -210,6 +210,8 @@ internal unsafe class DebugWindow : Window {
                             //foreach(var a in prevAliases) {
                             //    _plugin.Log.Debug(a);
                             //}
+                            var mainAlias = _plugin.PlayerLinksService.GetMainAlias((PlayerAlias)_player);
+                            _plugin.Log.Debug($"{_player} is {mainAlias}");
 
                         } catch(ArgumentException) {
 

@@ -224,7 +224,11 @@ internal class WindowManager : IDisposable {
 
     public async Task RefreshAll() {
         _plugin.Log.Debug("refreshing windows...");
-        Task.WaitAll(ConfigWindow.Refresh(), RefreshCCWindow(), RefreshFLWindow(), RefreshRWWindow());
+        Task.WaitAll(
+            Task.Run(() => ConfigWindow.Refresh()),
+            Task.Run(RefreshCCWindow),
+            Task.Run(RefreshFLWindow),
+            Task.Run(RefreshRWWindow));
         await Task.CompletedTask;
     }
 

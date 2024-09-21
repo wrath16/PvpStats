@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Filter;
-public class FLStatSourceFilter : StatSourceFilter, IEquatable<FLStatSourceFilter> {
+public class FLStatSourceFilter : StatSourceFilter {
 
     public static new Dictionary<StatSource, string> FilterNames => new() {
         { StatSource.LocalPlayer, "Local Player" },
@@ -37,9 +36,5 @@ public class FLStatSourceFilter : StatSourceFilter, IEquatable<FLStatSourceFilte
             InheritFromPlayerFilter = filter.InheritFromPlayerFilter;
         }
         UpdateAllSelected();
-    }
-
-    public bool Equals(FLStatSourceFilter? other) {
-        return FilterState.All(x => x.Value == other?.FilterState[x.Key]) && (InheritFromPlayerFilter == other?.InheritFromPlayerFilter);
     }
 }

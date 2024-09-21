@@ -12,6 +12,8 @@ using System.Threading.Tasks;
 namespace PvpStats.Windows.Summary;
 internal class CrystallineConflictRankGraph {
 
+    public float RefreshProgress { get; set; } = 0f;
+
     private Plugin _plugin;
     private bool _triggerFit = false;
     private List<(DateTime, int)> RankData = new();
@@ -19,11 +21,16 @@ internal class CrystallineConflictRankGraph {
     private List<(DateTime, int)> LossData = new();
     private SemaphoreSlim _refreshLock = new SemaphoreSlim(1);
 
+    int _matchesProcessed = 0;
+    int _matchesTotal = 100;
+
     public CrystallineConflictRankGraph(Plugin plugin) {
         _plugin = plugin;
     }
 
-    public async Task Refresh(List<CrystallineConflictMatch> matches) {
+    public async Task Refresh(List<CrystallineConflictMatch> matches, List<CrystallineConflictMatch> additions, List<CrystallineConflictMatch> removals) {
+        _matchesProcessed = 0;
+        _matchesTotal = matches.Count;
         List<(DateTime, int)> rankData = new();
         List<(DateTime, int)> winData = new();
         List<(DateTime, int)> lossData = new();
@@ -44,8 +51,8 @@ internal class CrystallineConflictRankGraph {
                     drawData.Add((match.DutyStartTime, match.PostMatch.RankBefore.TotalCredit));
                     drawData.Add(((DateTime)match.MatchEndTime, match.PostMatch.RankAfter.TotalCredit));
                 }
-
             }
+            RefreshProgress = (float)_matchesProcessed++ / _matchesTotal;
         }
         //_plugin.Log.Debug("...");
         //foreach(var x in rankData) {

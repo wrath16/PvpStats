@@ -3,16 +3,46 @@ using Dalamud.Interface.Utility;
 using Dalamud.Utility;
 using ImGuiNET;
 using PvpStats.Helpers;
+using PvpStats.Managers.Stats;
+using PvpStats.Types.Display;
+using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using PvpStats.Windows.Filter;
-using PvpStats.Windows.Tracker;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
 internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
+
+    protected override string TableId => "###CCPlayerStatsTable";
+
+    internal OtherPlayerFilter PlayerFilter { get; private set; }
+    internal StatSourceFilter StatSourceFilter { get; private set; }
+    internal MinMatchFilter MinMatchFilter { get; private set; }
+    internal PlayerQuickSearchFilter PlayerQuickSearchFilter { get; private set; }
+
+    internal Dictionary<PlayerAlias, CCPlayerJobStats> PlayerStats { get; private set; } = new();
+    internal Dictionary<PlayerAlias, Dictionary<PlayerAlias, int>> ActiveLinks { get; private set; } = new();
+
+    //internal state
+    List<CrystallineConflictMatch> _matches = new();
+    int _matchesProcessed = 0;
+    int _matchesTotal = 100;
+
+    List<PlayerAlias> _players = [];
+    Dictionary<PlayerAlias, CCPlayerJobStats> _playerStats = [];
+    Dictionary<PlayerAlias, List<CCScoreboardDouble>> _playerTeamContributions = [];
+    Dictionary<PlayerAlias, TimeSpan> _playerTimes = [];
+    Dictionary<PlayerAlias, Dictionary<Job, CCAggregateStats>> _playerJobStatsLookup = [];
+    Dictionary<PlayerAlias, Dictionary<PlayerAlias, int>> _activeLinks = [];
+
+    List<PlayerAlias> _linkedPlayerAliases = [];
+
+    StatSourceFilter _lastStatSourceFilter = new();
+    OtherPlayerFilter _lastPlayerFilter = new();
 
     protected override List<ColumnParams> Columns { get; set; } = new() {
         new ColumnParams{           Name = "Name",                                                                      Id = 0,                                                             Width = 200f,                                   Flags = ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoHide },
@@ -76,26 +106,135 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
         new NumericColumnParams{    Name = "KDA Ratio",                                                                 Id = (uint)"ScoreboardTotal.KDA".GetHashCode(),                     Width = 50f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
     };
 
-    protected override string TableId => "###CCPlayerStatsTable";
-
-    internal StatSourceFilter StatSourceFilter { get; private set; }
-    internal MinMatchFilter MinMatchFilter { get; private set; }
-    internal PlayerQuickSearchFilter PlayerQuickSearchFilter { get; private set; }
-
-    public CrystallineConflictPlayerList(Plugin plugin, CCTrackerWindow window) : base(plugin, window) {
+    public CrystallineConflictPlayerList(Plugin plugin, StatSourceFilter statSourceFilter, MinMatchFilter minMatchFilter, PlayerQuickSearchFilter quickSearchFilter, OtherPlayerFilter playerFilter) : base(plugin) {
 
         //note that draw and refresh are not utilized!
-        StatSourceFilter = new StatSourceFilter(plugin, window.Refresh, plugin.Configuration.CCWindowConfig.PlayerStatFilters.StatSourceFilter);
-        window.PlayerStatFilters.Add(StatSourceFilter);
+        StatSourceFilter = statSourceFilter;
+        MinMatchFilter = minMatchFilter;
+        PlayerQuickSearchFilter = quickSearchFilter;
+        PlayerFilter = playerFilter;
+        Reset();
+    }
 
-        //note that draw and refresh are not utilized!
-        MinMatchFilter = new MinMatchFilter(plugin, window.Refresh, plugin.Configuration.CCWindowConfig.PlayerStatFilters.MinMatchFilter);
-        window.PlayerStatFilters.Add(MinMatchFilter);
+    private void Reset() {
+        _players = [];
+        _playerStats = [];
+        _playerTeamContributions = [];
+        _playerTimes = [];
+        _playerJobStatsLookup = [];
+        _activeLinks = [];
+    }
 
-        //note that draw and refresh are not utilized!
-        PlayerQuickSearchFilter = new PlayerQuickSearchFilter(plugin, window.Refresh);
-        window.PlayerStatFilters.Add(PlayerQuickSearchFilter);
+    internal Task Refresh(List<CrystallineConflictMatch> matches, List<CrystallineConflictMatch> additions, List<CrystallineConflictMatch> removals) {
+        _matchesProcessed = 0;
+        Stopwatch s1 = Stopwatch.StartNew();
+        _linkedPlayerAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(PlayerFilter.PlayerNamesRaw);
+        bool statFilterChange = !StatSourceFilter.Equals(_lastStatSourceFilter);
+        bool playerFilterChange = StatSourceFilter!.InheritFromPlayerFilter && !PlayerFilter.Equals(_lastPlayerFilter);
+        try {
+            //_plugin.Log.Debug($"total old: {_matches.Count} additions: {additions.Count} removals: {removals.Count} sfc: {statFilterChange} pfc: {playerFilterChange}");
+            if(removals.Count * 2 >= matches.Count || statFilterChange || playerFilterChange) {
+                //force full build
+                //_plugin.Log.Debug("players full rebuild");
+                Reset();
+                _matchesTotal = matches.Count;
+                ProcessMatches(matches);
+            } else {
+                _matchesTotal = removals.Count + additions.Count;
+                //_plugin.Log.Debug($"adding: {additions.Count} removing: {removals.Count}");
+                ProcessMatches(removals, true);
+                ProcessMatches(additions);
+            }
 
+            foreach(var playerStat in _playerStats) {
+                playerStat.Value.StatsAll.Job = _playerJobStatsLookup[playerStat.Key].OrderByDescending(x => x.Value.Matches).FirstOrDefault().Key;
+                CrystallineConflictStatsManager.SetScoreboardStats(playerStat.Value, _playerTeamContributions[playerStat.Key], _playerTimes[playerStat.Key]);
+            }
+
+            //this may be incorrect when removing matches
+            ActiveLinks = _activeLinks;
+            DataModel = _playerStats.Keys.ToList();
+            DataModelUntruncated = DataModel;
+            StatsModel = _playerStats;
+            ApplyQuickFilters(MinMatchFilter.MinMatches, PlayerQuickSearchFilter.SearchText);
+            GoToPage(0);
+            TriggerSort = true;
+
+            _matches = matches;
+
+            _lastStatSourceFilter = new(StatSourceFilter!);
+            _lastPlayerFilter = new(PlayerFilter);
+        } finally {
+            s1.Stop();
+            _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"Players Refresh", s1.ElapsedMilliseconds.ToString()));
+            _matchesProcessed = 0;
+        }
+        return Task.CompletedTask;
+    }
+
+    private void ProcessMatch(CrystallineConflictMatch match, bool remove = false) {
+        foreach(var team in match.Teams) {
+            foreach(var player in team.Value.Players) {
+                bool isLocalPlayer = player.Alias.Equals(match.LocalPlayer);
+                bool isTeammate = !match.IsSpectated && !isLocalPlayer && team.Key == match.LocalPlayerTeam!.TeamName;
+                bool isOpponent = !match.IsSpectated && !isLocalPlayer && !isTeammate;
+                bool playerStatsEligible = true;
+                bool nameMatch = player.Alias.FullName.Contains(PlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase);
+                if(_plugin.Configuration.EnablePlayerLinking && !nameMatch) {
+                    nameMatch = _linkedPlayerAliases.Contains(player.Alias);
+                }
+                bool sideMatch = PlayerFilter.TeamStatus == TeamStatus.Any
+                    || PlayerFilter.TeamStatus == TeamStatus.Teammate && isTeammate
+                    || PlayerFilter.TeamStatus == TeamStatus.Opponent && !isTeammate && !isLocalPlayer;
+                bool jobMatch = PlayerFilter.AnyJob || PlayerFilter.PlayerJob == player.Job;
+                if(!nameMatch || !sideMatch || !jobMatch) {
+                    if(StatSourceFilter.InheritFromPlayerFilter) {
+                        playerStatsEligible = false;
+                    }
+                }
+
+                if(playerStatsEligible) {
+                    //handle linked aliases
+                    var alias = _plugin.PlayerLinksService.GetMainAlias(player.Alias);
+                    if(alias != player.Alias) {
+                        _activeLinks.TryAdd(alias, new());
+                        _activeLinks[alias].TryAdd(player.Alias, 0);
+                        if(remove) {
+                            _activeLinks[alias][player.Alias]--;
+                        } else {
+                            _activeLinks[alias][player.Alias]++;
+                        }
+                    }
+
+                    if(!_playerStats.TryGetValue(alias, out CCPlayerJobStats? playerStat)) {
+                        playerStat = new();
+                        _playerStats.Add(alias, playerStat);
+                        _playerTeamContributions.Add(alias, new());
+                        _playerJobStatsLookup.Add(alias, new());
+                        _playerTimes.Add(alias, TimeSpan.Zero);
+                    }
+                    if(remove) {
+                        _playerTimes[alias] -= match.MatchDuration ?? TimeSpan.Zero;
+                    } else {
+                        _playerTimes[alias] += match.MatchDuration ?? TimeSpan.Zero;
+                    }
+                    CrystallineConflictStatsManager.AddPlayerJobStat(playerStat, _playerTeamContributions[alias], match, team.Value, player, remove);
+                    if(player.Job != null) {
+                        if(!_playerJobStatsLookup[alias].ContainsKey((Job)player.Job)) {
+                            _playerJobStatsLookup[alias].Add((Job)player.Job, new());
+                        }
+                        CrystallineConflictStatsManager.IncrementAggregateStats(_playerJobStatsLookup[alias][(Job)player.Job], match, remove);
+                    }
+                }
+            }
+        }
+    }
+
+    private void ProcessMatches(List<CrystallineConflictMatch> matches, bool remove = false) {
+        matches.ForEach(x => {
+            ProcessMatch(x, remove);
+            RefreshProgress = (float)_matchesProcessed++ / _matchesTotal;
+        });
     }
 
     protected override void PreTableDraw() {
@@ -103,7 +242,8 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
         if(ImGui.Checkbox($"Inherit from player filter##{GetHashCode()}", ref inheritFromPlayerFilter)) {
             _plugin!.DataQueue.QueueDataOperation(async () => {
                 StatSourceFilter.InheritFromPlayerFilter = inheritFromPlayerFilter;
-                await Window.Refresh();
+                //don't like this
+                await _plugin.WindowManager.RefreshCCWindow();
             });
         }
         ImGuiHelper.HelpMarker("Will only include stats for players who match all conditions of the player filter.");
@@ -161,9 +301,9 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
     public override void DrawListItem(PlayerAlias item) {
         ImGui.SameLine(2f * ImGuiHelpers.GlobalScale);
         ImGui.TextUnformatted($"{item.Name}");
-        if(_plugin.CCStatsEngine.ActiveLinks.ContainsKey(item)) {
+        if(ActiveLinks.ContainsKey(item)) {
             string tooltipText = "Including stats for:\n\n";
-            _plugin.CCStatsEngine.ActiveLinks[item].ForEach(x => tooltipText += x + "\n");
+            ActiveLinks[item].Where(x => x.Value > 0).ToList().ForEach(x => tooltipText += x + "\n");
             tooltipText = tooltipText.Substring(0, tooltipText.Length - 1);
             ImGuiHelper.WrappedTooltip(tooltipText);
         }
@@ -383,12 +523,12 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
         return;
     }
 
-    public override async Task RefreshDataModel() {
-        DataModelUntruncated = DataModel;
-        StatsModel = _plugin.CCStatsEngine.PlayerStats;
-        ApplyQuickFilters(MinMatchFilter.MinMatches, PlayerQuickSearchFilter.SearchText);
-        await base.RefreshDataModel();
-    }
+    //public override async Task RefreshDataModel() {
+    //    DataModelUntruncated = DataModel;
+    //    StatsModel = _plugin.CCStatsEngine.PlayerStats;
+    //    ApplyQuickFilters(MinMatchFilter.MinMatches, PlayerQuickSearchFilter.SearchText);
+    //    await base.RefreshDataModel();
+    //}
 
     private void ApplyQuickFilters(uint minMatches, string searchText) {
         List<PlayerAlias> DataModelTruncated = new();
@@ -397,7 +537,7 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
             bool minMatchPass = StatsModel[player].StatsAll.Matches >= minMatches;
             bool namePass = searchText.IsNullOrEmpty()
                 || playerNames.Any(x => x.Length > 0 && player.FullName.Contains(x.Trim(), StringComparison.OrdinalIgnoreCase))
-                || playerNames.Any(x => x.Length > 0 && _plugin.CCStatsEngine.ActiveLinks.Where(y => y.Key.Equals(player)).Any(y => y.Value.Any(z => z.FullName.Contains(x.Trim(), StringComparison.OrdinalIgnoreCase))))
+                || playerNames.Any(x => x.Length > 0 && ActiveLinks.Where(y => y.Key.Equals(player)).Any(y => y.Value.Any(z => z.Key.FullName.Contains(x.Trim(), StringComparison.OrdinalIgnoreCase))))
                 ;
             if(minMatchPass && namePass) {
                 DataModelTruncated.Add(player);
