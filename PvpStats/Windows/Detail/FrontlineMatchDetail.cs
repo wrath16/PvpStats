@@ -28,7 +28,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
     public FrontlineMatchDetail(Plugin plugin, FrontlineMatch match) : base(plugin, plugin.FLCache, match) {
         //Flags -= ImGuiWindowFlags.AlwaysAutoResize;
         SizeConstraints = new WindowSizeConstraints {
-            MinimumSize = new Vector2(860, 800),
+            MinimumSize = new Vector2(700, 800),
             MaximumSize = new Vector2(5000, 5000)
         };
 
@@ -115,6 +115,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
             if(table) {
                 ImGui.TableSetupColumn("descriptions", ImGuiTableColumnFlags.WidthFixed, 190f * ImGuiHelpers.GlobalScale);
                 var columnWidth = (ImGui.GetContentRegionMax().X / 2 - (190f * ImGuiHelpers.GlobalScale + ImGui.GetStyle().CellPadding.X * 4 + ImGui.GetStyle().WindowPadding.X / 2)) * 2 / 3;
+                columnWidth = Math.Max(columnWidth, 150f * ImGuiHelpers.GlobalScale);
                 ImGui.TableSetupColumn("team1", ImGuiTableColumnFlags.WidthFixed, columnWidth);
                 ImGui.TableSetupColumn("team2", ImGuiTableColumnFlags.WidthFixed, columnWidth);
                 ImGui.TableSetupColumn("team3", ImGuiTableColumnFlags.WidthFixed, columnWidth);
