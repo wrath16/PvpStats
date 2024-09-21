@@ -177,7 +177,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
     }
 
     private void FLPlayerPayload10Detour(IntPtr p1) {
-        Plugin.Log.Debug("Fl player payload 10 detour entered.");
+        //Plugin.Log.Debug("Fl player payload 10 detour entered.");
         try {
 #if DEBUG
             Plugin.Functions.CreateByteDump(p1, 0x400, "fl_player_payload");
