@@ -10,7 +10,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace PvpStats.Managers.Stats;
 internal abstract class StatsManager<T> where T : PvpMatch {
@@ -30,34 +29,7 @@ internal abstract class StatsManager<T> where T : PvpMatch {
         MatchCache = cache;
     }
 
-    protected abstract Task RefreshInner(List<DataFilter> matchFilters, List<DataFilter> jobStatFilters, List<DataFilter> playerStatFilters);
-
-    public virtual async Task Refresh(List<DataFilter> matchFilters, List<DataFilter> jobStatFilters, List<DataFilter> playerStatFilters) {
-        //try {
-        //    RefreshProgress = 0f;
-        //    RefreshActive = true;
-        //    MatchRefreshProgress = 0f;
-        //    MatchRefreshActive = true;
-        //    SummaryRefreshMatchesProcessed = 0;
-        //    SummaryRefreshActive = true;
-        //    RecordsRefreshMatchesProcessed = 0;
-        //    RecordsRefreshActive = true;
-        //    JobsRefreshMatchesProcessed = 0;
-        //    JobsRefreshActive = true;
-        //    PlayersRefreshMatchesProcessed = 0;
-        //    PlayersRefreshActive = true;
-        //    await RefreshInner(matchFilters, jobStatFilters, playerStatFilters);
-        //} finally {
-        //    RefreshActive = false;
-        //    MatchRefreshActive = false;
-        //    SummaryRefreshActive = false;
-        //    RecordsRefreshActive = false;
-        //    JobsRefreshActive = false;
-        //    PlayersRefreshActive = false;
-        //}
-    }
-
-    public (List<T> Matches, List<T> Additions, List<T> Removals) Refresh2(List<DataFilter> matchFilters) {
+    public (List<T> Matches, List<T> Additions, List<T> Removals) Refresh(List<DataFilter> matchFilters) {
         try {
             RefreshActive = true;
             Stopwatch matchesTimer = Stopwatch.StartNew();

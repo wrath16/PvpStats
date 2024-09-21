@@ -67,7 +67,7 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
         try {
             await RefreshLock.WaitAsync();
             //RefreshActive = true;
-            var updatedSet = Plugin.RWStatsEngine.Refresh2(MatchFilters);
+            var updatedSet = Plugin.RWStatsEngine.Refresh(MatchFilters);
             Task.WaitAll([
                 Task.Run(() => _matchList.Refresh(updatedSet.Matches).ContinueWith(x => _matchRefreshActive = false)),
                 Task.Run(() => _summary.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals).ContinueWith(x => _summaryRefreshActive = false)),

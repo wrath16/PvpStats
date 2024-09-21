@@ -7,7 +7,6 @@ using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace PvpStats.Managers.Stats;
 internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
@@ -39,63 +38,6 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
 
     public RivalWingsStatsManager(Plugin plugin) : base(plugin, plugin.RWCache) {
     }
-
-    protected override async Task RefreshInner(List<DataFilter> matchFilters, List<DataFilter> jobStatFilters, List<DataFilter> playerStatFilters) {
-        return;
-
-        //Stopwatch matchesTimer = Stopwatch.StartNew();
-        //var matches = MatchCache.Matches.Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
-        //matches = FilterMatches(matchFilters, matches);
-        //var toAdd = matches.Except(Matches).ToList();
-        //var toSubtract = Matches.Except(matches).ToList();
-        //Matches = matches;
-        //MatchRefreshActive = false;
-        //matchesTimer.Stop();
-        //Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"Matches Refresh", matchesTimer.ElapsedMilliseconds.ToString()));
-
-        //Task summaryTask = Task.CompletedTask;
-        //Stopwatch summaryTimer = Stopwatch.StartNew();
-
-        //if(toSubtract.Count * 2 >= Matches.Count) {
-        //    //force full build
-        //    Reset();
-        //    int totalMatches = matches.Count;
-        //    Plugin.Log.Debug($"Full re-build: {totalMatches}");
-        //    summaryTask = Task.Run(() => BuildSummaryStats(matches));
-        //} else {
-        //    int totalMatches = toAdd.Count + toSubtract.Count;
-        //    Plugin.Log.Debug($"Removing: {toSubtract.Count} Adding: {toAdd.Count}");
-        //    summaryTask = Task.Run(() => {
-        //        BuildSummaryStats(toSubtract, true);
-        //        BuildSummaryStats(toAdd);
-        //    });
-        //}
-        //summaryTask = summaryTask.ContinueWith(x => {
-        //    CommitSummaryStats();
-        //    summaryTimer.Stop();
-        //    Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"Summary Refresh", summaryTimer.ElapsedMilliseconds.ToString()));
-        //    SummaryRefreshActive = false;
-        //});
-
-        //Task.WaitAll([summaryTask]);
-    }
-
-    //internal (List<RivalWingsMatch> Matches, List<RivalWingsMatch> Additions, List<RivalWingsMatch> Removals) Refresh2(List<DataFilter> matchFilters) {
-    //    try {
-    //        RefreshActive = true;
-    //        Stopwatch matchesTimer = Stopwatch.StartNew();
-    //        var matches = MatchCache.Matches.Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
-    //        matches = FilterMatches(matchFilters, matches);
-    //        var toAdd = matches.Except(Matches).ToList();
-    //        var toSubtract = Matches.Except(matches).ToList();
-    //        Matches = matches;
-    //        matchesTimer.Stop();
-    //        Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"Matches Refresh", matchesTimer.ElapsedMilliseconds.ToString()));
-    //        return (matches, toAdd, toSubtract);
-    //    } finally {
-    //        RefreshActive = false;
-    //    }
-    //}
 
     internal static void IncrementAggregateStats(CCAggregateStats stats, RivalWingsMatch match, bool decrement = false) {
         if(decrement) {

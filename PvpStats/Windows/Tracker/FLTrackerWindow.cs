@@ -84,7 +84,7 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
         try {
             await RefreshLock.WaitAsync();
             //RefreshActive = true;
-            var updatedSet = Plugin.FLStatsEngine.Refresh2(MatchFilters);
+            var updatedSet = Plugin.FLStatsEngine.Refresh(MatchFilters);
             Task.WaitAll([
                 Task.Run(() => _matchList.Refresh(updatedSet.Matches).ContinueWith(x => _matchRefreshActive = false)),
                 Task.Run(() => _summary.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals).ContinueWith(x => _summaryRefreshActive = false)),

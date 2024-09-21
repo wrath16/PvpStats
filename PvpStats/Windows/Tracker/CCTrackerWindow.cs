@@ -90,7 +90,7 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
         try {
             await RefreshLock.WaitAsync();
             //RefreshActive = true;
-            var updatedSet = Plugin.CCStatsEngine.Refresh2(MatchFilters);
+            var updatedSet = Plugin.CCStatsEngine.Refresh(MatchFilters);
             await Task.WhenAll([
                 Task.Run(() => _matches.Refresh(updatedSet.Matches).ContinueWith(x => _matchRefreshActive = false)),
                 Task.Run(() => _summary.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals).ContinueWith(x => _summaryRefreshActive = false)),
