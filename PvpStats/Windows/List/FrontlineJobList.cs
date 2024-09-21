@@ -26,9 +26,13 @@ internal class FrontlineJobList : FLStatsList<Job> {
     int _matchesProcessed = 0;
     int _matchesTotal = 100;
 
-    Dictionary<Job, FLPlayerJobStats> _jobStats;
-    Dictionary<Job, List<FLScoreboardDouble>> _jobTeamContributions;
-    Dictionary<Job, TimeSpan> _jobTimes;
+    Dictionary<Job, FLPlayerJobStats> _jobStats = [];
+    Dictionary<Job, List<FLScoreboardDouble>> _jobTeamContributions = [];
+    Dictionary<Job, TimeSpan> _jobTimes = [];
+
+    Dictionary<Job, FLPlayerJobStats> _shatterJobStats = [];
+    Dictionary<Job, List<FLScoreboardDouble>> _shatterTeamContributions = [];
+    Dictionary<Job, TimeSpan> _shatterJobTimes = [];
 
     FLStatSourceFilter _lastJobStatSourceFilter = new();
     OtherPlayerFilter _lastPlayerFilter = new();
@@ -48,6 +52,8 @@ internal class FrontlineJobList : FLStatsList<Job> {
         new NumericColumnParams{    Name = "Total Deaths",                                                              Id = (uint)"ScoreboardTotal.Deaths".GetHashCode(),                  Width = 50f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Total Assists",                                                             Id = (uint)"ScoreboardTotal.Assists".GetHashCode(),                 Width = 50f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Total Damage Dealt",                Header = "Total Damage\nDealt",         Id = (uint)"ScoreboardTotal.DamageDealt".GetHashCode(),             Width = 100f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Total Damage to PCs",                                                       Id = (uint)"ScoreboardTotal.DamageToPCs".GetHashCode(),             Width = 100f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Total Damage to Other",                                                     Id = (uint)"ScoreboardTotal.DamageToOther".GetHashCode(),           Width = 100f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Total Damage Taken",                Header = "Total Damage\nTaken",         Id = (uint)"ScoreboardTotal.DamageTaken".GetHashCode(),             Width = 100f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Total HP Restored",                                                         Id = (uint)"ScoreboardTotal.HPRestored".GetHashCode(),              Width = 100f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Total Kills/Assists",               Header = "Total Kills\n and Assists",   Id = (uint)"ScoreboardTotal.KillsAndAssists".GetHashCode(),         Width = 75f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
@@ -55,6 +61,8 @@ internal class FrontlineJobList : FLStatsList<Job> {
         new NumericColumnParams{    Name = "Deaths Per Match",                                                          Id = (uint)"ScoreboardPerMatch.Deaths".GetHashCode(),               Width = 73f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Assists Per Match",                                                         Id = (uint)"ScoreboardPerMatch.Assists".GetHashCode(),              Width = 73f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Damage Dealt Per Match",                                                    Id = (uint)"ScoreboardPerMatch.DamageDealt".GetHashCode(),          Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Damage to PCs Per Match",                                                   Id = (uint)"ScoreboardPerMatch.DamageToPCs".GetHashCode(),          Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Damage to Other Per Match",                                                 Id = (uint)"ScoreboardPerMatch.DamageToOther".GetHashCode(),        Width = 105f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Damage Taken Per Match",                                                    Id = (uint)"ScoreboardPerMatch.DamageTaken".GetHashCode(),          Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "HP Restored Per Match",                                                     Id = (uint)"ScoreboardPerMatch.HPRestored".GetHashCode(),           Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Kills/Assists Per Match",                                                   Id = (uint)"ScoreboardPerMatch.KillsAndAssists".GetHashCode(),      Width = 85f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
@@ -62,6 +70,8 @@ internal class FrontlineJobList : FLStatsList<Job> {
         new NumericColumnParams{    Name = "Deaths Per Min",                                                            Id = (uint)"ScoreboardPerMin.Deaths".GetHashCode(),                 Width = 60f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Assists Per Min",                                                           Id = (uint)"ScoreboardPerMin.Assists".GetHashCode(),                Width = 60f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Damage Dealt Per Min",                                                      Id = (uint)"ScoreboardPerMin.DamageDealt".GetHashCode(),            Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Damage to PCs Per Min",                                                     Id = (uint)"ScoreboardPerMin.DamageToPCs".GetHashCode(),            Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Damage to Other Per Min",                                                   Id = (uint)"ScoreboardPerMin.DamageToOther".GetHashCode(),          Width = 105f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Damage Taken Per Min",                                                      Id = (uint)"ScoreboardPerMin.DamageTaken".GetHashCode(),            Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "HP Restored Per Min",                                                       Id = (uint)"ScoreboardPerMin.HPRestored".GetHashCode(),             Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Kills/Assists Per Min",                                                     Id = (uint)"ScoreboardPerMin.KillsAndAssists".GetHashCode(),        Width = 85f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
@@ -69,6 +79,8 @@ internal class FrontlineJobList : FLStatsList<Job> {
         new NumericColumnParams{    Name = "Median Death Contrib.",                                                     Id = (uint)"ScoreboardContrib.Deaths".GetHashCode(),                Width = 110f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Median Assist Contrib.",                                                    Id = (uint)"ScoreboardContrib.Assists".GetHashCode(),               Width = 110f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Median Damage Dealt Contrib.",                                              Id = (uint)"ScoreboardContrib.DamageDealt".GetHashCode(),           Width = 110f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Median Damage to PCs Contrib.",                                             Id = (uint)"ScoreboardContrib.DamageToPCs".GetHashCode(),           Width = 120f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Median Damage to Other Contrib.",                                           Id = (uint)"ScoreboardContrib.DamageToOther".GetHashCode(),         Width = 120f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },    
         new NumericColumnParams{    Name = "Median Damage Taken Contrib.",                                              Id = (uint)"ScoreboardContrib.DamageTaken".GetHashCode(),           Width = 110f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Median HP Restored Contrib.",                                               Id = (uint)"ScoreboardContrib.HPRestored".GetHashCode(),            Width = 110f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "Median Kill/Assist Contrib.",   Header = "Median Kill and\nAssist Contrib", Id = (uint)"ScoreboardContrib.KillsAndAssists".GetHashCode(),       Width = 110f + Offset,                          Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
@@ -91,11 +103,19 @@ internal class FrontlineJobList : FLStatsList<Job> {
         _jobTeamContributions = [];
         _jobTimes = [];
 
+        _shatterJobStats = [];
+        _shatterTeamContributions = [];
+        _shatterJobTimes = [];
+
         var allJobs = Enum.GetValues(typeof(Job)).Cast<Job>();
         foreach(var job in allJobs) {
             _jobStats.Add(job, new());
-            _jobTimes.Add(job, TimeSpan.Zero);
             _jobTeamContributions.Add(job, new());
+            _jobTimes.Add(job, TimeSpan.Zero);
+
+            _shatterJobStats.Add(job, new());
+            _shatterTeamContributions.Add(job, new());
+            _shatterJobTimes.Add(job, TimeSpan.Zero);
         }
     }
 
@@ -119,6 +139,11 @@ internal class FrontlineJobList : FLStatsList<Job> {
             }
             foreach(var jobStat in _jobStats) {
                 FrontlineStatsManager.SetScoreboardStats(jobStat.Value, _jobTeamContributions[jobStat.Key], _jobTimes[jobStat.Key]);
+                FrontlineStatsManager.SetScoreboardStats(_shatterJobStats[jobStat.Key], _shatterTeamContributions[jobStat.Key], _shatterJobTimes[jobStat.Key]);
+                jobStat.Value.ScoreboardTotal.DamageToOther = _shatterJobStats[jobStat.Key].ScoreboardTotal.DamageToOther;
+                jobStat.Value.ScoreboardPerMatch.DamageToOther = _shatterJobStats[jobStat.Key].ScoreboardPerMatch.DamageToOther;
+                jobStat.Value.ScoreboardPerMin.DamageToOther = _shatterJobStats[jobStat.Key].ScoreboardPerMin.DamageToOther;
+                jobStat.Value.ScoreboardContrib.DamageToOther = _shatterJobStats[jobStat.Key].ScoreboardContrib.DamageToOther;
             }
             DataModel = _jobStats.Keys.ToList();
             StatsModel = _jobStats;
@@ -179,6 +204,17 @@ internal class FrontlineJobList : FLStatsList<Job> {
                         _jobTimes[job] += match.MatchDuration ?? TimeSpan.Zero;
                     }
                     FrontlineStatsManager.AddPlayerJobStat(_jobStats[job], _jobTeamContributions[job], match, player, teamScoreboard, remove);
+
+                    //shatter only
+                    if(match.Arena == FrontlineMap.FieldsOfGlory) {
+                        if(remove) {
+                            _shatterJobTimes[job] -= match.MatchDuration ?? TimeSpan.Zero;
+                        } else {
+                            _shatterJobTimes[job] += match.MatchDuration ?? TimeSpan.Zero;
+                        }
+                        FrontlineStatsManager.AddPlayerJobStat(_shatterJobStats[job], _shatterTeamContributions[job], match, player, teamScoreboard, remove);
+                    }
+
                 }
             }
         }
@@ -266,6 +302,12 @@ internal class FrontlineJobList : FLStatsList<Job> {
             ImGuiHelper.DrawNumericCell(StatsModel[item].ScoreboardTotal.DamageDealt.ToString("N0"), Offset);
         }
         if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(StatsModel[item].ScoreboardTotal.DamageToPCs.ToString("N0"), Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell(StatsModel[item].ScoreboardTotal.DamageToOther.ToString("N0"), Offset);
+        }
+        if(ImGui.TableNextColumn()) {
             ImGuiHelper.DrawNumericCell(StatsModel[item].ScoreboardTotal.DamageTaken.ToString("N0"), Offset);
         }
         if(ImGui.TableNextColumn()) {
@@ -289,6 +331,12 @@ internal class FrontlineJobList : FLStatsList<Job> {
             ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMatch.DamageDealt, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.DamageDealtPerMatchRange[0], FrontlineStatsManager.DamageDealtPerMatchRange[1], _plugin.Configuration.ColorScaleStats, "#", Offset);
         }
         if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMatch.DamageToPCs, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.DamageDealtToPCsPerMatchRange[0], FrontlineStatsManager.DamageDealtToPCsPerMatchRange[1], _plugin.Configuration.ColorScaleStats, "#", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMatch.DamageToOther, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.DamageToOtherPerMatchRange[0], FrontlineStatsManager.DamageToOtherPerMatchRange[1], _plugin.Configuration.ColorScaleStats, "#", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
             ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMatch.DamageTaken, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.DamageTakenPerMatchRange[0], FrontlineStatsManager.DamageTakenPerMatchRange[1], _plugin.Configuration.ColorScaleStats, "#", Offset);
         }
         if(ImGui.TableNextColumn()) {
@@ -300,25 +348,31 @@ internal class FrontlineJobList : FLStatsList<Job> {
 
         //per min
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.Kills, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.KillsPerMatchRange[0] / FrontlineStatsManager.AverageMatchLength, FrontlineStatsManager.KillsPerMatchRange[1] / FrontlineStatsManager.AverageMatchLength, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.Kills, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.KillsPerMinRange[0], FrontlineStatsManager.KillsPerMinRange[1], _plugin.Configuration.ColorScaleStats, "0.00", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.Deaths, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, FrontlineStatsManager.DeathsPerMatchRange[0] / FrontlineStatsManager.AverageMatchLength, FrontlineStatsManager.DeathsPerMatchRange[1] / FrontlineStatsManager.AverageMatchLength, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.Deaths, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, FrontlineStatsManager.DeathsPerMinRange[0], FrontlineStatsManager.DeathsPerMinRange[1], _plugin.Configuration.ColorScaleStats, "0.00", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.Assists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.AssistsPerMatchRange[0] / FrontlineStatsManager.AverageMatchLength, FrontlineStatsManager.AssistsPerMatchRange[1] / FrontlineStatsManager.AverageMatchLength, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.Assists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.AssistsPerMinRange[0], FrontlineStatsManager.AssistsPerMinRange[1], _plugin.Configuration.ColorScaleStats, "0.00", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.DamageDealt, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.DamageDealtPerMatchRange[0] / FrontlineStatsManager.AverageMatchLength, FrontlineStatsManager.DamageDealtPerMatchRange[1] / FrontlineStatsManager.AverageMatchLength, _plugin.Configuration.ColorScaleStats, "#", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.DamageDealt, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.DamageDealtPerMinRange[0], FrontlineStatsManager.DamageDealtPerMinRange[1], _plugin.Configuration.ColorScaleStats, "#", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.DamageTaken, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.DamageTakenPerMatchRange[0] / FrontlineStatsManager.AverageMatchLength, FrontlineStatsManager.DamageTakenPerMatchRange[1] / FrontlineStatsManager.AverageMatchLength, _plugin.Configuration.ColorScaleStats, "#", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.DamageToPCs, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.DamageDealtToPCsPerMinRange[0], FrontlineStatsManager.DamageDealtToPCsPerMinRange[1], _plugin.Configuration.ColorScaleStats, "#", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.HPRestoredPerMatchRange[0] / FrontlineStatsManager.AverageMatchLength, FrontlineStatsManager.HPRestoredPerMatchRange[1] / FrontlineStatsManager.AverageMatchLength, _plugin.Configuration.ColorScaleStats, "#", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.DamageToOther, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.DamageToOtherPerMinRange[0], FrontlineStatsManager.DamageToOtherPerMinRange[1], _plugin.Configuration.ColorScaleStats, "#", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.KillsAndAssists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, (FrontlineStatsManager.KillsPerMatchRange[0] + FrontlineStatsManager.AssistsPerMatchRange[0]) / FrontlineStatsManager.AverageMatchLength, (FrontlineStatsManager.KillsPerMatchRange[1] + FrontlineStatsManager.AssistsPerMatchRange[1]) / FrontlineStatsManager.AverageMatchLength, _plugin.Configuration.ColorScaleStats, "0.00", Offset);
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.DamageTaken, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.DamageTakenPerMinRange[0], FrontlineStatsManager.DamageTakenPerMinRange[1], _plugin.Configuration.ColorScaleStats, "#", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.HPRestoredPerMinRange[0], FrontlineStatsManager.HPRestoredPerMinRange[1], _plugin.Configuration.ColorScaleStats, "#", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.KillsAndAssists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.KillsPerMinRange[0] + FrontlineStatsManager.AssistsPerMinRange[0], FrontlineStatsManager.KillsPerMinRange[1] + FrontlineStatsManager.AssistsPerMinRange[1], _plugin.Configuration.ColorScaleStats, "0.00", Offset);
         }
 
         //team contrib
@@ -333,6 +387,12 @@ internal class FrontlineJobList : FLStatsList<Job> {
         }
         if(ImGui.TableNextColumn()) {
             ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardContrib.DamageDealt, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.ContribRange[0], FrontlineStatsManager.ContribRange[1], _plugin.Configuration.ColorScaleStats, "P1", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardContrib.DamageToPCs, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.ContribRange[0], FrontlineStatsManager.ContribRange[1], _plugin.Configuration.ColorScaleStats, "P1", Offset);
+        }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardContrib.DamageToOther, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.ContribRange[0], FrontlineStatsManager.ContribRange[1], _plugin.Configuration.ColorScaleStats, "P1", Offset);
         }
         if(ImGui.TableNextColumn()) {
             ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardContrib.DamageTaken, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, FrontlineStatsManager.ContribRange[0], FrontlineStatsManager.ContribRange[1], _plugin.Configuration.ColorScaleStats, "P1", Offset);
