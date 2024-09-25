@@ -30,13 +30,13 @@ internal class FrontlineSummary {
     int _matchesProcessed = 0;
     int _matchesTotal = 100;
 
-    FLAggregateStats _overallResults;
-    Dictionary<FrontlineMap, FLAggregateStats> _mapResults;
-    Dictionary<Job, FLAggregateStats> _localPlayerJobResults;
-    FLPlayerJobStats _localPlayerStats;
-    List<FLScoreboardDouble> _localPlayerTeamContributions;
-    FLPlayerJobStats _shatterLocalPlayerStats;
-    List<FLScoreboardDouble> _shatterLocalPlayerTeamContributions;
+    FLAggregateStats _overallResults = new();
+    Dictionary<FrontlineMap, FLAggregateStats> _mapResults = [];
+    Dictionary<Job, FLAggregateStats> _localPlayerJobResults = [];
+    FLPlayerJobStats _localPlayerStats = new();
+    List<FLScoreboardDouble> _localPlayerTeamContributions = [];
+    FLPlayerJobStats _shatterLocalPlayerStats = new();
+    List<FLScoreboardDouble> _shatterLocalPlayerTeamContributions = [];
 
     TimeSpan _totalMatchTime;
     TimeSpan _totalShatterTime;

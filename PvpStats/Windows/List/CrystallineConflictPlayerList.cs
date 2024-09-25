@@ -24,7 +24,6 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
     internal MinMatchFilter MinMatchFilter { get; private set; }
     internal PlayerQuickSearchFilter PlayerQuickSearchFilter { get; private set; }
 
-    internal Dictionary<PlayerAlias, CCPlayerJobStats> PlayerStats { get; private set; } = new();
     internal Dictionary<PlayerAlias, Dictionary<PlayerAlias, int>> ActiveLinks { get; private set; } = new();
 
     //internal state
