@@ -10,6 +10,8 @@ public class CCPlayerJobStats : PlayerJobStats {
     public CCScoreboardDouble ScoreboardPerMin { get; set; } = new();
     public CCScoreboardDouble ScoreboardContrib { get; set; } = new();
 
+    public override int TotalMatches => StatsAll.Matches;
+
     public static CCPlayerJobStats operator +(CCPlayerJobStats a, CCPlayerJobStats b) {
         return new CCPlayerJobStats() {
             StatsAll = a.StatsAll + b.StatsAll,

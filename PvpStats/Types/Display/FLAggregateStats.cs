@@ -1,6 +1,5 @@
 ﻿namespace PvpStats.Types.Display;
-public class FLAggregateStats {
-    public int Matches { get; set; }
+public class FLAggregateStats : AggregateStats {
     public int FirstPlaces { get; set; }
     public int SecondPlaces { get; set; }
     public int ThirdPlaces { get; set; }

@@ -12,6 +12,8 @@ internal class RWPlayerJobStats : PlayerJobStats {
     public RWScoreboardDouble ScoreboardPerMin { get; set; } = new();
     public RWScoreboardDouble ScoreboardContrib { get; set; } = new();
 
+    public override int TotalMatches => StatsAll.Matches;
+
     public static RWPlayerJobStats operator +(RWPlayerJobStats a, RWPlayerJobStats b) {
         return new RWPlayerJobStats() {
             //StatsAll = a.StatsAll + b.StatsAll,

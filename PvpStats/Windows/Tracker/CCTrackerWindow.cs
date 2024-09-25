@@ -35,7 +35,7 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
         //Flags = Flags | ImGuiWindowFlags.NoScrollbar;
 
         var playerFilter = new OtherPlayerFilter(plugin, Refresh);
-        var jobStatSourceFilter = new StatSourceFilter(plugin, Refresh);
+        var jobStatSourceFilter = new StatSourceFilter(plugin, Refresh, plugin.Configuration.CCWindowConfig.JobStatFilters.StatSourceFilter);
         var playerStatSourceFilter = new StatSourceFilter(plugin, Refresh, plugin.Configuration.CCWindowConfig.PlayerStatFilters.StatSourceFilter);
         var playerMinMatchFilter = new MinMatchFilter(plugin, Refresh, plugin.Configuration.CCWindowConfig.PlayerStatFilters.MinMatchFilter);
         var playerQuickSearchFilter = new PlayerQuickSearchFilter(plugin, Refresh);

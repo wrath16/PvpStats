@@ -106,7 +106,6 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
     };
 
     public CrystallineConflictPlayerList(Plugin plugin, StatSourceFilter statSourceFilter, MinMatchFilter minMatchFilter, PlayerQuickSearchFilter quickSearchFilter, OtherPlayerFilter playerFilter) : base(plugin) {
-
         //note that draw and refresh are not utilized!
         StatSourceFilter = statSourceFilter;
         MinMatchFilter = minMatchFilter;

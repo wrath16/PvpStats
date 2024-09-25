@@ -11,6 +11,8 @@ internal class FLPlayerJobStats : PlayerJobStats {
 
     public double BattleHighPerLife => ScoreboardPerMin.Deaths != 0 ? ScoreboardPerMin.BattleHigh / ScoreboardPerMin.Deaths : ScoreboardPerMatch.BattleHigh;
 
+    public override int TotalMatches => StatsAll.Matches;
+
     public double GetBattleHighPerMatch() {
         var halves = (int)ScoreboardPerMatch.Deaths;
         var remainder = ScoreboardPerMatch.Deaths - halves;
