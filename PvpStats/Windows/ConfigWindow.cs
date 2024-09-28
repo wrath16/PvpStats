@@ -24,6 +24,7 @@ internal class ConfigWindow : Window {
     protected SemaphoreSlim RefreshLock { get; init; } = new SemaphoreSlim(1);
 
     private float _saveOpacity = 0f;
+    private bool _ipcUpdateInProgress = false;
 
     public ConfigWindow(Plugin plugin) : base("PvP Tracker Settings") {
         SizeConstraints = new WindowSizeConstraints {
@@ -378,7 +379,7 @@ internal class ConfigWindow : Window {
             _plugin.DataQueue.QueueDataOperation(async () => {
                 _plugin.Configuration.EnablePlayerLinking = playerLinking;
                 _plugin.Configuration.Save();
-                await _plugin.WindowManager.RefreshAll();
+                await _plugin.WindowManager.RefreshAll(true);
             });
         }
         ImGuiHelper.HelpMarker("Enable combining of player stats with different aliases linked with the same unique character or player.");
@@ -387,7 +388,7 @@ internal class ConfigWindow : Window {
             _plugin.DataQueue.QueueDataOperation(async () => {
                 _plugin.Configuration.EnableAutoPlayerLinking = autoLinking;
                 _plugin.Configuration.Save();
-                await _plugin.WindowManager.RefreshAll();
+                await _plugin.WindowManager.RefreshAll(true);
             });
         }
         ImGuiHelper.HelpMarker("Use name change data from PlayerTrack to create player links.\n\n" +
@@ -397,7 +398,7 @@ internal class ConfigWindow : Window {
             _plugin.DataQueue.QueueDataOperation(async () => {
                 _plugin.Configuration.EnableManualPlayerLinking = manualLinking;
                 _plugin.Configuration.Save();
-                await _plugin.WindowManager.RefreshAll();
+                await _plugin.WindowManager.RefreshAll(true);
             });
         }
         ImGuiHelper.HelpMarker("Use the manual tab to create player links by hand or to track" +
@@ -405,11 +406,20 @@ internal class ConfigWindow : Window {
         using(var tabBar = ImRaii.TabBar("LinksTabBar")) {
             using(var tab = ImRaii.TabItem("Auto")) {
                 if(tab) {
+                    using var disabledButton = ImRaii.Disabled();
+                    if(!_ipcUpdateInProgress) {
+                        disabledButton.Dispose();
+                    }
                     if(ImGui.Button("Update Now")) {
-                        _plugin.DataQueue.QueueDataOperation(async () => {
+                        Task.Run(async () => {
+                            _ipcUpdateInProgress = true;
                             await _plugin.PlayerLinksService.BuildAutoLinksCache();
-                            await _plugin.WindowManager.RefreshAll();
+                            _ = _plugin.DataQueue.QueueDataOperation(() => _plugin.WindowManager.RefreshAll(true));
+                            _ipcUpdateInProgress = false;
                         });
+                    }
+                    if(_ipcUpdateInProgress) {
+                        disabledButton.Dispose();
                     }
                     DrawAutoPlayerLinkSettings();
                 }
