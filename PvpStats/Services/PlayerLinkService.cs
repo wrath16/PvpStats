@@ -17,7 +17,6 @@ internal class PlayerLinkService {
     internal List<PlayerAliasLink> ManualPlayerLinksCache { get; private set; }
     internal bool RefreshInProgress { get; private set; }
 
-
     internal PlayerLinkService(Plugin plugin) {
         _plugin = plugin;
         AutoPlayerLinksCache = new();
