@@ -1,6 +1,5 @@
 ﻿using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
-using Dalamud.Utility;
 using ImGuiNET;
 using PvpStats.Helpers;
 using PvpStats.Managers.Stats;
@@ -15,16 +14,9 @@ using System.Linq;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
-internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
+internal class CrystallineConflictPlayerList : PlayerStatsList<CCPlayerJobStats, CrystallineConflictMatch> {
 
     protected override string TableId => "###CCPlayerStatsTable";
-
-    internal OtherPlayerFilter PlayerFilter { get; private set; }
-    internal StatSourceFilter StatSourceFilter { get; private set; }
-    internal MinMatchFilter MinMatchFilter { get; private set; }
-    internal PlayerQuickSearchFilter PlayerQuickSearchFilter { get; private set; }
-
-    internal Dictionary<PlayerAlias, Dictionary<PlayerAlias, int>> ActiveLinks { get; private set; } = new();
 
     //internal state
     List<CrystallineConflictMatch> _matches = new();
@@ -105,12 +97,7 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
         new NumericColumnParams{    Name = "KDA Ratio",                                                                 Id = (uint)"ScoreboardTotal.KDA".GetHashCode(),                     Width = 50f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
     };
 
-    public CrystallineConflictPlayerList(Plugin plugin, StatSourceFilter statSourceFilter, MinMatchFilter minMatchFilter, PlayerQuickSearchFilter quickSearchFilter, OtherPlayerFilter playerFilter) : base(plugin) {
-        //note that draw and refresh are not utilized!
-        StatSourceFilter = statSourceFilter;
-        MinMatchFilter = minMatchFilter;
-        PlayerQuickSearchFilter = quickSearchFilter;
-        PlayerFilter = playerFilter;
+    public CrystallineConflictPlayerList(Plugin plugin, PlayerStatSourceFilter statSourceFilter, MinMatchFilter minMatchFilter, PlayerQuickSearchFilter quickSearchFilter, OtherPlayerFilter playerFilter) : base(plugin, statSourceFilter, minMatchFilter, quickSearchFilter, playerFilter) {
         Reset();
     }
 
@@ -233,67 +220,6 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
             ProcessMatch(x, remove);
             RefreshProgress = (float)_matchesProcessed++ / _matchesTotal;
         });
-    }
-
-    protected override void PreTableDraw() {
-        bool inheritFromPlayerFilter = StatSourceFilter.InheritFromPlayerFilter;
-        if(ImGui.Checkbox($"Inherit from player filter##{GetHashCode()}", ref inheritFromPlayerFilter)) {
-            _plugin!.DataQueue.QueueDataOperation(async () => {
-                StatSourceFilter.InheritFromPlayerFilter = inheritFromPlayerFilter;
-                //don't like this
-                await _plugin.WindowManager.RefreshCCWindow();
-            });
-        }
-        ImGuiHelper.HelpMarker("Will only include stats for players who match all conditions of the player filter.");
-
-        int minMatches = (int)MinMatchFilter.MinMatches;
-        ImGuiHelper.SetDynamicWidth(150f, 250f, 3f);
-        //these should really be interlocked with window refresh
-        if(ImGui.SliderInt("Min. matches", ref minMatches, 1, 100)) {
-            MinMatchFilter.MinMatches = (uint)minMatches;
-            ApplyQuickFilters(MinMatchFilter.MinMatches, PlayerQuickSearchFilter.SearchText);
-            //_plugin.DataQueue.QueueDataOperation(async() => {
-            //    try {
-            //        await Interlock.WaitAsync();
-            //        MinMatches = (uint)minMatches;
-            //        _plugin.Configuration.MatchWindowFilters.MinMatches = MinMatches;
-            //        ApplyQuickFilters(MinMatches, PlayerQuickSearch);
-            //    } finally {
-            //        Interlock.Release();
-            //    }
-            //});
-        }
-        ImGui.SameLine();
-        string quickSearch = PlayerQuickSearchFilter.SearchText;
-        ImGuiHelper.SetDynamicWidth(150f, 250f, 3f);
-        if(ImGui.InputTextWithHint("###playerQuickSearch", "Search...", ref quickSearch, 100)) {
-            PlayerQuickSearchFilter.SearchText = quickSearch;
-            ApplyQuickFilters(MinMatchFilter.MinMatches, PlayerQuickSearchFilter.SearchText);
-        }
-        ImGuiHelper.HelpMarker("Comma separate multiple players.");
-
-        ImGui.AlignTextToFramePadding();
-        ImGuiHelper.HelpMarker("Right-click table header for column options.", false, true);
-        ImGui.SameLine();
-        //ImGuiHelper.CSVButton(ListCSV);
-        CSVButton();
-
-        ImGui.SameLine();
-        ImGui.TextUnformatted($"Total players:   {DataModel.Count}");
-    }
-
-    protected override void PostColumnSetup() {
-        ImGui.TableSetupScrollFreeze(1, 1);
-        //column sorting
-        ImGuiTableSortSpecsPtr sortSpecs = ImGui.TableGetSortSpecs();
-        if(sortSpecs.SpecsDirty || TriggerSort) {
-            TriggerSort = false;
-            sortSpecs.SpecsDirty = false;
-            _plugin.DataQueue.QueueDataOperation(() => {
-                SortByColumn(sortSpecs.Specs.ColumnUserID, sortSpecs.Specs.SortDirection);
-                GoToPage(0);
-            });
-        }
     }
 
     public override void DrawListItem(PlayerAlias item) {
@@ -512,36 +438,10 @@ internal class CrystallineConflictPlayerList : CCStatsList<PlayerAlias> {
         }
     }
 
-    //we don't need this
-    public override void OpenFullEditDetail(PlayerAlias item) {
-        return;
-    }
-
-    public override void OpenItemDetail(PlayerAlias item) {
-        return;
-    }
-
     //public override async Task RefreshDataModel() {
     //    DataModelUntruncated = DataModel;
     //    StatsModel = _plugin.CCStatsEngine.PlayerStats;
     //    ApplyQuickFilters(MinMatchFilter.MinMatches, PlayerQuickSearchFilter.SearchText);
     //    await base.RefreshDataModel();
     //}
-
-    private void ApplyQuickFilters(uint minMatches, string searchText) {
-        List<PlayerAlias> DataModelTruncated = new();
-        var playerNames = searchText.Trim().Split(",").ToList();
-        foreach(var player in DataModelUntruncated) {
-            bool minMatchPass = StatsModel[player].StatsAll.Matches >= minMatches;
-            bool namePass = searchText.IsNullOrEmpty()
-                || playerNames.Any(x => x.Length > 0 && player.FullName.Contains(x.Trim(), StringComparison.OrdinalIgnoreCase))
-                || playerNames.Any(x => x.Length > 0 && ActiveLinks.Where(y => y.Key.Equals(player)).Any(y => y.Value.Any(z => z.Key.FullName.Contains(x.Trim(), StringComparison.OrdinalIgnoreCase))))
-                ;
-            if(minMatchPass && namePass) {
-                DataModelTruncated.Add(player);
-            }
-        }
-        DataModel = DataModelTruncated;
-        GoToPage(0);
-    }
 }

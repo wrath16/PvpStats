@@ -92,7 +92,6 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
     };
 
     public FrontlinePlayerList(Plugin plugin, PlayerStatSourceFilter statSourceFilter, MinMatchFilter minMatchFilter, PlayerQuickSearchFilter quickSearchFilter, OtherPlayerFilter playerFilter) : base(plugin, statSourceFilter, minMatchFilter, quickSearchFilter, playerFilter) {
-        //note that draw and refresh are not utilized!
         Reset();
     }
 
