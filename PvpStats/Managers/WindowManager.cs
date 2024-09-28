@@ -222,13 +222,13 @@ internal class WindowManager : IDisposable {
         opened = ImGui.IsPopupOpen($"{match.Id}--TagsPopup");
     }
 
-    public async Task RefreshAll() {
+    public async Task RefreshAll(bool fullRefresh = false) {
         _plugin.Log.Debug("refreshing windows...");
         Task.WaitAll(
             Task.Run(() => ConfigWindow.Refresh()),
-            Task.Run(RefreshCCWindow),
-            Task.Run(RefreshFLWindow),
-            Task.Run(RefreshRWWindow));
+            Task.Run(() => RefreshCCWindow(fullRefresh)),
+            Task.Run(() => RefreshFLWindow(fullRefresh)),
+            Task.Run(() => RefreshRWWindow(fullRefresh)));
         await Task.CompletedTask;
     }
 
@@ -236,16 +236,16 @@ internal class WindowManager : IDisposable {
         await ConfigWindow.Refresh();
     }
 
-    public async Task RefreshCCWindow() {
-        await CCTrackerWindow.Refresh();
+    public async Task RefreshCCWindow(bool fullRefresh = false) {
+        await CCTrackerWindow.Refresh(fullRefresh);
     }
 
-    public async Task RefreshFLWindow() {
-        await FLTrackerWindow.Refresh();
+    public async Task RefreshFLWindow(bool fullRefresh = false) {
+        await FLTrackerWindow.Refresh(fullRefresh);
     }
 
-    public async Task RefreshRWWindow() {
-        await RWTrackerWindow.Refresh();
+    public async Task RefreshRWWindow(bool fullRefresh = false) {
+        await RWTrackerWindow.Refresh(fullRefresh);
     }
 
     public nint GetTextureHandle(uint iconId) {

@@ -458,9 +458,15 @@ internal class ConfigWindow : Window {
         if(ImGui.Button("Save")) {
             _plugin.DataQueue.QueueDataOperation(async () => {
                 //_plugin.Storage.SetManualLinks(ManualLinks, false);
+
+                //add current manual link
+                if(_newManualLink.CurrentAlias != null) {
+                    ManualLinks.Add(_newManualLink);
+                }
+
                 await _plugin.PlayerLinksService.SaveManualLinksCache(ManualLinks);
                 if(_plugin.Configuration.EnablePlayerLinking && _plugin.Configuration.EnableManualPlayerLinking) {
-                    await _plugin.WindowManager.RefreshAll();
+                    await _plugin.WindowManager.RefreshAll(true);
                 }
             }).ContinueWith((t) => {
                 _saveOpacity = 1f;

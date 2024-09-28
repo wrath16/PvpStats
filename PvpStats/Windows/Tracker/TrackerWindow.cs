@@ -48,7 +48,7 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
         Flags |= ImGuiWindowFlags.NoScrollbar;
     }
 
-    public abstract Task Refresh();
+    public abstract Task Refresh(bool fullRefresh = false);
     public abstract void DrawInternal();
 
     protected void SaveFilters() {

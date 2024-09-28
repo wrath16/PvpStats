@@ -28,21 +28,23 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
 
-        var playerFilter = new OtherPlayerFilter(plugin, Refresh);
-        var jobStatSourceFilter = new FLStatSourceFilter(plugin, Refresh);
-        var playerStatSourceFilter = new PlayerStatSourceFilter(plugin, Refresh, plugin.Configuration.FLWindowConfig.PlayerStatFilters.StatSourceFilter);
-        var playerMinMatchFilter = new MinMatchFilter(plugin, Refresh, plugin.Configuration.FLWindowConfig.PlayerStatFilters.MinMatchFilter);
-        var playerQuickSearchFilter = new PlayerQuickSearchFilter(plugin, Refresh);
+        var refreshAction = () => Refresh();
 
-        MatchFilters.Add(new FrontlineArenaFilter(plugin, Refresh));
-        MatchFilters.Add(new TimeFilter(plugin, Refresh, plugin.Configuration.FLWindowConfig.MatchFilters.TimeFilter));
-        MatchFilters.Add(new LocalPlayerFilter(plugin, Refresh, plugin.Configuration.FLWindowConfig.MatchFilters.LocalPlayerFilter));
-        MatchFilters.Add(new LocalPlayerJobFilter(plugin, Refresh));
+        var playerFilter = new OtherPlayerFilter(plugin, refreshAction);
+        var jobStatSourceFilter = new FLStatSourceFilter(plugin, refreshAction);
+        var playerStatSourceFilter = new PlayerStatSourceFilter(plugin, refreshAction, plugin.Configuration.FLWindowConfig.PlayerStatFilters.StatSourceFilter);
+        var playerMinMatchFilter = new MinMatchFilter(plugin, refreshAction, plugin.Configuration.FLWindowConfig.PlayerStatFilters.MinMatchFilter);
+        var playerQuickSearchFilter = new PlayerQuickSearchFilter(plugin, refreshAction);
+
+        MatchFilters.Add(new FrontlineArenaFilter(plugin, refreshAction));
+        MatchFilters.Add(new TimeFilter(plugin, refreshAction, plugin.Configuration.FLWindowConfig.MatchFilters.TimeFilter));
+        MatchFilters.Add(new LocalPlayerFilter(plugin, refreshAction, plugin.Configuration.FLWindowConfig.MatchFilters.LocalPlayerFilter));
+        MatchFilters.Add(new LocalPlayerJobFilter(plugin, refreshAction));
         MatchFilters.Add(playerFilter);
-        MatchFilters.Add(new FLResultFilter(plugin, Refresh));
-        MatchFilters.Add(new DurationFilter(plugin, Refresh));
-        MatchFilters.Add(new BookmarkFilter(plugin, Refresh));
-        MatchFilters.Add(new TagFilter(plugin, Refresh));
+        MatchFilters.Add(new FLResultFilter(plugin, refreshAction));
+        MatchFilters.Add(new DurationFilter(plugin, refreshAction));
+        MatchFilters.Add(new BookmarkFilter(plugin, refreshAction));
+        MatchFilters.Add(new TagFilter(plugin, refreshAction));
 
         JobStatFilters.Add(jobStatSourceFilter);
 
@@ -79,7 +81,7 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
         }
     }
 
-    public override async Task Refresh() {
+    public override async Task Refresh(bool fullRefresh = false) {
         Stopwatch s0 = new();
         s0.Start();
         _summary.RefreshProgress = 0f;
@@ -93,6 +95,12 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
             await RefreshLock.WaitAsync();
             //RefreshActive = true;
             var updatedSet = Plugin.FLStatsEngine.Refresh(MatchFilters);
+
+            if(fullRefresh) {
+                updatedSet.Removals = updatedSet.Matches;
+                updatedSet.Additions = updatedSet.Matches;
+            }
+
             Task.WaitAll([
                 Task.Run(() => _matchList.Refresh(updatedSet.Matches).ContinueWith(x => _matchRefreshActive = false)),
                 Task.Run(() => _summary.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals).ContinueWith(x => _summaryRefreshActive = false)),

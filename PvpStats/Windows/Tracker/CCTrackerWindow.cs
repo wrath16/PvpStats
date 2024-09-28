@@ -34,24 +34,26 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
         //};
         //Flags = Flags | ImGuiWindowFlags.NoScrollbar;
 
-        var playerFilter = new OtherPlayerFilter(plugin, Refresh);
-        var jobStatSourceFilter = new StatSourceFilter(plugin, Refresh, plugin.Configuration.CCWindowConfig.JobStatFilters.StatSourceFilter);
-        var playerStatSourceFilter = new StatSourceFilter(plugin, Refresh, plugin.Configuration.CCWindowConfig.PlayerStatFilters.StatSourceFilter);
-        var playerMinMatchFilter = new MinMatchFilter(plugin, Refresh, plugin.Configuration.CCWindowConfig.PlayerStatFilters.MinMatchFilter);
-        var playerQuickSearchFilter = new PlayerQuickSearchFilter(plugin, Refresh);
+        var refreshAction = () => Refresh();
 
-        MatchFilters.Add(new MatchTypeFilter(plugin, Refresh, plugin.Configuration.CCWindowConfig.MatchFilters.MatchTypeFilter));
-        MatchFilters.Add(new TierFilter(plugin, Refresh));
-        MatchFilters.Add(new ArenaFilter(plugin, Refresh));
-        MatchFilters.Add(new TimeFilter(plugin, Refresh, plugin.Configuration.CCWindowConfig.MatchFilters.TimeFilter));
-        MatchFilters.Add(new LocalPlayerFilter(plugin, Refresh, plugin.Configuration.CCWindowConfig.MatchFilters.LocalPlayerFilter));
-        MatchFilters.Add(new LocalPlayerJobFilter(plugin, Refresh, plugin.Configuration.CCWindowConfig.MatchFilters.LocalPlayerJobFilter));
+        var playerFilter = new OtherPlayerFilter(plugin, refreshAction);
+        var jobStatSourceFilter = new StatSourceFilter(plugin, refreshAction, plugin.Configuration.CCWindowConfig.JobStatFilters.StatSourceFilter);
+        var playerStatSourceFilter = new PlayerStatSourceFilter(plugin, refreshAction, plugin.Configuration.CCWindowConfig.PlayerStatFilters.StatSourceFilter);
+        var playerMinMatchFilter = new MinMatchFilter(plugin, refreshAction, plugin.Configuration.CCWindowConfig.PlayerStatFilters.MinMatchFilter);
+        var playerQuickSearchFilter = new PlayerQuickSearchFilter(plugin, refreshAction);
+
+        MatchFilters.Add(new MatchTypeFilter(plugin, refreshAction, plugin.Configuration.CCWindowConfig.MatchFilters.MatchTypeFilter));
+        MatchFilters.Add(new TierFilter(plugin, refreshAction));
+        MatchFilters.Add(new ArenaFilter(plugin, refreshAction));
+        MatchFilters.Add(new TimeFilter(plugin, refreshAction, plugin.Configuration.CCWindowConfig.MatchFilters.TimeFilter));
+        MatchFilters.Add(new LocalPlayerFilter(plugin, refreshAction, plugin.Configuration.CCWindowConfig.MatchFilters.LocalPlayerFilter));
+        MatchFilters.Add(new LocalPlayerJobFilter(plugin, refreshAction, plugin.Configuration.CCWindowConfig.MatchFilters.LocalPlayerJobFilter));
         MatchFilters.Add(playerFilter);
-        MatchFilters.Add(new ResultFilter(plugin, Refresh));
-        MatchFilters.Add(new DurationFilter(plugin, Refresh));
-        MatchFilters.Add(new BookmarkFilter(plugin, Refresh));
-        MatchFilters.Add(new TagFilter(plugin, Refresh));
-        MatchFilters.Add(new MiscFilter(plugin, Refresh, plugin.Configuration.CCWindowConfig.MatchFilters.MiscFilter));
+        MatchFilters.Add(new ResultFilter(plugin, refreshAction));
+        MatchFilters.Add(new DurationFilter(plugin, refreshAction));
+        MatchFilters.Add(new BookmarkFilter(plugin, refreshAction));
+        MatchFilters.Add(new TagFilter(plugin, refreshAction));
+        MatchFilters.Add(new MiscFilter(plugin, refreshAction, plugin.Configuration.CCWindowConfig.MatchFilters.MiscFilter));
 
         JobStatFilters.Add(jobStatSourceFilter);
         PlayerStatFilters.Add(playerStatSourceFilter);
@@ -72,7 +74,7 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
         base.OnClose();
     }
 
-    public override async Task Refresh() {
+    public override async Task Refresh(bool fullRefresh = false) {
         Stopwatch s0 = new();
         s0.Start();
 
@@ -91,6 +93,12 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
             await RefreshLock.WaitAsync();
             //RefreshActive = true;
             var updatedSet = Plugin.CCStatsEngine.Refresh(MatchFilters);
+
+            if(fullRefresh) {
+                updatedSet.Removals = updatedSet.Matches;
+                updatedSet.Additions = updatedSet.Matches;
+            }
+
             await Task.WhenAll([
                 Task.Run(() => _matches.Refresh(updatedSet.Matches).ContinueWith(x => _matchRefreshActive = false)),
                 Task.Run(() => _summary.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals).ContinueWith(x => _summaryRefreshActive = false)),

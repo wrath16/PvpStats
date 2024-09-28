@@ -23,14 +23,17 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
             MinimumSize = new Vector2(435, 400),
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
-        MatchFilters.Add(new TimeFilter(plugin, Refresh, plugin.Configuration.RWWindowConfig.MatchFilters.TimeFilter));
-        MatchFilters.Add(new LocalPlayerFilter(plugin, Refresh, plugin.Configuration.RWWindowConfig.MatchFilters.LocalPlayerFilter));
-        MatchFilters.Add(new LocalPlayerJobFilter(plugin, Refresh));
-        MatchFilters.Add(new OtherPlayerFilter(plugin, Refresh));
-        MatchFilters.Add(new ResultFilter(plugin, Refresh));
-        MatchFilters.Add(new DurationFilter(plugin, Refresh));
-        MatchFilters.Add(new BookmarkFilter(plugin, Refresh));
-        MatchFilters.Add(new TagFilter(plugin, Refresh));
+
+        var refreshAction = () => Refresh();
+
+        MatchFilters.Add(new TimeFilter(plugin, refreshAction, plugin.Configuration.RWWindowConfig.MatchFilters.TimeFilter));
+        MatchFilters.Add(new LocalPlayerFilter(plugin, refreshAction, plugin.Configuration.RWWindowConfig.MatchFilters.LocalPlayerFilter));
+        MatchFilters.Add(new LocalPlayerJobFilter(plugin, refreshAction));
+        MatchFilters.Add(new OtherPlayerFilter(plugin, refreshAction));
+        MatchFilters.Add(new ResultFilter(plugin, refreshAction));
+        MatchFilters.Add(new DurationFilter(plugin, refreshAction));
+        MatchFilters.Add(new BookmarkFilter(plugin, refreshAction));
+        MatchFilters.Add(new TagFilter(plugin, refreshAction));
 
         _matchList = new(plugin);
         _summary = new(plugin);
@@ -59,7 +62,7 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
         }
     }
 
-    public override async Task Refresh() {
+    public override async Task Refresh(bool fullRefresh = false) {
         Stopwatch s0 = new();
         s0.Start();
         _summaryRefreshActive = true;
@@ -68,6 +71,12 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
             await RefreshLock.WaitAsync();
             //RefreshActive = true;
             var updatedSet = Plugin.RWStatsEngine.Refresh(MatchFilters);
+
+            if(fullRefresh) {
+                updatedSet.Removals = updatedSet.Matches;
+                updatedSet.Additions = updatedSet.Matches;
+            }
+
             Task.WaitAll([
                 Task.Run(() => _matchList.Refresh(updatedSet.Matches).ContinueWith(x => _matchRefreshActive = false)),
                 Task.Run(() => _summary.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals).ContinueWith(x => _summaryRefreshActive = false)),
