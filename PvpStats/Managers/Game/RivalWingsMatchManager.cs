@@ -25,6 +25,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
 
     private IntPtr _leaveDutyButton = IntPtr.Zero;
     private IntPtr _leaveDutyButtonOwnerNode = IntPtr.Zero;
+    private string? _leaveDutyButtonText;
     private ushort _addonId;
     IAddonEventHandle? _mouseOverEvent;
     IAddonEventHandle? _mouseOutEvent;
@@ -125,34 +126,8 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                     await Plugin.RWCache.AddMatch(CurrentMatch);
                 });
             });
-            _resultPayloadReceived = false;
-            _matchEnded = false;
-            _objIdToPlayer = [];
-            _mechTime = [];
-            _midCounts = [];
-            _mercCounts = [];
-            _playerMechStats = [];
-            _allianceStats = [];
-            RivalWingsTeamName[] allTeams = { RivalWingsTeamName.Falcons, RivalWingsTeamName.Ravens };
-            var allMechs = Enum.GetValues(typeof(RivalWingsMech)).Cast<RivalWingsMech>();
-            var allSupples = Enum.GetValues(typeof(RivalWingsSupplies)).Cast<RivalWingsSupplies>();
-            foreach(var team in allTeams) {
-                _mechTime.Add(team, new());
-                _mercCounts.Add(team, 0);
-                foreach(var mech in allMechs) {
-                    _mechTime[team].Add(mech, 0f);
-                }
-                _midCounts.Add(team, new());
-                foreach(var supplies in allSupples) {
-                    _midCounts[team].Add(supplies, 0);
-                }
-            }
-            for(int i = 0; i < 6; i++) {
-                _allianceStats.Add(i, new());
-            }
-            _lastFalconMidScore = 0;
-            _lastRavenMidScore = 0;
-            _lastMercControl = RivalWingsContentDirector.Team.None;
+            Reset();
+
         } catch(Exception e) {
             //suppress all exceptions so game doesn't crash if something fails here
             Plugin.Log.Error(e, $"Error in rw director .ctor.");
@@ -396,6 +371,8 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                 if(buttonNode != null) {
                     Plugin.Log.Debug($"Disabling button at node: 0x{new IntPtr(buttonNode):X8}");
                     buttonNode->AtkComponentBase.SetEnabledState(false);
+                    _leaveDutyButtonText ??= MemoryService.ReadString(buttonNode->ButtonTextNode->GetText());
+                    buttonNode->ButtonTextNode->SetText("Waiting for scoreboard...");
                     var targetNode = buttonNode->AtkComponentBase.OwnerNode;
                     targetNode->AtkResNode.NodeFlags |= NodeFlags.EmitsEvents | NodeFlags.RespondToMouse | NodeFlags.HasCollision;
                     _mouseOverEvent = Plugin.AddonEventManager.AddEvent((nint)addon, (nint)targetNode, AddonEventType.MouseOver, TooltipHandler);
@@ -412,7 +389,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         var addonId = ((AtkUnitBase*)addon)->Id;
         switch(type) {
             case AddonEventType.MouseOver:
-                AtkStage.Instance()->TooltipManager.ShowTooltip(addonId, (AtkResNode*)node, "Disabled by PvP Tracker until scoreboard payload received!");
+                AtkStage.Instance()->TooltipManager.ShowTooltip(addonId, (AtkResNode*)node, "Disabled by PvP Tracker until scoreboard payload received! This can be disabled in plugin settings.");
                 break;
             case AddonEventType.MouseOut:
                 AtkStage.Instance()->TooltipManager.HideTooltip(addonId);
@@ -447,6 +424,9 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         }
         if(_addonId != 0) {
             AtkStage.Instance()->TooltipManager.HideTooltip(_addonId);
+        }
+        if(_leaveDutyButtonText != null) {
+            ((AtkComponentButton*)_leaveDutyButton)->ButtonTextNode->SetText(_leaveDutyButtonText);
         }
     }
 
@@ -565,6 +545,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
     private void Reset() {
         _leaveDutyButton = IntPtr.Zero;
         _leaveDutyButtonOwnerNode = IntPtr.Zero;
+        _leaveDutyButtonText = null;
         _addonId = 0;
         _mouseOverEvent = null;
         _mouseOutEvent = null;
@@ -581,5 +562,23 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         _lastFalconMidScore = 0;
         _lastRavenMidScore = 0;
         _lastPrint = DateTime.MinValue;
+
+        RivalWingsTeamName[] allTeams = { RivalWingsTeamName.Falcons, RivalWingsTeamName.Ravens };
+        var allMechs = Enum.GetValues(typeof(RivalWingsMech)).Cast<RivalWingsMech>();
+        var allSupples = Enum.GetValues(typeof(RivalWingsSupplies)).Cast<RivalWingsSupplies>();
+        foreach(var team in allTeams) {
+            _mechTime.Add(team, new());
+            _mercCounts.Add(team, 0);
+            foreach(var mech in allMechs) {
+                _mechTime[team].Add(mech, 0f);
+            }
+            _midCounts.Add(team, new());
+            foreach(var supplies in allSupples) {
+                _midCounts[team].Add(supplies, 0);
+            }
+        }
+        for(int i = 0; i < 6; i++) {
+            _allianceStats.Add(i, new());
+        }
     }
 }
