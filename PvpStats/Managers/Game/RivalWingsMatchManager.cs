@@ -389,7 +389,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         var addonId = ((AtkUnitBase*)addon)->Id;
         switch(type) {
             case AddonEventType.MouseOver:
-                AtkStage.Instance()->TooltipManager.ShowTooltip(addonId, (AtkResNode*)node, "Disabled by PvP Tracker until scoreboard payload received! This can be disabled in plugin settings.");
+                AtkStage.Instance()->TooltipManager.ShowTooltip(addonId, (AtkResNode*)node, "Disabled by PvP Tracker until scoreboard payload is received by client. This can be disabled in plugin settings.");
                 break;
             case AddonEventType.MouseOut:
                 AtkStage.Instance()->TooltipManager.HideTooltip(addonId);
