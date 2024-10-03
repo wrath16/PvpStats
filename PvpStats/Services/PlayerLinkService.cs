@@ -200,8 +200,22 @@ internal class PlayerLinkService {
     }
 
     private PlayerAlias GetMainAlias(PlayerAlias alias, List<PlayerAlias> prevAliases) {
-        var unLinks = ManualPlayerLinksCache.Where(x => x.IsUnlink).ToList();
-        List<PlayerAliasLink> allLinks = [.. AutoPlayerLinksCache.Where(x => x.CurrentAlias != null), .. ManualPlayerLinksCache.Where(x => !x.IsUnlink && x.CurrentAlias != null)];
+        if(!_plugin.Configuration.EnablePlayerLinking) {
+            return alias;
+        }
+
+        List<PlayerAliasLink> unLinks = [];
+        if(_plugin.Configuration.EnableManualPlayerLinking) {
+            unLinks = ManualPlayerLinksCache.Where(x => x.IsUnlink).ToList();
+        }
+        List<PlayerAliasLink> allLinks = [];
+        if(_plugin.Configuration.EnableAutoPlayerLinking) {
+            allLinks = [.. allLinks, .. AutoPlayerLinksCache.Where(x => x.CurrentAlias != null)];
+        }
+        if(_plugin.Configuration.EnableManualPlayerLinking) {
+            allLinks = [.. allLinks, .. ManualPlayerLinksCache.Where(x => !x.IsUnlink && x.CurrentAlias != null)];
+        }
+
         foreach(var link in allLinks) {
             bool unlinkFound = false;
             foreach(var unlink in unLinks) {
