@@ -57,6 +57,12 @@ internal class StorageService {
         ccMatchCollection.EnsureIndex(m => m.MatchType);
         ccMatchCollection.EnsureIndex(m => m.Arena);
         ccMatchCollection.EnsureIndex(m => m.IsBookmarked);
+
+        var flMatchCollection = GetFLMatches();
+        flMatchCollection.EnsureIndex(m => m.DutyStartTime);
+
+        var rwMatchCollection = GetRWMatches();
+        rwMatchCollection.EnsureIndex(m => m.DutyStartTime);
     }
 
     public void Dispose() {

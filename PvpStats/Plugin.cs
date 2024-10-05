@@ -9,7 +9,10 @@ using PvpStats.Managers.Stats;
 using PvpStats.Services;
 using PvpStats.Services.DataCache;
 using PvpStats.Settings;
+using PvpStats.Types.Match;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PvpStats;
@@ -25,6 +28,7 @@ public sealed class Plugin : IDalamudPlugin {
     private const string RWStatsCommandName = "/rwstats";
     private const string DebugCommandName = "/pvpstatsdebug";
     private const string ConfigCommandName = "/pvpstatsconfig";
+    private const string LastMatchCommandName = "/lastmatch";
 
     //Dalamud services
     internal IDalamudPluginInterface PluginInterface { get; init; }
@@ -163,6 +167,9 @@ public sealed class Plugin : IDalamudPlugin {
             CommandManager.AddHandler(ConfigCommandName, new CommandInfo(OnConfigCommand) {
                 HelpMessage = "Opens config window."
             });
+            CommandManager.AddHandler(LastMatchCommandName, new CommandInfo(OnLastMatchCommand) {
+                HelpMessage = "Opens match details window of last played match."
+            });
 
 #if DEBUG
             CommandManager.AddHandler(DebugCommandName, new CommandInfo(OnDebugCommand) {
@@ -204,6 +211,26 @@ public sealed class Plugin : IDalamudPlugin {
 
     private void OnSplashCommand(string command, string args) {
         WindowManager.OpenSplashWindow();
+    }
+
+    private void OnLastMatchCommand(string command, string args) {
+        var lastMatchCC = CCStatsEngine.Matches.FirstOrDefault();
+        var lastMatchFL = FLStatsEngine.Matches.FirstOrDefault();
+        var lastMatchRW = RWStatsEngine.Matches.FirstOrDefault();
+        List<PvpMatch> matches = [];
+        if(lastMatchCC != null) {
+            matches.Add(lastMatchCC);
+        }
+        if(lastMatchFL != null) {
+            matches.Add(lastMatchFL);
+        }
+        if(lastMatchRW != null) {
+            matches.Add(lastMatchRW);
+        }
+        var lastMatch = matches.OrderByDescending(x => x.DutyStartTime).FirstOrDefault();
+        if(lastMatch != null) {
+            WindowManager.OpenMatchDetailsWindow(lastMatch);
+        }
     }
 
     private void OnCCCommand(string command, string args) {
