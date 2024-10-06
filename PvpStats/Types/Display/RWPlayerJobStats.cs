@@ -3,6 +3,8 @@
 namespace PvpStats.Types.Display;
 internal class RWPlayerJobStats : PlayerJobStats {
     public CCAggregateStats StatsAll { get; set; } = new();
+    public CCAggregateStats MercStats { get; set; } = new();
+    public CCAggregateStats MidStats { get; set; } = new();
     //public CCAggregateStats StatsPersonal { get; set; } = new();
     ////CCAggregateStats StatsLocalPlayer { get; set; } = new();
     //public CCAggregateStats StatsTeammate { get; set; } = new();
@@ -21,6 +23,8 @@ internal class RWPlayerJobStats : PlayerJobStats {
             //StatsTeammate = a.StatsTeammate + b.StatsTeammate,
             //StatsOpponent = a.StatsOpponent + b.StatsOpponent,
             ScoreboardTotal = a.ScoreboardTotal + b.ScoreboardTotal,
+            MercStats = a.MercStats + b.MercStats,
+            MidStats = a.MidStats + b.MidStats
         };
     }
 }

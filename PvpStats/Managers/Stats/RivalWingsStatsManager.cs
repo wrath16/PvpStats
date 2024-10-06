@@ -14,26 +14,28 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
     public static float[] KillsPerMatchRange = [1.0f, 7.0f];
     public static float[] DeathsPerMatchRange = [1.0f, 7.0f];
     public static float[] AssistsPerMatchRange = [7f, 25f];
-    public static float[] DamageDealtToPCsPerMatchRange = [300000f, 2000000f];
+    public static float[] DamageDealtToPCsPerMatchRange = [300000f, 1800000f];
     public static float[] DamageDealtToOtherPerMatchRange = [100000f, 3000000f];
+    public static float[] DamageDealtPerMatchRange = [DamageDealtToPCsPerMatchRange[0] + DamageDealtToOtherPerMatchRange[0], DamageDealtToPCsPerMatchRange[1] + DamageDealtToOtherPerMatchRange[1]];
     public static float[] DamageTakenPerMatchRange = [400000f, 1500000f];
-    public static float[] HPRestoredPerMatchRange = [100000f, 1200000f];
-    public static float[] CeruleumPerMatchRange = [20f, 140f];
+    public static float[] HPRestoredPerMatchRange = [100000f, 1000000f];
+    public static float[] CeruleumPerMatchRange = [20f, 120f];
     public static float AverageMatchLength = 10f;
     public static float[] KillsPerMinRange = [KillsPerMatchRange[0] / AverageMatchLength, KillsPerMatchRange[1] / AverageMatchLength];
     public static float[] DeathsPerMinRange = [DeathsPerMatchRange[0] / AverageMatchLength, DeathsPerMatchRange[1] / AverageMatchLength];
     public static float[] AssistsPerMinRange = [AssistsPerMatchRange[0] / AverageMatchLength, AssistsPerMatchRange[1] / AverageMatchLength];
     public static float[] DamageDealtToPCsPerMinRange = [DamageDealtToPCsPerMatchRange[0] / AverageMatchLength, DamageDealtToPCsPerMatchRange[1] / AverageMatchLength];
     public static float[] DamageDealtToOtherPerMinRange = [DamageDealtToOtherPerMatchRange[0] / AverageMatchLength, DamageDealtToOtherPerMatchRange[1] / AverageMatchLength];
+    public static float[] DamageDealtPerMinRange = [DamageDealtPerMatchRange[0] / AverageMatchLength, DamageDealtPerMatchRange[1] / AverageMatchLength];
     public static float[] DamageTakenPerMinRange = [DamageTakenPerMatchRange[0] / AverageMatchLength, DamageTakenPerMatchRange[1] / AverageMatchLength];
     public static float[] HPRestoredPerMinRange = [HPRestoredPerMatchRange[0] / AverageMatchLength, HPRestoredPerMatchRange[1] / AverageMatchLength];
     public static float[] CeruleumPerMinRange = [CeruleumPerMatchRange[0] / AverageMatchLength, CeruleumPerMatchRange[1] / AverageMatchLength];
 
     public static float[] ContribRange = [0 / 24f, 2 / 24f];
-    public static float[] DamagePerKARange = [40000f, 150000f];
-    public static float[] DamagePerLifeRange = [190000f, 400000f];
-    public static float[] DamageTakenPerLifeRange = [100000f, 300000f];
-    public static float[] HPRestoredPerLifeRange = [120000f, 600000f];
+    public static float[] DamagePerKARange = [35000f, 100000f];
+    public static float[] DamagePerLifeRange = [150000f, 1500000f];
+    public static float[] DamageTakenPerLifeRange = [120000f, 500000f];
+    public static float[] HPRestoredPerLifeRange = [80000f, 600000f];
     public static float[] KDARange = [2.0f, 15.0f];
 
     public RivalWingsStatsManager(Plugin plugin) : base(plugin, plugin.RWCache) {
@@ -111,6 +113,7 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
             stats.ScoreboardContrib.DamageToPCs = teamContributions.OrderBy(x => x.DamageToPCs).ElementAt(statMatches / 2).DamageToPCs;
             stats.ScoreboardContrib.DamageToOther = teamContributions.OrderBy(x => x.DamageToOther).ElementAt(statMatches / 2).DamageToOther;
             stats.ScoreboardContrib.Ceruleum = teamContributions.OrderBy(x => x.Ceruleum).ElementAt(statMatches / 2).Ceruleum;
+            stats.ScoreboardContrib.KillsAndAssists = teamContributions.OrderBy(x => x.KillsAndAssists).ElementAt(statMatches / 2).KillsAndAssists;
             stats.ScoreboardContrib.Special1 = teamContributions.OrderBy(x => x.Special1).ElementAt(statMatches / 2).Special1;
         }
     }
