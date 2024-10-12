@@ -20,7 +20,18 @@ public class PvpScoreboardDouble : IEquatable<PvpScoreboardDouble> {
 
     }
 
+    //get rid of this
     public PvpScoreboardDouble(PvpScoreboard playerScoreboard, PvpScoreboard teamScoreboard) {
+        Kills = teamScoreboard.Kills != 0 ? (double)playerScoreboard.Kills / teamScoreboard.Kills : 0;
+        Deaths = teamScoreboard.Deaths != 0 ? (double)playerScoreboard.Deaths / teamScoreboard.Deaths : 0;
+        Assists = teamScoreboard.Assists != 0 ? (double)playerScoreboard.Assists / teamScoreboard.Assists : 0;
+        DamageDealt = teamScoreboard.DamageDealt != 0 ? (double)playerScoreboard.DamageDealt / teamScoreboard.DamageDealt : 0;
+        DamageTaken = teamScoreboard.DamageTaken != 0 ? (double)playerScoreboard.DamageTaken / teamScoreboard.DamageTaken : 0;
+        HPRestored = teamScoreboard.HPRestored != 0 ? (double)playerScoreboard.HPRestored / teamScoreboard.HPRestored : 0;
+        KillsAndAssists = ((double)playerScoreboard.Kills + playerScoreboard.Assists) / (teamScoreboard.Kills + teamScoreboard.Assists);
+    }
+
+    public PvpScoreboardDouble(ScoreboardTally playerScoreboard, ScoreboardTally teamScoreboard) {
         Kills = teamScoreboard.Kills != 0 ? (double)playerScoreboard.Kills / teamScoreboard.Kills : 0;
         Deaths = teamScoreboard.Deaths != 0 ? (double)playerScoreboard.Deaths / teamScoreboard.Deaths : 0;
         Assists = teamScoreboard.Assists != 0 ? (double)playerScoreboard.Assists / teamScoreboard.Assists : 0;
@@ -43,6 +54,18 @@ public class PvpScoreboardDouble : IEquatable<PvpScoreboardDouble> {
     }
 
     public static explicit operator PvpScoreboardDouble(PvpScoreboard a) {
+        return new PvpScoreboardDouble() {
+            Kills = a.Kills,
+            Deaths = a.Deaths,
+            Assists = a.Assists,
+            DamageDealt = a.DamageDealt,
+            DamageTaken = a.DamageTaken,
+            HPRestored = a.HPRestored,
+            KillsAndAssists = a.KillsAndAssists,
+        };
+    }
+
+    public static explicit operator PvpScoreboardDouble(ScoreboardTally a) {
         return new PvpScoreboardDouble() {
             Kills = a.Kills,
             Deaths = a.Deaths,

@@ -2,11 +2,11 @@
 
 namespace PvpStats.Types.Match;
 public class FrontlineScoreboard : PvpScoreboard {
-    public long Occupations;
-    public long DamageToOther;
+    public long Occupations { get; set; }
+    public long DamageToOther { get; set; }
     [BsonIgnore]
     public long DamageToPCs => DamageDealt - DamageToOther;
-    public long Special1; //believed to be healing received
+    public long Special1 { get; set; } //believed to be healing received
 
     [BsonIgnore]
     public override long DamageDealtPerKA => KillsAndAssists > 0 ? DamageToPCs / KillsAndAssists : DamageToPCs;

@@ -2,13 +2,13 @@
 
 namespace PvpStats.Types.Match;
 public class PvpScoreboard {
-    public int Size = 1;
-    public long Kills;
-    public long Deaths;
-    public long Assists;
-    public long DamageDealt;
-    public long DamageTaken;
-    public long HPRestored;
+    public int Size { get; set; } = 1;
+    public long Kills { get; set; }
+    public long Deaths { get; set; }
+    public long Assists { get; set; }
+    public long DamageDealt { get; set; }
+    public long DamageTaken { get; set; }
+    public long HPRestored { get; set; }
     [BsonIgnore]
     public long KillsAndAssists => Kills + Assists;
     [BsonIgnore]

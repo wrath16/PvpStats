@@ -121,12 +121,12 @@ public class CrystallineConflictMatch : PvpMatch {
         DutyStartTime = DateTime.Now;
     }
 
-    public Dictionary<PlayerAlias, CCScoreboard>? GetPlayerScoreboards() {
+    public Dictionary<PlayerAlias, CCScoreboardTally>? GetPlayerScoreboards() {
         if(PostMatch is null) {
             return null;
         }
 
-        Dictionary<PlayerAlias, CCScoreboard> scoreboard = new();
+        Dictionary<PlayerAlias, CCScoreboardTally> scoreboard = new();
         foreach(var team in PostMatch.Teams) {
             foreach(var player in team.Value.PlayerStats) {
                 if(player.Team is null) {
@@ -138,11 +138,11 @@ public class CrystallineConflictMatch : PvpMatch {
         return scoreboard;
     }
 
-    public Dictionary<CrystallineConflictTeamName, CCScoreboard>? GetTeamScoreboards() {
+    public Dictionary<CrystallineConflictTeamName, CCScoreboardTally>? GetTeamScoreboards() {
         if(PostMatch is null) {
             return null;
         }
-        Dictionary<CrystallineConflictTeamName, CCScoreboard> scoreboards = new();
+        Dictionary<CrystallineConflictTeamName, CCScoreboardTally> scoreboards = new();
         foreach(var team in PostMatch.Teams) {
             var scoreboard = team.Value.TeamStats.ToScoreboard();
             scoreboard.Size = team.Value.PlayerStats.Count;

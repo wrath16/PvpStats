@@ -104,7 +104,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
         Plugin.Log.Debug("Fl match end 10 detour entered.");
         try {
 #if DEBUG
-            Plugin.Functions.CreateByteDump(p2, 0x400, "fl_match_results");
+            //Plugin.Functions.CreateByteDump(p2, 0x400, "fl_match_results");
 #endif
             FrontlineResultsPacket resultsPacket;
             unsafe {
@@ -180,7 +180,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
         //Plugin.Log.Debug("Fl player payload 10 detour entered.");
         try {
 #if DEBUG
-            Plugin.Functions.CreateByteDump(p1, 0x400, "fl_player_payload");
+            //Plugin.Functions.CreateByteDump(p1, 0x400, "fl_player_payload");
 #endif
             FrontlinePlayerResultsPacket resultsPacket;
             unsafe {

@@ -34,8 +34,8 @@ public class CrystallineConflictPostMatchRow {
 
     public TimeSpan TimeOnCrystal { get; set; }
 
-    public CCScoreboard ToScoreboard() {
-        return new CCScoreboard() {
+    public CCScoreboardTally ToScoreboard() {
+        return new CCScoreboardTally() {
             Kills = Kills,
             Deaths = Deaths,
             Assists = Assists,

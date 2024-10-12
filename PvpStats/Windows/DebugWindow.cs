@@ -10,6 +10,7 @@ using Dalamud.Interface.Windowing;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Game.InstanceContent;
+using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.Havok;
 using ImGuiNET;
@@ -25,6 +26,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Reflection;
 using static PvpStats.Types.ClientStruct.RivalWingsContentDirector;
 
 namespace PvpStats.Windows;
@@ -281,6 +283,9 @@ internal unsafe class DebugWindow : Window {
                         _plugin.Log.Debug($"Scoreboards equal? {contrib1.Equals(contrib2)}");
 
                     }
+
+                    ImGui.Text(Framework.Instance()->GameVersionString);
+                    ImGui.Text(Assembly.GetExecutingAssembly().GetName().Version.ToString());
                 }
             }
         }

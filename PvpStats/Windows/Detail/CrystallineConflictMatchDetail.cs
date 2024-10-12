@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Detail;
@@ -22,10 +23,10 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     private Plugin _plugin;
     private CCTeamQuickFilter _teamQuickFilter;
     private CrystallineConflictMatch _dataModel;
-    private Dictionary<CrystallineConflictTeamName, CCScoreboard>? _teamScoreboard;
+    private Dictionary<CrystallineConflictTeamName, CCScoreboardTally>? _teamScoreboard;
     private Dictionary<PlayerAlias, CCScoreboardDouble>? _playerContributions = [];
-    private Dictionary<PlayerAlias, CCScoreboard>? _scoreboard;
-    private Dictionary<PlayerAlias, CCScoreboard>? _unfilteredScoreboard;
+    private Dictionary<PlayerAlias, CCScoreboardTally>? _scoreboard;
+    private Dictionary<PlayerAlias, CCScoreboardTally>? _unfilteredScoreboard;
 
     internal CrystallineConflictMatchDetail(Plugin plugin, CrystallineConflictMatch match) : base(plugin, plugin.CCCache, match) {
         ForceMainWindow = true;
@@ -489,8 +490,8 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         if(_unfilteredScoreboard == null || _scoreboard == null) return;
 
         //Func<KeyValuePair<CrystallineConflictPostMatchRow, (CCScoreboard, CCScoreboardDouble)>, object> comparator = (r) => 0;
-        Func<KeyValuePair<PlayerAlias, CCScoreboard>, object> comparator = (r) => 0;
-        Func<KeyValuePair<CrystallineConflictTeamName, CCScoreboard>, object> teamComparator = (r) => 0;
+        Func<KeyValuePair<PlayerAlias, CCScoreboardTally>, object> comparator = (r) => 0;
+        Func<KeyValuePair<CrystallineConflictTeamName, CCScoreboardTally>, object> teamComparator = (r) => 0;
 
         //0 = name
         //1 = home world
@@ -517,13 +518,20 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 }
             }
             if(!propFound) {
-                var props = typeof(CCScoreboard).GetProperties();
+                var props = typeof(CCScoreboardTally).GetProperties();
+                var fields = typeof(CCScoreboardTally).GetFields();
+                List<MemberInfo> members = [.. props, .. fields];
                 //iterate to two levels
-                foreach(var prop in props) {
-                    var propId = prop.Name.GetHashCode();
+                foreach(var member in members) {
+                    var propId = member.Name.GetHashCode();
                     if((uint)propId == columnId) {
-                        comparator = (r) => prop.GetValue(r.Value) ?? 0;
-                        teamComparator = (r) => prop.GetValue(r.Value) ?? 0;
+                        if(member is PropertyInfo) {
+                            comparator = (r) => (member as PropertyInfo)!.GetValue(r.Value) ?? 0;
+                            teamComparator = (r) => (member as PropertyInfo)!.GetValue(r.Value) ?? 0;
+                        } else if(member is FieldInfo) {
+                            comparator = (r) => (member as FieldInfo)!.GetValue(r.Value) ?? 0;
+                            teamComparator = (r) => (member as FieldInfo)!.GetValue(r.Value) ?? 0;
+                        }
                         break;
                     }
                 }

@@ -10,10 +10,10 @@ public class CCScoreboardDouble : PvpScoreboardDouble, IEquatable<CCScoreboardDo
 
     }
 
-    public CCScoreboardDouble(PvpScoreboard playerScoreboard, PvpScoreboard teamScoreboard) : base(playerScoreboard, teamScoreboard) {
-        if(playerScoreboard is CCScoreboard && teamScoreboard is CCScoreboard) {
-            var playerCCScoreboard = playerScoreboard as CCScoreboard;
-            var teamCCScoreboard = teamScoreboard as CCScoreboard;
+    public CCScoreboardDouble(ScoreboardTally playerScoreboard, ScoreboardTally teamScoreboard) : base(playerScoreboard, teamScoreboard) {
+        if(playerScoreboard is CCScoreboardTally && teamScoreboard is CCScoreboardTally) {
+            var playerCCScoreboard = playerScoreboard as CCScoreboardTally;
+            var teamCCScoreboard = teamScoreboard as CCScoreboardTally;
 
             TimeOnCrystal = playerCCScoreboard!.TimeOnCrystal != TimeSpan.Zero ? playerCCScoreboard.TimeOnCrystal / teamCCScoreboard!.TimeOnCrystal : 0;
         }
@@ -33,7 +33,7 @@ public class CCScoreboardDouble : PvpScoreboardDouble, IEquatable<CCScoreboardDo
         };
     }
 
-    public static explicit operator CCScoreboardDouble(CCScoreboard a) {
+    public static explicit operator CCScoreboardDouble(CCScoreboardTally a) {
         var c = (PvpScoreboardDouble)a;
         return new CCScoreboardDouble() {
             Kills = c.Kills,

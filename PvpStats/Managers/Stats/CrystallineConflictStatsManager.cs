@@ -129,14 +129,14 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
                 var teamScoreboard = teamPostMatch.TeamStats.ToScoreboard();
                 var hashCode = HashCode.Combine(match.GetHashCode(), player.Alias);
                 if(remove) {
-                    //statsModel.ScoreboardTotal -= playerScoreboard;
-                    Interlocked.Add(ref statsModel.ScoreboardTotal.Kills, -playerScoreboard.Kills);
-                    Interlocked.Add(ref statsModel.ScoreboardTotal.Deaths, -playerScoreboard.Deaths);
-                    Interlocked.Add(ref statsModel.ScoreboardTotal.Assists, -playerScoreboard.Assists);
-                    Interlocked.Add(ref statsModel.ScoreboardTotal.DamageDealt, -playerScoreboard.DamageDealt);
-                    Interlocked.Add(ref statsModel.ScoreboardTotal.DamageTaken, -playerScoreboard.DamageTaken);
-                    Interlocked.Add(ref statsModel.ScoreboardTotal.HPRestored, -playerScoreboard.HPRestored);
-                    Interlocked.Add(ref statsModel.ScoreboardTotal.TimeOnCrystalTicks, -playerScoreboard.TimeOnCrystalTicks);
+                    statsModel.ScoreboardTotal.RemoveScoreboard(playerScoreboard);
+                    //Interlocked.Add(ref statsModel.ScoreboardTotal.Kills, -playerScoreboard.Kills);
+                    //Interlocked.Add(ref statsModel.ScoreboardTotal.Deaths, -playerScoreboard.Deaths);
+                    //Interlocked.Add(ref statsModel.ScoreboardTotal.Assists, -playerScoreboard.Assists);
+                    //Interlocked.Add(ref statsModel.ScoreboardTotal.DamageDealt, -playerScoreboard.DamageDealt);
+                    //Interlocked.Add(ref statsModel.ScoreboardTotal.DamageTaken, -playerScoreboard.DamageTaken);
+                    //Interlocked.Add(ref statsModel.ScoreboardTotal.HPRestored, -playerScoreboard.HPRestored);
+                    //Interlocked.Add(ref statsModel.ScoreboardTotal.TimeOnCrystalTicks, -playerScoreboard.TimeOnCrystalTicks);
                     if(!teamContributions.TryRemove(hashCode, out _)) {
 #if DEBUG
                         Plugin.Log2.Warning($"failed to remove team contrib!, {match.DutyStartTime} {player.Alias}");
@@ -144,13 +144,14 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
                     }
                 } else {
                     //statsModel.ScoreboardTotal += playerScoreboard;
-                    Interlocked.Add(ref statsModel.ScoreboardTotal.Kills, playerScoreboard.Kills);
-                    Interlocked.Add(ref statsModel.ScoreboardTotal.Deaths, playerScoreboard.Deaths);
-                    Interlocked.Add(ref statsModel.ScoreboardTotal.Assists, playerScoreboard.Assists);
-                    Interlocked.Add(ref statsModel.ScoreboardTotal.DamageDealt, playerScoreboard.DamageDealt);
-                    Interlocked.Add(ref statsModel.ScoreboardTotal.DamageTaken, playerScoreboard.DamageTaken);
-                    Interlocked.Add(ref statsModel.ScoreboardTotal.HPRestored, playerScoreboard.HPRestored);
-                    Interlocked.Add(ref statsModel.ScoreboardTotal.TimeOnCrystalTicks, playerScoreboard.TimeOnCrystalTicks);
+                    statsModel.ScoreboardTotal.AddScoreboard(playerScoreboard);
+                    //Interlocked.Add(ref statsModel.ScoreboardTotal.Kills, playerScoreboard.Kills);
+                    //Interlocked.Add(ref statsModel.ScoreboardTotal.Deaths, playerScoreboard.Deaths);
+                    //Interlocked.Add(ref statsModel.ScoreboardTotal.Assists, playerScoreboard.Assists);
+                    //Interlocked.Add(ref statsModel.ScoreboardTotal.DamageDealt, playerScoreboard.DamageDealt);
+                    //Interlocked.Add(ref statsModel.ScoreboardTotal.DamageTaken, playerScoreboard.DamageTaken);
+                    //Interlocked.Add(ref statsModel.ScoreboardTotal.HPRestored, playerScoreboard.HPRestored);
+                    //Interlocked.Add(ref statsModel.ScoreboardTotal.TimeOnCrystalTicks, playerScoreboard.TimeOnCrystalTicks);
                     teamContributions.TryAdd(hashCode, new(playerScoreboard, teamScoreboard));
                 }
             }
