@@ -66,11 +66,14 @@ internal abstract class PlayerStatsList<T, U> : StatsList<PlayerAlias, T> where 
         if(sortSpecs.SpecsDirty || TriggerSort) {
             TriggerSort = false;
             sortSpecs.SpecsDirty = false;
+            SortByColumn(sortSpecs.Specs.ColumnUserID, sortSpecs.Specs.SortDirection);
+            GoToPage(0);
+
             //this causes conflicts when multiple tracker windows refresh at once
-            _plugin.DataQueue.QueueDataOperation(() => {
-                SortByColumn(sortSpecs.Specs.ColumnUserID, sortSpecs.Specs.SortDirection);
-                GoToPage(0);
-            });
+            //_plugin.DataQueue.QueueDataOperation(() => {
+            //    SortByColumn(sortSpecs.Specs.ColumnUserID, sortSpecs.Specs.SortDirection);
+            //    GoToPage(0);
+            //});
         }
     }
 

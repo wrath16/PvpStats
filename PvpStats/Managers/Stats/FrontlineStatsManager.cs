@@ -1,10 +1,12 @@
-﻿using Dalamud.Utility;
+﻿using Dalamud.Plugin.Services;
+using Dalamud.Utility;
 using PvpStats.Helpers;
 using PvpStats.Types.Display;
 using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using PvpStats.Windows.Filter;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -34,7 +36,7 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
     public static float[] DamageTakenPerLifeRange = [120000f, 300000f];
     public static float[] HPRestoredPerLifeRange = [120000f, 300000f];
     public static float[] KDARange = [4.0f, 20.0f];
-    public static float[] BattleHighPerLifeRange = [10.0f, 60.0f];
+    public static float[] BattleHighPerLifeRange = [10.0f, 100.0f];
 
     internal FrontlineStatsManager(Plugin plugin) : base(plugin, plugin.FLCache) {
     }
@@ -117,6 +119,71 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
                 } else {
                     statsModel.ScoreboardTotal += playerScoreboard;
                     teamContributions.Add(new(playerScoreboard, teamScoreboard));
+                }
+                statsModel.ScoreboardTotal.Size = statsModel.StatsAll.Matches;
+            }
+        }
+    }
+
+    public void AddPlayerJobStat(FLPlayerJobStats statsModel, ConcurrentDictionary<FLScoreboardDouble, byte> teamContributions,
+    FrontlineMatch match, FrontlinePlayer player, FrontlineScoreboard? teamScoreboard, bool remove = false) {
+        bool isLocalPlayer = player.Name.Equals(match.LocalPlayer);
+        bool isTeammate = !isLocalPlayer && player.Team == match.LocalPlayerTeam!;
+        bool isOpponent = !isLocalPlayer && !isTeammate;
+
+        //if(isTeammate) {
+        //    IncrementAggregateStats(statsModel.StatsTeammate, match);
+        //} else if(isOpponent) {
+        //    IncrementAggregateStats(statsModel.StatsOpponent, match);
+        //}
+
+        if(remove) {
+            statsModel.StatsAll.Matches--;
+        } else {
+            statsModel.StatsAll.Matches++;
+        }
+
+        if(match.Teams.ContainsKey(player.Team)) {
+            switch(match.Teams[player.Team].Placement) {
+                case 0:
+                    if(remove) {
+                        statsModel.StatsAll.FirstPlaces--;
+                    } else {
+                        statsModel.StatsAll.FirstPlaces++;
+                    }
+                    break;
+                case 1:
+                    if(remove) {
+                        statsModel.StatsAll.SecondPlaces--;
+                    } else {
+                        statsModel.StatsAll.SecondPlaces++;
+                    }
+                    break;
+                case 2:
+                    if(remove) {
+                        statsModel.StatsAll.ThirdPlaces--;
+                    } else {
+                        statsModel.StatsAll.ThirdPlaces++;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if(match.PlayerScoreboards != null) {
+            var playerScoreboard = match.PlayerScoreboards[player.Name];
+            if(playerScoreboard != null && teamScoreboard != null) {
+                if(remove) {
+                    statsModel.ScoreboardTotal -= playerScoreboard;
+                    //teamContributions.TryTake(new(playerScoreboard, teamScoreboard));
+                    var toRemove = new FLScoreboardDouble(playerScoreboard, teamScoreboard);
+                    if(!teamContributions.TryRemove(toRemove, out _)) {
+                        Plugin.Log.Warning($"failed to remove teamcontrib!, {match.DutyStartTime} {player.Name}");
+                    }
+                } else {
+                    statsModel.ScoreboardTotal += playerScoreboard;
+                    teamContributions.TryAdd(new(playerScoreboard, teamScoreboard), 0);
                 }
                 statsModel.ScoreboardTotal.Size = statsModel.StatsAll.Matches;
             }

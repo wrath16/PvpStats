@@ -4,6 +4,7 @@ using PvpStats.Types.Match;
 using PvpStats.Windows.Filter;
 using PvpStats.Windows.List;
 using PvpStats.Windows.Summary;
+using System;
 using System.Diagnostics;
 using System.Numerics;
 using System.Threading.Tasks;
@@ -107,7 +108,17 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
                 Task.Run(() => _matchList.Refresh(updatedSet.Matches).ContinueWith(x => _matchRefreshActive = false)),
                 Task.Run(() => _summary.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals).ContinueWith(x => _summaryRefreshActive = false)),
                 Task.Run(() => _jobs.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals).ContinueWith(x => _jobRefreshActive = false)),
-                Task.Run(() => _players.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals).ContinueWith(x => _playerRefreshActive = false)),
+                //Task.Run(async () => {
+                //    try {
+                //        await _players.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
+
+                //    } catch(Exception e) {
+                //        Plugin.Log.Error(e, "player refresh error");
+                //    }
+
+
+                //}).ContinueWith(x => _playerRefreshActive = false),
+                Task.Run(() => _players.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals)).ContinueWith(x => _playerRefreshActive = false),
                 Task.Run(SaveFilters)
             ]);
         } catch {

@@ -15,9 +15,11 @@ using FFXIVClientStructs.Havok;
 using ImGuiNET;
 using PvpStats.Services;
 using PvpStats.Types.ClientStruct;
+using PvpStats.Types.Display;
 using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -37,6 +39,8 @@ internal unsafe class DebugWindow : Window {
 
     private string _toFind = "";
     private string _player = "";
+
+    internal HashSet<PlayerAlias> CompetentPlayers { get; private set; } = [];
 
     internal DebugWindow(Plugin plugin) : base("Pvp Stats Debug") {
         ForceMainWindow = true;
@@ -225,31 +229,58 @@ internal unsafe class DebugWindow : Window {
                         _plugin.RWMatchManager.EnableLeaveDutyButton();
                     }
 
-                    //var cursorBefore = ImGui.GetCursorPos();
-                    //Vector2 barSize = new Vector2(100f, 50f);
+                    if(ImGui.Button("Get competent players")) {
+                        _plugin.DataQueue.QueueDataOperation(() => {
+                            CompetentPlayers = [];
+                            foreach(var match in _plugin.FLCache.Matches.Where(x => x.IsCompleted && !x.IsDeleted)) {
+                                foreach(var scoreboard in match.PlayerScoreboards) {
+                                    if(scoreboard.Value.KDA >= 20) {
+                                        CompetentPlayers.Add((PlayerAlias)scoreboard.Key);
+                                    }
+                                }
+                            }
+                        });
+                    }
 
-                    //ImGui.SetCursorPos(new Vector2(50f, 50f));
-                    //ImGui.Text("overwritesssssssssssss!");
+                    if(ImGui.Button("Test")) {
+                        var match = _plugin.FLCache.Matches.Where(x => x.IsCompleted && !x.IsDeleted).OrderBy(x => x.DutyStartTime).FirstOrDefault();
+                        var pScoreboard = match.PlayerScoreboards["Sarah Montcroix Siren"];
+                        var teamScoreboard = match.GetTeamScoreboards()[(FrontlineTeamName)match.LocalPlayerTeam];
 
-                    ////ImGui.SetCursorPos(new Vector2((ImGui.GetWindowSize().X - barSize.X) / 2, ImGui.GetWindowSize().Y / 2));
-                    //ImGui.SetCursorPos(new Vector2(20f, 50f));
-                    //using var color = ImRaii.PushColor(ImGuiCol.PlotHistogram, ImGuiColors.DalamudGrey2);
-                    //using var color2 = ImRaii.PushColor(ImGuiCol.FrameBg, ImGui.GetStyle().Colors[(int)ImGuiCol.FrameBg] + new Vector4(0f, 0f, 0f, 1f));
-                    ////using var color2 = ImRaii.PushColor(ImGuiCol.FrameBg, ImGui.GetStyle().);
-                    //ImGui.ProgressBar(0.45f, barSize * ImGuiHelpers.GlobalScale);
+                        var contrib1 = new FLScoreboardDouble(pScoreboard, teamScoreboard);
+                        var contrib2 = new FLScoreboardDouble(pScoreboard, teamScoreboard);
 
+                        _plugin.Log.Debug($"{contrib1.GetHashCode()} {contrib2.GetHashCode()}");
 
+                        ConcurrentDictionary<FLScoreboardDouble, byte> scoreboards = new();
+                        scoreboards.TryAdd(contrib1, 0);
+                        if(scoreboards.TryRemove(contrib2, out _)) {
+                            _plugin.Log.Debug("Removal success!");
+                        } else {
+                            _plugin.Log.Debug("Removal failed");
+                        }
+                        _plugin.Log.Debug($"Scoreboards equal? {contrib1.Equals(contrib2)}");
 
-                    //ImGui.SetCursorPos(cursorBefore);
-                    //using(var table = ImRaii.Table("##testoverlay", 1)) {
-                    //    if(table) {
-                    //        ImGui.TableSetupColumn("c1");
-                    //        if(ImGui.TableNextColumn()) {
-                    //            ImGui.Text("hello");
-                    //        }
-                    //    }
-                    //}
-                    //ImGui.Separator();
+                    }
+
+                    if(ImGui.Button("Test2")) {
+                        var match = _plugin.FLCache.Matches.Where(x => x.IsCompleted && !x.IsDeleted).OrderBy(x => x.DutyStartTime).LastOrDefault();
+                        var pScoreboard = match.PlayerScoreboards["Sarah Montcroix Siren"];
+                        var teamScoreboard = match.GetTeamScoreboards()[(FrontlineTeamName)match.LocalPlayerTeam];
+
+                        var contrib1 = new FLScoreboardDouble(pScoreboard, teamScoreboard);
+                        var contrib2 = new FLScoreboardDouble(pScoreboard, teamScoreboard);
+
+                        ConcurrentDictionary<FLScoreboardDouble, byte> scoreboards = new();
+                        scoreboards.TryAdd(contrib1, 0);
+                        if(scoreboards.TryRemove(contrib2, out _)) {
+                            _plugin.Log.Debug("Removal success!");
+                        } else {
+                            _plugin.Log.Debug("Removal failed");
+                        }
+                        _plugin.Log.Debug($"Scoreboards equal? {contrib1.Equals(contrib2)}");
+
+                    }
                 }
             }
         }

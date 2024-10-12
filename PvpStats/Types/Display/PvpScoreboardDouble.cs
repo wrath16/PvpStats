@@ -63,4 +63,8 @@ public class PvpScoreboardDouble : IEquatable<PvpScoreboardDouble> {
             && HPRestored == other?.HPRestored
             && KillsAndAssists == other?.KillsAndAssists;
     }
+
+    public override int GetHashCode() {
+        return (Kills, Deaths, Assists, DamageDealt, DamageTaken, HPRestored, KillsAndAssists).GetHashCode();
+    }
 }

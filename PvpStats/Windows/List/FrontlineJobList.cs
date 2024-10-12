@@ -125,7 +125,7 @@ internal class FrontlineJobList : FLStatsList<Job> {
         _linkedPlayerAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(PlayerFilter.PlayerNamesRaw);
         bool statFilterChange = !StatSourceFilter.Equals(_lastJobStatSourceFilter);
         bool playerFilterChange = StatSourceFilter!.InheritFromPlayerFilter && !PlayerFilter.Equals(_lastPlayerFilter);
-        //_plugin.Log.Debug($"total old: {_matches.Count} additions: {additions.Count} removals: {removals.Count} jsfc: {statFilterChange} pfc: {playerFilterChange}");
+        _plugin.Log.Debug($"total old: {_matches.Count} additions: {additions.Count} removals: {removals.Count} jsfc: {statFilterChange} pfc: {playerFilterChange}");
         try {
             if(removals.Count * 2 >= _matches.Count || statFilterChange || playerFilterChange) {
                 //force full build
@@ -193,6 +193,12 @@ internal class FrontlineJobList : FLStatsList<Job> {
                 } else if(!StatSourceFilter.FilterState[StatSource.Opponent] && !isTeammate && !isLocalPlayer) {
                     jobStatsEligible = false;
                 }
+
+#if DEBUG
+                //if(!_plugin.WindowManager.DebugWindow.CompetentPlayers.Contains(player.Name)) {
+                //    continue;
+                //}
+#endif
 
                 if(player?.Job != null && player?.Team != null && jobStatsEligible) {
                     //Plugin.Log.Debug($"Adding job stats..{player.Name} {player.Job}");

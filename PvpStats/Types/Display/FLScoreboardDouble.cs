@@ -2,7 +2,7 @@
 using System;
 
 namespace PvpStats.Types.Display;
-public class FLScoreboardDouble : PvpScoreboardDouble, IEquatable<FrontlineScoreboard> {
+public class FLScoreboardDouble : PvpScoreboardDouble, IEquatable<FrontlineScoreboard>, IEquatable<FLScoreboardDouble> {
 
     public static int BattleHighPerKill => 10;
     public static int BattleHighPerAssist => 2;
@@ -67,6 +67,14 @@ public class FLScoreboardDouble : PvpScoreboardDouble, IEquatable<FrontlineScore
     public bool Equals(FrontlineScoreboard? other) {
         if(other is null) {
             return false;
+        } else {
+            return Equals((FLScoreboardDouble)other);
+        }
+    }
+
+    public bool Equals(FLScoreboardDouble? other) {
+        if(other is null) {
+            return false;
         }
         var thisPvPScoreboard = (PvpScoreboardDouble)this;
         var otherPvPScoreboard = (PvpScoreboardDouble)other;
@@ -75,5 +83,9 @@ public class FLScoreboardDouble : PvpScoreboardDouble, IEquatable<FrontlineScore
             && DamageToPCs == other.DamageToPCs
             && DamageToOther == other.DamageToOther
             && Special1 == other.Special1;
+    }
+
+    public override int GetHashCode() {
+        return (base.GetHashCode(), Occupations, DamageToPCs, DamageToOther, Special1).GetHashCode();
     }
 }
