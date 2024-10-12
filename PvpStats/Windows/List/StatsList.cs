@@ -3,6 +3,7 @@ using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PvpStats.Helpers;
 using PvpStats.Types.Display;
+using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
@@ -12,13 +13,17 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
-internal abstract class StatsList<T, U> : FilteredList<T> where T : notnull where U : PlayerJobStats {
+internal abstract class StatsList<T, U, V> : FilteredList<T> where T : notnull where U : PlayerJobStats where V : PvpMatch {
 
     public float RefreshProgress { get; set; } = 0f;
+    protected int MatchesProcessed { get; set; }
+    protected int MatchesTotal { get; set; }
 
     protected List<T> DataModelUntruncated { get; set; } = [];
 
     protected Dictionary<T, U> StatsModel { get; set; } = [];
+
+    protected List<V> Matches = new();
 
     protected override ImGuiTableFlags TableFlags { get; set; } = ImGuiTableFlags.Reorderable | ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable
     | ImGuiTableFlags.Borders | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX | ImGuiTableFlags.PadOuterX;
@@ -44,6 +49,26 @@ internal abstract class StatsList<T, U> : FilteredList<T> where T : notnull wher
     public override async Task RefreshDataModel() {
         TriggerSort = true;
         await Task.CompletedTask;
+    }
+
+    protected virtual void ProcessMatch(V match, bool remove = false) {
+    }
+
+    protected virtual async Task ProcessMatches(List<V> matches, bool remove = false) {
+        List<Task> matchTasks = [];
+        matches.ForEach(x => {
+            var t = new Task(() => {
+                ProcessMatch(x, remove);
+                RefreshProgress = (float)MatchesProcessed++ / MatchesTotal;
+            });
+            matchTasks.Add(t);
+            t.Start();
+        });
+        try {
+            await Task.WhenAll(matchTasks);
+        } catch(Exception e) {
+            _plugin.Log.Error(e, "Process Match Error");
+        }
     }
 
     protected (PropertyInfo?, PropertyInfo?) GetStatsPropertyFromId(uint columnId) {

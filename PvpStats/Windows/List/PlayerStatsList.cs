@@ -8,10 +8,9 @@ using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
-internal abstract class PlayerStatsList<T, U> : StatsList<PlayerAlias, T> where T : PlayerJobStats where U : PvpMatch {
+internal abstract class PlayerStatsList<T, U> : StatsList<PlayerAlias, T, U> where T : PlayerJobStats where U : PvpMatch {
 
     internal OtherPlayerFilter PlayerFilter { get; private set; }
     public PlayerStatSourceFilter StatSourceFilter { get; protected set; }
@@ -19,11 +18,6 @@ internal abstract class PlayerStatsList<T, U> : StatsList<PlayerAlias, T> where 
     public PlayerQuickSearchFilter PlayerQuickSearchFilter { get; protected set; }
 
     public Dictionary<PlayerAlias, Dictionary<PlayerAlias, int>> ActiveLinks { get; protected set; } = new();
-
-    protected int MatchesProcessed { get; set; }
-    protected int MatchesTotal { get; set; }
-
-    protected List<U> Matches = new();
 
     public PlayerStatsList(Plugin plugin, PlayerStatSourceFilter statSourceFilter, MinMatchFilter minMatchFilter, PlayerQuickSearchFilter quickSearchFilter, OtherPlayerFilter playerFilter) : base(plugin) {
 
@@ -33,25 +27,6 @@ internal abstract class PlayerStatsList<T, U> : StatsList<PlayerAlias, T> where 
         PlayerQuickSearchFilter = quickSearchFilter;
         PlayerFilter = playerFilter;
         //Reset();
-    }
-    protected virtual void ProcessMatch(U match, bool remove = false) {
-    }
-
-    protected async Task ProcessMatches(List<U> matches, bool remove = false) {
-        List<Task> matchTasks = [];
-        matches.ForEach(x => {
-            var t = new Task(() => {
-                ProcessMatch(x, remove);
-                RefreshProgress = (float)MatchesProcessed++ / MatchesTotal;
-            });
-            matchTasks.Add(t);
-            t.Start();
-        });
-        try {
-            await Task.WhenAll(matchTasks);
-        } catch(Exception e) {
-            _plugin.Log.Error(e, "Process Match Error");
-        }
     }
 
     protected override void PreTableDraw() {

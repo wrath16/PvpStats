@@ -8,6 +8,7 @@ using PvpStats.Types.Display;
 using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -22,12 +23,12 @@ internal class CrystallineConflictSummary {
     public float RefreshProgress { get; set; } = 0f;
 
     internal CCPlayerJobStats LocalPlayerStats { get; private set; } = new();
-    internal Dictionary<Job, CCAggregateStats> LocalPlayerJobStats { get; private set; } = new();
-    internal Dictionary<CrystallineConflictMap, CCAggregateStats> ArenaStats { get; private set; } = new();
-    internal Dictionary<PlayerAlias, CCAggregateStats> TeammateStats { get; private set; } = new();
-    internal Dictionary<PlayerAlias, CCAggregateStats> OpponentStats { get; private set; } = new();
-    internal Dictionary<Job, CCAggregateStats> TeammateJobStats { get; private set; } = new();
-    internal Dictionary<Job, CCAggregateStats> OpponentJobStats { get; private set; } = new();
+    internal Dictionary<Job, CCAggregateStats> LocalPlayerJobStats { get; private set; } = [];
+    internal Dictionary<CrystallineConflictMap, CCAggregateStats> ArenaStats { get; private set; } = [];
+    internal Dictionary<PlayerAlias, CCAggregateStats> TeammateStats { get; private set; } = [];
+    internal Dictionary<PlayerAlias, CCAggregateStats> OpponentStats { get; private set; } = [];
+    internal Dictionary<Job, CCAggregateStats> TeammateJobStats { get; private set; } = [];
+    internal Dictionary<Job, CCAggregateStats> OpponentJobStats { get; private set; } = [];
     internal TimeSpan AverageMatchDuration { get; private set; } = new();
 
     //internal state
@@ -38,16 +39,16 @@ internal class CrystallineConflictSummary {
     TimeSpan _totalMatchTime;
 
     CCPlayerJobStats _localPlayerStats = new();
-    List<CCScoreboardDouble> _localPlayerTeamContributions = [];
+    ConcurrentDictionary<int, CCScoreboardDouble> _localPlayerTeamContributions = [];
     TimeSpan _localPlayerMatchTime;
-    Dictionary<Job, CCAggregateStats> _localPlayerJobStats = [];
-    Dictionary<CrystallineConflictMap, CCAggregateStats> _arenaStats = [];
-    Dictionary<PlayerAlias, CCAggregateStats> _teammateStats = [];
-    Dictionary<PlayerAlias, CCAggregateStats> _opponentStats = [];
-    Dictionary<Job, CCAggregateStats> _teammateJobStats = [];
-    Dictionary<Job, CCAggregateStats> _opponentJobStats = [];
-    Dictionary<PlayerAlias, Dictionary<Job, CCAggregateStats>> _teammateJobStatsLookup = [];
-    Dictionary<PlayerAlias, Dictionary<Job, CCAggregateStats>> _opponentJobStatsLookup = [];
+    ConcurrentDictionary<Job, CCAggregateStats> _localPlayerJobStats = [];
+    ConcurrentDictionary<CrystallineConflictMap, CCAggregateStats> _arenaStats = [];
+    ConcurrentDictionary<PlayerAlias, CCAggregateStats> _teammateStats = [];
+    ConcurrentDictionary<PlayerAlias, CCAggregateStats> _opponentStats = [];
+    ConcurrentDictionary<Job, CCAggregateStats> _teammateJobStats = [];
+    ConcurrentDictionary<Job, CCAggregateStats> _opponentJobStats = [];
+    ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<Job, CCAggregateStats>> _teammateJobStatsLookup = [];
+    ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<Job, CCAggregateStats>> _opponentJobStatsLookup = [];
 
     public CrystallineConflictSummary(Plugin plugin) {
         Plugin = plugin;
@@ -69,7 +70,7 @@ internal class CrystallineConflictSummary {
         _opponentJobStatsLookup = [];
     }
 
-    internal Task Refresh(List<CrystallineConflictMatch> matches, List<CrystallineConflictMatch> additions, List<CrystallineConflictMatch> removals) {
+    internal async Task Refresh(List<CrystallineConflictMatch> matches, List<CrystallineConflictMatch> additions, List<CrystallineConflictMatch> removals) {
         _matchesProcessed = 0;
         Stopwatch s1 = Stopwatch.StartNew();
         try {
@@ -77,13 +78,13 @@ internal class CrystallineConflictSummary {
                 //force full build
                 Reset();
                 _matchesTotal = matches.Count;
-                ProcessMatches(matches);
+                await ProcessMatches(matches);
             } else {
                 _matchesTotal = removals.Count + additions.Count;
-                ProcessMatches(removals, true);
-                ProcessMatches(additions);
+                await ProcessMatches(removals, true);
+                await ProcessMatches(additions);
             }
-            CrystallineConflictStatsManager.SetScoreboardStats(_localPlayerStats, _localPlayerTeamContributions, _localPlayerMatchTime);
+            CrystallineConflictStatsManager.SetScoreboardStats(_localPlayerStats, _localPlayerTeamContributions.Values.ToList(), _localPlayerMatchTime);
             foreach(var teammateStat in _teammateStats) {
                 teammateStat.Value.Job = _teammateJobStatsLookup[teammateStat.Key].OrderByDescending(x => x.Value.WinDiff).FirstOrDefault().Key;
             }
@@ -102,10 +103,9 @@ internal class CrystallineConflictSummary {
             _matches = matches;
         } finally {
             s1.Stop();
-            Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"Summary Refresh", s1.ElapsedMilliseconds.ToString()));
+            Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"CC Summary Refresh", s1.ElapsedMilliseconds.ToString()));
             _matchesProcessed = 0;
         }
-        return Task.CompletedTask;
     }
 
     private void ProcessMatch(CrystallineConflictMatch match, bool remove = false) {
@@ -126,22 +126,16 @@ internal class CrystallineConflictSummary {
 
             if(match.LocalPlayerTeamMember!.Job != null) {
                 var job = (Job)match.LocalPlayerTeamMember!.Job;
-                if(!_localPlayerJobStats.TryGetValue(job, out CCAggregateStats? jobStat)) {
-                    jobStat = new();
-                    _localPlayerJobStats.Add(job, jobStat);
-                }
-                CrystallineConflictStatsManager.IncrementAggregateStats(jobStat, match, remove);
+                _localPlayerJobStats.TryAdd(job, new());
+                CrystallineConflictStatsManager.IncrementAggregateStats(_localPlayerJobStats[job], match, remove);
             }
         }
 
         //arena stats
         if(match.Arena != null) {
             var arena = (CrystallineConflictMap)match.Arena;
-            if(!_arenaStats.TryGetValue(arena, out CCAggregateStats? arenaStat)) {
-                arenaStat = new();
-                _arenaStats.Add(arena, arenaStat);
-            }
-            CrystallineConflictStatsManager.IncrementAggregateStats(arenaStat, match, remove);
+            _arenaStats.TryAdd(arena, new());
+            CrystallineConflictStatsManager.IncrementAggregateStats(_arenaStats[arena], match, remove);
         }
 
         //process player and job stats
@@ -155,61 +149,46 @@ internal class CrystallineConflictSummary {
                 var alias = Plugin.PlayerLinksService.GetMainAlias(player.Alias);
 
                 if(isTeammate) {
-                    if(!_teammateStats.TryGetValue(alias, out CCAggregateStats? teammateStat)) {
-                        teammateStat = new();
-                        _teammateStats.Add(alias, teammateStat);
-                    }
-                    CrystallineConflictStatsManager.IncrementAggregateStats(teammateStat, match, remove);
+                    _teammateStats.TryAdd(alias, new());
+                    CrystallineConflictStatsManager.IncrementAggregateStats(_teammateStats[alias], match, remove);
                     if(player.Job != null) {
-                        if(!_teammateJobStats.TryGetValue(job, out CCAggregateStats? teammateJobStat)) {
-                            teammateJobStat = new();
-                            _teammateJobStats.Add(job, teammateJobStat);
-                        }
-                        CrystallineConflictStatsManager.IncrementAggregateStats(teammateJobStat, match, remove);
-                        if(!_teammateJobStatsLookup.TryGetValue(alias, out Dictionary<Job, CCAggregateStats>? teammateJobStatLookup)) {
-                            teammateJobStatLookup = new();
-                            _teammateJobStatsLookup.Add(alias, teammateJobStatLookup);
-                        }
-                        if(!teammateJobStatLookup!.TryGetValue(job, out CCAggregateStats? teammateJobStatLookupJobStat)) {
-                            teammateJobStatLookupJobStat = new();
-                            teammateJobStatLookup.Add(job, teammateJobStatLookupJobStat);
-                        }
-                        CrystallineConflictStatsManager.IncrementAggregateStats(teammateJobStatLookupJobStat, match, remove);
+                        _teammateJobStats.TryAdd(job, new());
+                        CrystallineConflictStatsManager.IncrementAggregateStats(_teammateJobStats[job], match, remove);
+                        _teammateJobStatsLookup.TryAdd(alias, new());
+                        _teammateJobStatsLookup[alias].TryAdd(job, new());
+                        CrystallineConflictStatsManager.IncrementAggregateStats(_teammateJobStatsLookup[alias][job], match, remove);
                     }
                 } else if(isOpponent) {
-                    if(!_opponentStats.TryGetValue(alias, out CCAggregateStats? opponentStat)) {
-                        opponentStat = new();
-                        _opponentStats.Add(alias, opponentStat);
-                    }
-                    CrystallineConflictStatsManager.IncrementAggregateStats(opponentStat, match, remove);
+                    _opponentStats.TryAdd(alias, new());
+                    CrystallineConflictStatsManager.IncrementAggregateStats(_opponentStats[alias], match, remove);
                     if(player.Job != null) {
-                        if(!_opponentJobStats.TryGetValue(job, out CCAggregateStats? opponentJobStat)) {
-                            opponentJobStat = new();
-                            _opponentJobStats.Add(job, opponentJobStat);
-                        }
-                        CrystallineConflictStatsManager.IncrementAggregateStats(opponentJobStat, match, remove);
+                        _opponentJobStats.TryAdd(job, new());
+                        CrystallineConflictStatsManager.IncrementAggregateStats(_opponentJobStats[job], match, remove);
+                        _opponentJobStatsLookup.TryAdd(alias, new());
+                        _opponentJobStatsLookup[alias].TryAdd(job, new());
+                        CrystallineConflictStatsManager.IncrementAggregateStats(_opponentJobStatsLookup[alias][job], match, remove);
                     }
-                    if(!_opponentJobStatsLookup.TryGetValue(alias, out Dictionary<Job, CCAggregateStats>? opponentJobStatLookup)) {
-                        opponentJobStatLookup = new();
-                        _opponentJobStatsLookup.Add(alias, opponentJobStatLookup);
-                    }
-                    if(!opponentJobStatLookup!.TryGetValue(job, out CCAggregateStats? opponentJobStatLookupJobStat)) {
-                        opponentJobStatLookupJobStat = new();
-                        opponentJobStatLookup.Add(job, opponentJobStatLookupJobStat);
-                    }
-                    CrystallineConflictStatsManager.IncrementAggregateStats(opponentJobStatLookupJobStat, match, remove);
                 }
             }
         }
     }
 
-    private void ProcessMatches(List<CrystallineConflictMatch> matches, bool remove = false) {
+    private async Task ProcessMatches(List<CrystallineConflictMatch> matches, bool remove = false) {
+        List<Task> matchTasks = [];
         matches.ForEach(x => {
-            ProcessMatch(x, remove);
-            RefreshProgress = (float)_matchesProcessed++ / _matchesTotal;
+            var t = new Task(() => {
+                ProcessMatch(x, remove);
+                RefreshProgress = (float)_matchesProcessed++ / _matchesTotal;
+            });
+            matchTasks.Add(t);
+            t.Start();
         });
+        try {
+            await Task.WhenAll(matchTasks);
+        } catch(Exception e) {
+            Plugin.Log2.Error(e, "Process Match Error");
+        }
     }
-
     public void Draw() {
         if(!RefreshLock.Wait(0)) {
             return;
