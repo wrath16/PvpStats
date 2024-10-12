@@ -62,52 +62,49 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
         }
     }
 
-    public static void AddPlayerJobStat(FLPlayerJobStats statsModel, List<FLScoreboardDouble> teamContributions,
-    FrontlineMatch match, FrontlinePlayer player, FrontlineScoreboard? teamScoreboard, bool remove = false) {
+    public static void IncrementAggregateStats(FLAggregateStats stats, FrontlineMatch match, FrontlinePlayer player, bool decrement = false) {
         bool isLocalPlayer = player.Name.Equals(match.LocalPlayer);
         bool isTeammate = !isLocalPlayer && player.Team == match.LocalPlayerTeam!;
         bool isOpponent = !isLocalPlayer && !isTeammate;
 
-        //if(isTeammate) {
-        //    IncrementAggregateStats(statsModel.StatsTeammate, match);
-        //} else if(isOpponent) {
-        //    IncrementAggregateStats(statsModel.StatsOpponent, match);
-        //}
-
-        if(remove) {
-            statsModel.StatsAll.Matches--;
+        if(decrement) {
+            stats.Matches--;
         } else {
-            statsModel.StatsAll.Matches++;
+            stats.Matches++;
         }
 
         if(match.Teams.ContainsKey(player.Team)) {
             switch(match.Teams[player.Team].Placement) {
                 case 0:
-                    if(remove) {
-                        statsModel.StatsAll.FirstPlaces--;
+                    if(decrement) {
+                        stats.FirstPlaces--;
                     } else {
-                        statsModel.StatsAll.FirstPlaces++;
+                        stats.FirstPlaces++;
                     }
                     break;
                 case 1:
-                    if(remove) {
-                        statsModel.StatsAll.SecondPlaces--;
+                    if(decrement) {
+                        stats.SecondPlaces--;
                     } else {
-                        statsModel.StatsAll.SecondPlaces++;
+                        stats.SecondPlaces++;
                     }
                     break;
                 case 2:
-                    if(remove) {
-                        statsModel.StatsAll.ThirdPlaces--;
+                    if(decrement) {
+                        stats.ThirdPlaces--;
                     } else {
-                        statsModel.StatsAll.ThirdPlaces++;
+                        stats.ThirdPlaces++;
                     }
                     break;
                 default:
                     break;
             }
         }
+    }
 
+    public static void AddPlayerJobStat(FLPlayerJobStats statsModel, List<FLScoreboardDouble> teamContributions,
+    FrontlineMatch match, FrontlinePlayer player, FrontlineScoreboard? teamScoreboard, bool remove = false) {
+        IncrementAggregateStats(statsModel.StatsAll, match, player, remove);
         if(match.PlayerScoreboards != null) {
             var playerScoreboard = match.PlayerScoreboards[player.Name];
             if(playerScoreboard != null && teamScoreboard != null) {
@@ -126,56 +123,19 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
 
     public static void AddPlayerJobStat(FLPlayerJobStats statsModel, ConcurrentDictionary<int, FLScoreboardDouble> teamContributions,
     FrontlineMatch match, FrontlinePlayer player, FrontlineScoreboard? teamScoreboard, bool remove = false) {
-        bool isLocalPlayer = player.Name.Equals(match.LocalPlayer);
-        bool isTeammate = !isLocalPlayer && player.Team == match.LocalPlayerTeam!;
-        bool isOpponent = !isLocalPlayer && !isTeammate;
-
-        if(remove) {
-            statsModel.StatsAll.Matches--;
-        } else {
-            statsModel.StatsAll.Matches++;
-        }
-
-        if(match.Teams.ContainsKey(player.Team)) {
-            switch(match.Teams[player.Team].Placement) {
-                case 0:
-                    if(remove) {
-                        statsModel.StatsAll.FirstPlaces--;
-                    } else {
-                        statsModel.StatsAll.FirstPlaces++;
-                    }
-                    break;
-                case 1:
-                    if(remove) {
-                        statsModel.StatsAll.SecondPlaces--;
-                    } else {
-                        statsModel.StatsAll.SecondPlaces++;
-                    }
-                    break;
-                case 2:
-                    if(remove) {
-                        statsModel.StatsAll.ThirdPlaces--;
-                    } else {
-                        statsModel.StatsAll.ThirdPlaces++;
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
+        IncrementAggregateStats(statsModel.StatsAll, match, player, remove);
 
         if(match.PlayerScoreboards != null) {
             var playerScoreboard = match.PlayerScoreboards[player.Name];
             if(playerScoreboard != null && teamScoreboard != null) {
                 var hashCode = (match.GetHashCode(), player.Name).GetHashCode();
-
                 if(remove) {
                     statsModel.ScoreboardTotal -= playerScoreboard;
                     //teamContributions.TryTake(new(playerScoreboard, teamScoreboard));
                     var toRemove = new FLScoreboardDouble(playerScoreboard, teamScoreboard);
                     if(!teamContributions.TryRemove(hashCode, out _)) {
 #if DEBUG
-                        Plugin.Log2.Warning($"failed to remove teamcontrib!, {match.DutyStartTime} {player.Name}");
+                        Plugin.Log2.Warning($"failed to remove team contrib!, {match.DutyStartTime} {player.Name}");
 #endif
                     }
                 } else {

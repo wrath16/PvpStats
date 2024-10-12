@@ -5,6 +5,7 @@ using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using PvpStats.Windows.Filter;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -41,7 +42,7 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
     public RivalWingsStatsManager(Plugin plugin) : base(plugin, plugin.RWCache) {
     }
 
-    internal static void IncrementAggregateStats(CCAggregateStats stats, RivalWingsMatch match, bool decrement = false) {
+    public static void IncrementAggregateStats(CCAggregateStats stats, RivalWingsMatch match, bool decrement = false) {
         if(decrement) {
             stats.Matches--;
             if(match.IsWin) {
@@ -57,27 +58,29 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
                 stats.Losses++;
             }
         }
-
     }
 
-    internal static void AddPlayerJobStat(RWPlayerJobStats statsModel, List<RWScoreboardDouble> teamContributions,
-    RivalWingsMatch match, RivalWingsPlayer player, RivalWingsScoreboard? teamScoreboard, bool remove = false) {
-
-        if(remove) {
-            statsModel.StatsAll.Matches--;
+    public static void IncrementAggregateStats(CCAggregateStats stats, RivalWingsMatch match, RivalWingsPlayer player, bool decrement = false) {
+        if(decrement) {
+            stats.Matches--;
             if(match.MatchWinner == player.Team) {
-                statsModel.StatsAll.Wins--;
+                stats.Wins--;
             } else if(match.MatchWinner != null) {
-                statsModel.StatsAll.Losses--;
+                stats.Losses--;
             }
         } else {
-            statsModel.StatsAll.Matches++;
+            stats.Matches++;
             if(match.MatchWinner == player.Team) {
-                statsModel.StatsAll.Wins++;
+                stats.Wins++;
             } else if(match.MatchWinner != null) {
-                statsModel.StatsAll.Losses++;
+                stats.Losses++;
             }
         }
+    }
+
+    public static void AddPlayerJobStat(RWPlayerJobStats statsModel, List<RWScoreboardDouble> teamContributions,
+    RivalWingsMatch match, RivalWingsPlayer player, RivalWingsScoreboard? teamScoreboard, bool remove = false) {
+        IncrementAggregateStats(statsModel.StatsAll, match, player, remove);
 
         if(match.PlayerScoreboards != null) {
             var playerScoreboard = match.PlayerScoreboards[player.Name];
@@ -94,7 +97,30 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
         }
     }
 
-    internal static void SetScoreboardStats(RWPlayerJobStats stats, List<RWScoreboardDouble> teamContributions, TimeSpan time) {
+    public static void AddPlayerJobStat(RWPlayerJobStats statsModel, ConcurrentDictionary<int, RWScoreboardDouble> teamContributions,
+    RivalWingsMatch match, RivalWingsPlayer player, RivalWingsScoreboard? teamScoreboard, bool remove = false) {
+        IncrementAggregateStats(statsModel.StatsAll, match, player, remove);
+
+        if(match.PlayerScoreboards != null) {
+            var playerScoreboard = match.PlayerScoreboards[player.Name];
+            if(playerScoreboard != null && teamScoreboard != null) {
+                var hashCode = (match.GetHashCode(), player.Name).GetHashCode();
+                if(remove) {
+                    statsModel.ScoreboardTotal -= playerScoreboard;
+                    if(!teamContributions.Remove(hashCode, out _)) {
+#if DEBUG
+                        Plugin.Log2.Warning($"failed to remove team contrib!, {match.DutyStartTime} {player.Name}");
+#endif
+                    }
+                } else {
+                    statsModel.ScoreboardTotal += playerScoreboard;
+                    teamContributions.TryAdd(hashCode, new(playerScoreboard, teamScoreboard));
+                }
+            }
+        }
+    }
+
+    public static void SetScoreboardStats(RWPlayerJobStats stats, List<RWScoreboardDouble> teamContributions, TimeSpan time) {
         var statMatches = teamContributions.Count;
         //set average stats
         if(statMatches > 0) {

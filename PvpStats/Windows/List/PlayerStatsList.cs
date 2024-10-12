@@ -8,6 +8,7 @@ using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
 internal abstract class PlayerStatsList<T, U> : StatsList<PlayerAlias, T> where T : PlayerJobStats where U : PvpMatch {
@@ -19,6 +20,9 @@ internal abstract class PlayerStatsList<T, U> : StatsList<PlayerAlias, T> where 
 
     public Dictionary<PlayerAlias, Dictionary<PlayerAlias, int>> ActiveLinks { get; protected set; } = new();
 
+    protected int MatchesProcessed { get; set; }
+    protected int MatchesTotal { get; set; }
+
     protected List<U> Matches = new();
 
     public PlayerStatsList(Plugin plugin, PlayerStatSourceFilter statSourceFilter, MinMatchFilter minMatchFilter, PlayerQuickSearchFilter quickSearchFilter, OtherPlayerFilter playerFilter) : base(plugin) {
@@ -29,6 +33,25 @@ internal abstract class PlayerStatsList<T, U> : StatsList<PlayerAlias, T> where 
         PlayerQuickSearchFilter = quickSearchFilter;
         PlayerFilter = playerFilter;
         //Reset();
+    }
+    protected virtual void ProcessMatch(U match, bool remove = false) {
+    }
+
+    protected async Task ProcessMatches(List<U> matches, bool remove = false) {
+        List<Task> matchTasks = [];
+        matches.ForEach(x => {
+            var t = new Task(() => {
+                ProcessMatch(x, remove);
+                RefreshProgress = (float)MatchesProcessed++ / MatchesTotal;
+            });
+            matchTasks.Add(t);
+            t.Start();
+        });
+        try {
+            await Task.WhenAll(matchTasks);
+        } catch(Exception e) {
+            _plugin.Log.Error(e, "Process Match Error");
+        }
     }
 
     protected override void PreTableDraw() {
@@ -57,24 +80,6 @@ internal abstract class PlayerStatsList<T, U> : StatsList<PlayerAlias, T> where 
 
         ImGui.SameLine();
         ImGui.TextUnformatted($"Total players:   {DataModel.Count}");
-    }
-
-    protected override void PostColumnSetup() {
-        ImGui.TableSetupScrollFreeze(1, 1);
-        //column sorting
-        ImGuiTableSortSpecsPtr sortSpecs = ImGui.TableGetSortSpecs();
-        if(sortSpecs.SpecsDirty || TriggerSort) {
-            TriggerSort = false;
-            sortSpecs.SpecsDirty = false;
-            SortByColumn(sortSpecs.Specs.ColumnUserID, sortSpecs.Specs.SortDirection);
-            GoToPage(0);
-
-            //this causes conflicts when multiple tracker windows refresh at once
-            //_plugin.DataQueue.QueueDataOperation(() => {
-            //    SortByColumn(sortSpecs.Specs.ColumnUserID, sortSpecs.Specs.SortDirection);
-            //    GoToPage(0);
-            //});
-        }
     }
 
     protected void ApplyQuickFilters(uint minMatches, string searchText) {

@@ -19,10 +19,6 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
     protected override string TableId => "###FLPlayerStatsTable";
 
     //internal state
-    //List<FrontlineMatch> _matches = new();
-    int _matchesProcessed = 0;
-    int _matchesTotal = 100;
-
     ConcurrentQueue<PlayerAlias> _players = [];
     ConcurrentDictionary<PlayerAlias, FLPlayerJobStats> _playerStats = [];
     ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<int, FLScoreboardDouble>> _playerTeamContributions = [];
@@ -109,7 +105,7 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
     }
 
     internal async Task Refresh(List<FrontlineMatch> matches, List<FrontlineMatch> additions, List<FrontlineMatch> removals) {
-        _matchesProcessed = 0;
+        MatchesProcessed = 0;
         Stopwatch s1 = Stopwatch.StartNew();
         _linkedPlayerAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(PlayerFilter.PlayerNamesRaw);
         bool removalThresholdMet = removals.Count * 2 >= Matches.Count;
@@ -121,10 +117,10 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
                 //force full build
                 //_plugin.Log.Debug("players full rebuild");
                 Reset();
-                _matchesTotal = matches.Count;
+                MatchesTotal = matches.Count;
                 await ProcessMatches(matches);
             } else {
-                _matchesTotal = removals.Count + additions.Count;
+                MatchesTotal = removals.Count + additions.Count;
                 //_plugin.Log.Debug($"adding: {additions.Count} removing: {removals.Count}");
                 await ProcessMatches(removals, true);
                 await ProcessMatches(additions);
@@ -159,12 +155,12 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
         } finally {
             s1.Stop();
             _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"FL Players Refresh", s1.ElapsedMilliseconds.ToString()));
-            _matchesProcessed = 0;
+            MatchesProcessed = 0;
         }
         return;
     }
 
-    private void ProcessMatch(FrontlineMatch match, bool remove = false) {
+    protected override void ProcessMatch(FrontlineMatch match, bool remove = false) {
         List<Task> playerTasks = [];
         if(match.PlayerScoreboards != null) {
             var teamScoreboards = match.GetTeamScoreboards();
@@ -240,30 +236,6 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
                     }
                 }
             }
-        }
-    }
-
-    private async Task ProcessMatches(List<FrontlineMatch> matches, bool remove = false) {
-        List<Task> matchTasks = [];
-
-        matches.ForEach(x => {
-            var t = new Task(() => {
-                ProcessMatch(x, remove);
-                RefreshProgress = (float)_matchesProcessed++ / _matchesTotal;
-            });
-            matchTasks.Add(t);
-            t.Start();
-
-            //Task.Run(() => {
-            //    ProcessMatch(x, remove);
-            //    RefreshProgress = (float)_matchesProcessed++ / _matchesTotal;
-            //});
-        });
-        try {
-            await Task.WhenAll(matchTasks);
-            //await Task.WhenAll(matchTasks.Select(x => x.Result));
-        } catch(Exception e) {
-            _plugin.Log.Error(e, "Error!");
         }
     }
 
