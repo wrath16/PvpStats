@@ -124,17 +124,11 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
         }
     }
 
-    public static void AddPlayerJobStat(FLPlayerJobStats statsModel, ConcurrentDictionary<FLScoreboardDouble, byte> teamContributions,
+    public static void AddPlayerJobStat(FLPlayerJobStats statsModel, ConcurrentDictionary<int, FLScoreboardDouble> teamContributions,
     FrontlineMatch match, FrontlinePlayer player, FrontlineScoreboard? teamScoreboard, bool remove = false) {
         bool isLocalPlayer = player.Name.Equals(match.LocalPlayer);
         bool isTeammate = !isLocalPlayer && player.Team == match.LocalPlayerTeam!;
         bool isOpponent = !isLocalPlayer && !isTeammate;
-
-        //if(isTeammate) {
-        //    IncrementAggregateStats(statsModel.StatsTeammate, match);
-        //} else if(isOpponent) {
-        //    IncrementAggregateStats(statsModel.StatsOpponent, match);
-        //}
 
         if(remove) {
             statsModel.StatsAll.Matches--;
@@ -173,18 +167,20 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
         if(match.PlayerScoreboards != null) {
             var playerScoreboard = match.PlayerScoreboards[player.Name];
             if(playerScoreboard != null && teamScoreboard != null) {
+                var hashCode = (match.GetHashCode(), player.Name).GetHashCode();
+
                 if(remove) {
                     statsModel.ScoreboardTotal -= playerScoreboard;
                     //teamContributions.TryTake(new(playerScoreboard, teamScoreboard));
                     var toRemove = new FLScoreboardDouble(playerScoreboard, teamScoreboard);
-                    if(!teamContributions.TryRemove(toRemove, out _)) {
+                    if(!teamContributions.TryRemove(hashCode, out _)) {
 #if DEBUG
                         Plugin.Log2.Warning($"failed to remove teamcontrib!, {match.DutyStartTime} {player.Name}");
 #endif
                     }
                 } else {
                     statsModel.ScoreboardTotal += playerScoreboard;
-                    teamContributions.TryAdd(new(playerScoreboard, teamScoreboard), 0);
+                    teamContributions.TryAdd(hashCode, new(playerScoreboard, teamScoreboard));
                 }
                 statsModel.ScoreboardTotal.Size = statsModel.StatsAll.Matches;
             }

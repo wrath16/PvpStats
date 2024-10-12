@@ -166,7 +166,7 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
     }
 
     protected Task RefreshTab(Func<Task> func) {
-        var task = new Task(async () => {
+        var task = new Task<Task>(async () => {
             try {
                 await func.Invoke();
             } catch(Exception e) {
@@ -174,7 +174,7 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
             }
         });
         task.Start();
-        return task;
+        return task.Result;
     }
 
     protected unsafe void Tab(string name, Action action, bool refreshActive = false, float refreshProgress = 0f) {

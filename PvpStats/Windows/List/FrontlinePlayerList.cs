@@ -25,12 +25,12 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
 
     ConcurrentQueue<PlayerAlias> _players = [];
     ConcurrentDictionary<PlayerAlias, FLPlayerJobStats> _playerStats = [];
-    ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<FLScoreboardDouble, byte>> _playerTeamContributions = [];
+    ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<int, FLScoreboardDouble>> _playerTeamContributions = [];
     ConcurrentDictionary<PlayerAlias, TimeSpan> _playerTimes = [];
     ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<Job, FLAggregateStats>> _playerJobStatsLookup = [];
     ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<PlayerAlias, int>> _activeLinks = [];
     ConcurrentDictionary<PlayerAlias, FLPlayerJobStats> _shatterStats = [];
-    ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<FLScoreboardDouble, byte>> _shatterTeamContributions = [];
+    ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<int, FLScoreboardDouble>> _shatterTeamContributions = [];
     ConcurrentDictionary<PlayerAlias, TimeSpan> _shatterTimes = [];
 
     List<PlayerAlias> _linkedPlayerAliases = [];
@@ -135,8 +135,8 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
 
             foreach(var playerStat in _playerStats) {
                 playerStat.Value.StatsAll.Job = _playerJobStatsLookup[playerStat.Key].OrderByDescending(x => x.Value.Matches).FirstOrDefault().Key;
-                FrontlineStatsManager.SetScoreboardStats(playerStat.Value, _playerTeamContributions[playerStat.Key].Keys.ToList(), _playerTimes[playerStat.Key]);
-                FrontlineStatsManager.SetScoreboardStats(_shatterStats[playerStat.Key], _shatterTeamContributions[playerStat.Key].Keys.ToList(), _shatterTimes[playerStat.Key]);
+                FrontlineStatsManager.SetScoreboardStats(playerStat.Value, _playerTeamContributions[playerStat.Key].Values.ToList(), _playerTimes[playerStat.Key]);
+                FrontlineStatsManager.SetScoreboardStats(_shatterStats[playerStat.Key], _shatterTeamContributions[playerStat.Key].Values.ToList(), _shatterTimes[playerStat.Key]);
                 playerStat.Value.ScoreboardTotal.DamageToOther = _shatterStats[playerStat.Key].ScoreboardTotal.DamageToOther;
                 playerStat.Value.ScoreboardPerMatch.DamageToOther = _shatterStats[playerStat.Key].ScoreboardPerMatch.DamageToOther;
                 playerStat.Value.ScoreboardPerMin.DamageToOther = _shatterStats[playerStat.Key].ScoreboardPerMin.DamageToOther;

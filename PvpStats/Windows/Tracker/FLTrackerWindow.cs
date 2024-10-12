@@ -120,7 +120,7 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
                 await _players.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
                 _playerRefreshActive = false;
             });
-            Task.WaitAll([
+            await Task.WhenAll([
                 matchRefresh,
                 summaryRefresh,
                 jobRefresh,

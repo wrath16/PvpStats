@@ -88,7 +88,7 @@ internal class FrontlineSummary {
             _matches = matches;
         } finally {
             s1.Stop();
-            Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"Summary Refresh", s1.ElapsedMilliseconds.ToString()));
+            Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"FL Summary Refresh", s1.ElapsedMilliseconds.ToString()));
             _matchesProcessed = 0;
         }
         return Task.CompletedTask;

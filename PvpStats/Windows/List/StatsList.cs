@@ -153,4 +153,22 @@ internal abstract class StatsList<T, U> : FilteredList<T> where T : notnull wher
         }
         ImGuiHelper.WrappedTooltip("Copy CSV to clipboard");
     }
+
+    protected override void PostColumnSetup() {
+        ImGui.TableSetupScrollFreeze(1, 1);
+        //column sorting
+        ImGuiTableSortSpecsPtr sortSpecs = ImGui.TableGetSortSpecs();
+        if(sortSpecs.SpecsDirty || TriggerSort) {
+            TriggerSort = false;
+            sortSpecs.SpecsDirty = false;
+
+            //removed from data queue for performance reasons
+            SortByColumn(sortSpecs.Specs.ColumnUserID, sortSpecs.Specs.SortDirection);
+            GoToPage(0);
+            //_plugin.DataQueue.QueueDataOperation(() => {
+            //    SortByColumn(sortSpecs.Specs.ColumnUserID, sortSpecs.Specs.SortDirection);
+            //    GoToPage(0);
+            //});
+        }
+    }
 }
