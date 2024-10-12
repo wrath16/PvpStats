@@ -1,6 +1,5 @@
 ﻿using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
-using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PvpStats.Helpers;
 using PvpStats.Managers.Stats;
@@ -9,27 +8,21 @@ using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using PvpStats.Windows.Filter;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
-internal class CrystallineConflictJobList : CCStatsList<Job> {
+internal class CrystallineConflictJobList : JobStatsList<CCPlayerJobStats, CrystallineConflictMatch> {
 
     protected override string TableId => "###CCJobStatsTable";
 
-    internal StatSourceFilter StatSourceFilter { get; private set; }
-    internal OtherPlayerFilter PlayerFilter { get; private set; }
-
     //internal state
-    List<CrystallineConflictMatch> _matches = new();
-    int _matchesProcessed = 0;
-    int _matchesTotal = 100;
-
-    Dictionary<Job, CCPlayerJobStats> _jobStats;
-    Dictionary<Job, List<CCScoreboardDouble>> _jobTeamContributions;
-    Dictionary<Job, TimeSpan> _jobTimes;
+    ConcurrentDictionary<Job, CCPlayerJobStats> _jobStats = [];
+    ConcurrentDictionary<Job, ConcurrentDictionary<int, CCScoreboardDouble>> _jobTeamContributions = [];
+    ConcurrentDictionary<Job, TimeSpan> _jobTimes = [];
 
     StatSourceFilter _lastJobStatSourceFilter = new();
     OtherPlayerFilter _lastPlayerFilter = new();
@@ -98,9 +91,7 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
         new NumericColumnParams{    Name = "KDA Ratio",                                                                 Id = (uint)"ScoreboardTotal.KDA".GetHashCode(),                     Width = 50f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
     };
 
-    public CrystallineConflictJobList(Plugin plugin, StatSourceFilter statSourceFilter, OtherPlayerFilter playerFilter) : base(plugin) {
-        StatSourceFilter = statSourceFilter;
-        PlayerFilter = playerFilter;
+    public CrystallineConflictJobList(Plugin plugin, StatSourceFilter statSourceFilter, OtherPlayerFilter playerFilter) : base(plugin, statSourceFilter, playerFilter) {
         Reset();
     }
 
@@ -111,50 +102,49 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
 
         var allJobs = Enum.GetValues(typeof(Job)).Cast<Job>();
         foreach(var job in allJobs) {
-            _jobStats.Add(job, new());
-            _jobTimes.Add(job, TimeSpan.Zero);
-            _jobTeamContributions.Add(job, new());
+            _jobStats.TryAdd(job, new());
+            _jobTimes.TryAdd(job, TimeSpan.Zero);
+            _jobTeamContributions.TryAdd(job, new());
         }
     }
 
-    internal Task Refresh(List<CrystallineConflictMatch> matches, List<CrystallineConflictMatch> additions, List<CrystallineConflictMatch> removals) {
-        _matchesProcessed = 0;
+    internal async Task Refresh(List<CrystallineConflictMatch> matches, List<CrystallineConflictMatch> additions, List<CrystallineConflictMatch> removals) {
+        MatchesProcessed = 0;
         Stopwatch s1 = Stopwatch.StartNew();
         _linkedPlayerAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(PlayerFilter.PlayerNamesRaw);
         bool jobStatFilterChange = !StatSourceFilter.Equals(_lastJobStatSourceFilter);
         bool playerFilterChange = StatSourceFilter!.InheritFromPlayerFilter && !PlayerFilter.Equals(_lastPlayerFilter);
         try {
-            if(removals.Count * 2 >= _matches.Count || jobStatFilterChange || playerFilterChange) {
+            if(removals.Count * 2 >= Matches.Count || jobStatFilterChange || playerFilterChange) {
                 //force full build
                 Reset();
-                _matchesTotal = matches.Count;
-                ProcessMatches(matches);
+                MatchesTotal = matches.Count;
+                await ProcessMatches(matches);
             } else {
-                _matchesTotal = removals.Count + additions.Count;
-                ProcessMatches(removals, true);
-                ProcessMatches(additions);
+                MatchesTotal = removals.Count + additions.Count;
+                await ProcessMatches(removals, true);
+                await ProcessMatches(additions);
             }
             foreach(var jobStat in _jobStats) {
-                CrystallineConflictStatsManager.SetScoreboardStats(jobStat.Value, _jobTeamContributions[jobStat.Key], _jobTimes[jobStat.Key]);
+                CrystallineConflictStatsManager.SetScoreboardStats(jobStat.Value, _jobTeamContributions[jobStat.Key].Values.ToList(), _jobTimes[jobStat.Key]);
             }
             DataModel = _jobStats.Keys.ToList();
-            StatsModel = _jobStats;
+            StatsModel = _jobStats.ToDictionary();
             GoToPage(0);
             TriggerSort = true;
 
-            _matches = matches;
+            Matches = matches;
 
             _lastJobStatSourceFilter = new(StatSourceFilter!);
             _lastPlayerFilter = new(PlayerFilter);
         } finally {
             s1.Stop();
             _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"CC Jobs Refresh", s1.ElapsedMilliseconds.ToString()));
-            _matchesProcessed = 0;
+            MatchesProcessed = 0;
         }
-        return Task.CompletedTask;
     }
 
-    private void ProcessMatch(CrystallineConflictMatch match, bool remove = false) {
+    protected override void ProcessMatch(CrystallineConflictMatch match, bool remove = false) {
         foreach(var team in match.Teams) {
             foreach(var player in team.Value.Players) {
                 bool isLocalPlayer = player.Alias.Equals(match.LocalPlayer);
@@ -198,46 +188,6 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
                     CrystallineConflictStatsManager.AddPlayerJobStat(_jobStats[job], _jobTeamContributions[job], match, team.Value, player, remove);
                 }
             }
-        }
-    }
-
-    private void ProcessMatches(List<CrystallineConflictMatch> matches, bool remove = false) {
-        matches.ForEach(x => {
-            ProcessMatch(x, remove);
-            RefreshProgress = (float)_matchesProcessed++ / _matchesTotal;
-        });
-    }
-
-    protected override void PreTableDraw() {
-        using(var filterTable = ImRaii.Table("jobListFilterTable", 2)) {
-            if(filterTable) {
-                ImGui.TableSetupColumn("filterName", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 110f);
-                ImGui.TableSetupColumn($"filters", ImGuiTableColumnFlags.WidthStretch);
-
-                ImGui.TableNextColumn();
-                ImGui.AlignTextToFramePadding();
-                ImGui.TextUnformatted("Include stats from:");
-                ImGui.TableNextColumn();
-                StatSourceFilter.Draw();
-            }
-        }
-        ImGui.AlignTextToFramePadding();
-        ImGuiHelper.HelpMarker("Right-click table header for column options.", false, true);
-        ImGui.SameLine();
-        CSVButton();
-    }
-
-    protected override void PostColumnSetup() {
-        ImGui.TableSetupScrollFreeze(1, 1);
-        //column sorting
-        ImGuiTableSortSpecsPtr sortSpecs = ImGui.TableGetSortSpecs();
-        if(sortSpecs.SpecsDirty || TriggerSort) {
-            TriggerSort = false;
-            sortSpecs.SpecsDirty = false;
-            _plugin.DataQueue.QueueDataOperation(() => {
-                SortByColumn(sortSpecs.Specs.ColumnUserID, sortSpecs.Specs.SortDirection);
-                GoToPage(0);
-            });
         }
     }
 
@@ -456,11 +406,4 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
     //    StatsModel = _plugin.CCStatsEngine.JobStats;
     //    await base.RefreshDataModel();
     //}
-
-    public override void OpenFullEditDetail(Job item) {
-        throw new NotImplementedException();
-    }
-
-    public override void OpenItemDetail(Job item) {
-    }
 }
