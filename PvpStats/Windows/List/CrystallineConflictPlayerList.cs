@@ -8,6 +8,7 @@ using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using PvpStats.Windows.Filter;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -19,16 +20,11 @@ internal class CrystallineConflictPlayerList : PlayerStatsList<CCPlayerJobStats,
     protected override string TableId => "###CCPlayerStatsTable";
 
     //internal state
-    List<CrystallineConflictMatch> _matches = new();
-    int _matchesProcessed = 0;
-    int _matchesTotal = 100;
-
-    List<PlayerAlias> _players = [];
-    Dictionary<PlayerAlias, CCPlayerJobStats> _playerStats = [];
-    Dictionary<PlayerAlias, List<CCScoreboardDouble>> _playerTeamContributions = [];
-    Dictionary<PlayerAlias, TimeSpan> _playerTimes = [];
-    Dictionary<PlayerAlias, Dictionary<Job, CCAggregateStats>> _playerJobStatsLookup = [];
-    Dictionary<PlayerAlias, Dictionary<PlayerAlias, int>> _activeLinks = [];
+    ConcurrentDictionary<PlayerAlias, CCPlayerJobStats> _playerStats = [];
+    ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<int, CCScoreboardDouble>> _playerTeamContributions = [];
+    ConcurrentDictionary<PlayerAlias, TimeSpan> _playerTimes = [];
+    ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<Job, CCAggregateStats>> _playerJobStatsLookup = [];
+    ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<PlayerAlias, int>> _activeLinks = [];
 
     List<PlayerAlias> _linkedPlayerAliases = [];
 
@@ -102,7 +98,6 @@ internal class CrystallineConflictPlayerList : PlayerStatsList<CCPlayerJobStats,
     }
 
     private void Reset() {
-        _players = [];
         _playerStats = [];
         _playerTeamContributions = [];
         _playerTimes = [];
@@ -110,54 +105,53 @@ internal class CrystallineConflictPlayerList : PlayerStatsList<CCPlayerJobStats,
         _activeLinks = [];
     }
 
-    internal Task Refresh(List<CrystallineConflictMatch> matches, List<CrystallineConflictMatch> additions, List<CrystallineConflictMatch> removals) {
-        _matchesProcessed = 0;
+    internal async Task Refresh(List<CrystallineConflictMatch> matches, List<CrystallineConflictMatch> additions, List<CrystallineConflictMatch> removals) {
+        MatchesProcessed = 0;
         Stopwatch s1 = Stopwatch.StartNew();
         _linkedPlayerAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(PlayerFilter.PlayerNamesRaw);
         bool statFilterChange = !StatSourceFilter.Equals(_lastStatSourceFilter);
         bool playerFilterChange = StatSourceFilter!.InheritFromPlayerFilter && !PlayerFilter.Equals(_lastPlayerFilter);
         try {
             //_plugin.Log.Debug($"total old: {_matches.Count} additions: {additions.Count} removals: {removals.Count} sfc: {statFilterChange} pfc: {playerFilterChange}");
-            if(removals.Count * 2 >= matches.Count || statFilterChange || playerFilterChange) {
+            if(removals.Count * 2 >= Matches.Count || statFilterChange || playerFilterChange) {
                 //force full build
                 //_plugin.Log.Debug("players full rebuild");
                 Reset();
-                _matchesTotal = matches.Count;
-                ProcessMatches(matches);
+                MatchesTotal = matches.Count;
+                await ProcessMatches(matches);
             } else {
-                _matchesTotal = removals.Count + additions.Count;
+                MatchesTotal = removals.Count + additions.Count;
                 //_plugin.Log.Debug($"adding: {additions.Count} removing: {removals.Count}");
-                ProcessMatches(removals, true);
-                ProcessMatches(additions);
+                await ProcessMatches(removals, true);
+                await ProcessMatches(additions);
             }
 
             foreach(var playerStat in _playerStats) {
                 playerStat.Value.StatsAll.Job = _playerJobStatsLookup[playerStat.Key].OrderByDescending(x => x.Value.Matches).FirstOrDefault().Key;
-                CrystallineConflictStatsManager.SetScoreboardStats(playerStat.Value, _playerTeamContributions[playerStat.Key], _playerTimes[playerStat.Key]);
+                CrystallineConflictStatsManager.SetScoreboardStats(playerStat.Value, _playerTeamContributions[playerStat.Key].Values.ToList(), _playerTimes[playerStat.Key]);
             }
 
             //this may be incorrect when removing matches
-            ActiveLinks = _activeLinks;
+            ActiveLinks = _activeLinks.Select(x => (x.Key, x.Value.ToDictionary())).ToDictionary();
             DataModel = _playerStats.Keys.ToList();
             DataModelUntruncated = DataModel;
-            StatsModel = _playerStats;
+            StatsModel = _playerStats.ToDictionary();
             ApplyQuickFilters(MinMatchFilter.MinMatches, PlayerQuickSearchFilter.SearchText);
             GoToPage(0);
             TriggerSort = true;
 
-            _matches = matches;
+            Matches = matches;
 
             _lastStatSourceFilter = new(StatSourceFilter!);
             _lastPlayerFilter = new(PlayerFilter);
         } finally {
             s1.Stop();
-            _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"Players Refresh", s1.ElapsedMilliseconds.ToString()));
-            _matchesProcessed = 0;
+            _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"CC Players Refresh", s1.ElapsedMilliseconds.ToString()));
+            MatchesProcessed = 0;
         }
-        return Task.CompletedTask;
     }
 
-    private void ProcessMatch(CrystallineConflictMatch match, bool remove = false) {
+    protected override void ProcessMatch(CrystallineConflictMatch match, bool remove = false) {
         foreach(var team in match.Teams) {
             foreach(var player in team.Value.Players) {
                 bool isLocalPlayer = player.Alias.Equals(match.LocalPlayer);
@@ -191,35 +185,23 @@ internal class CrystallineConflictPlayerList : PlayerStatsList<CCPlayerJobStats,
                         }
                     }
 
-                    if(!_playerStats.TryGetValue(alias, out CCPlayerJobStats? playerStat)) {
-                        playerStat = new();
-                        _playerStats.Add(alias, playerStat);
-                        _playerTeamContributions.Add(alias, new());
-                        _playerJobStatsLookup.Add(alias, new());
-                        _playerTimes.Add(alias, TimeSpan.Zero);
-                    }
+                    _playerStats.TryAdd(alias, new());
+                    _playerTeamContributions.TryAdd(alias, new());
+                    _playerJobStatsLookup.TryAdd(alias, new());
+                    _playerTimes.TryAdd(alias, TimeSpan.Zero);
                     if(remove) {
                         _playerTimes[alias] -= match.MatchDuration ?? TimeSpan.Zero;
                     } else {
                         _playerTimes[alias] += match.MatchDuration ?? TimeSpan.Zero;
                     }
-                    CrystallineConflictStatsManager.AddPlayerJobStat(playerStat, _playerTeamContributions[alias], match, team.Value, player, remove);
+                    CrystallineConflictStatsManager.AddPlayerJobStat(_playerStats[alias], _playerTeamContributions[alias], match, team.Value, player, remove);
                     if(player.Job != null) {
-                        if(!_playerJobStatsLookup[alias].ContainsKey((Job)player.Job)) {
-                            _playerJobStatsLookup[alias].Add((Job)player.Job, new());
-                        }
+                        _playerJobStatsLookup[alias].TryAdd((Job)player.Job, new());
                         CrystallineConflictStatsManager.IncrementAggregateStats(_playerJobStatsLookup[alias][(Job)player.Job], match, remove);
                     }
                 }
             }
         }
-    }
-
-    private void ProcessMatches(List<CrystallineConflictMatch> matches, bool remove = false) {
-        matches.ForEach(x => {
-            ProcessMatch(x, remove);
-            RefreshProgress = (float)_matchesProcessed++ / _matchesTotal;
-        });
     }
 
     public override void DrawListItem(PlayerAlias item) {
@@ -360,8 +342,10 @@ internal class CrystallineConflictPlayerList : PlayerStatsList<CCPlayerJobStats,
             ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMatch.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.HPRestoredPerMatchRange[0], CrystallineConflictStatsManager.HPRestoredPerMatchRange[1], _plugin.Configuration.ColorScaleStats, "#", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            var tcpa = TimeSpan.FromSeconds(StatsModel[item].ScoreboardPerMatch.TimeOnCrystal);
-            ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(tcpa), (float)tcpa.TotalSeconds, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.TimeOnCrystalPerMatchRange[0], CrystallineConflictStatsManager.TimeOnCrystalPerMatchRange[1], _plugin.Configuration.ColorScaleStats, Offset);
+            if(!double.IsNaN(StatsModel[item].ScoreboardPerMatch.TimeOnCrystal)) {
+                var tcpa = TimeSpan.FromSeconds(StatsModel[item].ScoreboardPerMatch.TimeOnCrystal);
+                ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(tcpa), (float)tcpa.TotalSeconds, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.TimeOnCrystalPerMatchRange[0], CrystallineConflictStatsManager.TimeOnCrystalPerMatchRange[1], _plugin.Configuration.ColorScaleStats, Offset);
+            }
         }
         if(ImGui.TableNextColumn()) {
             ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMatch.KillsAndAssists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.KillsPerMatchRange[0] + CrystallineConflictStatsManager.AssistsPerMatchRange[0], CrystallineConflictStatsManager.KillsPerMatchRange[1] + CrystallineConflictStatsManager.AssistsPerMatchRange[1], _plugin.Configuration.ColorScaleStats, "0.00", Offset);
@@ -387,8 +371,10 @@ internal class CrystallineConflictPlayerList : PlayerStatsList<CCPlayerJobStats,
             ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.HPRestoredPerMinRange[0], CrystallineConflictStatsManager.HPRestoredPerMinRange[1], _plugin.Configuration.ColorScaleStats, "#", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            var tcpm = TimeSpan.FromSeconds(StatsModel[item].ScoreboardPerMin.TimeOnCrystal);
-            ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(tcpm), (float)tcpm.TotalSeconds, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.TimeOnCrystalPerMinRange[0], CrystallineConflictStatsManager.TimeOnCrystalPerMinRange[1], _plugin.Configuration.ColorScaleStats, Offset);
+            if(!double.IsNaN(StatsModel[item].ScoreboardPerMin.TimeOnCrystal)) {
+                var tcpm = TimeSpan.FromSeconds(StatsModel[item].ScoreboardPerMin.TimeOnCrystal);
+                ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(tcpm), (float)tcpm.TotalSeconds, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.TimeOnCrystalPerMinRange[0], CrystallineConflictStatsManager.TimeOnCrystalPerMinRange[1], _plugin.Configuration.ColorScaleStats, Offset);
+            }
         }
         if(ImGui.TableNextColumn()) {
             ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.KillsAndAssists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.KillsPerMinRange[0] + CrystallineConflictStatsManager.AssistsPerMinRange[0], CrystallineConflictStatsManager.KillsPerMinRange[1] + CrystallineConflictStatsManager.AssistsPerMinRange[1], _plugin.Configuration.ColorScaleStats, "0.00", Offset);

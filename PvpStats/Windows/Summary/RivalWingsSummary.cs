@@ -104,7 +104,7 @@ internal class RivalWingsSummary {
 
         } finally {
             summaryTimer.Stop();
-            Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"Summary Refresh", summaryTimer.ElapsedMilliseconds.ToString()));
+            Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"RW Summary Refresh", summaryTimer.ElapsedMilliseconds.ToString()));
             _matchesProcessed = 0;
         }
         return Task.CompletedTask;

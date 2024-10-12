@@ -148,7 +148,7 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
             _lastPlayerFilter = new(PlayerFilter);
         } finally {
             s1.Stop();
-            _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"Jobs Refresh", s1.ElapsedMilliseconds.ToString()));
+            _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"CC Jobs Refresh", s1.ElapsedMilliseconds.ToString()));
             _matchesProcessed = 0;
         }
         return Task.CompletedTask;
@@ -370,8 +370,10 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
             ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMatch.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.HPRestoredPerMatchRange[0], CrystallineConflictStatsManager.HPRestoredPerMatchRange[1], _plugin.Configuration.ColorScaleStats, "#", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            var tcpa = TimeSpan.FromSeconds(StatsModel[item].ScoreboardPerMatch.TimeOnCrystal);
-            ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(tcpa), (float)tcpa.TotalSeconds, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.TimeOnCrystalPerMatchRange[0], CrystallineConflictStatsManager.TimeOnCrystalPerMatchRange[1], _plugin.Configuration.ColorScaleStats, Offset);
+            if(!double.IsNaN(StatsModel[item].ScoreboardPerMatch.TimeOnCrystal)) {
+                var tcpa = TimeSpan.FromSeconds(StatsModel[item].ScoreboardPerMatch.TimeOnCrystal);
+                ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(tcpa), (float)tcpa.TotalSeconds, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.TimeOnCrystalPerMatchRange[0], CrystallineConflictStatsManager.TimeOnCrystalPerMatchRange[1], _plugin.Configuration.ColorScaleStats, Offset);
+            }
         }
         if(ImGui.TableNextColumn()) {
             ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMatch.KillsAndAssists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.KillsPerMatchRange[0] + CrystallineConflictStatsManager.AssistsPerMatchRange[0], CrystallineConflictStatsManager.KillsPerMatchRange[1] + CrystallineConflictStatsManager.AssistsPerMatchRange[1], _plugin.Configuration.ColorScaleStats, "0.00", Offset);
@@ -397,8 +399,10 @@ internal class CrystallineConflictJobList : CCStatsList<Job> {
             ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.HPRestored, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.HPRestoredPerMinRange[0], CrystallineConflictStatsManager.HPRestoredPerMinRange[1], _plugin.Configuration.ColorScaleStats, "#", Offset);
         }
         if(ImGui.TableNextColumn()) {
-            var tcpm = TimeSpan.FromSeconds(StatsModel[item].ScoreboardPerMin.TimeOnCrystal);
-            ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(tcpm), (float)tcpm.TotalSeconds, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.TimeOnCrystalPerMinRange[0], CrystallineConflictStatsManager.TimeOnCrystalPerMinRange[1], _plugin.Configuration.ColorScaleStats, Offset);
+            if(!double.IsNaN(StatsModel[item].ScoreboardPerMin.TimeOnCrystal)) {
+                var tcpm = TimeSpan.FromSeconds(StatsModel[item].ScoreboardPerMin.TimeOnCrystal);
+                ImGuiHelper.DrawNumericCell(ImGuiHelper.GetTimeSpanString(tcpm), (float)tcpm.TotalSeconds, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.TimeOnCrystalPerMinRange[0], CrystallineConflictStatsManager.TimeOnCrystalPerMinRange[1], _plugin.Configuration.ColorScaleStats, Offset);
+            }
         }
         if(ImGui.TableNextColumn()) {
             ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardPerMin.KillsAndAssists, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, CrystallineConflictStatsManager.KillsPerMinRange[0] + CrystallineConflictStatsManager.AssistsPerMinRange[0], CrystallineConflictStatsManager.KillsPerMinRange[1] + CrystallineConflictStatsManager.AssistsPerMinRange[1], _plugin.Configuration.ColorScaleStats, "0.00", Offset);

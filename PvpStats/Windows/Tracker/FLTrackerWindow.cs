@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace PvpStats.Windows.Tracker;
 internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
 
-    private readonly FrontlineMatchList _matchList;
+    private readonly FrontlineMatchList _matches;
     private readonly FrontlineSummary _summary;
     private readonly FrontlineJobList _jobs;
     private readonly FrontlinePlayerList _players;
@@ -50,7 +50,7 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
         PlayerStatFilters.Add(playerStatSourceFilter);
         PlayerStatFilters.Add(playerMinMatchFilter);
 
-        _matchList = new(plugin);
+        _matches = new(plugin);
         _summary = new(plugin);
         _jobs = new(plugin, jobStatSourceFilter, playerFilter);
         _players = new(plugin, playerStatSourceFilter, playerMinMatchFilter, playerQuickSearchFilter, playerFilter);
@@ -63,7 +63,7 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
         using(var tabBar = ImRaii.TabBar("TabBar", ImGuiTabBarFlags.None)) {
             if(tabBar) {
                 Tab("Matches", () => {
-                    _matchList.Draw();
+                    _matches.Draw();
                 }, _matchRefreshActive, 0f);
                 Tab("Summary", () => {
                     using(ImRaii.Child("SummaryChild")) {
@@ -89,7 +89,6 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
         _summary.RefreshProgress = 0f;
         _jobs.RefreshProgress = 0f;
         _players.RefreshProgress = 0f;
-
         _summaryRefreshActive = true;
         _matchRefreshActive = true;
         _jobRefreshActive = true;
@@ -105,7 +104,7 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
             }
 
             var matchRefresh = RefreshTab(async () => {
-                await _matchList.Refresh(updatedSet.Matches);
+                await _matches.Refresh(updatedSet.Matches);
                 _matchRefreshActive = false;
             });
             var summaryRefresh = RefreshTab(async () => {
@@ -121,11 +120,11 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
                 _playerRefreshActive = false;
             });
             await Task.WhenAll([
-                matchRefresh,
-                summaryRefresh,
-                jobRefresh,
-                playerRefresh,
                 Task.Run(SaveFilters),
+                matchRefresh.Result,
+                summaryRefresh.Result,
+                jobRefresh.Result,
+                playerRefresh.Result,
             ]);
         } catch {
             Plugin.Log.Error("FL tracker refresh failed.");

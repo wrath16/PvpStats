@@ -165,7 +165,7 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
         ImGuiHelper.WrappedTooltip($"{(CollapseFilters ? "Show filters" : "Hide filters")}");
     }
 
-    protected Task RefreshTab(Func<Task> func) {
+    protected Task<Task> RefreshTab(Func<Task> func) {
         var task = new Task<Task>(async () => {
             try {
                 await func.Invoke();
@@ -174,7 +174,7 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
             }
         });
         task.Start();
-        return task.Result;
+        return task;
     }
 
     protected unsafe void Tab(string name, Action action, bool refreshActive = false, float refreshProgress = 0f) {

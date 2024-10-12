@@ -99,14 +99,34 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
                 updatedSet.Additions = updatedSet.Matches;
             }
 
+            var matchRefresh = RefreshTab(async () => {
+                await _matches.Refresh(updatedSet.Matches);
+                _matchRefreshActive = false;
+            });
+            var summaryRefresh = RefreshTab(async () => {
+                await _summary.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
+                _summaryRefreshActive = false;
+            });
+            var recordsRefresh = RefreshTab(async () => {
+                await _records.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
+                _recordsRefreshActive = false;
+            });
+            var jobRefresh = RefreshTab(async () => {
+                await _jobs.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
+                _jobRefreshActive = false;
+            });
+            var playerRefresh = RefreshTab(async () => {
+                await _players.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
+                _playerRefreshActive = false;
+            });
+
             await Task.WhenAll([
-                Task.Run(() => _matches.Refresh(updatedSet.Matches).ContinueWith(x => _matchRefreshActive = false)),
-                Task.Run(() => _summary.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals).ContinueWith(x => _summaryRefreshActive = false)),
-                Task.Run(() => _records.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals).ContinueWith(x => _recordsRefreshActive = false)),
-                Task.Run(() => _jobs.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals).ContinueWith(x => _jobRefreshActive = false)),
-                Task.Run(() => _players.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals).ContinueWith(x => _playerRefreshActive = false)),
-                _rank.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals).ContinueWith(x => _creditRefreshActive = false),
-                Task.Run(SaveFilters)
+                Task.Run(SaveFilters),
+                matchRefresh.Result,
+                summaryRefresh.Result,
+                recordsRefresh.Result,
+                jobRefresh.Result,
+                playerRefresh.Result,
             ]);
         } catch {
             Plugin.Log.Error("CC tracker refresh failed.");

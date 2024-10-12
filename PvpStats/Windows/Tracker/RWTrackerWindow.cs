@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace PvpStats.Windows.Tracker;
 internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
 
-    private readonly RivalWingsMatchList _matchList;
+    private readonly RivalWingsMatchList _matches;
     private readonly RivalWingsSummary _summary;
     private readonly RivalWingsPlayerList _players;
     private readonly RivalWingsPvPProfile _profile;
@@ -45,7 +45,7 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
         PlayerStatFilters.Add(playerStatSourceFilter);
         PlayerStatFilters.Add(playerMinMatchFilter);
 
-        _matchList = new(plugin);
+        _matches = new(plugin);
         _summary = new(plugin);
         _players = new(plugin, playerStatSourceFilter, playerMinMatchFilter, playerQuickSearchFilter, playerFilter);
         _profile = new(plugin);
@@ -57,7 +57,7 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
         using(var tabBar = ImRaii.TabBar("TabBar", ImGuiTabBarFlags.None)) {
             if(tabBar) {
                 Tab("Matches", () => {
-                    _matchList.Draw();
+                    _matches.Draw();
                 }, _matchRefreshActive, 0f);
                 Tab("Summary", () => {
                     using(ImRaii.Child("SummaryChild")) {
@@ -77,6 +77,8 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
     public override async Task Refresh(bool fullRefresh = false) {
         Stopwatch s0 = new();
         s0.Start();
+        _summary.RefreshProgress = 0f;
+        _players.RefreshProgress = 0f;
         _summaryRefreshActive = true;
         _matchRefreshActive = true;
         _playerRefreshActive = true;
@@ -90,11 +92,24 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
                 updatedSet.Additions = updatedSet.Matches;
             }
 
-            Task.WaitAll([
-                Task.Run(() => _matchList.Refresh(updatedSet.Matches).ContinueWith(x => _matchRefreshActive = false)),
-                Task.Run(() => _summary.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals).ContinueWith(x => _summaryRefreshActive = false)),
-                Task.Run(() => _players.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals).ContinueWith(x => _playerRefreshActive = false)),
-                Task.Run(SaveFilters)
+            var matchRefresh = RefreshTab(async () => {
+                await _matches.Refresh(updatedSet.Matches);
+                _matchRefreshActive = false;
+            });
+            var summaryRefresh = RefreshTab(async () => {
+                await _summary.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
+                _summaryRefreshActive = false;
+            });
+            var playerRefresh = RefreshTab(async () => {
+                await _players.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
+                _playerRefreshActive = false;
+            });
+
+            await Task.WhenAll([
+                Task.Run(SaveFilters),
+                matchRefresh.Result,
+                summaryRefresh.Result,
+                playerRefresh.Result,
             ]);
         } catch {
             Plugin.Log.Error("RW tracker refresh failed.");
