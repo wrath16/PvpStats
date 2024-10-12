@@ -117,7 +117,7 @@ internal class FrontlineJobList : JobStatsList<FLPlayerJobStats, FrontlineMatch>
         _linkedPlayerAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(PlayerFilter.PlayerNamesRaw);
         bool statFilterChange = !StatSourceFilter.Equals(_lastJobStatSourceFilter);
         bool playerFilterChange = StatSourceFilter!.InheritFromPlayerFilter && !PlayerFilter.Equals(_lastPlayerFilter);
-        _plugin.Log.Debug($"total old: {Matches.Count} additions: {additions.Count} removals: {removals.Count} jsfc: {statFilterChange} pfc: {playerFilterChange}");
+        //_plugin.Log.Debug($"total old: {Matches.Count} additions: {additions.Count} removals: {removals.Count} jsfc: {statFilterChange} pfc: {playerFilterChange}");
         try {
             if(removals.Count * 2 >= Matches.Count || statFilterChange || playerFilterChange) {
                 //force full build
@@ -207,46 +207,6 @@ internal class FrontlineJobList : JobStatsList<FLPlayerJobStats, FrontlineMatch>
                     }
                 }
             }
-        }
-    }
-
-    //private void ProcessMatches(List<FrontlineMatch> matches, bool remove = false) {
-    //    matches.ForEach(x => {
-    //        ProcessMatch(x, remove);
-    //        RefreshProgress = (float)_matchesProcessed++ / _matchesTotal;
-    //    });
-    //}
-
-    protected override void PreTableDraw() {
-        using(var filterTable = ImRaii.Table("jobListFilterTable", 2)) {
-            if(filterTable) {
-                ImGui.TableSetupColumn("filterName", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 110f);
-                ImGui.TableSetupColumn($"filters", ImGuiTableColumnFlags.WidthStretch);
-
-                ImGui.TableNextColumn();
-                ImGui.AlignTextToFramePadding();
-                ImGui.TextUnformatted("Include stats from:");
-                ImGui.TableNextColumn();
-                StatSourceFilter.Draw();
-            }
-        }
-        ImGui.AlignTextToFramePadding();
-        ImGuiHelper.HelpMarker("Right-click table header for column options.", false, true);
-        ImGui.SameLine();
-        CSVButton();
-    }
-
-    protected override void PostColumnSetup() {
-        ImGui.TableSetupScrollFreeze(1, 1);
-        //column sorting
-        ImGuiTableSortSpecsPtr sortSpecs = ImGui.TableGetSortSpecs();
-        if(sortSpecs.SpecsDirty || TriggerSort) {
-            TriggerSort = false;
-            sortSpecs.SpecsDirty = false;
-            _plugin.DataQueue.QueueDataOperation(() => {
-                SortByColumn(sortSpecs.Specs.ColumnUserID, sortSpecs.Specs.SortDirection);
-                GoToPage(0);
-            });
         }
     }
 
