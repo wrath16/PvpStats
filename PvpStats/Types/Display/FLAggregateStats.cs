@@ -1,8 +1,8 @@
 ﻿namespace PvpStats.Types.Display;
 public class FLAggregateStats : AggregateStats {
-    public int FirstPlaces { get; set; }
-    public int SecondPlaces { get; set; }
-    public int ThirdPlaces { get; set; }
+    public int FirstPlaces;
+    public int SecondPlaces;
+    public int ThirdPlaces;
     public int Wins => FirstPlaces;
     public int Losses => SecondPlaces + ThirdPlaces;
     public int WinDiff => Wins - Losses;
@@ -13,6 +13,18 @@ public class FLAggregateStats : AggregateStats {
     public double ThirdRate => (double)ThirdPlaces / Matches;
     public double WinRate => FirstRate;
     public double LossRate => (double)(SecondPlaces + ThirdPlaces) / Matches;
+
+    public FLAggregateStats() {
+
+    }
+
+    public FLAggregateStats(FLAggregateStats stats) {
+        Matches = stats.Matches;
+        Job = stats.Job;
+        FirstPlaces = stats.FirstPlaces;
+        SecondPlaces = stats.SecondPlaces;
+        ThirdPlaces = stats.ThirdPlaces;
+    }
 
     public static FLAggregateStats operator +(FLAggregateStats a, FLAggregateStats b) {
         return new FLAggregateStats() {

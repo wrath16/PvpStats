@@ -4,8 +4,8 @@ using System;
 namespace PvpStats.Types.Display;
 public class CCScoreboard : PvpScoreboard {
     //this should honestly be moved
-    public TimeSpan MatchTime { get; set; }
-    public TimeSpan TimeOnCrystal { get; set; }
+    public TimeSpan TimeOnCrystal;
+    public long TimeOnCrystalTicks;
 
     public static CCScoreboard operator +(CCScoreboard a, CCScoreboard b) {
         var c = a + (PvpScoreboard)b;
@@ -17,7 +17,6 @@ public class CCScoreboard : PvpScoreboard {
             DamageTaken = c.DamageTaken,
             HPRestored = c.HPRestored,
             TimeOnCrystal = a.TimeOnCrystal + b.TimeOnCrystal,
-            MatchTime = a.MatchTime + b.MatchTime,
         };
     }
 
@@ -31,7 +30,6 @@ public class CCScoreboard : PvpScoreboard {
             DamageTaken = c.DamageTaken,
             HPRestored = c.HPRestored,
             TimeOnCrystal = a.TimeOnCrystal - b.TimeOnCrystal,
-            MatchTime = a.MatchTime - b.MatchTime,
         };
     }
 }

@@ -189,11 +189,10 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
             bool refreshLockAcquired = RefreshLock.Wait(0);
             try {
                 action.Invoke();
-            } catch {
+            } catch(Exception e) {
                 //suppress all exceptions while a refresh is in progress
                 if(refreshLockAcquired) {
-                    Plugin.Log.Debug("draw error on refresh lock acquired.");
-                    throw;
+                    Plugin.Log2.Error(e, "Tab Draw Error");
                 }
             } finally {
                 if(refreshLockAcquired) {

@@ -2,11 +2,11 @@
 
 namespace PvpStats.Types.Match;
 public class RivalWingsScoreboard : PvpScoreboard {
-    public long Ceruleum { get; set; }
-    public long DamageToOther { get; set; }
+    public long Ceruleum;
+    public long DamageToOther;
     [BsonIgnore]
     public long DamageToPCs => DamageDealt - DamageToOther;
-    public long Special1 { get; set; } //believed to be healing received
+    public long Special1;  //believed to be healing received
 
     [BsonIgnore]
     public override long DamageDealtPerKA => KillsAndAssists > 0 ? DamageToPCs / KillsAndAssists : DamageToPCs;

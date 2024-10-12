@@ -8,6 +8,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace PvpStats.Managers.Stats;
 internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflictMatch> {
@@ -39,71 +40,71 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
 
     public static void IncrementAggregateStats(CCAggregateStats stats, CrystallineConflictMatch match, bool decrement = false) {
         if(decrement) {
-            stats.Matches--;
+            Interlocked.Decrement(ref stats.Matches);
             if(match.IsWin) {
-                stats.Wins--;
+                Interlocked.Decrement(ref stats.Wins);
             } else if(match.IsLoss) {
-                stats.Losses--;
+                Interlocked.Decrement(ref stats.Losses);
             }
         } else {
-            stats.Matches++;
+            Interlocked.Increment(ref stats.Matches);
             if(match.IsWin) {
-                stats.Wins++;
+                Interlocked.Increment(ref stats.Wins);
             } else if(match.IsLoss) {
-                stats.Losses++;
+                Interlocked.Increment(ref stats.Losses);
             }
         }
     }
 
     public static void IncrementAggregateStats(CCAggregateStats stats, CrystallineConflictMatch match, CrystallineConflictTeam team, CrystallineConflictPlayer player, bool decrement = false) {
         if(decrement) {
-            stats.Matches--;
+            Interlocked.Decrement(ref stats.Matches);
             if(match.MatchWinner == team.TeamName) {
-                stats.Wins--;
+                Interlocked.Decrement(ref stats.Wins);
             } else if(match.MatchWinner != null) {
-                stats.Losses--;
+                Interlocked.Decrement(ref stats.Losses);
             }
         } else {
-            stats.Matches++;
+            Interlocked.Increment(ref stats.Matches);
             if(match.MatchWinner == team.TeamName) {
-                stats.Wins++;
+                Interlocked.Increment(ref stats.Wins);
             } else if(match.MatchWinner != null) {
-                stats.Losses++;
+                Interlocked.Increment(ref stats.Losses);
             }
         }
     }
 
-    public static void AddPlayerJobStat(CCPlayerJobStats statsModel, List<CCScoreboardDouble> teamContributions,
-        CrystallineConflictMatch match, CrystallineConflictTeam team, CrystallineConflictPlayer player, bool remove = false) {
-        bool isLocalPlayer = player.Alias.Equals(match.LocalPlayer);
-        bool isTeammate = !match.IsSpectated && !isLocalPlayer && team.TeamName == match.LocalPlayerTeam!.TeamName;
-        bool isOpponent = !match.IsSpectated && !isLocalPlayer && !isTeammate;
+    //public static void AddPlayerJobStat(CCPlayerJobStats statsModel, List<CCScoreboardDouble> teamContributions,
+    //    CrystallineConflictMatch match, CrystallineConflictTeam team, CrystallineConflictPlayer player, bool remove = false) {
+    //    bool isLocalPlayer = player.Alias.Equals(match.LocalPlayer);
+    //    bool isTeammate = !match.IsSpectated && !isLocalPlayer && team.TeamName == match.LocalPlayerTeam!.TeamName;
+    //    bool isOpponent = !match.IsSpectated && !isLocalPlayer && !isTeammate;
 
-        IncrementAggregateStats(statsModel.StatsAll, match, team, player, remove);
-        if(!match.IsSpectated) {
-            if(isTeammate) {
-                IncrementAggregateStats(statsModel.StatsTeammate, match, remove);
-            } else if(isOpponent) {
-                IncrementAggregateStats(statsModel.StatsOpponent, match, remove);
-            }
-        }
+    //    IncrementAggregateStats(statsModel.StatsAll, match, team, player, remove);
+    //    if(!match.IsSpectated) {
+    //        if(isTeammate) {
+    //            IncrementAggregateStats(statsModel.StatsTeammate, match, remove);
+    //        } else if(isOpponent) {
+    //            IncrementAggregateStats(statsModel.StatsOpponent, match, remove);
+    //        }
+    //    }
 
-        if(match.PostMatch != null) {
-            var teamPostMatch = match.PostMatch.Teams.Where(x => x.Key == team.TeamName).FirstOrDefault().Value;
-            var playerPostMatch = teamPostMatch.PlayerStats.Where(x => x.Player?.Equals(player.Alias) ?? false).FirstOrDefault();
-            if(playerPostMatch != null) {
-                var playerScoreboard = playerPostMatch.ToScoreboard();
-                var teamScoreboard = teamPostMatch.TeamStats.ToScoreboard();
-                if(remove) {
-                    statsModel.ScoreboardTotal -= playerScoreboard;
-                    teamContributions.Remove(new(playerScoreboard, teamScoreboard));
-                } else {
-                    statsModel.ScoreboardTotal += playerScoreboard;
-                    teamContributions.Add(new(playerScoreboard, teamScoreboard));
-                }
-            }
-        }
-    }
+    //    if(match.PostMatch != null) {
+    //        var teamPostMatch = match.PostMatch.Teams.Where(x => x.Key == team.TeamName).FirstOrDefault().Value;
+    //        var playerPostMatch = teamPostMatch.PlayerStats.Where(x => x.Player?.Equals(player.Alias) ?? false).FirstOrDefault();
+    //        if(playerPostMatch != null) {
+    //            var playerScoreboard = playerPostMatch.ToScoreboard();
+    //            var teamScoreboard = teamPostMatch.TeamStats.ToScoreboard();
+    //            if(remove) {
+    //                statsModel.ScoreboardTotal -= playerScoreboard;
+    //                teamContributions.Remove(new(playerScoreboard, teamScoreboard));
+    //            } else {
+    //                statsModel.ScoreboardTotal += playerScoreboard;
+    //                teamContributions.Add(new(playerScoreboard, teamScoreboard));
+    //            }
+    //        }
+    //    }
+    //}
 
     public static void AddPlayerJobStat(CCPlayerJobStats statsModel, ConcurrentDictionary<int, CCScoreboardDouble> teamContributions,
     CrystallineConflictMatch match, CrystallineConflictTeam team, CrystallineConflictPlayer player, bool remove = false) {
@@ -128,14 +129,28 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
                 var teamScoreboard = teamPostMatch.TeamStats.ToScoreboard();
                 var hashCode = HashCode.Combine(match.GetHashCode(), player.Alias);
                 if(remove) {
-                    statsModel.ScoreboardTotal -= playerScoreboard;
+                    //statsModel.ScoreboardTotal -= playerScoreboard;
+                    Interlocked.Add(ref statsModel.ScoreboardTotal.Kills, -playerScoreboard.Kills);
+                    Interlocked.Add(ref statsModel.ScoreboardTotal.Deaths, -playerScoreboard.Deaths);
+                    Interlocked.Add(ref statsModel.ScoreboardTotal.Assists, -playerScoreboard.Assists);
+                    Interlocked.Add(ref statsModel.ScoreboardTotal.DamageDealt, -playerScoreboard.DamageDealt);
+                    Interlocked.Add(ref statsModel.ScoreboardTotal.DamageTaken, -playerScoreboard.DamageTaken);
+                    Interlocked.Add(ref statsModel.ScoreboardTotal.HPRestored, -playerScoreboard.HPRestored);
+                    Interlocked.Add(ref statsModel.ScoreboardTotal.TimeOnCrystalTicks, -playerScoreboard.TimeOnCrystalTicks);
                     if(!teamContributions.TryRemove(hashCode, out _)) {
 #if DEBUG
                         Plugin.Log2.Warning($"failed to remove team contrib!, {match.DutyStartTime} {player.Alias}");
 #endif
                     }
                 } else {
-                    statsModel.ScoreboardTotal += playerScoreboard;
+                    //statsModel.ScoreboardTotal += playerScoreboard;
+                    Interlocked.Add(ref statsModel.ScoreboardTotal.Kills, playerScoreboard.Kills);
+                    Interlocked.Add(ref statsModel.ScoreboardTotal.Deaths, playerScoreboard.Deaths);
+                    Interlocked.Add(ref statsModel.ScoreboardTotal.Assists, playerScoreboard.Assists);
+                    Interlocked.Add(ref statsModel.ScoreboardTotal.DamageDealt, playerScoreboard.DamageDealt);
+                    Interlocked.Add(ref statsModel.ScoreboardTotal.DamageTaken, playerScoreboard.DamageTaken);
+                    Interlocked.Add(ref statsModel.ScoreboardTotal.HPRestored, playerScoreboard.HPRestored);
+                    Interlocked.Add(ref statsModel.ScoreboardTotal.TimeOnCrystalTicks, playerScoreboard.TimeOnCrystalTicks);
                     teamContributions.TryAdd(hashCode, new(playerScoreboard, teamScoreboard));
                 }
             }
@@ -145,14 +160,16 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
     public static void SetScoreboardStats(CCPlayerJobStats stats, List<CCScoreboardDouble> teamContributions, TimeSpan time) {
         var statMatches = teamContributions.Count;
         //set average stats
+        stats.StatsPersonal.Matches = stats.StatsTeammate.Matches + stats.StatsOpponent.Matches;
+        stats.StatsPersonal.Wins = stats.StatsTeammate.Wins + stats.StatsOpponent.Wins;
+        stats.StatsPersonal.Losses = stats.StatsTeammate.Losses + stats.StatsOpponent.Losses;
+
+        stats.ScoreboardTotal.TimeOnCrystal = TimeSpan.FromTicks(stats.ScoreboardTotal.TimeOnCrystalTicks);
+
+        stats.ScoreboardPerMatch = (CCScoreboardDouble)stats.ScoreboardTotal / statMatches;
+        stats.ScoreboardPerMin = (CCScoreboardDouble)stats.ScoreboardTotal / time.TotalMinutes;
+
         if(statMatches > 0) {
-            stats.StatsPersonal.Matches = stats.StatsTeammate.Matches + stats.StatsOpponent.Matches;
-            stats.StatsPersonal.Wins = stats.StatsTeammate.Wins + stats.StatsOpponent.Wins;
-            stats.StatsPersonal.Losses = stats.StatsTeammate.Losses + stats.StatsOpponent.Losses;
-
-            stats.ScoreboardPerMatch = (CCScoreboardDouble)stats.ScoreboardTotal / statMatches;
-            stats.ScoreboardPerMin = (CCScoreboardDouble)stats.ScoreboardTotal / time.TotalMinutes;
-
             stats.ScoreboardContrib.Kills = teamContributions.OrderBy(x => x.Kills).ElementAt(statMatches / 2).Kills;
             stats.ScoreboardContrib.Deaths = teamContributions.OrderBy(x => x.Deaths).ElementAt(statMatches / 2).Deaths;
             stats.ScoreboardContrib.Assists = teamContributions.OrderBy(x => x.Assists).ElementAt(statMatches / 2).Assists;
@@ -161,6 +178,8 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
             stats.ScoreboardContrib.HPRestored = teamContributions.OrderBy(x => x.HPRestored).ElementAt(statMatches / 2).HPRestored;
             stats.ScoreboardContrib.TimeOnCrystal = teamContributions.OrderBy(x => x.TimeOnCrystal).ElementAt(statMatches / 2).TimeOnCrystal;
             stats.ScoreboardContrib.KillsAndAssists = teamContributions.OrderBy(x => x.KillsAndAssists).ElementAt(statMatches / 2).KillsAndAssists;
+        } else {
+            stats.ScoreboardContrib = new();
         }
     }
 

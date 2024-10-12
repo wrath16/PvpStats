@@ -71,7 +71,7 @@ internal abstract class StatsList<T, U, V> : FilteredList<T> where T : notnull w
         }
     }
 
-    protected (PropertyInfo?, PropertyInfo?) GetStatsPropertyFromId(uint columnId) {
+    protected (PropertyInfo?, MemberInfo?) GetStatsPropertyFromId(uint columnId) {
         var props = typeof(U).GetProperties();
         //iterate up to two levels
         foreach(var prop in props) {
@@ -81,10 +81,12 @@ internal abstract class StatsList<T, U, V> : FilteredList<T> where T : notnull w
             }
 
             var props2 = prop.PropertyType.GetProperties();
-            foreach(var prop2 in props2) {
-                var propId2 = $"{prop.Name}.{prop2.Name}".GetHashCode();
-                if((uint)propId2 == columnId) {
-                    return (prop, prop2);
+            var fields2 = prop.PropertyType.GetFields();
+            List<MemberInfo> members2 = [.. props2, .. fields2];
+            foreach(var member2 in members2) {
+                var memberId2 = $"{prop.Name}.{member2.Name}".GetHashCode();
+                if((uint)memberId2 == columnId) {
+                    return (prop, member2);
                 }
             }
         }
@@ -117,7 +119,11 @@ internal abstract class StatsList<T, U, V> : FilteredList<T> where T : notnull w
             if(p1 != null && p2 == null) {
                 comparator = (r) => p1.GetValue(StatsModel[r]) ?? 0;
             } else if(p1 != null && p2 != null) {
-                comparator = (r) => p2.GetValue(p1.GetValue(StatsModel[r])) ?? 0;
+                if(p2 is PropertyInfo) {
+                    comparator = (r) => (p2 as PropertyInfo)!.GetValue(p1.GetValue(StatsModel[r])) ?? 0;
+                } else if(p2 is FieldInfo) {
+                    comparator = (r) => (p2 as FieldInfo)!.GetValue(p1.GetValue(StatsModel[r])) ?? 0;
+                }
             } else {
                 comparator = (r) => 0;
             }
@@ -153,9 +159,12 @@ internal abstract class StatsList<T, U, V> : FilteredList<T> where T : notnull w
             if(p1 != null && p2 == null) {
                 csv += p1.GetValue(StatsModel[key]);
             } else if(p1 != null && p2 != null) {
-                csv += p2.GetValue(p1.GetValue(StatsModel[key]));
+                if(p2 is PropertyInfo) {
+                    csv += (p2 as PropertyInfo)!.GetValue(p1.GetValue(StatsModel[key]));
+                } else if(p2 is FieldInfo) {
+                    csv += (p2 as FieldInfo)!.GetValue(p1.GetValue(StatsModel[key]));
+                }
             }
-
             csv += ",";
         }
         csv += "\n";

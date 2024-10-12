@@ -42,7 +42,8 @@ public class CrystallineConflictPostMatchRow {
             DamageDealt = DamageDealt,
             DamageTaken = DamageTaken,
             HPRestored = HPRestored,
-            TimeOnCrystal = TimeOnCrystal
+            TimeOnCrystal = TimeOnCrystal,
+            TimeOnCrystalTicks = TimeOnCrystal.Ticks
         };
     }
 }
