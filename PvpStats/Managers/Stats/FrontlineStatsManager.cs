@@ -128,7 +128,7 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
         if(match.PlayerScoreboards != null) {
             var playerScoreboard = match.PlayerScoreboards[player.Name];
             if(playerScoreboard != null && teamScoreboard != null) {
-                var hashCode = (match.GetHashCode(), player.Name).GetHashCode();
+                var hashCode = HashCode.Combine(match.GetHashCode(), player.Name);
                 if(remove) {
                     statsModel.ScoreboardTotal -= playerScoreboard;
                     //teamContributions.TryTake(new(playerScoreboard, teamScoreboard));

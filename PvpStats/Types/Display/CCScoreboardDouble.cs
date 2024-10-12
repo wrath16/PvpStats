@@ -58,6 +58,6 @@ public class CCScoreboardDouble : PvpScoreboardDouble, IEquatable<CCScoreboardDo
     }
 
     public override int GetHashCode() {
-        return (base.GetHashCode(), TimeOnCrystal).GetHashCode();
+        return HashCode.Combine(base.GetHashCode(), TimeOnCrystal);
     }
 }

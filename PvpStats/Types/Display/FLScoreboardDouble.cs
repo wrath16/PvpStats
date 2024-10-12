@@ -86,6 +86,6 @@ public class FLScoreboardDouble : PvpScoreboardDouble, IEquatable<FrontlineScore
     }
 
     public override int GetHashCode() {
-        return (base.GetHashCode(), Occupations, DamageToPCs, DamageToOther, Special1).GetHashCode();
+        return HashCode.Combine(base.GetHashCode(), Occupations, DamageToPCs, DamageToOther, Special1);
     }
 }

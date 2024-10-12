@@ -73,6 +73,6 @@ public class RWScoreboardDouble : PvpScoreboardDouble, IEquatable<RWScoreboardDo
     }
 
     public override int GetHashCode() {
-        return (base.GetHashCode(), DamageToPCs, DamageToOther, Ceruleum, Special1).GetHashCode();
+        return HashCode.Combine(base.GetHashCode(), DamageToPCs, DamageToOther, Ceruleum, Special1);
     }
 }
