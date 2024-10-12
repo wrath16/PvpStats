@@ -165,6 +165,18 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
         ImGuiHelper.WrappedTooltip($"{(CollapseFilters ? "Show filters" : "Hide filters")}");
     }
 
+    protected Task RefreshTab(Func<Task> func) {
+        var task = new Task(async () => {
+            try {
+                await func.Invoke();
+            } catch(Exception e) {
+                Plugin.Log2.Error(e, "Refresh Tab error");
+            }
+        });
+        task.Start();
+        return task;
+    }
+
     protected unsafe void Tab(string name, Action action, bool refreshActive = false, float refreshProgress = 0f) {
         var flags = ImGuiTabItemFlags.None;
         if(Plugin.Configuration.ResizeWindowLeft) {

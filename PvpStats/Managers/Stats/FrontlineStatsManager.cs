@@ -1,5 +1,4 @@
-﻿using Dalamud.Plugin.Services;
-using Dalamud.Utility;
+﻿using Dalamud.Utility;
 using PvpStats.Helpers;
 using PvpStats.Types.Display;
 using PvpStats.Types.Match;
@@ -125,7 +124,7 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
         }
     }
 
-    public void AddPlayerJobStat(FLPlayerJobStats statsModel, ConcurrentDictionary<FLScoreboardDouble, byte> teamContributions,
+    public static void AddPlayerJobStat(FLPlayerJobStats statsModel, ConcurrentDictionary<FLScoreboardDouble, byte> teamContributions,
     FrontlineMatch match, FrontlinePlayer player, FrontlineScoreboard? teamScoreboard, bool remove = false) {
         bool isLocalPlayer = player.Name.Equals(match.LocalPlayer);
         bool isTeammate = !isLocalPlayer && player.Team == match.LocalPlayerTeam!;
@@ -179,7 +178,9 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
                     //teamContributions.TryTake(new(playerScoreboard, teamScoreboard));
                     var toRemove = new FLScoreboardDouble(playerScoreboard, teamScoreboard);
                     if(!teamContributions.TryRemove(toRemove, out _)) {
-                        Plugin.Log.Warning($"failed to remove teamcontrib!, {match.DutyStartTime} {player.Name}");
+#if DEBUG
+                        Plugin.Log2.Warning($"failed to remove teamcontrib!, {match.DutyStartTime} {player.Name}");
+#endif
                     }
                 } else {
                     statsModel.ScoreboardTotal += playerScoreboard;

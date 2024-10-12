@@ -1,5 +1,4 @@
 ﻿using Dalamud.Interface.Utility;
-using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using ImGuiNET;
 using PvpStats.Helpers;
 using PvpStats.Managers.Stats;
@@ -113,11 +112,12 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
         _matchesProcessed = 0;
         Stopwatch s1 = Stopwatch.StartNew();
         _linkedPlayerAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(PlayerFilter.PlayerNamesRaw);
+        bool removalThresholdMet = removals.Count * 2 >= Matches.Count;
         bool statFilterChange = !StatSourceFilter.Equals(_lastStatSourceFilter);
         bool playerFilterChange = StatSourceFilter!.InheritFromPlayerFilter && !PlayerFilter.Equals(_lastPlayerFilter);
         try {
-            _plugin.Log.Debug($"total old: {Matches.Count} additions: {additions.Count} removals: {removals.Count} sfc: {statFilterChange} pfc: {playerFilterChange}");
-            if(removals.Count * 2 >= matches.Count || statFilterChange || playerFilterChange) {
+            //_plugin.Log.Debug($"total old: {Matches.Count} additions: {additions.Count} removals: {removals.Count} threshold: {removalThresholdMet} sfc: {statFilterChange} pfc: {playerFilterChange}");
+            if(removalThresholdMet || statFilterChange || playerFilterChange) {
                 //force full build
                 //_plugin.Log.Debug("players full rebuild");
                 Reset();
@@ -130,9 +130,8 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
                 await ProcessMatches(additions);
             }
 
-            _plugin.Log.Debug($"playerStats: {_playerStats.Count} jobStatsLookup: {_playerJobStatsLookup.Count} teamContribs: {_playerTeamContributions.Count} playerTimes: {_playerTimes.Count} " +
-                $"shatterStats: {_shatterStats.Count} shatterContribs: {_shatterTeamContributions.Count} shatterTimes: {_shatterTimes.Count}");
-
+            //_plugin.Log.Debug($"playerStats: {_playerStats.Count} jobStatsLookup: {_playerJobStatsLookup.Count} teamContribs: {_playerTeamContributions.Count} playerTimes: {_playerTimes.Count} " +
+            //    $"shatterStats: {_shatterStats.Count} shatterContribs: {_shatterTeamContributions.Count} shatterTimes: {_shatterTimes.Count}");
 
             foreach(var playerStat in _playerStats) {
                 playerStat.Value.StatsAll.Job = _playerJobStatsLookup[playerStat.Key].OrderByDescending(x => x.Value.Matches).FirstOrDefault().Key;
@@ -159,118 +158,11 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
             _lastPlayerFilter = new(PlayerFilter);
         } finally {
             s1.Stop();
-            _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"Players Refresh", s1.ElapsedMilliseconds.ToString()));
+            _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"FL Players Refresh", s1.ElapsedMilliseconds.ToString()));
             _matchesProcessed = 0;
         }
         return;
     }
-
-    //private async Task ProcessMatch(FrontlineMatch match, bool remove = false) {
-    //    List<Task> playerTasks = [];
-    //    if(match.PlayerScoreboards != null) {
-    //        var teamScoreboards = match.GetTeamScoreboards();
-    //        foreach(var playerScoreboard in match.PlayerScoreboards) {
-    //            var t = new Task(() => {
-    //                var player = match.Players.FirstOrDefault(x => x.Name.Equals(playerScoreboard.Key));
-    //                if(player is null) return;
-    //                bool isLocalPlayer = player.Name.Equals(match.LocalPlayer);
-    //                bool isTeammate = !isLocalPlayer && player.Team == match.LocalPlayerTeam;
-    //                bool isOpponent = !isLocalPlayer && !isTeammate;
-
-    //                bool statEligible = true;
-    //                bool nameMatch = player.Name.FullName.Contains(PlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase);
-    //                if(_plugin.Configuration.EnablePlayerLinking && !nameMatch) {
-    //                    nameMatch = _linkedPlayerAliases.Contains(player.Name);
-    //                }
-    //                bool sideMatch = PlayerFilter.TeamStatus == TeamStatus.Any
-    //                    || PlayerFilter.TeamStatus == TeamStatus.Teammate && isTeammate
-    //                    || PlayerFilter.TeamStatus == TeamStatus.Opponent && !isTeammate && !isLocalPlayer;
-    //                bool jobMatch = PlayerFilter.AnyJob || PlayerFilter.PlayerJob == player.Job;
-    //                if(!nameMatch || !sideMatch || !jobMatch) {
-    //                    if(StatSourceFilter.InheritFromPlayerFilter) {
-    //                        statEligible = false;
-    //                    }
-    //                }
-    //                if(!StatSourceFilter.FilterState[StatSource.LocalPlayer] && isLocalPlayer) {
-    //                    statEligible = false;
-    //                } else if(!StatSourceFilter.FilterState[StatSource.Teammate] && isTeammate) {
-    //                    statEligible = false;
-    //                } else if(!StatSourceFilter.FilterState[StatSource.Opponent] && !isTeammate && !isLocalPlayer) {
-    //                    statEligible = false;
-    //                }
-
-    //                if(statEligible) {
-    //                    //handle linked aliases
-    //                    var alias = _plugin.PlayerLinksService.GetMainAlias(player.Name);
-    //                    if(alias != player.Name) {
-    //                        _activeLinks.TryAdd(alias, new());
-    //                        _activeLinks[alias].TryAdd(player.Name, 0);
-    //                        if(remove) {
-    //                            _activeLinks[alias][player.Name]--;
-    //                        } else {
-    //                            _activeLinks[alias][player.Name]++;
-    //                        }
-    //                    }
-    //                    var teamScoreboard = match.GetTeamScoreboards()[player.Team];
-    //                    _playerStats.TryAdd(alias, new());
-    //                    _playerTeamContributions.TryAdd(alias, new());
-    //                    _playerJobStatsLookup.TryAdd(alias, new());
-    //                    _playerTimes.TryAdd(alias, TimeSpan.Zero);
-    //                    _shatterStats.TryAdd(alias, new());
-    //                    _shatterTeamContributions.TryAdd(alias, new());
-    //                    _shatterTimes.TryAdd(alias, new());
-    //                    //if(!_playerStats.TryGetValue(alias, out FLPlayerJobStats? playerStat)) {
-    //                    //    playerStat = new();
-    //                    //    _playerStats.TryAdd(alias, playerStat);
-    //                    //}
-    //                    //if(!_playerTeamContributions.TryGetValue(alias, out var _)) {
-    //                    //    _playerTeamContributions.TryAdd(alias, new());
-    //                    //}
-    //                    //if(!_playerJobStatsLookup.TryGetValue(alias, out var _)) {
-    //                    //    _playerJobStatsLookup.TryAdd(alias, new());
-    //                    //}
-    //                    //if(!_playerTimes.TryGetValue(alias, out var _)) {
-    //                    //    _playerTimes.TryAdd(alias, TimeSpan.Zero);
-    //                    //}
-    //                    //if(!_shatterStats.TryGetValue(alias, out var _)) {
-    //                    //    _shatterStats.TryAdd(alias, new());
-    //                    //}
-    //                    //if(!_shatterTeamContributions.TryGetValue(alias, out var _)) {
-    //                    //    _shatterTeamContributions.TryAdd(alias, new());
-    //                    //}
-    //                    //if(!_shatterTimes.TryGetValue(alias, out var _)) {
-    //                    //    _shatterTimes.TryAdd(alias, new());
-    //                    //}
-
-    //                    if(remove) {
-    //                        _playerTimes[alias] -= match.MatchDuration ?? TimeSpan.Zero;
-    //                    } else {
-    //                        _playerTimes[alias] += match.MatchDuration ?? TimeSpan.Zero;
-    //                    }
-    //                    _plugin.FLStatsEngine.AddPlayerJobStat(_playerStats[alias], _playerTeamContributions[alias], match, player, teamScoreboard, remove);
-    //                    if(player.Job != null) {
-    //                        _playerJobStatsLookup[alias].TryAdd((Job)player.Job, new());
-    //                        FrontlineStatsManager.IncrementAggregateStats(_playerJobStatsLookup[alias][(Job)player.Job], match, remove);
-    //                    }
-
-    //                    //shatter only
-    //                    if(match.Arena == FrontlineMap.FieldsOfGlory) {
-    //                        if(remove) {
-    //                            _shatterTimes[alias] -= match.MatchDuration ?? TimeSpan.Zero;
-    //                        } else {
-    //                            _shatterTimes[alias] += match.MatchDuration ?? TimeSpan.Zero;
-    //                        }
-    //                        _plugin.FLStatsEngine.AddPlayerJobStat(_shatterStats[alias], _shatterTeamContributions[alias], match, player, teamScoreboard, remove);
-    //                    }
-    //                }
-    //            });
-    //            playerTasks.Add(t);
-    //            t.Start();
-    //            await t;
-    //        }
-    //    }
-    //    await Task.WhenAll(playerTasks);
-    //}
 
     private void ProcessMatch(FrontlineMatch match, bool remove = false) {
         List<Task> playerTasks = [];
@@ -331,7 +223,7 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
                     } else {
                         _playerTimes[alias] += match.MatchDuration ?? TimeSpan.Zero;
                     }
-                    _plugin.FLStatsEngine.AddPlayerJobStat(_playerStats[alias], _playerTeamContributions[alias], match, player, teamScoreboard, remove);
+                    FrontlineStatsManager.AddPlayerJobStat(_playerStats[alias], _playerTeamContributions[alias], match, player, teamScoreboard, remove);
                     if(player.Job != null) {
                         _playerJobStatsLookup[alias].TryAdd((Job)player.Job, new());
                         FrontlineStatsManager.IncrementAggregateStats(_playerJobStatsLookup[alias][(Job)player.Job], match, remove);
@@ -344,36 +236,12 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
                         } else {
                             _shatterTimes[alias] += match.MatchDuration ?? TimeSpan.Zero;
                         }
-                        _plugin.FLStatsEngine.AddPlayerJobStat(_shatterStats[alias], _shatterTeamContributions[alias], match, player, teamScoreboard, remove);
+                        FrontlineStatsManager.AddPlayerJobStat(_shatterStats[alias], _shatterTeamContributions[alias], match, player, teamScoreboard, remove);
                     }
                 }
             }
         }
     }
-
-    //private async Task ProcessMatches(List<FrontlineMatch> matches, bool remove = false) {
-    //    List<Task<Task>> matchTasks = [];
-
-    //    matches.ForEach(x => {
-    //        var t = new Task<Task>(async () => {
-    //            await ProcessMatch(x, remove);
-    //            RefreshProgress = (float)_matchesProcessed++ / _matchesTotal;
-    //        });
-    //        matchTasks.Add(t);
-    //        t.Start();
-
-    //        //Task.Run(() => {
-    //        //    ProcessMatch(x, remove);
-    //        //    RefreshProgress = (float)_matchesProcessed++ / _matchesTotal;
-    //        //});
-    //    });
-    //    try {
-    //        await Task.WhenAll(matchTasks);
-    //        await Task.WhenAll(matchTasks.Select(x => x.Result));
-    //    } catch(Exception e) {
-    //        _plugin.Log.Error(e, "Error!");
-    //    }
-    //}
 
     private async Task ProcessMatches(List<FrontlineMatch> matches, bool remove = false) {
         List<Task> matchTasks = [];

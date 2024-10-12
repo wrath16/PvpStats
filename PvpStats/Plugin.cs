@@ -30,6 +30,8 @@ public sealed class Plugin : IDalamudPlugin {
     private const string ConfigCommandName = "/pvpstatsconfig";
     private const string LastMatchCommandName = "/lastmatch";
 
+    internal static IPluginLog Log2;
+
     //Dalamud services
     internal IDalamudPluginInterface PluginInterface { get; init; }
     private ICommandManager CommandManager { get; init; }
@@ -106,6 +108,7 @@ public sealed class Plugin : IDalamudPlugin {
             GameGui = gameGui;
             Framework = framework;
             Log = log;
+            Log2 = log;
             AddonEventManager = addonEventManager;
             AddonLifecycle = addonLifecycle;
             ObjectTable = objectTable;

@@ -71,4 +71,8 @@ public class RWScoreboardDouble : PvpScoreboardDouble, IEquatable<RWScoreboardDo
             && DamageToOther == other.DamageToOther
             && Special1 == other.Special1;
     }
+
+    public override int GetHashCode() {
+        return (base.GetHashCode(), DamageToPCs, DamageToOther, Ceruleum, Special1).GetHashCode();
+    }
 }

@@ -56,4 +56,8 @@ public class CCScoreboardDouble : PvpScoreboardDouble, IEquatable<CCScoreboardDo
         return thisPvPScoreboard.Equals(otherPvPScoreboard)
             && TimeOnCrystal == other.TimeOnCrystal;
     }
+
+    public override int GetHashCode() {
+        return (base.GetHashCode(), TimeOnCrystal).GetHashCode();
+    }
 }
