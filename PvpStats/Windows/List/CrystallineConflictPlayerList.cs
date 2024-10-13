@@ -12,6 +12,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
@@ -22,7 +23,7 @@ internal class CrystallineConflictPlayerList : PlayerStatsList<CCPlayerJobStats,
     //internal state
     ConcurrentDictionary<PlayerAlias, CCPlayerJobStats> _playerStats = [];
     ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<int, CCScoreboardDouble>> _playerTeamContributions = [];
-    ConcurrentDictionary<PlayerAlias, TimeSpan> _playerTimes = [];
+    ConcurrentDictionary<PlayerAlias, TimeTally> _playerTimes = [];
     ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<Job, CCAggregateStats>> _playerJobStatsLookup = [];
     ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<PlayerAlias, int>> _activeLinks = [];
 
@@ -128,7 +129,7 @@ internal class CrystallineConflictPlayerList : PlayerStatsList<CCPlayerJobStats,
 
             foreach(var playerStat in _playerStats) {
                 playerStat.Value.StatsAll.Job = _playerJobStatsLookup[playerStat.Key].OrderByDescending(x => x.Value.Matches).FirstOrDefault().Key;
-                CrystallineConflictStatsManager.SetScoreboardStats(playerStat.Value, _playerTeamContributions[playerStat.Key].Values.ToList(), _playerTimes[playerStat.Key]);
+                CrystallineConflictStatsManager.SetScoreboardStats(playerStat.Value, _playerTeamContributions[playerStat.Key].Values.ToList(), _playerTimes[playerStat.Key].ToTimeSpan());
             }
 
             //this may be incorrect when removing matches
@@ -188,11 +189,11 @@ internal class CrystallineConflictPlayerList : PlayerStatsList<CCPlayerJobStats,
                     _playerStats.TryAdd(alias, new());
                     _playerTeamContributions.TryAdd(alias, new());
                     _playerJobStatsLookup.TryAdd(alias, new());
-                    _playerTimes.TryAdd(alias, TimeSpan.Zero);
+                    _playerTimes.TryAdd(alias, new());
                     if(remove) {
-                        _playerTimes[alias] -= match.MatchDuration ?? TimeSpan.Zero;
+                        _playerTimes[alias].RemoveTime(match.MatchDuration ?? TimeSpan.Zero);
                     } else {
-                        _playerTimes[alias] += match.MatchDuration ?? TimeSpan.Zero;
+                        _playerTimes[alias].AddTime(match.MatchDuration ?? TimeSpan.Zero);
                     }
                     CrystallineConflictStatsManager.AddPlayerJobStat(_playerStats[alias], _playerTeamContributions[alias], match, team.Value, player, remove);
                     if(player.Job != null) {

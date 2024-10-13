@@ -8,6 +8,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace PvpStats.Managers.Stats;
 internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
@@ -42,58 +43,54 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
 
     public static void IncrementAggregateStats(FLAggregateStats stats, FrontlineMatch match, bool decrement = false) {
         if(decrement) {
-            stats.Matches--;
+            Interlocked.Decrement(ref stats.Matches);
             if(match.Result == 0) {
-                stats.FirstPlaces--;
+                Interlocked.Decrement(ref stats.FirstPlaces);
             } else if(match.Result == 1) {
-                stats.SecondPlaces--;
+                Interlocked.Decrement(ref stats.SecondPlaces);
             } else if(match.Result == 2) {
-                stats.ThirdPlaces--;
+                Interlocked.Decrement(ref stats.ThirdPlaces);
             }
         } else {
-            stats.Matches++;
+            Interlocked.Increment(ref stats.Matches);
             if(match.Result == 0) {
-                stats.FirstPlaces++;
+                Interlocked.Increment(ref stats.FirstPlaces);
             } else if(match.Result == 1) {
-                stats.SecondPlaces++;
+                Interlocked.Increment(ref stats.SecondPlaces);
             } else if(match.Result == 2) {
-                stats.ThirdPlaces++;
+                Interlocked.Increment(ref stats.ThirdPlaces);
             }
         }
     }
 
     public static void IncrementAggregateStats(FLAggregateStats stats, FrontlineMatch match, FrontlinePlayer player, bool decrement = false) {
-        bool isLocalPlayer = player.Name.Equals(match.LocalPlayer);
-        bool isTeammate = !isLocalPlayer && player.Team == match.LocalPlayerTeam!;
-        bool isOpponent = !isLocalPlayer && !isTeammate;
-
         if(decrement) {
-            stats.Matches--;
+            Interlocked.Decrement(ref stats.Matches);
         } else {
-            stats.Matches++;
+            Interlocked.Increment(ref stats.Matches);
         }
 
         if(match.Teams.ContainsKey(player.Team)) {
             switch(match.Teams[player.Team].Placement) {
                 case 0:
                     if(decrement) {
-                        stats.FirstPlaces--;
+                        Interlocked.Decrement(ref stats.FirstPlaces);
                     } else {
-                        stats.FirstPlaces++;
+                        Interlocked.Increment(ref stats.FirstPlaces);
                     }
                     break;
                 case 1:
                     if(decrement) {
-                        stats.SecondPlaces--;
+                        Interlocked.Decrement(ref stats.SecondPlaces);
                     } else {
-                        stats.SecondPlaces++;
+                        Interlocked.Increment(ref stats.SecondPlaces);
                     }
                     break;
                 case 2:
                     if(decrement) {
-                        stats.ThirdPlaces--;
+                        Interlocked.Decrement(ref stats.ThirdPlaces);
                     } else {
-                        stats.ThirdPlaces++;
+                        Interlocked.Increment(ref stats.ThirdPlaces);
                     }
                     break;
                 default:
@@ -103,46 +100,41 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
     }
 
     public static void AddPlayerJobStat(FLPlayerJobStats statsModel, List<FLScoreboardDouble> teamContributions,
-    FrontlineMatch match, FrontlinePlayer player, FrontlineScoreboard? teamScoreboard, bool remove = false) {
+    FrontlineMatch match, FrontlinePlayer player, FLScoreboardTally? teamScoreboard, bool remove = false) {
         IncrementAggregateStats(statsModel.StatsAll, match, player, remove);
         if(match.PlayerScoreboards != null) {
-            var playerScoreboard = match.PlayerScoreboards[player.Name];
+            var playerScoreboard = new FLScoreboardTally(match.PlayerScoreboards[player.Name]);
             if(playerScoreboard != null && teamScoreboard != null) {
                 //statsModel.ScoreboardTotal.MatchTime += match.PostMatch.MatchDuration;
                 if(remove) {
-                    statsModel.ScoreboardTotal -= playerScoreboard;
+                    statsModel.ScoreboardTotal.RemoveScoreboard(playerScoreboard);
                     teamContributions.Remove(new(playerScoreboard, teamScoreboard));
                 } else {
-                    statsModel.ScoreboardTotal += playerScoreboard;
+                    statsModel.ScoreboardTotal.AddScoreboard(playerScoreboard);
                     teamContributions.Add(new(playerScoreboard, teamScoreboard));
                 }
-                statsModel.ScoreboardTotal.Size = statsModel.StatsAll.Matches;
             }
         }
     }
 
     public static void AddPlayerJobStat(FLPlayerJobStats statsModel, ConcurrentDictionary<int, FLScoreboardDouble> teamContributions,
-    FrontlineMatch match, FrontlinePlayer player, FrontlineScoreboard? teamScoreboard, bool remove = false) {
+    FrontlineMatch match, FrontlinePlayer player, FLScoreboardTally? teamScoreboard, bool remove = false) {
         IncrementAggregateStats(statsModel.StatsAll, match, player, remove);
-
         if(match.PlayerScoreboards != null) {
-            var playerScoreboard = match.PlayerScoreboards[player.Name];
+            var playerScoreboard = new FLScoreboardTally(match.PlayerScoreboards[player.Name]);
             if(playerScoreboard != null && teamScoreboard != null) {
                 var hashCode = HashCode.Combine(match.GetHashCode(), player.Name);
                 if(remove) {
-                    statsModel.ScoreboardTotal -= playerScoreboard;
-                    //teamContributions.TryTake(new(playerScoreboard, teamScoreboard));
-                    var toRemove = new FLScoreboardDouble(playerScoreboard, teamScoreboard);
+                    statsModel.ScoreboardTotal.RemoveScoreboard(playerScoreboard);
                     if(!teamContributions.TryRemove(hashCode, out _)) {
 #if DEBUG
                         Plugin.Log2.Warning($"failed to remove team contrib!, {match.DutyStartTime} {player.Name}");
 #endif
                     }
                 } else {
-                    statsModel.ScoreboardTotal += playerScoreboard;
+                    statsModel.ScoreboardTotal.AddScoreboard(playerScoreboard);
                     teamContributions.TryAdd(hashCode, new(playerScoreboard, teamScoreboard));
                 }
-                statsModel.ScoreboardTotal.Size = statsModel.StatsAll.Matches;
             }
         }
     }

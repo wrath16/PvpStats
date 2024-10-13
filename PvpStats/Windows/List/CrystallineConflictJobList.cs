@@ -23,7 +23,7 @@ internal class CrystallineConflictJobList : JobStatsList<CCPlayerJobStats, Cryst
     //internal state
     ConcurrentDictionary<Job, CCPlayerJobStats> _jobStats = [];
     ConcurrentDictionary<Job, ConcurrentDictionary<int, CCScoreboardDouble>> _jobTeamContributions = [];
-    ConcurrentDictionary<Job, (TimeSpan Time, SemaphoreSlim Lock)> _jobTimes = [];
+    ConcurrentDictionary<Job, TimeTally> _jobTimes = [];
 
     StatSourceFilter _lastJobStatSourceFilter = new();
     OtherPlayerFilter _lastPlayerFilter = new();
@@ -104,7 +104,7 @@ internal class CrystallineConflictJobList : JobStatsList<CCPlayerJobStats, Cryst
         var allJobs = Enum.GetValues(typeof(Job)).Cast<Job>();
         foreach(var job in allJobs) {
             _jobStats.TryAdd(job, new());
-            _jobTimes.TryAdd(job, (TimeSpan.Zero, new(1)));
+            _jobTimes.TryAdd(job, new());
             _jobTeamContributions.TryAdd(job, new());
         }
     }
@@ -127,7 +127,7 @@ internal class CrystallineConflictJobList : JobStatsList<CCPlayerJobStats, Cryst
                 await ProcessMatches(additions);
             }
             foreach(var jobStat in _jobStats) {
-                CrystallineConflictStatsManager.SetScoreboardStats(jobStat.Value, _jobTeamContributions[jobStat.Key].Values.ToList(), _jobTimes[jobStat.Key].Time);
+                CrystallineConflictStatsManager.SetScoreboardStats(jobStat.Value, _jobTeamContributions[jobStat.Key].Values.ToList(), _jobTimes[jobStat.Key].ToTimeSpan());
             }
             DataModel = _jobStats.Keys.ToList();
             StatsModel = _jobStats.ToDictionary();
@@ -182,14 +182,9 @@ internal class CrystallineConflictJobList : JobStatsList<CCPlayerJobStats, Cryst
 
                 if(jobStatsEligible) {
                     if(remove) {
-                        //this...is shit!
-                        _jobTimes[job].Lock.Wait();
-                        _jobTimes[job] = (_jobTimes[job].Time - match.MatchDuration ?? TimeSpan.Zero, _jobTimes[job].Lock);
-                        _jobTimes[job].Lock.Release();
+                        _jobTimes[job].RemoveTime(match.MatchDuration ?? TimeSpan.Zero);
                     } else {
-                        _jobTimes[job].Lock.Wait();
-                        _jobTimes[job] = (_jobTimes[job].Time + match.MatchDuration ?? TimeSpan.Zero, _jobTimes[job].Lock);
-                        _jobTimes[job].Lock.Release();
+                        _jobTimes[job].AddTime(match.MatchDuration ?? TimeSpan.Zero);
                     }
                     CrystallineConflictStatsManager.AddPlayerJobStat(_jobStats[job], _jobTeamContributions[job], match, team.Value, player, remove);
                 }

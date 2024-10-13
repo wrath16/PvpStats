@@ -244,46 +244,6 @@ internal unsafe class DebugWindow : Window {
                         });
                     }
 
-                    if(ImGui.Button("Test")) {
-                        var match = _plugin.FLCache.Matches.Where(x => x.IsCompleted && !x.IsDeleted).OrderBy(x => x.DutyStartTime).FirstOrDefault();
-                        var pScoreboard = match.PlayerScoreboards["Sarah Montcroix Siren"];
-                        var teamScoreboard = match.GetTeamScoreboards()[(FrontlineTeamName)match.LocalPlayerTeam];
-
-                        var contrib1 = new FLScoreboardDouble(pScoreboard, teamScoreboard);
-                        var contrib2 = new FLScoreboardDouble(pScoreboard, teamScoreboard);
-
-                        _plugin.Log.Debug($"{contrib1.GetHashCode()} {contrib2.GetHashCode()}");
-
-                        ConcurrentDictionary<FLScoreboardDouble, byte> scoreboards = new();
-                        scoreboards.TryAdd(contrib1, 0);
-                        if(scoreboards.TryRemove(contrib2, out _)) {
-                            _plugin.Log.Debug("Removal success!");
-                        } else {
-                            _plugin.Log.Debug("Removal failed");
-                        }
-                        _plugin.Log.Debug($"Scoreboards equal? {contrib1.Equals(contrib2)}");
-
-                    }
-
-                    if(ImGui.Button("Test2")) {
-                        var match = _plugin.FLCache.Matches.Where(x => x.IsCompleted && !x.IsDeleted).OrderBy(x => x.DutyStartTime).LastOrDefault();
-                        var pScoreboard = match.PlayerScoreboards["Sarah Montcroix Siren"];
-                        var teamScoreboard = match.GetTeamScoreboards()[(FrontlineTeamName)match.LocalPlayerTeam];
-
-                        var contrib1 = new FLScoreboardDouble(pScoreboard, teamScoreboard);
-                        var contrib2 = new FLScoreboardDouble(pScoreboard, teamScoreboard);
-
-                        ConcurrentDictionary<FLScoreboardDouble, byte> scoreboards = new();
-                        scoreboards.TryAdd(contrib1, 0);
-                        if(scoreboards.TryRemove(contrib2, out _)) {
-                            _plugin.Log.Debug("Removal success!");
-                        } else {
-                            _plugin.Log.Debug("Removal failed");
-                        }
-                        _plugin.Log.Debug($"Scoreboards equal? {contrib1.Equals(contrib2)}");
-
-                    }
-
                     ImGui.Text(Framework.Instance()->GameVersionString);
                     ImGui.Text(Assembly.GetExecutingAssembly().GetName().Version.ToString());
                 }

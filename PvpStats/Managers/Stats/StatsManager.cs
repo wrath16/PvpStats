@@ -40,7 +40,7 @@ internal abstract class StatsManager<T> where T : PvpMatch {
             Matches = matches;
             matchesTimer.Stop();
             Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"Matches Refresh", matchesTimer.ElapsedMilliseconds.ToString()));
-            //Plugin.Log.Debug($"additions: {toAdd.Count} removals: {toSubtract.Count}");
+            Plugin.Log.Debug($"total: {matches.Count} additions: {toAdd.Count} removals: {toSubtract.Count}");
             return (matches, toAdd, toSubtract);
         } finally {
             RefreshActive = false;

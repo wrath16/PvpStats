@@ -36,11 +36,11 @@ internal class CrystallineConflictSummary {
     int _matchesProcessed = 0;
     int _matchesTotal = 100;
 
-    TimeSpan _totalMatchTime;
+    TimeTally _totalMatchTime = new();
 
     CCPlayerJobStats _localPlayerStats = new();
     ConcurrentDictionary<int, CCScoreboardDouble> _localPlayerTeamContributions = [];
-    TimeSpan _localPlayerMatchTime;
+    TimeTally _localPlayerMatchTime = new();
     ConcurrentDictionary<Job, CCAggregateStats> _localPlayerJobStats = [];
     ConcurrentDictionary<CrystallineConflictMap, CCAggregateStats> _arenaStats = [];
     ConcurrentDictionary<PlayerAlias, CCAggregateStats> _teammateStats = [];
@@ -56,10 +56,10 @@ internal class CrystallineConflictSummary {
     }
 
     private void Reset() {
-        _totalMatchTime = TimeSpan.Zero;
+        _totalMatchTime = new();
         _localPlayerStats = new();
         _localPlayerTeamContributions = [];
-        _localPlayerMatchTime = TimeSpan.Zero;
+        _localPlayerMatchTime = new();
         _localPlayerJobStats = [];
         _arenaStats = [];
         _teammateStats = [];
@@ -84,7 +84,7 @@ internal class CrystallineConflictSummary {
                 await ProcessMatches(removals, true);
                 await ProcessMatches(additions);
             }
-            CrystallineConflictStatsManager.SetScoreboardStats(_localPlayerStats, _localPlayerTeamContributions.Values.ToList(), _localPlayerMatchTime);
+            CrystallineConflictStatsManager.SetScoreboardStats(_localPlayerStats, _localPlayerTeamContributions.Values.ToList(), _localPlayerMatchTime.ToTimeSpan());
             foreach(var teammateStat in _teammateStats) {
                 teammateStat.Value.Job = _teammateJobStatsLookup[teammateStat.Key].OrderByDescending(x => x.Value.WinDiff).FirstOrDefault().Key;
             }
@@ -99,7 +99,7 @@ internal class CrystallineConflictSummary {
             TeammateJobStats = _teammateJobStats.Where(x => x.Value.Matches > 0).OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
             OpponentStats = _opponentStats.Where(x => x.Value.Matches > 0).OrderBy(x => x.Value.Matches).OrderBy(x => x.Value.WinDiff).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
             OpponentJobStats = _opponentJobStats.Where(x => x.Value.Matches > 0).OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-            AverageMatchDuration = matches.Count > 0 ? _totalMatchTime / matches.Count : TimeSpan.Zero;
+            AverageMatchDuration = matches.Count > 0 ? _totalMatchTime.ToTimeSpan() / matches.Count : TimeSpan.Zero;
             _matches = matches;
         } finally {
             s1.Stop();
@@ -110,17 +110,17 @@ internal class CrystallineConflictSummary {
 
     private void ProcessMatch(CrystallineConflictMatch match, bool remove = false) {
         if(remove) {
-            _totalMatchTime -= match.MatchDuration ?? TimeSpan.Zero;
+            _totalMatchTime.RemoveTime(match.MatchDuration ?? TimeSpan.Zero);
         } else {
-            _totalMatchTime += match.MatchDuration ?? TimeSpan.Zero;
+            _totalMatchTime.AddTime(match.MatchDuration ?? TimeSpan.Zero);
         }
 
         //local player stats
         if(!match.IsSpectated && match.PostMatch != null) {
             if(remove) {
-                _localPlayerMatchTime -= match.MatchDuration ?? TimeSpan.Zero;
+                _localPlayerMatchTime.RemoveTime(match.MatchDuration ?? TimeSpan.Zero);
             } else {
-                _localPlayerMatchTime += match.MatchDuration ?? TimeSpan.Zero;
+                _localPlayerMatchTime.AddTime(match.MatchDuration ?? TimeSpan.Zero);
             }
             CrystallineConflictStatsManager.AddPlayerJobStat(_localPlayerStats, _localPlayerTeamContributions, match, match.LocalPlayerTeam!, match.LocalPlayerTeamMember!, remove);
 

@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using PvpStats.Types.Match;
+using System.Threading;
 
 namespace PvpStats.Types.Display;
 public class ScoreboardTally {
@@ -17,6 +18,7 @@ public class ScoreboardTally {
     public double KDA => (double)KillsAndAssists / long.Max(Deaths, 1);
 
     public void AddScoreboard(ScoreboardTally scoreboard) {
+        Interlocked.Add(ref Size, scoreboard.Size);
         Interlocked.Add(ref Kills, scoreboard.Kills);
         Interlocked.Add(ref Deaths, scoreboard.Deaths);
         Interlocked.Add(ref Assists, scoreboard.Assists);
@@ -26,6 +28,7 @@ public class ScoreboardTally {
     }
 
     public void RemoveScoreboard(ScoreboardTally scoreboard) {
+        Interlocked.Add(ref Size, -scoreboard.Size);
         Interlocked.Add(ref Kills, -scoreboard.Kills);
         Interlocked.Add(ref Deaths, -scoreboard.Deaths);
         Interlocked.Add(ref Assists, -scoreboard.Assists);

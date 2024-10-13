@@ -50,7 +50,7 @@ public class FrontlineMatch : PvpMatch {
         foreach(var player in Players) {
             var scoreboard = PlayerScoreboards[player.Name];
             var team = player.Team;
-            contributions.Add(player.Name, new(scoreboard, teamScoreboards[team]));
+            contributions.Add(player.Name, new(new FLScoreboardTally(scoreboard), new FLScoreboardTally(teamScoreboards[team])));
         }
         return contributions;
     }

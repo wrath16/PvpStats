@@ -124,7 +124,7 @@ internal class FrontlineSummary {
                 //scoreboardEligibleTime += match.MatchDuration ?? TimeSpan.Zero;
                 FrontlineScoreboard? localPlayerTeamScoreboard = null;
                 teamScoreboards?.TryGetValue((FrontlineTeamName)match.LocalPlayerTeam, out localPlayerTeamScoreboard);
-                FrontlineStatsManager.AddPlayerJobStat(_localPlayerStats, _localPlayerTeamContributions, match, match.LocalPlayerTeamMember!, localPlayerTeamScoreboard, remove);
+                FrontlineStatsManager.AddPlayerJobStat(_localPlayerStats, _localPlayerTeamContributions, match, match.LocalPlayerTeamMember!, new FLScoreboardTally(localPlayerTeamScoreboard), remove);
                 if(match.Arena == FrontlineMap.FieldsOfGlory) {
                     if(remove) {
                         _totalShatterTime -= match.MatchDuration ?? TimeSpan.Zero;
@@ -132,7 +132,7 @@ internal class FrontlineSummary {
                         _totalShatterTime += match.MatchDuration ?? TimeSpan.Zero;
                     }
                     teamScoreboards?.TryGetValue((FrontlineTeamName)match.LocalPlayerTeam, out localPlayerTeamScoreboard);
-                    FrontlineStatsManager.AddPlayerJobStat(_shatterLocalPlayerStats, _shatterLocalPlayerTeamContributions, match, match.LocalPlayerTeamMember!, localPlayerTeamScoreboard, remove);
+                    FrontlineStatsManager.AddPlayerJobStat(_shatterLocalPlayerStats, _shatterLocalPlayerTeamContributions, match, match.LocalPlayerTeamMember!, new FLScoreboardTally(localPlayerTeamScoreboard), remove);
                 }
             }
         }

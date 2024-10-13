@@ -2,7 +2,7 @@
 using System;
 
 namespace PvpStats.Types.Display;
-public class FLScoreboardDouble : PvpScoreboardDouble, IEquatable<FrontlineScoreboard>, IEquatable<FLScoreboardDouble> {
+public class FLScoreboardDouble : PvpScoreboardDouble, IEquatable<FLScoreboardDouble> {
 
     public static int BattleHighPerKill => 10;
     public static int BattleHighPerAssist => 2;
@@ -18,10 +18,10 @@ public class FLScoreboardDouble : PvpScoreboardDouble, IEquatable<FrontlineScore
 
     }
 
-    public FLScoreboardDouble(PvpScoreboard playerScoreboard, PvpScoreboard teamScoreboard) : base(playerScoreboard, teamScoreboard) {
-        if(playerScoreboard is FrontlineScoreboard && teamScoreboard is FrontlineScoreboard) {
-            var playerFLScoreboard = playerScoreboard as FrontlineScoreboard;
-            var teamFLScoreboard = teamScoreboard as FrontlineScoreboard;
+    public FLScoreboardDouble(ScoreboardTally playerScoreboard, ScoreboardTally teamScoreboard) : base(playerScoreboard, teamScoreboard) {
+        if(playerScoreboard is FLScoreboardTally && teamScoreboard is FLScoreboardTally) {
+            var playerFLScoreboard = playerScoreboard as FLScoreboardTally;
+            var teamFLScoreboard = teamScoreboard as FLScoreboardTally;
 
             Occupations = playerFLScoreboard!.Occupations != 0 ? (double)playerFLScoreboard.Occupations / teamFLScoreboard!.Occupations : 0;
             DamageToOther = playerFLScoreboard!.DamageToOther != 0 ? (double)playerFLScoreboard.DamageToOther / teamFLScoreboard!.DamageToOther : 0;
@@ -47,7 +47,7 @@ public class FLScoreboardDouble : PvpScoreboardDouble, IEquatable<FrontlineScore
         };
     }
 
-    public static explicit operator FLScoreboardDouble(FrontlineScoreboard a) {
+    public static explicit operator FLScoreboardDouble(FLScoreboardTally a) {
         var c = (PvpScoreboardDouble)a;
         return new FLScoreboardDouble() {
             Kills = c.Kills,
@@ -64,7 +64,7 @@ public class FLScoreboardDouble : PvpScoreboardDouble, IEquatable<FrontlineScore
         };
     }
 
-    public bool Equals(FrontlineScoreboard? other) {
+    public bool Equals(FLScoreboardTally? other) {
         if(other is null) {
             return false;
         } else {

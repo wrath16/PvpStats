@@ -74,38 +74,6 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
         }
     }
 
-    //public static void AddPlayerJobStat(CCPlayerJobStats statsModel, List<CCScoreboardDouble> teamContributions,
-    //    CrystallineConflictMatch match, CrystallineConflictTeam team, CrystallineConflictPlayer player, bool remove = false) {
-    //    bool isLocalPlayer = player.Alias.Equals(match.LocalPlayer);
-    //    bool isTeammate = !match.IsSpectated && !isLocalPlayer && team.TeamName == match.LocalPlayerTeam!.TeamName;
-    //    bool isOpponent = !match.IsSpectated && !isLocalPlayer && !isTeammate;
-
-    //    IncrementAggregateStats(statsModel.StatsAll, match, team, player, remove);
-    //    if(!match.IsSpectated) {
-    //        if(isTeammate) {
-    //            IncrementAggregateStats(statsModel.StatsTeammate, match, remove);
-    //        } else if(isOpponent) {
-    //            IncrementAggregateStats(statsModel.StatsOpponent, match, remove);
-    //        }
-    //    }
-
-    //    if(match.PostMatch != null) {
-    //        var teamPostMatch = match.PostMatch.Teams.Where(x => x.Key == team.TeamName).FirstOrDefault().Value;
-    //        var playerPostMatch = teamPostMatch.PlayerStats.Where(x => x.Player?.Equals(player.Alias) ?? false).FirstOrDefault();
-    //        if(playerPostMatch != null) {
-    //            var playerScoreboard = playerPostMatch.ToScoreboard();
-    //            var teamScoreboard = teamPostMatch.TeamStats.ToScoreboard();
-    //            if(remove) {
-    //                statsModel.ScoreboardTotal -= playerScoreboard;
-    //                teamContributions.Remove(new(playerScoreboard, teamScoreboard));
-    //            } else {
-    //                statsModel.ScoreboardTotal += playerScoreboard;
-    //                teamContributions.Add(new(playerScoreboard, teamScoreboard));
-    //            }
-    //        }
-    //    }
-    //}
-
     public static void AddPlayerJobStat(CCPlayerJobStats statsModel, ConcurrentDictionary<int, CCScoreboardDouble> teamContributions,
     CrystallineConflictMatch match, CrystallineConflictTeam team, CrystallineConflictPlayer player, bool remove = false) {
         bool isLocalPlayer = player.Alias.Equals(match.LocalPlayer);
@@ -130,28 +98,13 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
                 var hashCode = HashCode.Combine(match.GetHashCode(), player.Alias);
                 if(remove) {
                     statsModel.ScoreboardTotal.RemoveScoreboard(playerScoreboard);
-                    //Interlocked.Add(ref statsModel.ScoreboardTotal.Kills, -playerScoreboard.Kills);
-                    //Interlocked.Add(ref statsModel.ScoreboardTotal.Deaths, -playerScoreboard.Deaths);
-                    //Interlocked.Add(ref statsModel.ScoreboardTotal.Assists, -playerScoreboard.Assists);
-                    //Interlocked.Add(ref statsModel.ScoreboardTotal.DamageDealt, -playerScoreboard.DamageDealt);
-                    //Interlocked.Add(ref statsModel.ScoreboardTotal.DamageTaken, -playerScoreboard.DamageTaken);
-                    //Interlocked.Add(ref statsModel.ScoreboardTotal.HPRestored, -playerScoreboard.HPRestored);
-                    //Interlocked.Add(ref statsModel.ScoreboardTotal.TimeOnCrystalTicks, -playerScoreboard.TimeOnCrystalTicks);
                     if(!teamContributions.TryRemove(hashCode, out _)) {
 #if DEBUG
                         Plugin.Log2.Warning($"failed to remove team contrib!, {match.DutyStartTime} {player.Alias}");
 #endif
                     }
                 } else {
-                    //statsModel.ScoreboardTotal += playerScoreboard;
                     statsModel.ScoreboardTotal.AddScoreboard(playerScoreboard);
-                    //Interlocked.Add(ref statsModel.ScoreboardTotal.Kills, playerScoreboard.Kills);
-                    //Interlocked.Add(ref statsModel.ScoreboardTotal.Deaths, playerScoreboard.Deaths);
-                    //Interlocked.Add(ref statsModel.ScoreboardTotal.Assists, playerScoreboard.Assists);
-                    //Interlocked.Add(ref statsModel.ScoreboardTotal.DamageDealt, playerScoreboard.DamageDealt);
-                    //Interlocked.Add(ref statsModel.ScoreboardTotal.DamageTaken, playerScoreboard.DamageTaken);
-                    //Interlocked.Add(ref statsModel.ScoreboardTotal.HPRestored, playerScoreboard.HPRestored);
-                    //Interlocked.Add(ref statsModel.ScoreboardTotal.TimeOnCrystalTicks, playerScoreboard.TimeOnCrystalTicks);
                     teamContributions.TryAdd(hashCode, new(playerScoreboard, teamScoreboard));
                 }
             }
