@@ -31,7 +31,7 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
     public static float[] ContribRange = [0.15f, 0.25f];
     public static float[] DamagePerKARange = [52000f, 100000f];
     public static float[] DamagePerLifeRange = [190000f, 400000f];
-    public static float[] DamageTakenPerLifeRange = [140000f, 340000f];
+    public static float[] DamageTakenPerLifeRange = [140000f, 300000f];
     public static float[] HPRestoredPerLifeRange = [120000f, 600000f];
     public static float[] KDARange = [(KillsPerMatchRange[0] + AssistsPerMatchRange[0]) / DeathsPerMatchRange[1], (KillsPerMatchRange[1] + AssistsPerMatchRange[1]) / DeathsPerMatchRange[0]];
 

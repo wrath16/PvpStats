@@ -23,12 +23,12 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
     ConcurrentQueue<PlayerAlias> _players = [];
     ConcurrentDictionary<PlayerAlias, FLPlayerJobStats> _playerStats = [];
     ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<int, FLScoreboardDouble>> _playerTeamContributions = [];
-    ConcurrentDictionary<PlayerAlias, (TimeSpan Time, SemaphoreSlim Lock)> _playerTimes = [];
+    ConcurrentDictionary<PlayerAlias, TimeTally> _playerTimes = [];
     ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<Job, FLAggregateStats>> _playerJobStatsLookup = [];
     ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<PlayerAlias, int>> _activeLinks = [];
     ConcurrentDictionary<PlayerAlias, FLPlayerJobStats> _shatterStats = [];
     ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<int, FLScoreboardDouble>> _shatterTeamContributions = [];
-    ConcurrentDictionary<PlayerAlias, (TimeSpan Time, SemaphoreSlim Lock)> _shatterTimes = [];
+    ConcurrentDictionary<PlayerAlias, TimeTally> _shatterTimes = [];
 
     List<PlayerAlias> _linkedPlayerAliases = [];
 
@@ -132,8 +132,8 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
 
             foreach(var playerStat in _playerStats) {
                 playerStat.Value.StatsAll.Job = _playerJobStatsLookup[playerStat.Key].OrderByDescending(x => x.Value.Matches).FirstOrDefault().Key;
-                FrontlineStatsManager.SetScoreboardStats(playerStat.Value, _playerTeamContributions[playerStat.Key].Values.ToList(), _playerTimes[playerStat.Key].Time);
-                FrontlineStatsManager.SetScoreboardStats(_shatterStats[playerStat.Key], _shatterTeamContributions[playerStat.Key].Values.ToList(), _shatterTimes[playerStat.Key].Time);
+                FrontlineStatsManager.SetScoreboardStats(playerStat.Value, _playerTeamContributions[playerStat.Key].Values.ToList(), _playerTimes[playerStat.Key].ToTimeSpan());
+                FrontlineStatsManager.SetScoreboardStats(_shatterStats[playerStat.Key], _shatterTeamContributions[playerStat.Key].Values.ToList(), _shatterTimes[playerStat.Key].ToTimeSpan());
                 playerStat.Value.ScoreboardTotal.DamageToOther = _shatterStats[playerStat.Key].ScoreboardTotal.DamageToOther;
                 playerStat.Value.ScoreboardPerMatch.DamageToOther = _shatterStats[playerStat.Key].ScoreboardPerMatch.DamageToOther;
                 playerStat.Value.ScoreboardPerMin.DamageToOther = _shatterStats[playerStat.Key].ScoreboardPerMin.DamageToOther;
@@ -210,18 +210,16 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
                     _playerStats.TryAdd(alias, new());
                     _playerTeamContributions.TryAdd(alias, new());
                     _playerJobStatsLookup.TryAdd(alias, new());
-                    _playerTimes.TryAdd(alias, (TimeSpan.Zero, new(1)));
+                    _playerTimes.TryAdd(alias, new());
                     _shatterStats.TryAdd(alias, new());
                     _shatterTeamContributions.TryAdd(alias, new());
-                    _shatterTimes.TryAdd(alias, (TimeSpan.Zero, new(1)));
+                    _shatterTimes.TryAdd(alias, new());
 
-                    _playerTimes[alias].Lock.Wait();
                     if(remove) {
-                        _playerTimes[alias] = (_playerTimes[alias].Time - match.MatchDuration ?? TimeSpan.Zero, _playerTimes[alias].Lock);
+                        _playerTimes[alias].RemoveTime(match.MatchDuration ?? TimeSpan.Zero);
                     } else {
-                        _playerTimes[alias] = (_playerTimes[alias].Time + match.MatchDuration ?? TimeSpan.Zero, _playerTimes[alias].Lock);
+                        _playerTimes[alias].AddTime(match.MatchDuration ?? TimeSpan.Zero);
                     }
-                    _playerTimes[alias].Lock.Release();
 
                     FrontlineStatsManager.AddPlayerJobStat(_playerStats[alias], _playerTeamContributions[alias], match, player, teamScoreboard, remove);
                     if(player.Job != null) {
@@ -231,13 +229,11 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
 
                     //shatter only
                     if(match.Arena == FrontlineMap.FieldsOfGlory) {
-                        _shatterTimes[alias].Lock.Wait();
                         if(remove) {
-                            _shatterTimes[alias] = (_shatterTimes[alias].Time - match.MatchDuration ?? TimeSpan.Zero, _shatterTimes[alias].Lock);
+                            _shatterTimes[alias].RemoveTime(match.MatchDuration ?? TimeSpan.Zero);
                         } else {
-                            _shatterTimes[alias] = (_shatterTimes[alias].Time + match.MatchDuration ?? TimeSpan.Zero, _shatterTimes[alias].Lock);
+                            _shatterTimes[alias].AddTime(match.MatchDuration ?? TimeSpan.Zero);
                         }
-                        _shatterTimes[alias].Lock.Release();
                         FrontlineStatsManager.AddPlayerJobStat(_shatterStats[alias], _shatterTeamContributions[alias], match, player, teamScoreboard, remove);
                     }
                 }

@@ -22,11 +22,11 @@ internal class FrontlineJobList : JobStatsList<FLPlayerJobStats, FrontlineMatch>
     //internal state
     ConcurrentDictionary<Job, FLPlayerJobStats> _jobStats = [];
     ConcurrentDictionary<Job, ConcurrentDictionary<int, FLScoreboardDouble>> _jobTeamContributions = [];
-    ConcurrentDictionary<Job, (TimeSpan Time, SemaphoreSlim Lock)> _jobTimes = [];
+    ConcurrentDictionary<Job, TimeTally> _jobTimes = [];
 
     ConcurrentDictionary<Job, FLPlayerJobStats> _shatterJobStats = [];
     ConcurrentDictionary<Job, ConcurrentDictionary<int, FLScoreboardDouble>> _shatterTeamContributions = [];
-    ConcurrentDictionary<Job, (TimeSpan Time, SemaphoreSlim Lock)> _shatterJobTimes = [];
+    ConcurrentDictionary<Job, TimeTally> _shatterTimes = [];
 
     StatSourceFilter _lastJobStatSourceFilter = new();
     OtherPlayerFilter _lastPlayerFilter = new();
@@ -97,17 +97,17 @@ internal class FrontlineJobList : JobStatsList<FLPlayerJobStats, FrontlineMatch>
 
         _shatterJobStats = [];
         _shatterTeamContributions = [];
-        _shatterJobTimes = [];
+        _shatterTimes = [];
 
         var allJobs = Enum.GetValues(typeof(Job)).Cast<Job>();
         foreach(var job in allJobs) {
             _jobStats.TryAdd(job, new());
             _jobTeamContributions.TryAdd(job, new());
-            _jobTimes.TryAdd(job, (TimeSpan.Zero, new(1)));
+            _jobTimes.TryAdd(job, new());
 
             _shatterJobStats.TryAdd(job, new());
             _shatterTeamContributions.TryAdd(job, new());
-            _shatterJobTimes.TryAdd(job, (TimeSpan.Zero, new(1)));
+            _shatterTimes.TryAdd(job, new());
         }
     }
 
@@ -130,8 +130,8 @@ internal class FrontlineJobList : JobStatsList<FLPlayerJobStats, FrontlineMatch>
                 await ProcessMatches(additions);
             }
             foreach(var jobStat in _jobStats) {
-                FrontlineStatsManager.SetScoreboardStats(jobStat.Value, _jobTeamContributions[jobStat.Key].Values.ToList(), _jobTimes[jobStat.Key].Time);
-                FrontlineStatsManager.SetScoreboardStats(_shatterJobStats[jobStat.Key], _shatterTeamContributions[jobStat.Key].Values.ToList(), _shatterJobTimes[jobStat.Key].Time);
+                FrontlineStatsManager.SetScoreboardStats(jobStat.Value, _jobTeamContributions[jobStat.Key].Values.ToList(), _jobTimes[jobStat.Key].ToTimeSpan());
+                FrontlineStatsManager.SetScoreboardStats(_shatterJobStats[jobStat.Key], _shatterTeamContributions[jobStat.Key].Values.ToList(), _shatterTimes[jobStat.Key].ToTimeSpan());
                 jobStat.Value.ScoreboardTotal.DamageToOther = _shatterJobStats[jobStat.Key].ScoreboardTotal.DamageToOther;
                 jobStat.Value.ScoreboardPerMatch.DamageToOther = _shatterJobStats[jobStat.Key].ScoreboardPerMatch.DamageToOther;
                 jobStat.Value.ScoreboardPerMin.DamageToOther = _shatterJobStats[jobStat.Key].ScoreboardPerMin.DamageToOther;
@@ -189,24 +189,20 @@ internal class FrontlineJobList : JobStatsList<FLPlayerJobStats, FrontlineMatch>
                     //Plugin.Log.Debug($"Adding job stats..{player.Name} {player.Job}");
                     var teamScoreboard = new FLScoreboardTally(match.GetTeamScoreboards()[player.Team]);
                     var job = (Job)player.Job;
-                    _jobTimes[job].Lock.Wait();
                     if(remove) {
-                        _jobTimes[job] = (_jobTimes[job].Time - match.MatchDuration ?? TimeSpan.Zero, _jobTimes[job].Lock);
+                        _jobTimes[job].RemoveTime(match.MatchDuration ?? TimeSpan.Zero);
                     } else {
-                        _jobTimes[job] = (_jobTimes[job].Time + match.MatchDuration ?? TimeSpan.Zero, _jobTimes[job].Lock);
+                        _jobTimes[job].AddTime(match.MatchDuration ?? TimeSpan.Zero);
                     }
-                    _jobTimes[job].Lock.Release();
                     FrontlineStatsManager.AddPlayerJobStat(_jobStats[job], _jobTeamContributions[job], match, player, teamScoreboard, remove);
 
                     //shatter only
                     if(match.Arena == FrontlineMap.FieldsOfGlory) {
-                        _shatterJobTimes[job].Lock.Wait();
                         if(remove) {
-                            _shatterJobTimes[job] = (_shatterJobTimes[job].Time - match.MatchDuration ?? TimeSpan.Zero, _shatterJobTimes[job].Lock);
+                            _shatterTimes[job].RemoveTime(match.MatchDuration ?? TimeSpan.Zero);
                         } else {
-                            _shatterJobTimes[job] = (_shatterJobTimes[job].Time + match.MatchDuration ?? TimeSpan.Zero, _shatterJobTimes[job].Lock);
+                            _shatterTimes[job].AddTime(match.MatchDuration ?? TimeSpan.Zero);
                         }
-                        _shatterJobTimes[job].Lock.Release();
                         FrontlineStatsManager.AddPlayerJobStat(_shatterJobStats[job], _shatterTeamContributions[job], match, player, teamScoreboard, remove);
                     }
                 }
