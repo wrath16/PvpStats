@@ -120,7 +120,7 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
 
         stats.ScoreboardTotal.TimeOnCrystal = TimeSpan.FromTicks(stats.ScoreboardTotal.TimeOnCrystalTicks);
         //subtract one to account for starting with size one
-        stats.ScoreboardTotal.Size--;
+        stats.ScoreboardTotal.Size = statMatches;
 
         stats.ScoreboardPerMatch = (CCScoreboardDouble)stats.ScoreboardTotal / statMatches;
         stats.ScoreboardPerMin = (CCScoreboardDouble)stats.ScoreboardTotal / time.TotalMinutes;

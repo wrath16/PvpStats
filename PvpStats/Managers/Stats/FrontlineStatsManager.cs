@@ -143,7 +143,8 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
         var statMatches = teamContributions.Count;
         //set average stats
 
-        stats.ScoreboardTotal.Size--;
+        //stats.ScoreboardTotal.Size--;
+        stats.ScoreboardTotal.Size = statMatches;
         stats.ScoreboardPerMatch = (FLScoreboardDouble)stats.ScoreboardTotal / statMatches;
         stats.ScoreboardPerMin = (FLScoreboardDouble)stats.ScoreboardTotal / (double)time.TotalMinutes;
 
