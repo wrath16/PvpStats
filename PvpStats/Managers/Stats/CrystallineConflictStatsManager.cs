@@ -14,7 +14,7 @@ namespace PvpStats.Managers.Stats;
 internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflictMatch> {
 
     public static float[] KillsPerMatchRange = [1.0f, 4.0f];
-    public static float[] DeathsPerMatchRange = [1.5f, 3.5f];
+    public static float[] DeathsPerMatchRange = [1.0f, 3.0f];
     public static float[] AssistsPerMatchRange = [4.0f, 8.0f];
     public static float[] DamageDealtPerMatchRange = [400000f, 800000f];
     public static float[] DamageTakenPerMatchRange = [400000f, 800000f];
@@ -31,7 +31,7 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
     public static float[] ContribRange = [0.15f, 0.25f];
     public static float[] DamagePerKARange = [52000f, 100000f];
     public static float[] DamagePerLifeRange = [190000f, 400000f];
-    public static float[] DamageTakenPerLifeRange = [180000f, 380000f];
+    public static float[] DamageTakenPerLifeRange = [140000f, 340000f];
     public static float[] HPRestoredPerLifeRange = [120000f, 600000f];
     public static float[] KDARange = [(KillsPerMatchRange[0] + AssistsPerMatchRange[0]) / DeathsPerMatchRange[1], (KillsPerMatchRange[1] + AssistsPerMatchRange[1]) / DeathsPerMatchRange[0]];
 
@@ -119,6 +119,8 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
         stats.StatsPersonal.Losses = stats.StatsTeammate.Losses + stats.StatsOpponent.Losses;
 
         stats.ScoreboardTotal.TimeOnCrystal = TimeSpan.FromTicks(stats.ScoreboardTotal.TimeOnCrystalTicks);
+        //subtract one to account for starting with size one
+        stats.ScoreboardTotal.Size--;
 
         stats.ScoreboardPerMatch = (CCScoreboardDouble)stats.ScoreboardTotal / statMatches;
         stats.ScoreboardPerMin = (CCScoreboardDouble)stats.ScoreboardTotal / time.TotalMinutes;

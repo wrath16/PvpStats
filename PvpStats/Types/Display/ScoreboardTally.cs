@@ -1,4 +1,6 @@
 ﻿using PvpStats.Types.Match;
+using System;
+using System.ComponentModel;
 using System.Threading;
 
 namespace PvpStats.Types.Display;
@@ -12,9 +14,9 @@ public class ScoreboardTally {
     public long HPRestored;
     public long KillsAndAssists => Kills + Assists;
     public virtual long DamageDealtPerKA => KillsAndAssists > 0 ? DamageDealt / KillsAndAssists : DamageDealt;
-    public long DamageDealtPerLife => DamageDealt / (Deaths + Size);
-    public long DamageTakenPerLife => DamageTaken / (Deaths + Size);
-    public long HPRestoredPerLife => HPRestored / (Deaths + Size);
+    public long DamageDealtPerLife => DamageDealt / Math.Max(Deaths + Size, 1);
+    public long DamageTakenPerLife => DamageTaken / Math.Max(Deaths + Size, 1);
+    public long HPRestoredPerLife => HPRestored / Math.Max(Deaths + Size, 1);
     public double KDA => (double)KillsAndAssists / long.Max(Deaths, 1);
 
     public void AddScoreboard(ScoreboardTally scoreboard) {
