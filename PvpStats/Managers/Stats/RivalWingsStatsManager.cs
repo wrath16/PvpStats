@@ -8,6 +8,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace PvpStats.Managers.Stats;
 internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
@@ -44,53 +45,53 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
 
     public static void IncrementAggregateStats(CCAggregateStats stats, RivalWingsMatch match, bool decrement = false) {
         if(decrement) {
-            stats.Matches--;
+            Interlocked.Decrement(ref stats.Matches);
             if(match.IsWin) {
-                stats.Wins--;
+                Interlocked.Decrement(ref stats.Wins);
             } else if(match.IsLoss) {
-                stats.Losses--;
+                Interlocked.Decrement(ref stats.Losses);
             }
         } else {
-            stats.Matches++;
+            Interlocked.Increment(ref stats.Matches);
             if(match.IsWin) {
-                stats.Wins++;
+                Interlocked.Increment(ref stats.Wins);
             } else if(match.IsLoss) {
-                stats.Losses++;
+                Interlocked.Increment(ref stats.Losses);
             }
         }
     }
 
     public static void IncrementAggregateStats(CCAggregateStats stats, RivalWingsMatch match, RivalWingsPlayer player, bool decrement = false) {
         if(decrement) {
-            stats.Matches--;
+            Interlocked.Decrement(ref stats.Matches);
             if(match.MatchWinner == player.Team) {
-                stats.Wins--;
+                Interlocked.Decrement(ref stats.Wins);
             } else if(match.MatchWinner != null) {
-                stats.Losses--;
+                Interlocked.Decrement(ref stats.Losses);
             }
         } else {
-            stats.Matches++;
+            Interlocked.Increment(ref stats.Matches);
             if(match.MatchWinner == player.Team) {
-                stats.Wins++;
+                Interlocked.Increment(ref stats.Wins);
             } else if(match.MatchWinner != null) {
-                stats.Losses++;
+                Interlocked.Increment(ref stats.Losses);
             }
         }
     }
 
     public static void AddPlayerJobStat(RWPlayerJobStats statsModel, List<RWScoreboardDouble> teamContributions,
-    RivalWingsMatch match, RivalWingsPlayer player, RivalWingsScoreboard? teamScoreboard, bool remove = false) {
+    RivalWingsMatch match, RivalWingsPlayer player, RWScoreboardTally? teamScoreboard, bool remove = false) {
         IncrementAggregateStats(statsModel.StatsAll, match, player, remove);
 
         if(match.PlayerScoreboards != null) {
-            var playerScoreboard = match.PlayerScoreboards[player.Name];
+            var playerScoreboard = new RWScoreboardTally(match.PlayerScoreboards[player.Name]);
             if(playerScoreboard != null && teamScoreboard != null) {
                 //statsModel.ScoreboardTotal.MatchTime += match.PostMatch.MatchDuration;
                 if(remove) {
-                    statsModel.ScoreboardTotal -= playerScoreboard;
+                    statsModel.ScoreboardTotal.RemoveScoreboard(playerScoreboard);
                     teamContributions.Remove(new(playerScoreboard, teamScoreboard));
                 } else {
-                    statsModel.ScoreboardTotal += playerScoreboard;
+                    statsModel.ScoreboardTotal.AddScoreboard(playerScoreboard);
                     teamContributions.Add(new(playerScoreboard, teamScoreboard));
                 }
             }
@@ -98,22 +99,22 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
     }
 
     public static void AddPlayerJobStat(RWPlayerJobStats statsModel, ConcurrentDictionary<int, RWScoreboardDouble> teamContributions,
-    RivalWingsMatch match, RivalWingsPlayer player, RivalWingsScoreboard? teamScoreboard, bool remove = false) {
+    RivalWingsMatch match, RivalWingsPlayer player, RWScoreboardTally? teamScoreboard, bool remove = false) {
         IncrementAggregateStats(statsModel.StatsAll, match, player, remove);
 
         if(match.PlayerScoreboards != null) {
-            var playerScoreboard = match.PlayerScoreboards[player.Name];
+            var playerScoreboard = new RWScoreboardTally(match.PlayerScoreboards[player.Name]);
             if(playerScoreboard != null && teamScoreboard != null) {
                 var hashCode = HashCode.Combine(match.GetHashCode(), player.Name);
                 if(remove) {
-                    statsModel.ScoreboardTotal -= playerScoreboard;
+                    statsModel.ScoreboardTotal.RemoveScoreboard(playerScoreboard);
                     if(!teamContributions.Remove(hashCode, out _)) {
 #if DEBUG
                         Plugin.Log2.Warning($"failed to remove team contrib!, {match.DutyStartTime} {player.Name}");
 #endif
                     }
                 } else {
-                    statsModel.ScoreboardTotal += playerScoreboard;
+                    statsModel.ScoreboardTotal.AddScoreboard(playerScoreboard);
                     teamContributions.TryAdd(hashCode, new(playerScoreboard, teamScoreboard));
                 }
             }
@@ -122,14 +123,15 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
 
     public static void SetScoreboardStats(RWPlayerJobStats stats, List<RWScoreboardDouble> teamContributions, TimeSpan time) {
         var statMatches = teamContributions.Count;
-        //set average stats
-        if(statMatches > 0) {
-            //stats.StatsPersonal.Matches = stats.StatsTeammate.Matches + stats.StatsOpponent.Matches;
-            //stats.StatsPersonal.Wins = stats.StatsTeammate.Wins + stats.StatsOpponent.Wins;
-            //stats.StatsPersonal.Losses = stats.StatsTeammate.Losses + stats.StatsOpponent.Losses;
-            stats.ScoreboardPerMatch = (RWScoreboardDouble)stats.ScoreboardTotal / statMatches;
-            stats.ScoreboardPerMin = (RWScoreboardDouble)stats.ScoreboardTotal / (double)time.TotalMinutes;
 
+        //stats.StatsPersonal.Matches = stats.StatsTeammate.Matches + stats.StatsOpponent.Matches;
+        //stats.StatsPersonal.Wins = stats.StatsTeammate.Wins + stats.StatsOpponent.Wins;
+        //stats.StatsPersonal.Losses = stats.StatsTeammate.Losses + stats.StatsOpponent.Losses;
+        stats.ScoreboardTotal.Size = statMatches;
+        stats.ScoreboardPerMatch = (RWScoreboardDouble)stats.ScoreboardTotal / statMatches;
+        stats.ScoreboardPerMin = (RWScoreboardDouble)stats.ScoreboardTotal / (double)time.TotalMinutes;
+
+        if(statMatches > 0) {
             stats.ScoreboardContrib.Kills = teamContributions.OrderBy(x => x.Kills).ElementAt(statMatches / 2).Kills;
             stats.ScoreboardContrib.Deaths = teamContributions.OrderBy(x => x.Deaths).ElementAt(statMatches / 2).Deaths;
             stats.ScoreboardContrib.Assists = teamContributions.OrderBy(x => x.Assists).ElementAt(statMatches / 2).Assists;
@@ -141,6 +143,8 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
             stats.ScoreboardContrib.Ceruleum = teamContributions.OrderBy(x => x.Ceruleum).ElementAt(statMatches / 2).Ceruleum;
             stats.ScoreboardContrib.KillsAndAssists = teamContributions.OrderBy(x => x.KillsAndAssists).ElementAt(statMatches / 2).KillsAndAssists;
             stats.ScoreboardContrib.Special1 = teamContributions.OrderBy(x => x.Special1).ElementAt(statMatches / 2).Special1;
+        } else {
+            stats.ScoreboardContrib = new();
         }
     }
 

@@ -25,7 +25,7 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
     ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<int, FLScoreboardDouble>> _playerTeamContributions = [];
     ConcurrentDictionary<PlayerAlias, TimeTally> _playerTimes = [];
     ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<Job, FLAggregateStats>> _playerJobStatsLookup = [];
-    ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<PlayerAlias, int>> _activeLinks = [];
+    ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<PlayerAlias, InterlockedTally>> _activeLinks = [];
     ConcurrentDictionary<PlayerAlias, FLPlayerJobStats> _shatterStats = [];
     ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<int, FLScoreboardDouble>> _shatterTeamContributions = [];
     ConcurrentDictionary<PlayerAlias, TimeTally> _shatterTimes = [];
@@ -141,7 +141,7 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
             }
 
             //this may be incorrect when removing matches
-            ActiveLinks = _activeLinks.Select(x => (x.Key, x.Value.ToDictionary())).ToDictionary();
+            ActiveLinks = _activeLinks.Select(x => (x.Key, x.Value.Where(y => y.Value.Tally > 0).Select(y => (y.Key, y.Value.Tally)).ToDictionary())).ToDictionary();
             DataModel = _playerStats.Keys.ToList();
             DataModelUntruncated = DataModel;
             StatsModel = _playerStats.ToDictionary();
@@ -199,11 +199,11 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
                     var alias = _plugin.PlayerLinksService.GetMainAlias(player.Name);
                     if(alias != player.Name) {
                         _activeLinks.TryAdd(alias, new());
-                        _activeLinks[alias].TryAdd(player.Name, 0);
+                        _activeLinks[alias].TryAdd(player.Name, new());
                         if(remove) {
-                            _activeLinks[alias][player.Name]--;
+                            _activeLinks[alias][player.Name].Subtract(1);
                         } else {
-                            _activeLinks[alias][player.Name]++;
+                            _activeLinks[alias][player.Name].Add(1);
                         }
                     }
                     var teamScoreboard = new FLScoreboardTally(match.GetTeamScoreboards()[player.Team]);

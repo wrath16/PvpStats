@@ -12,6 +12,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
@@ -22,9 +23,9 @@ internal class RivalWingsPlayerList : PlayerStatsList<RWPlayerJobStats, RivalWin
     //internal state
     ConcurrentDictionary<PlayerAlias, RWPlayerJobStats> _playerStats = [];
     ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<int, RWScoreboardDouble>> _playerTeamContributions = [];
-    ConcurrentDictionary<PlayerAlias, TimeSpan> _playerTimes = [];
+    ConcurrentDictionary<PlayerAlias, TimeTally> _playerTimes = [];
     ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<Job, CCAggregateStats>> _playerJobStatsLookup = [];
-    ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<PlayerAlias, int>> _activeLinks = [];
+    ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<PlayerAlias, InterlockedTally>> _activeLinks = [];
     //Dictionary<PlayerAlias, CCAggregateStats> _playerMercStats = [];
     //Dictionary<PlayerAlias, CCAggregateStats> _playerMidStats = [];
 
@@ -126,11 +127,11 @@ internal class RivalWingsPlayerList : PlayerStatsList<RWPlayerJobStats, RivalWin
 
             foreach(var playerStat in _playerStats) {
                 playerStat.Value.StatsAll.Job = _playerJobStatsLookup[playerStat.Key].OrderByDescending(x => x.Value.Matches).FirstOrDefault().Key;
-                RivalWingsStatsManager.SetScoreboardStats(playerStat.Value, _playerTeamContributions[playerStat.Key].Values.ToList(), _playerTimes[playerStat.Key]);
+                RivalWingsStatsManager.SetScoreboardStats(playerStat.Value, _playerTeamContributions[playerStat.Key].Values.ToList(), _playerTimes[playerStat.Key].ToTimeSpan());
             }
 
             //this may be incorrect when removing matches
-            ActiveLinks = _activeLinks.Select(x => (x.Key, x.Value.ToDictionary())).ToDictionary();
+            ActiveLinks = _activeLinks.Select(x => (x.Key, x.Value.Where(y => y.Value.Tally > 0).Select(y => (y.Key, y.Value.Tally)).ToDictionary())).ToDictionary();
             DataModel = _playerStats.Keys.ToList();
             DataModelUntruncated = DataModel;
             StatsModel = _playerStats.ToDictionary();
@@ -188,23 +189,23 @@ internal class RivalWingsPlayerList : PlayerStatsList<RWPlayerJobStats, RivalWin
                 var alias = _plugin.PlayerLinksService.GetMainAlias(player.Name);
                 if(alias != player.Name) {
                     _activeLinks.TryAdd(alias, new());
-                    _activeLinks[alias].TryAdd(player.Name, 0);
+                    _activeLinks[alias].TryAdd(player.Name, new());
                     if(remove) {
-                        _activeLinks[alias][player.Name]--;
+                        _activeLinks[alias][player.Name].Subtract(1);
                     } else {
-                        _activeLinks[alias][player.Name]++;
+                        _activeLinks[alias][player.Name].Add(1);
                     }
                 }
-                var teamScoreboard = match.GetTeamScoreboards()[player.Team];
+                var teamScoreboard = new RWScoreboardTally(match.GetTeamScoreboards()[player.Team]);
                 var enemyTeam = (RivalWingsTeamName)((int)(player.Team + 1) % 2);
                 _playerStats.TryAdd(alias, new());
                 _playerTeamContributions.TryAdd(alias, new());
                 _playerJobStatsLookup.TryAdd(alias, new());
-                _playerTimes.TryAdd(alias, TimeSpan.Zero);
+                _playerTimes.TryAdd(alias, new());
                 if(remove) {
-                    _playerTimes[alias] -= match.MatchDuration ?? TimeSpan.Zero;
+                    _playerTimes[alias].RemoveTime(match.MatchDuration ?? TimeSpan.Zero);
                 } else {
-                    _playerTimes[alias] += match.MatchDuration ?? TimeSpan.Zero;
+                    _playerTimes[alias].AddTime(match.MatchDuration ?? TimeSpan.Zero);
                 }
                 RivalWingsStatsManager.AddPlayerJobStat(_playerStats[alias], _playerTeamContributions[alias], match, player, teamScoreboard, remove);
                 if(player.Job != null) {
@@ -214,11 +215,11 @@ internal class RivalWingsPlayerList : PlayerStatsList<RWPlayerJobStats, RivalWin
 
                 if(match.Mercs != null) {
                     if(remove) {
-                        _playerStats[alias].MercStats.Wins -= match.Mercs[player.Team];
-                        _playerStats[alias].MercStats.Losses -= match.Mercs[enemyTeam];
+                        Interlocked.Add(ref _playerStats[alias].MercStats.Wins, -match.Mercs[player.Team]);
+                        Interlocked.Add(ref _playerStats[alias].MercStats.Losses, -match.Mercs[enemyTeam]);
                     } else {
-                        _playerStats[alias].MercStats.Wins += match.Mercs[player.Team];
-                        _playerStats[alias].MercStats.Losses += match.Mercs[enemyTeam];
+                        Interlocked.Add(ref _playerStats[alias].MercStats.Wins, match.Mercs[player.Team]);
+                        Interlocked.Add(ref _playerStats[alias].MercStats.Losses, match.Mercs[enemyTeam]);
                     }
                 }
                 if(match.Supplies != null) {
@@ -231,11 +232,11 @@ internal class RivalWingsPlayerList : PlayerStatsList<RWPlayerJobStats, RivalWin
                         totalLosses += supply.Value;
                     }
                     if(remove) {
-                        _playerStats[alias].MidStats.Wins -= totalWins;
-                        _playerStats[alias].MidStats.Losses -= totalLosses;
+                        Interlocked.Add(ref _playerStats[alias].MidStats.Wins, -totalWins);
+                        Interlocked.Add(ref _playerStats[alias].MidStats.Losses, -totalLosses);
                     } else {
-                        _playerStats[alias].MidStats.Wins += totalWins;
-                        _playerStats[alias].MidStats.Losses += totalLosses;
+                        Interlocked.Add(ref _playerStats[alias].MidStats.Wins, totalWins);
+                        Interlocked.Add(ref _playerStats[alias].MidStats.Losses, totalLosses);
                     }
                 }
             }

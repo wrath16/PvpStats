@@ -25,7 +25,7 @@ internal class CrystallineConflictPlayerList : PlayerStatsList<CCPlayerJobStats,
     ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<int, CCScoreboardDouble>> _playerTeamContributions = [];
     ConcurrentDictionary<PlayerAlias, TimeTally> _playerTimes = [];
     ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<Job, CCAggregateStats>> _playerJobStatsLookup = [];
-    ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<PlayerAlias, int>> _activeLinks = [];
+    ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<PlayerAlias, InterlockedTally>> _activeLinks = [];
 
     List<PlayerAlias> _linkedPlayerAliases = [];
 
@@ -133,7 +133,7 @@ internal class CrystallineConflictPlayerList : PlayerStatsList<CCPlayerJobStats,
             }
 
             //this may be incorrect when removing matches
-            ActiveLinks = _activeLinks.Select(x => (x.Key, x.Value.ToDictionary())).ToDictionary();
+            ActiveLinks = _activeLinks.Select(x => (x.Key, x.Value.Where(y => y.Value.Tally > 0).Select(y => (y.Key, y.Value.Tally)).ToDictionary())).ToDictionary();
             DataModel = _playerStats.Keys.ToList();
             DataModelUntruncated = DataModel;
             StatsModel = _playerStats.ToDictionary();
@@ -178,11 +178,11 @@ internal class CrystallineConflictPlayerList : PlayerStatsList<CCPlayerJobStats,
                     var alias = _plugin.PlayerLinksService.GetMainAlias(player.Alias);
                     if(alias != player.Alias) {
                         _activeLinks.TryAdd(alias, new());
-                        _activeLinks[alias].TryAdd(player.Alias, 0);
+                        _activeLinks[alias].TryAdd(player.Alias, new());
                         if(remove) {
-                            _activeLinks[alias][player.Alias]--;
+                            _activeLinks[alias][player.Alias].Subtract(1);
                         } else {
-                            _activeLinks[alias][player.Alias]++;
+                            _activeLinks[alias][player.Alias].Add(1);
                         }
                     }
 

@@ -60,7 +60,7 @@ public class RivalWingsMatch : PvpMatch {
         foreach(var player in Players) {
             var scoreboard = PlayerScoreboards[player.Name];
             var team = player.Team;
-            contributions.Add(player.Name, new(scoreboard, teamScoreboards[team]));
+            contributions.Add(player.Name, new(new RWScoreboardTally(scoreboard), new RWScoreboardTally(teamScoreboards[team])));
         }
         return contributions;
     }

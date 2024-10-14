@@ -141,7 +141,6 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
 
     public static void SetScoreboardStats(FLPlayerJobStats stats, List<FLScoreboardDouble> teamContributions, TimeSpan time) {
         var statMatches = teamContributions.Count;
-        //set average stats
 
         //stats.ScoreboardTotal.Size--;
         stats.ScoreboardTotal.Size = statMatches;

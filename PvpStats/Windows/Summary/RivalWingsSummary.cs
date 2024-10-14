@@ -129,10 +129,15 @@ internal class RivalWingsSummary {
         }
 
         if(match.PlayerScoreboards != null) {
-            _scoreboardEligibleTime += match.MatchDuration ?? TimeSpan.Zero;
+            if(remove) {
+                _scoreboardEligibleTime -= match.MatchDuration ?? TimeSpan.Zero;
+            } else {
+                _scoreboardEligibleTime += match.MatchDuration ?? TimeSpan.Zero;
+            }
             RivalWingsScoreboard? localPlayerTeamScoreboard = null;
             teamScoreboards?.TryGetValue(match.LocalPlayerTeam ?? RivalWingsTeamName.Unknown, out localPlayerTeamScoreboard);
-            RivalWingsStatsManager.AddPlayerJobStat(_localPlayerStats, _localPlayerTeamContributions, match, match.LocalPlayerTeamMember, localPlayerTeamScoreboard, remove);
+            var scoreboardTally = localPlayerTeamScoreboard != null ? new RWScoreboardTally(localPlayerTeamScoreboard) : null;
+            RivalWingsStatsManager.AddPlayerJobStat(_localPlayerStats, _localPlayerTeamContributions, match, match.LocalPlayerTeamMember, scoreboardTally, remove);
         }
 
         if(match.PlayerMechTime != null && match.LocalPlayer != null) {

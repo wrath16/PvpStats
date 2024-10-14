@@ -13,10 +13,10 @@ public class RWScoreboardDouble : PvpScoreboardDouble, IEquatable<RWScoreboardDo
 
     }
 
-    public RWScoreboardDouble(PvpScoreboard playerScoreboard, PvpScoreboard teamScoreboard) : base(playerScoreboard, teamScoreboard) {
-        if(playerScoreboard is RivalWingsScoreboard && teamScoreboard is RivalWingsScoreboard) {
-            var playerRWScoreboard = playerScoreboard as RivalWingsScoreboard;
-            var teamRWScoreboard = teamScoreboard as RivalWingsScoreboard;
+    public RWScoreboardDouble(ScoreboardTally playerScoreboard, ScoreboardTally teamScoreboard) : base(playerScoreboard, teamScoreboard) {
+        if(playerScoreboard is RWScoreboardTally && teamScoreboard is RWScoreboardTally) {
+            var playerRWScoreboard = playerScoreboard as RWScoreboardTally;
+            var teamRWScoreboard = teamScoreboard as RWScoreboardTally;
 
             Ceruleum = playerRWScoreboard!.Ceruleum != 0 ? (double)playerRWScoreboard.Ceruleum / teamRWScoreboard!.Ceruleum : 0;
             DamageToOther = playerRWScoreboard!.DamageToOther != 0 ? (double)playerRWScoreboard.DamageToOther / teamRWScoreboard!.DamageToOther : 0;
@@ -42,7 +42,7 @@ public class RWScoreboardDouble : PvpScoreboardDouble, IEquatable<RWScoreboardDo
         };
     }
 
-    public static explicit operator RWScoreboardDouble(RivalWingsScoreboard a) {
+    public static explicit operator RWScoreboardDouble(RWScoreboardTally a) {
         var c = (PvpScoreboardDouble)a;
         return new RWScoreboardDouble() {
             Kills = c.Kills,
