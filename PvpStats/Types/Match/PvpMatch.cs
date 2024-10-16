@@ -9,6 +9,7 @@ public abstract class PvpMatch : IEquatable<PvpMatch> {
     public int Version { get; init; }
     public bool IsCompleted { get; set; }
     public bool IsDeleted { get; set; }
+    public bool IsQuarantined { get; set; }
     public bool IsPickup { get; set; }
     public bool IsBookmarked { get; set; }
     public string Tags { get; set; } = "";
@@ -25,6 +26,8 @@ public abstract class PvpMatch : IEquatable<PvpMatch> {
     public uint DutyId { get; set; }
     public uint TerritoryId { get; set; }
     public string? DataCenter { get; set; }
+    public string? GameVersion { get; set; }
+    public string? PluginVersion { get; set; }
 
     public PvpMatch() {
         Id = new();

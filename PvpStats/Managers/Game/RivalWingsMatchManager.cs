@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace PvpStats.Managers.Game;
@@ -120,7 +121,13 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                     DutyId = dutyId,
                     TerritoryId = territoryId,
                     Arena = arena,
+                    PluginVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString(),
                 };
+                unsafe {
+                    if(FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance() != null) {
+                        CurrentMatch.GameVersion = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->GameVersionString;
+                    }
+                }
                 Plugin.Log.Information($"starting new match on {CurrentMatch.Arena}");
                 Plugin.DataQueue.QueueDataOperation(async () => {
                     await Plugin.RWCache.AddMatch(CurrentMatch);
@@ -147,7 +154,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             }
 
 #if DEBUG
-            Plugin.Functions.CreateByteDump(p2, 0x3000, "rw_match_end");
+            //Plugin.Functions.CreateByteDump(p2, 0x3000, "rw_match_end");
 #endif
 
             Plugin.DataQueue.QueueDataOperation(async () => {
@@ -194,10 +201,11 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             }
         } catch(Exception e) {
             Plugin.Log.Error(e, $"Error in rw match end .ctor.");
+        } finally {
+            _resultPayloadReceived = true;
+            EnableLeaveDutyButton();
+            _rwMatchEndHook.Original(p1, p2);
         }
-        _resultPayloadReceived = true;
-        EnableLeaveDutyButton();
-        _rwMatchEndHook.Original(p1, p2);
     }
 
     private bool ProcessMatchResults(RivalWingsResultsPacket results, RivalWingsContentDirector director) {
@@ -402,31 +410,32 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             return;
         }
         Plugin.Log.Debug("Duty menu closed");
-        _leaveDutyButton = IntPtr.Zero;
-        _leaveDutyButtonOwnerNode = IntPtr.Zero;
-        _mouseOverEvent = null;
-        _mouseOutEvent = null;
-        _addonId = 0;
+        ResetButton();
     }
 
     internal unsafe void EnableLeaveDutyButton() {
-        if(_leaveDutyButton != IntPtr.Zero) {
-            ((AtkComponentButton*)_leaveDutyButton)->AtkComponentBase.SetEnabledState(true);
-        }
-        if(_mouseOverEvent != null) {
-            Plugin.AddonEventManager.RemoveEvent(_mouseOverEvent);
-        }
-        if(_mouseOutEvent != null) {
-            Plugin.AddonEventManager.RemoveEvent(_mouseOutEvent);
-        }
-        if(_leaveDutyButtonOwnerNode != IntPtr.Zero) {
-            ((AtkComponentNode*)_leaveDutyButtonOwnerNode)->AtkResNode.NodeFlags &= ~(NodeFlags.HasCollision | NodeFlags.EmitsEvents | NodeFlags.RespondToMouse);
-        }
-        if(_addonId != 0) {
-            AtkStage.Instance()->TooltipManager.HideTooltip(_addonId);
-        }
-        if(_leaveDutyButtonText != null) {
-            ((AtkComponentButton*)_leaveDutyButton)->ButtonTextNode->SetText(_leaveDutyButtonText);
+        try {
+            if(_leaveDutyButton != IntPtr.Zero) {
+                ((AtkComponentButton*)_leaveDutyButton)->AtkComponentBase.SetEnabledState(true);
+                if(_leaveDutyButtonText != null) {
+                    ((AtkComponentButton*)_leaveDutyButton)->ButtonTextNode->SetText(_leaveDutyButtonText);
+                }
+            }
+            if(_mouseOverEvent != null) {
+                Plugin.AddonEventManager.RemoveEvent(_mouseOverEvent);
+            }
+            if(_mouseOutEvent != null) {
+                Plugin.AddonEventManager.RemoveEvent(_mouseOutEvent);
+            }
+            if(_leaveDutyButtonOwnerNode != IntPtr.Zero) {
+                ((AtkComponentNode*)_leaveDutyButtonOwnerNode)->AtkResNode.NodeFlags &= ~(NodeFlags.HasCollision | NodeFlags.EmitsEvents | NodeFlags.RespondToMouse);
+            }
+            if(_addonId != 0) {
+                AtkStage.Instance()->TooltipManager.HideTooltip(_addonId);
+            }
+
+        } catch (Exception e) {
+            Plugin.Log2.Error(e, "Error in enabling leave duty button.");
         }
     }
 
@@ -442,9 +451,9 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         var now = DateTime.Now;
 
 #if DEBUG
-        if(now - _lastUpdate > TimeSpan.FromSeconds(30)) {
-            Plugin.Functions.CreateByteDump((nint)director, 0x3000, "RWICD");
-        }
+        //if(now - _lastUpdate > TimeSpan.FromSeconds(30)) {
+        //    Plugin.Functions.CreateByteDump((nint)director, 0x3000, "RWICD");
+        //}
 #endif
 
         try {
@@ -543,12 +552,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
     }
 
     private void Reset() {
-        _leaveDutyButton = IntPtr.Zero;
-        _leaveDutyButtonOwnerNode = IntPtr.Zero;
-        _leaveDutyButtonText = null;
-        _addonId = 0;
-        _mouseOverEvent = null;
-        _mouseOutEvent = null;
+        ResetButton();
         _matchEnded = false;
         _resultPayloadReceived = false;
         _objIdToPlayer = [];
@@ -580,5 +584,14 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         for(int i = 0; i < 6; i++) {
             _allianceStats.Add(i, new());
         }
+    }
+
+    private void ResetButton() {
+        _leaveDutyButton = IntPtr.Zero;
+        _leaveDutyButtonOwnerNode = IntPtr.Zero;
+        _leaveDutyButtonText = null;
+        _addonId = 0;
+        _mouseOverEvent = null;
+        _mouseOutEvent = null;
     }
 }

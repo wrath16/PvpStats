@@ -5,6 +5,7 @@ using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Hooking;
 using Dalamud.Utility;
 using Dalamud.Utility.Signatures;
+using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.GeneratedSheets2;
 using PvpStats.Helpers;
@@ -15,6 +16,7 @@ using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace PvpStats.Managers.Game;
@@ -104,7 +106,13 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 TerritoryId = territoryId,
                 Arena = MatchHelper.GetArena(territoryId),
                 MatchType = MatchHelper.GetMatchType(dutyId),
-            };
+                PluginVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString(),
+        };
+            unsafe {
+                if(Framework.Instance() != null) {
+                    _currentMatch.GameVersion = Framework.Instance()->GameVersionString;
+                }
+            }
             _plugin.Log.Information($"starting new match on {_currentMatch.Arena}");
             _plugin.DataQueue.QueueDataOperation(async () => {
                 await _plugin.CCCache.AddMatch(_currentMatch);

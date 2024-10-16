@@ -12,6 +12,7 @@ using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace PvpStats.Managers.Game;
@@ -86,7 +87,13 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
                     TerritoryId = territoryId,
                     Arena = MatchHelper.GetFrontlineMap(dutyId),
                     MaxBattleHigh = new(),
+                    PluginVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString(),
                 };
+                unsafe {
+                    if(FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance() != null) {
+                        CurrentMatch.GameVersion = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->GameVersionString;
+                    }
+                }
                 _maxObservedBattleHigh = [];
                 Plugin.Log.Information($"starting new match on {CurrentMatch.Arena}");
                 Plugin.DataQueue.QueueDataOperation(async () => {
