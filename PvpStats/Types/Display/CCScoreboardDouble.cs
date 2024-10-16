@@ -1,5 +1,4 @@
-﻿using PvpStats.Types.Match;
-using System;
+﻿using System;
 
 namespace PvpStats.Types.Display;
 public class CCScoreboardDouble : PvpScoreboardDouble, IEquatable<CCScoreboardDouble> {

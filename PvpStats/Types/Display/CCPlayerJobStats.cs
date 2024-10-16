@@ -1,6 +1,4 @@
-﻿using System.Threading;
-
-namespace PvpStats.Types.Display;
+﻿namespace PvpStats.Types.Display;
 public class CCPlayerJobStats : PlayerJobStats {
     public CCAggregateStats StatsAll { get; set; } = new();
     public CCAggregateStats StatsPersonal { get; set; } = new();

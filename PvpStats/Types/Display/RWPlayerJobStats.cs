@@ -1,6 +1,4 @@
-﻿using PvpStats.Types.Match;
-
-namespace PvpStats.Types.Display;
+﻿namespace PvpStats.Types.Display;
 internal class RWPlayerJobStats : PlayerJobStats {
     public CCAggregateStats StatsAll { get; set; } = new();
     public CCAggregateStats MercStats { get; set; } = new();

@@ -1,6 +1,4 @@
-﻿using PvpStats.Types.Match;
-using System;
-using System.ComponentModel;
+﻿using System;
 using System.Threading;
 
 namespace PvpStats.Types.Display;

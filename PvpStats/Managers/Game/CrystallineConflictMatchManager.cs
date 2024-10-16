@@ -107,7 +107,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 Arena = MatchHelper.GetArena(territoryId),
                 MatchType = MatchHelper.GetMatchType(dutyId),
                 PluginVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString(),
-        };
+            };
             unsafe {
                 if(Framework.Instance() != null) {
                     _currentMatch.GameVersion = Framework.Instance()->GameVersionString;

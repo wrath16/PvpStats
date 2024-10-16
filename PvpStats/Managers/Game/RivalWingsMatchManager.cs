@@ -434,7 +434,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                 AtkStage.Instance()->TooltipManager.HideTooltip(_addonId);
             }
 
-        } catch (Exception e) {
+        } catch(Exception e) {
             Plugin.Log2.Error(e, "Error in enabling leave duty button.");
         }
     }

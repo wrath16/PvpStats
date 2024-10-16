@@ -1,6 +1,4 @@
-﻿using PvpStats.Types.Match;
-
-namespace PvpStats.Types.Display;
+﻿namespace PvpStats.Types.Display;
 internal class FLPlayerJobStats : PlayerJobStats {
     public FLAggregateStats StatsAll { get; set; } = new();
     public FLScoreboardTally ScoreboardTotal { get; set; } = new();
