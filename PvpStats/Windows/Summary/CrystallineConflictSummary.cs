@@ -19,8 +19,12 @@ namespace PvpStats.Windows.Summary;
 internal class CrystallineConflictSummary {
 
     private readonly Plugin Plugin;
-    internal protected SemaphoreSlim RefreshLock { get; private set; } = new SemaphoreSlim(1);
+
+    int _matchesProcessed = 0;
+    int _matchesTotal = 100;
+    private readonly SemaphoreSlim _refreshProgressLock = new(1);
     public float RefreshProgress { get; set; } = 0f;
+    internal protected SemaphoreSlim RefreshLock { get; private set; } = new SemaphoreSlim(1);
 
     internal CCPlayerJobStats LocalPlayerStats { get; private set; } = new();
     internal Dictionary<Job, CCAggregateStats> LocalPlayerJobStats { get; private set; } = [];
@@ -33,11 +37,7 @@ internal class CrystallineConflictSummary {
 
     //internal state
     List<CrystallineConflictMatch> _matches = new();
-    int _matchesProcessed = 0;
-    int _matchesTotal = 100;
-
     TimeTally _totalMatchTime = new();
-
     CCPlayerJobStats _localPlayerStats = new();
     ConcurrentDictionary<int, CCScoreboardDouble> _localPlayerTeamContributions = [];
     TimeTally _localPlayerMatchTime = new();
@@ -178,7 +178,12 @@ internal class CrystallineConflictSummary {
         matches.ForEach(x => {
             var t = new Task(() => {
                 ProcessMatch(x, remove);
-                RefreshProgress = (float)_matchesProcessed++ / _matchesTotal;
+                _refreshProgressLock.Wait();
+                try {
+                    RefreshProgress = (float)_matchesProcessed++ / _matchesTotal;
+                } finally {
+                    _refreshProgressLock.Release();
+                }
             });
             matchTasks.Add(t);
             t.Start();

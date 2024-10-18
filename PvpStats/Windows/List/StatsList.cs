@@ -15,9 +15,11 @@ using System.Threading.Tasks;
 namespace PvpStats.Windows.List;
 internal abstract class StatsList<T, U, V> : FilteredList<T> where T : notnull where U : PlayerJobStats where V : PvpMatch {
 
+    private readonly SemaphoreSlim _refreshProgressLock = new(1);
     public float RefreshProgress { get; set; } = 0f;
     protected int MatchesProcessed { get; set; }
     protected int MatchesTotal { get; set; }
+
 
     protected List<T> DataModelUntruncated { get; set; } = [];
 
@@ -59,7 +61,13 @@ internal abstract class StatsList<T, U, V> : FilteredList<T> where T : notnull w
         matches.ForEach(x => {
             var t = new Task(() => {
                 ProcessMatch(x, remove);
-                RefreshProgress = (float)MatchesProcessed++ / MatchesTotal;
+                //this is not properly interlocked
+                _refreshProgressLock.Wait();
+                try {
+                    RefreshProgress = (float)MatchesProcessed++ / MatchesTotal;
+                } finally {
+                    _refreshProgressLock.Release();
+                }
             });
             matchTasks.Add(t);
             t.Start();
