@@ -17,6 +17,7 @@ internal class SplashWindow : Window {
             MinimumSize = new Vector2(185, 175),
             MaximumSize = new Vector2(185, 175)
         };
+        Flags |= ImGuiWindowFlags.NoResize;
     }
 
     public override void Draw() {
