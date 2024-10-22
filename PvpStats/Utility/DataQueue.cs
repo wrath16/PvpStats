@@ -4,8 +4,8 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace PvpStats.Services;
-internal class DataQueueService {
+namespace PvpStats.Utility;
+internal class DataQueue {
 
     //coordinates all data sequence-sensitive operations
     private ConcurrentQueue<(Task, DateTime)> DataTaskQueue { get; init; } = new();
@@ -14,7 +14,7 @@ internal class DataQueueService {
 
     internal DateTime LastTaskTime { get; set; }
 
-    internal DataQueueService(Plugin plugin) {
+    internal DataQueue(Plugin plugin) {
         _plugin = plugin;
     }
 

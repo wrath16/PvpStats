@@ -10,6 +10,7 @@ using PvpStats.Services;
 using PvpStats.Services.DataCache;
 using PvpStats.Settings;
 using PvpStats.Types.Match;
+using PvpStats.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -61,7 +62,7 @@ public sealed class Plugin : IDalamudPlugin {
     internal FrontlineStatsManager FLStatsEngine { get; init; }
     internal RivalWingsStatsManager RWStatsEngine { get; init; }
 
-    internal DataQueueService DataQueue { get; init; }
+    internal DataQueue DataQueue { get; init; }
     internal LocalizationService Localization { get; init; }
     internal StorageService Storage { get; init; }
     internal CCMatchCacheService CCCache { get; init; }
