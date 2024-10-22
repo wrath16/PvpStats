@@ -283,7 +283,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         }
 
         //discard grace period 
-        if(CurrentMatch.MatchStartTime > CurrentMatch.DutyStartTime - TimeSpan.FromSeconds(10)) {
+        if(CurrentMatch.MatchStartTime > CurrentMatch.DutyStartTime - TimeSpan.FromSeconds(40)) {
             //CurrentMatch.TeamMechTime = _mechTime;
             //do this to decouple from fields
             CurrentMatch.TeamMechTime = [];
