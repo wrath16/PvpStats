@@ -21,7 +21,6 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
     private readonly CrystallineConflictRankGraph _credit;
 
     private bool _matchRefreshActive = true;
-    private bool _summaryRefreshActive = true;
     private bool _recordsRefreshActive = true;
     private bool _jobRefreshActive = true;
     private bool _playerRefreshActive = true;
@@ -83,7 +82,7 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
         _players.RefreshProgress = 0f;
         _credit.RefreshProgress = 0f;
         _records.RefreshProgress = 0f;
-        _summaryRefreshActive = true;
+        _summary.RefreshActive = true;
         _matchRefreshActive = true;
         _recordsRefreshActive = true;
         _jobRefreshActive = true;
@@ -105,7 +104,7 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
             });
             var summaryRefresh = RefreshTab(async () => {
                 await _summary.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-                _summaryRefreshActive = false;
+                _summary.RefreshActive = false;
             });
             var recordsRefresh = RefreshTab(async () => {
                 await _records.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
@@ -137,7 +136,7 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
             throw;
         } finally {
             _matchRefreshActive = false;
-            _summaryRefreshActive = false;
+            _summary.RefreshActive = false;
             _recordsRefreshActive = false;
             _jobRefreshActive = false;
             _playerRefreshActive = false;
@@ -160,7 +159,7 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
                     using(ImRaii.Child("SummaryChild")) {
                         _summary.Draw();
                     }
-                }, _summaryRefreshActive, _summary.RefreshProgress);
+                }, _summary.RefreshActive, _summary.RefreshProgress);
                 Tab("Records", () => {
                     using(ImRaii.Child("RecordsChild")) {
                         _records.Draw();

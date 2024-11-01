@@ -35,6 +35,8 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
     public bool RefreshActive { get; protected set; }
     public float RefreshProgress { get; protected set; }
 
+    protected List<Refreshable<T>> Tabs;
+
     protected TrackerWindow(Plugin plugin, StatsManager<T> statsManager, WindowConfiguration config, string name) : base(name) {
         Plugin = plugin;
         StatsEngine = statsManager;
@@ -177,7 +179,7 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
         return task;
     }
 
-    protected unsafe void Tab(string name, Action action, bool refreshActive = false, float refreshProgress = 0f) {
+    protected unsafe void Tab(string name, Action action, bool refreshActive = false, double refreshProgress = 0f) {
         var flags = ImGuiTabItemFlags.None;
         if(Plugin.Configuration.ResizeWindowLeft) {
             flags |= ImGuiTabItemFlags.Trailing;
@@ -200,7 +202,7 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
                 }
 
                 if(refreshActive) {
-                    ImGuiHelper.DrawRefreshProgressBar(refreshProgress);
+                    ImGuiHelper.DrawRefreshProgressBar((float)refreshProgress);
                 }
             }
         }

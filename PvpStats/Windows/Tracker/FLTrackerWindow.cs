@@ -139,4 +139,14 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
             Plugin.Log.Information(string.Format("{0,-25}: {1,4} ms", $"FL tracker refresh time", s0.ElapsedMilliseconds.ToString()));
         }
     }
+
+    public async Task RefreshJobs() {
+        var jobRefresh = RefreshTab(async () => {
+            await _jobs.Refresh(Plugin.FLStatsEngine.Matches, Plugin.FLStatsEngine.Matches, Plugin.FLStatsEngine.Matches);
+            _jobRefreshActive = false;
+        });
+        await Task.WhenAll([
+            jobRefresh.Result,
+        ]);
+    }
 }

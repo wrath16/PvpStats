@@ -125,7 +125,7 @@ public sealed class Plugin : IDalamudPlugin {
             }
             Configuration.Initialize(this);
 
-            DataQueue = new(this);
+            DataQueue = new();
             Storage = new(this, $"{PluginInterface.GetPluginConfigDirectory()}\\{DatabaseName}");
             CCCache = new(this);
             FLCache = new(this);

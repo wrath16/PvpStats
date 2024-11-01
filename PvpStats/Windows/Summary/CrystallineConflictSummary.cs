@@ -12,18 +12,16 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Summary;
-internal class CrystallineConflictSummary {
+internal class CrystallineConflictSummary : Refreshable<CrystallineConflictMatch> {
 
     private readonly Plugin Plugin;
+    public override string Name => "CC Summary";
 
-    int _matchesProcessed = 0;
-    int _matchesTotal = 100;
-    private readonly SemaphoreSlim _refreshProgressLock = new(1);
-    public float RefreshProgress { get; set; } = 0f;
     internal protected SemaphoreSlim RefreshLock { get; private set; } = new SemaphoreSlim(1);
 
     internal CCPlayerJobStats LocalPlayerStats { get; private set; } = new();
@@ -36,7 +34,6 @@ internal class CrystallineConflictSummary {
     internal TimeSpan AverageMatchDuration { get; private set; } = new();
 
     //internal state
-    List<CrystallineConflictMatch> _matches = new();
     TimeTally _totalMatchTime = new();
     CCPlayerJobStats _localPlayerStats = new();
     ConcurrentDictionary<int, CCScoreboardDouble> _localPlayerTeamContributions = [];
@@ -55,7 +52,7 @@ internal class CrystallineConflictSummary {
         Reset();
     }
 
-    private void Reset() {
+    protected override void Reset() {
         _totalMatchTime = new();
         _localPlayerStats = new();
         _localPlayerTeamContributions = [];
@@ -70,45 +67,26 @@ internal class CrystallineConflictSummary {
         _opponentJobStatsLookup = [];
     }
 
-    internal async Task Refresh(List<CrystallineConflictMatch> matches, List<CrystallineConflictMatch> additions, List<CrystallineConflictMatch> removals) {
-        _matchesProcessed = 0;
-        Stopwatch s1 = Stopwatch.StartNew();
-        try {
-            if(removals.Count * 2 >= _matches.Count) {
-                //force full build
-                Reset();
-                _matchesTotal = matches.Count;
-                await ProcessMatches(matches);
-            } else {
-                _matchesTotal = removals.Count + additions.Count;
-                await ProcessMatches(removals, true);
-                await ProcessMatches(additions);
-            }
-            CrystallineConflictStatsManager.SetScoreboardStats(_localPlayerStats, _localPlayerTeamContributions.Values.ToList(), _localPlayerMatchTime.ToTimeSpan());
-            foreach(var teammateStat in _teammateStats) {
-                teammateStat.Value.Job = _teammateJobStatsLookup[teammateStat.Key].OrderByDescending(x => x.Value.WinDiff).FirstOrDefault().Key;
-            }
-            foreach(var opponentStat in _opponentStats) {
-                opponentStat.Value.Job = _opponentJobStatsLookup[opponentStat.Key].OrderBy(x => x.Value.WinDiff).FirstOrDefault().Key;
-            }
-
-            LocalPlayerStats = _localPlayerStats;
-            LocalPlayerJobStats = _localPlayerJobStats.Where(x => x.Value.Matches > 0).OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-            ArenaStats = _arenaStats.Where(x => x.Value.Matches > 0).OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-            TeammateStats = _teammateStats.Where(x => x.Value.Matches > 0).OrderBy(x => x.Value.Matches).OrderByDescending(x => x.Value.WinDiff).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-            TeammateJobStats = _teammateJobStats.Where(x => x.Value.Matches > 0).OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-            OpponentStats = _opponentStats.Where(x => x.Value.Matches > 0).OrderBy(x => x.Value.Matches).OrderBy(x => x.Value.WinDiff).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-            OpponentJobStats = _opponentJobStats.Where(x => x.Value.Matches > 0).OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-            AverageMatchDuration = matches.Count > 0 ? _totalMatchTime.ToTimeSpan() / matches.Count : TimeSpan.Zero;
-            _matches = matches;
-        } finally {
-            s1.Stop();
-            Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"CC Summary Refresh", s1.ElapsedMilliseconds.ToString()));
-            _matchesProcessed = 0;
+    protected override void PostRefresh(List<CrystallineConflictMatch> matches, List<CrystallineConflictMatch> additions, List<CrystallineConflictMatch> removals) {
+        CrystallineConflictStatsManager.SetScoreboardStats(_localPlayerStats, _localPlayerTeamContributions.Values.ToList(), _localPlayerMatchTime.ToTimeSpan());
+        foreach(var teammateStat in _teammateStats) {
+            teammateStat.Value.Job = _teammateJobStatsLookup[teammateStat.Key].OrderByDescending(x => x.Value.WinDiff).FirstOrDefault().Key;
         }
+        foreach(var opponentStat in _opponentStats) {
+            opponentStat.Value.Job = _opponentJobStatsLookup[opponentStat.Key].OrderBy(x => x.Value.WinDiff).FirstOrDefault().Key;
+        }
+
+        LocalPlayerStats = _localPlayerStats;
+        LocalPlayerJobStats = _localPlayerJobStats.Where(x => x.Value.Matches > 0).OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        ArenaStats = _arenaStats.Where(x => x.Value.Matches > 0).OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        TeammateStats = _teammateStats.Where(x => x.Value.Matches > 0).OrderBy(x => x.Value.Matches).OrderByDescending(x => x.Value.WinDiff).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        TeammateJobStats = _teammateJobStats.Where(x => x.Value.Matches > 0).OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        OpponentStats = _opponentStats.Where(x => x.Value.Matches > 0).OrderBy(x => x.Value.Matches).OrderBy(x => x.Value.WinDiff).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        OpponentJobStats = _opponentJobStats.Where(x => x.Value.Matches > 0).OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        AverageMatchDuration = matches.Count > 0 ? _totalMatchTime.ToTimeSpan() / matches.Count : TimeSpan.Zero;
     }
 
-    private void ProcessMatch(CrystallineConflictMatch match, bool remove = false) {
+    protected override void ProcessMatch(CrystallineConflictMatch match, bool remove = false) {
         if(remove) {
             _totalMatchTime.RemoveTime(match.MatchDuration ?? TimeSpan.Zero);
         } else {
@@ -173,27 +151,6 @@ internal class CrystallineConflictSummary {
         }
     }
 
-    private async Task ProcessMatches(List<CrystallineConflictMatch> matches, bool remove = false) {
-        List<Task> matchTasks = [];
-        matches.ForEach(x => {
-            var t = new Task(() => {
-                ProcessMatch(x, remove);
-                _refreshProgressLock.Wait();
-                try {
-                    RefreshProgress = (float)_matchesProcessed++ / _matchesTotal;
-                } finally {
-                    _refreshProgressLock.Release();
-                }
-            });
-            matchTasks.Add(t);
-            t.Start();
-        });
-        try {
-            await Task.WhenAll(matchTasks);
-        } catch(Exception e) {
-            Plugin.Log2.Error(e, "Process Match Error");
-        }
-    }
     public void Draw() {
         if(!RefreshLock.Wait(0)) {
             return;

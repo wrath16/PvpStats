@@ -10,13 +10,13 @@ internal class DataQueue {
     //coordinates all data sequence-sensitive operations
     private ConcurrentQueue<(Task, DateTime)> DataTaskQueue { get; init; } = new();
     private SemaphoreSlim DataLock { get; init; } = new SemaphoreSlim(1, 1);
-    private Plugin _plugin;
+    //private Plugin _plugin;
 
     internal DateTime LastTaskTime { get; set; }
 
-    internal DataQueue(Plugin plugin) {
-        _plugin = plugin;
-    }
+    //internal DataQueue(Plugin plugin) {
+    //    _plugin = plugin;
+    //}
 
     internal void Dispose() {
         DataTaskQueue.Clear();
@@ -25,7 +25,7 @@ internal class DataQueue {
     internal Task<T> QueueDataOperation<T>(Func<T> action) {
 #if DEBUG
         var x = new StackFrame(1, true).GetMethod();
-        _plugin.Log.Verbose($"adding data operation from: {x.Name} {x.DeclaringType} tasks queued: {DataTaskQueue.Count + 1}");
+        Plugin.Log2.Verbose($"adding data operation from: {x.Name} {x.DeclaringType} tasks queued: {DataTaskQueue.Count + 1}");
 #endif
         Task<T> t = new(action);
         AddToTaskQueue(t);
@@ -35,7 +35,7 @@ internal class DataQueue {
     internal Task QueueDataOperation(Action action) {
 #if DEBUG
         var x = new StackFrame(1, true).GetMethod();
-        _plugin.Log.Verbose($"adding data operation from: {x.Name} {x.DeclaringType} tasks queued: {DataTaskQueue.Count + 1}");
+        Plugin.Log2.Verbose($"adding data operation from: {x.Name} {x.DeclaringType} tasks queued: {DataTaskQueue.Count + 1}");
 #endif
         Task t = new(action);
         AddToTaskQueue(t);
@@ -64,7 +64,7 @@ internal class DataQueue {
                     throw new InvalidOperationException("Unable to dequeue task!");
                 }
             } catch(Exception e) {
-                _plugin.Log.Error(e, $"Exception in data task.");
+                Plugin.Log2.Error(e, $"Exception in data task.");
                 //_plugin.Log.Error(e.StackTrace ?? "");
             } finally {
                 DataLock.Release();
