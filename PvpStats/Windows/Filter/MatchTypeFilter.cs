@@ -41,7 +41,7 @@ public class MatchTypeFilter : DataFilter {
     internal override void Draw() {
         bool allSelected = AllSelected;
         if(ImGui.Checkbox($"Select All##{GetHashCode()}", ref allSelected)) {
-            Task.Run(async() => {
+            Task.Run(async () => {
                 foreach(var category in FilterState) {
                     FilterState[category.Key] = allSelected;
                 }

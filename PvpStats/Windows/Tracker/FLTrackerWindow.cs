@@ -41,7 +41,6 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
         MatchFilters.Add(new BookmarkFilter(plugin, refreshAction));
         MatchFilters.Add(new TagFilter(plugin, refreshAction));
 
-
         _matches = new(plugin);
         _summary = new(plugin);
         _jobs = new(plugin, WindowConfig.JobStatFilters.StatSourceFilter, playerFilter);

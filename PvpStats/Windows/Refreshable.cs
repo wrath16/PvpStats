@@ -3,7 +3,6 @@ using PvpStats.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -53,7 +52,7 @@ internal abstract class Refreshable<T> where T : PvpMatch {
     protected abstract void PostRefresh(List<T> matches, List<T> additions, List<T> removals);
 
     public async Task Refresh(List<T> matches, List<T> additions, List<T> removals) {
-        var task =  RefreshQueue.QueueDataOperation(async () => {
+        var task = RefreshQueue.QueueDataOperation(async () => {
             RefreshActive = true;
             MatchesProcessed = 0;
             RefreshProgress = 0;
