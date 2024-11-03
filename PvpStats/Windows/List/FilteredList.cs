@@ -3,6 +3,7 @@ using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using LiteDB;
 using PvpStats.Helpers;
+using PvpStats.Types.Match;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -29,7 +30,7 @@ public class NumericColumnParams : ColumnParams {
     }
 }
 
-internal abstract class FilteredList<T> where T : notnull {
+internal abstract class FilteredList<T, U> : Refreshable<U> where T : notnull where U : PvpMatch {
 
     protected SemaphoreSlim RefreshLock = new SemaphoreSlim(1);
     protected SemaphoreSlim? Interlock;
@@ -65,21 +66,29 @@ internal abstract class FilteredList<T> where T : notnull {
         GoToPage();
     }
 
-    internal async Task Refresh(List<T> dataModel) {
-        try {
-            await RefreshLock.WaitAsync();
-            DataModel = dataModel;
-            ListCSV = CSVHeader();
-            await RefreshDataModel();
-            GoToPage(0);
-        } finally {
-            RefreshLock.Release();
-        }
+    protected override Task RefreshInner(List<U> matches, List<U> additions, List<U> removals) {
+        PostRefresh(matches, additions, removals);
+        _matches = matches;
+        ListCSV = CSVHeader();
+        GoToPage(0);
+        return Task.CompletedTask;
     }
 
-    public virtual async Task RefreshDataModel() {
-        await Task.CompletedTask;
-    }
+    //internal async Task Refresh(List<T> dataModel) {
+    //    try {
+    //        await RefreshLock.WaitAsync();
+    //        DataModel = dataModel;
+    //        ListCSV = CSVHeader();
+    //        await RefreshDataModel();
+    //        GoToPage(0);
+    //    } finally {
+    //        RefreshLock.Release();
+    //    }
+    //}
+
+    //public virtual async Task RefreshDataModel() {
+    //    await Task.CompletedTask;
+    //}
 
     public void GoToPage(int? pageNumber = null) {
         pageNumber ??= PageNumber;

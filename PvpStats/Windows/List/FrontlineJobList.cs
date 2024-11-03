@@ -9,13 +9,12 @@ using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
 internal class FrontlineJobList : JobStatsList<FLPlayerJobStats, FrontlineMatch> {
 
+    public override string Name => "FL Jobs";
     protected override string TableId => "###FLJobStatsTable";
 
     //internal state
@@ -26,9 +25,6 @@ internal class FrontlineJobList : JobStatsList<FLPlayerJobStats, FrontlineMatch>
     ConcurrentDictionary<Job, FLPlayerJobStats> _shatterJobStats = [];
     ConcurrentDictionary<Job, ConcurrentDictionary<int, FLScoreboardDouble>> _shatterTeamContributions = [];
     ConcurrentDictionary<Job, TimeTally> _shatterTimes = [];
-
-    StatSourceFilter _lastJobStatSourceFilter = new();
-    OtherPlayerFilter _lastPlayerFilter = new();
 
     List<PlayerAlias> _linkedPlayerAliases = [];
 
@@ -89,7 +85,7 @@ internal class FrontlineJobList : JobStatsList<FLPlayerJobStats, FrontlineMatch>
         Reset();
     }
 
-    private void Reset() {
+    protected override void Reset() {
         _jobStats = [];
         _jobTeamContributions = [];
         _jobTimes = [];
@@ -110,46 +106,18 @@ internal class FrontlineJobList : JobStatsList<FLPlayerJobStats, FrontlineMatch>
         }
     }
 
-    internal async Task Refresh(List<FrontlineMatch> matches, List<FrontlineMatch> additions, List<FrontlineMatch> removals) {
-        MatchesProcessed = 0;
-        Stopwatch s1 = Stopwatch.StartNew();
-        _linkedPlayerAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(PlayerFilter.PlayerNamesRaw);
-        bool statFilterChange = !StatSourceFilter.Equals(_lastJobStatSourceFilter);
-        bool playerFilterChange = StatSourceFilter!.InheritFromPlayerFilter && !PlayerFilter.Equals(_lastPlayerFilter);
-        //_plugin.Log.Debug($"total old: {Matches.Count} additions: {additions.Count} removals: {removals.Count} jsfc: {statFilterChange} pfc: {playerFilterChange}");
-        try {
-            if(removals.Count * 2 >= Matches.Count || statFilterChange || playerFilterChange) {
-                //force full build
-                Reset();
-                MatchesTotal = matches.Count;
-                await ProcessMatches(matches);
-            } else {
-                MatchesTotal = removals.Count + additions.Count;
-                await ProcessMatches(removals, true);
-                await ProcessMatches(additions);
-            }
-            foreach(var jobStat in _jobStats) {
-                FrontlineStatsManager.SetScoreboardStats(jobStat.Value, _jobTeamContributions[jobStat.Key].Values.ToList(), _jobTimes[jobStat.Key].ToTimeSpan());
-                FrontlineStatsManager.SetScoreboardStats(_shatterJobStats[jobStat.Key], _shatterTeamContributions[jobStat.Key].Values.ToList(), _shatterTimes[jobStat.Key].ToTimeSpan());
-                jobStat.Value.ScoreboardTotal.DamageToOther = _shatterJobStats[jobStat.Key].ScoreboardTotal.DamageToOther;
-                jobStat.Value.ScoreboardPerMatch.DamageToOther = _shatterJobStats[jobStat.Key].ScoreboardPerMatch.DamageToOther;
-                jobStat.Value.ScoreboardPerMin.DamageToOther = _shatterJobStats[jobStat.Key].ScoreboardPerMin.DamageToOther;
-                jobStat.Value.ScoreboardContrib.DamageToOther = _shatterJobStats[jobStat.Key].ScoreboardContrib.DamageToOther;
-            }
-            DataModel = _jobStats.Keys.ToList();
-            StatsModel = _jobStats.ToDictionary();
-            GoToPage(0);
-            TriggerSort = true;
-
-            Matches = matches;
-
-            _lastJobStatSourceFilter = new(StatSourceFilter!);
-            _lastPlayerFilter = new(PlayerFilter);
-        } finally {
-            s1.Stop();
-            _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"FL Jobs Refresh", s1.ElapsedMilliseconds.ToString()));
-            MatchesProcessed = 0;
+    protected override void PostRefresh(List<FrontlineMatch> matches, List<FrontlineMatch> additions, List<FrontlineMatch> removals) {
+        foreach(var jobStat in _jobStats) {
+            FrontlineStatsManager.SetScoreboardStats(jobStat.Value, _jobTeamContributions[jobStat.Key].Values.ToList(), _jobTimes[jobStat.Key].ToTimeSpan());
+            FrontlineStatsManager.SetScoreboardStats(_shatterJobStats[jobStat.Key], _shatterTeamContributions[jobStat.Key].Values.ToList(), _shatterTimes[jobStat.Key].ToTimeSpan());
+            jobStat.Value.ScoreboardTotal.DamageToOther = _shatterJobStats[jobStat.Key].ScoreboardTotal.DamageToOther;
+            jobStat.Value.ScoreboardPerMatch.DamageToOther = _shatterJobStats[jobStat.Key].ScoreboardPerMatch.DamageToOther;
+            jobStat.Value.ScoreboardPerMin.DamageToOther = _shatterJobStats[jobStat.Key].ScoreboardPerMin.DamageToOther;
+            jobStat.Value.ScoreboardContrib.DamageToOther = _shatterJobStats[jobStat.Key].ScoreboardContrib.DamageToOther;
         }
+        DataModel = _jobStats.Keys.ToList();
+        StatsModel = _jobStats.ToDictionary();
+        base.PostRefresh(matches, additions, removals);
     }
 
     protected override void ProcessMatch(FrontlineMatch match, bool remove = false) {

@@ -10,22 +10,18 @@ using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
 internal class CrystallineConflictJobList : JobStatsList<CCPlayerJobStats, CrystallineConflictMatch> {
 
+    public override string Name => "CC Jobs";
     protected override string TableId => "###CCJobStatsTable";
 
     //internal state
     ConcurrentDictionary<Job, CCPlayerJobStats> _jobStats = [];
     ConcurrentDictionary<Job, ConcurrentDictionary<int, CCScoreboardDouble>> _jobTeamContributions = [];
     ConcurrentDictionary<Job, TimeTally> _jobTimes = [];
-
-    StatSourceFilter _lastJobStatSourceFilter = new();
-    OtherPlayerFilter _lastPlayerFilter = new();
 
     List<PlayerAlias> _linkedPlayerAliases = [];
 
@@ -95,7 +91,7 @@ internal class CrystallineConflictJobList : JobStatsList<CCPlayerJobStats, Cryst
         Reset();
     }
 
-    private void Reset() {
+    protected override void Reset() {
         _jobStats = [];
         _jobTeamContributions = [];
         _jobTimes = [];
@@ -108,40 +104,13 @@ internal class CrystallineConflictJobList : JobStatsList<CCPlayerJobStats, Cryst
         }
     }
 
-    internal async Task Refresh(List<CrystallineConflictMatch> matches, List<CrystallineConflictMatch> additions, List<CrystallineConflictMatch> removals) {
-        MatchesProcessed = 0;
-        Stopwatch s1 = Stopwatch.StartNew();
-        _linkedPlayerAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(PlayerFilter.PlayerNamesRaw);
-        bool jobStatFilterChange = !StatSourceFilter.Equals(_lastJobStatSourceFilter);
-        bool playerFilterChange = StatSourceFilter!.InheritFromPlayerFilter && !PlayerFilter.Equals(_lastPlayerFilter);
-        try {
-            if(removals.Count * 2 >= Matches.Count || jobStatFilterChange || playerFilterChange) {
-                //force full build
-                Reset();
-                MatchesTotal = matches.Count;
-                await ProcessMatches(matches);
-            } else {
-                MatchesTotal = removals.Count + additions.Count;
-                await ProcessMatches(removals, true);
-                await ProcessMatches(additions);
-            }
-            foreach(var jobStat in _jobStats) {
-                CrystallineConflictStatsManager.SetScoreboardStats(jobStat.Value, _jobTeamContributions[jobStat.Key].Values.ToList(), _jobTimes[jobStat.Key].ToTimeSpan());
-            }
-            DataModel = _jobStats.Keys.ToList();
-            StatsModel = _jobStats.ToDictionary();
-            GoToPage(0);
-            TriggerSort = true;
-
-            Matches = matches;
-
-            _lastJobStatSourceFilter = new(StatSourceFilter!);
-            _lastPlayerFilter = new(PlayerFilter);
-        } finally {
-            s1.Stop();
-            _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"CC Jobs Refresh", s1.ElapsedMilliseconds.ToString()));
-            MatchesProcessed = 0;
+    protected override void PostRefresh(List<CrystallineConflictMatch> matches, List<CrystallineConflictMatch> additions, List<CrystallineConflictMatch> removals) {
+        foreach(var jobStat in _jobStats) {
+            CrystallineConflictStatsManager.SetScoreboardStats(jobStat.Value, _jobTeamContributions[jobStat.Key].Values.ToList(), _jobTimes[jobStat.Key].ToTimeSpan());
         }
+        DataModel = _jobStats.Keys.ToList();
+        StatsModel = _jobStats.ToDictionary();
+        base.PostRefresh(matches, additions, removals);
     }
 
     protected override void ProcessMatch(CrystallineConflictMatch match, bool remove = false) {

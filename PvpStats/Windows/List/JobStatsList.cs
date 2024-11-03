@@ -6,6 +6,8 @@ using PvpStats.Types.Display;
 using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using PvpStats.Windows.Filter;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
 internal abstract class JobStatsList<T, U> : StatsList<Job, T, U> where T : PlayerJobStats where U : PvpMatch {
@@ -13,9 +15,35 @@ internal abstract class JobStatsList<T, U> : StatsList<Job, T, U> where T : Play
     internal OtherPlayerFilter PlayerFilter { get; private set; }
     public StatSourceFilter StatSourceFilter { get; protected set; }
 
+    protected StatSourceFilter _lastJobStatSourceFilter = new();
+    protected OtherPlayerFilter _lastPlayerFilter = new();
+
     public JobStatsList(Plugin plugin, StatSourceFilter statSourceFilter, OtherPlayerFilter playerFilter) : base(plugin) {
         StatSourceFilter = statSourceFilter;
         PlayerFilter = playerFilter;
+    }
+
+    protected override async Task RefreshInner(List<U> matches, List<U> additions, List<U> removals) {
+        bool statFilterChange = !StatSourceFilter.Equals(_lastJobStatSourceFilter);
+        bool playerFilterChange = StatSourceFilter!.InheritFromPlayerFilter && !PlayerFilter.Equals(_lastPlayerFilter);
+        if(removals.Count * 2 >= _matches.Count || statFilterChange || playerFilterChange) {
+            //force full build
+            Reset();
+            MatchesTotal = matches.Count;
+            await ProcessMatches(matches);
+        } else {
+            MatchesTotal = removals.Count + additions.Count;
+            await ProcessMatches(removals, true);
+            await ProcessMatches(additions);
+        }
+        PostRefresh(matches, additions, removals);
+        _matches = matches;
+    }
+
+    protected override void PostRefresh(List<U> matches, List<U> additions, List<U> removals) {
+        _lastJobStatSourceFilter = new(StatSourceFilter!);
+        _lastPlayerFilter = new(PlayerFilter!);
+        base.PostRefresh(matches, additions, removals);
     }
 
     protected override void PreTableDraw() {

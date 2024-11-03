@@ -9,13 +9,13 @@ using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
 internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, FrontlineMatch> {
 
+    public override string Name => "FL Players";
     protected override string TableId => "###FLPlayerStatsTable";
 
     //internal state
@@ -30,9 +30,6 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
     ConcurrentDictionary<PlayerAlias, TimeTally> _shatterTimes = [];
 
     List<PlayerAlias> _linkedPlayerAliases = [];
-
-    StatSourceFilter _lastStatSourceFilter = new();
-    OtherPlayerFilter _lastPlayerFilter = new();
 
     protected override List<ColumnParams> Columns { get; set; } = new() {
         new ColumnParams{           Name = "Name",                                                                      Id = 0,                                                             Width = 200f,                                   Flags = ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoHide },
@@ -92,7 +89,7 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
         Reset();
     }
 
-    private void Reset() {
+    protected override void Reset() {
         _players = [];
         _playerStats = [];
         _playerTeamContributions = [];
@@ -104,60 +101,22 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
         _shatterTimes = [];
     }
 
-    internal async Task Refresh(List<FrontlineMatch> matches, List<FrontlineMatch> additions, List<FrontlineMatch> removals) {
-        MatchesProcessed = 0;
-        Stopwatch s1 = Stopwatch.StartNew();
-        _linkedPlayerAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(PlayerFilter.PlayerNamesRaw);
-        bool removalThresholdMet = removals.Count * 2 >= Matches.Count;
-        bool statFilterChange = !StatSourceFilter.Equals(_lastStatSourceFilter);
-        bool playerFilterChange = StatSourceFilter!.InheritFromPlayerFilter && !PlayerFilter.Equals(_lastPlayerFilter);
-        try {
-            //_plugin.Log.Debug($"total old: {Matches.Count} additions: {additions.Count} removals: {removals.Count} threshold: {removalThresholdMet} sfc: {statFilterChange} pfc: {playerFilterChange}");
-            if(removalThresholdMet || statFilterChange || playerFilterChange) {
-                //force full build
-                //_plugin.Log.Debug("players full rebuild");
-                Reset();
-                MatchesTotal = matches.Count;
-                await ProcessMatches(matches);
-            } else {
-                MatchesTotal = removals.Count + additions.Count;
-                //_plugin.Log.Debug($"adding: {additions.Count} removing: {removals.Count}");
-                await ProcessMatches(removals, true);
-                await ProcessMatches(additions);
-            }
-
-            //_plugin.Log.Debug($"playerStats: {_playerStats.Count} jobStatsLookup: {_playerJobStatsLookup.Count} teamContribs: {_playerTeamContributions.Count} playerTimes: {_playerTimes.Count} " +
-            //    $"shatterStats: {_shatterStats.Count} shatterContribs: {_shatterTeamContributions.Count} shatterTimes: {_shatterTimes.Count}");
-
-            foreach(var playerStat in _playerStats) {
-                playerStat.Value.StatsAll.Job = _playerJobStatsLookup[playerStat.Key].OrderByDescending(x => x.Value.Matches).FirstOrDefault().Key;
-                FrontlineStatsManager.SetScoreboardStats(playerStat.Value, _playerTeamContributions[playerStat.Key].Values.ToList(), _playerTimes[playerStat.Key].ToTimeSpan());
-                FrontlineStatsManager.SetScoreboardStats(_shatterStats[playerStat.Key], _shatterTeamContributions[playerStat.Key].Values.ToList(), _shatterTimes[playerStat.Key].ToTimeSpan());
-                playerStat.Value.ScoreboardTotal.DamageToOther = _shatterStats[playerStat.Key].ScoreboardTotal.DamageToOther;
-                playerStat.Value.ScoreboardPerMatch.DamageToOther = _shatterStats[playerStat.Key].ScoreboardPerMatch.DamageToOther;
-                playerStat.Value.ScoreboardPerMin.DamageToOther = _shatterStats[playerStat.Key].ScoreboardPerMin.DamageToOther;
-                playerStat.Value.ScoreboardContrib.DamageToOther = _shatterStats[playerStat.Key].ScoreboardContrib.DamageToOther;
-            }
-
-            //this may be incorrect when removing matches
-            ActiveLinks = _activeLinks.Select(x => (x.Key, x.Value.Where(y => y.Value.Tally > 0).Select(y => (y.Key, y.Value.Tally)).ToDictionary())).ToDictionary();
-            DataModel = _playerStats.Keys.ToList();
-            DataModelUntruncated = DataModel;
-            StatsModel = _playerStats.ToDictionary();
-            ApplyQuickFilters(MinMatchFilter.MinMatches, PlayerQuickSearchFilter.SearchText);
-            GoToPage(0);
-            TriggerSort = true;
-
-            Matches = matches;
-
-            _lastStatSourceFilter = new(StatSourceFilter!);
-            _lastPlayerFilter = new(PlayerFilter);
-        } finally {
-            s1.Stop();
-            _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"FL Players Refresh", s1.ElapsedMilliseconds.ToString()));
-            MatchesProcessed = 0;
+    protected override void PostRefresh(List<FrontlineMatch> matches, List<FrontlineMatch> additions, List<FrontlineMatch> removals) {
+        foreach(var playerStat in _playerStats) {
+            playerStat.Value.StatsAll.Job = _playerJobStatsLookup[playerStat.Key].OrderByDescending(x => x.Value.Matches).FirstOrDefault().Key;
+            FrontlineStatsManager.SetScoreboardStats(playerStat.Value, _playerTeamContributions[playerStat.Key].Values.ToList(), _playerTimes[playerStat.Key].ToTimeSpan());
+            FrontlineStatsManager.SetScoreboardStats(_shatterStats[playerStat.Key], _shatterTeamContributions[playerStat.Key].Values.ToList(), _shatterTimes[playerStat.Key].ToTimeSpan());
+            playerStat.Value.ScoreboardTotal.DamageToOther = _shatterStats[playerStat.Key].ScoreboardTotal.DamageToOther;
+            playerStat.Value.ScoreboardPerMatch.DamageToOther = _shatterStats[playerStat.Key].ScoreboardPerMatch.DamageToOther;
+            playerStat.Value.ScoreboardPerMin.DamageToOther = _shatterStats[playerStat.Key].ScoreboardPerMin.DamageToOther;
+            playerStat.Value.ScoreboardContrib.DamageToOther = _shatterStats[playerStat.Key].ScoreboardContrib.DamageToOther;
         }
-        return;
+        ActiveLinks = _activeLinks.Select(x => (x.Key, x.Value.Where(y => y.Value.Tally > 0).Select(y => (y.Key, y.Value.Tally)).ToDictionary())).ToDictionary();
+        DataModel = _playerStats.Keys.ToList();
+        DataModelUntruncated = DataModel;
+        StatsModel = _playerStats.ToDictionary();
+        ApplyQuickFilters(MinMatchFilter.MinMatches, PlayerQuickSearchFilter.SearchText);
+        base.PostRefresh(matches, additions, removals);
     }
 
     protected override void ProcessMatch(FrontlineMatch match, bool remove = false) {

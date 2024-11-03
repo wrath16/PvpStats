@@ -13,18 +13,13 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
-internal abstract class StatsList<T, U, V> : FilteredList<T> where T : notnull where U : PlayerJobStats where V : PvpMatch {
-
-    private readonly SemaphoreSlim _refreshProgressLock = new(1);
-    public float RefreshProgress { get; set; } = 0f;
-    protected int MatchesProcessed { get; set; }
-    protected int MatchesTotal { get; set; }
+internal abstract class StatsList<T, U, V> : FilteredList<T, V> where T : notnull where U : PlayerJobStats where V : PvpMatch {
 
     protected List<T> DataModelUntruncated { get; set; } = [];
 
     protected Dictionary<T, U> StatsModel { get; set; } = [];
 
-    protected List<V> Matches = new();
+    //protected List<V> Matches = new();
 
     protected override ImGuiTableFlags TableFlags { get; set; } = ImGuiTableFlags.Reorderable | ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable
     | ImGuiTableFlags.Borders | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX | ImGuiTableFlags.PadOuterX;
@@ -47,35 +42,9 @@ internal abstract class StatsList<T, U, V> : FilteredList<T> where T : notnull w
     public override void OpenItemDetail(T item) {
     }
 
-    public override async Task RefreshDataModel() {
+    protected override void PostRefresh(List<V> matches, List<V> additions, List<V> removals) {
+        GoToPage(0);
         TriggerSort = true;
-        await Task.CompletedTask;
-    }
-
-    protected virtual void ProcessMatch(V match, bool remove = false) {
-    }
-
-    protected virtual async Task ProcessMatches(List<V> matches, bool remove = false) {
-        List<Task> matchTasks = [];
-        matches.ForEach(x => {
-            var t = new Task(() => {
-                ProcessMatch(x, remove);
-                //this is not properly interlocked
-                _refreshProgressLock.Wait();
-                try {
-                    RefreshProgress = (float)MatchesProcessed++ / MatchesTotal;
-                } finally {
-                    _refreshProgressLock.Release();
-                }
-            });
-            matchTasks.Add(t);
-            t.Start();
-        });
-        try {
-            await Task.WhenAll(matchTasks);
-        } catch(Exception e) {
-            _plugin.Log.Error(e, "Process Match Error");
-        }
     }
 
     protected (PropertyInfo?, MemberInfo?) GetStatsPropertyFromId(uint columnId) {

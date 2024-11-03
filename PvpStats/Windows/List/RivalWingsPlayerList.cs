@@ -10,14 +10,13 @@ using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
 internal class RivalWingsPlayerList : PlayerStatsList<RWPlayerJobStats, RivalWingsMatch> {
 
+    public override string Name => "RW Players";
     protected override string TableId => "###RWPlayerStatsTable";
 
     //internal state
@@ -30,9 +29,6 @@ internal class RivalWingsPlayerList : PlayerStatsList<RWPlayerJobStats, RivalWin
     //Dictionary<PlayerAlias, CCAggregateStats> _playerMidStats = [];
 
     List<PlayerAlias> _linkedPlayerAliases = [];
-
-    StatSourceFilter _lastStatSourceFilter = new();
-    OtherPlayerFilter _lastPlayerFilter = new();
 
     protected override List<ColumnParams> Columns { get; set; } = new() {
         new ColumnParams{           Name = "Name",                                                                      Id = 0,                                                             Width = 200f,                                   Flags = ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoHide },
@@ -96,7 +92,7 @@ internal class RivalWingsPlayerList : PlayerStatsList<RWPlayerJobStats, RivalWin
         Reset();
     }
 
-    private void Reset() {
+    protected override void Reset() {
         _playerStats = [];
         _playerTeamContributions = [];
         _playerTimes = [];
@@ -104,50 +100,17 @@ internal class RivalWingsPlayerList : PlayerStatsList<RWPlayerJobStats, RivalWin
         _activeLinks = [];
     }
 
-    internal async Task Refresh(List<RivalWingsMatch> matches, List<RivalWingsMatch> additions, List<RivalWingsMatch> removals) {
-        MatchesProcessed = 0;
-        Stopwatch s1 = Stopwatch.StartNew();
-        _linkedPlayerAliases = _plugin.PlayerLinksService.GetAllLinkedAliases(PlayerFilter.PlayerNamesRaw);
-        bool statFilterChange = !StatSourceFilter.Equals(_lastStatSourceFilter);
-        bool playerFilterChange = StatSourceFilter!.InheritFromPlayerFilter && !PlayerFilter.Equals(_lastPlayerFilter);
-        try {
-            //_plugin.Log.Debug($"total old: {Matches.Count} additions: {additions.Count} removals: {removals.Count} sfc: {statFilterChange} pfc: {playerFilterChange}");
-            if(removals.Count * 2 >= Matches.Count || statFilterChange || playerFilterChange) {
-                //force full build
-                //_plugin.Log.Debug("players full rebuild");
-                Reset();
-                MatchesTotal = matches.Count;
-                await ProcessMatches(matches);
-            } else {
-                MatchesTotal = removals.Count + additions.Count;
-                //_plugin.Log.Debug($"adding: {additions.Count} removing: {removals.Count}");
-                await ProcessMatches(removals, true);
-                await ProcessMatches(additions);
-            }
-
-            foreach(var playerStat in _playerStats) {
-                playerStat.Value.StatsAll.Job = _playerJobStatsLookup[playerStat.Key].OrderByDescending(x => x.Value.Matches).FirstOrDefault().Key;
-                RivalWingsStatsManager.SetScoreboardStats(playerStat.Value, _playerTeamContributions[playerStat.Key].Values.ToList(), _playerTimes[playerStat.Key].ToTimeSpan());
-            }
-
-            //this may be incorrect when removing matches
-            ActiveLinks = _activeLinks.Select(x => (x.Key, x.Value.Where(y => y.Value.Tally > 0).Select(y => (y.Key, y.Value.Tally)).ToDictionary())).ToDictionary();
-            DataModel = _playerStats.Keys.ToList();
-            DataModelUntruncated = DataModel;
-            StatsModel = _playerStats.ToDictionary();
-            ApplyQuickFilters(MinMatchFilter.MinMatches, PlayerQuickSearchFilter.SearchText);
-            GoToPage(0);
-            TriggerSort = true;
-
-            Matches = matches;
-
-            _lastStatSourceFilter = new(StatSourceFilter!);
-            _lastPlayerFilter = new(PlayerFilter);
-        } finally {
-            s1.Stop();
-            _plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"RW Players Refresh", s1.ElapsedMilliseconds.ToString()));
-            MatchesProcessed = 0;
+    protected override void PostRefresh(List<RivalWingsMatch> matches, List<RivalWingsMatch> additions, List<RivalWingsMatch> removals) {
+        foreach(var playerStat in _playerStats) {
+            playerStat.Value.StatsAll.Job = _playerJobStatsLookup[playerStat.Key].OrderByDescending(x => x.Value.Matches).FirstOrDefault().Key;
+            RivalWingsStatsManager.SetScoreboardStats(playerStat.Value, _playerTeamContributions[playerStat.Key].Values.ToList(), _playerTimes[playerStat.Key].ToTimeSpan());
         }
+        ActiveLinks = _activeLinks.Select(x => (x.Key, x.Value.Where(y => y.Value.Tally > 0).Select(y => (y.Key, y.Value.Tally)).ToDictionary())).ToDictionary();
+        DataModel = _playerStats.Keys.ToList();
+        DataModelUntruncated = DataModel;
+        StatsModel = _playerStats.ToDictionary();
+        ApplyQuickFilters(MinMatchFilter.MinMatches, PlayerQuickSearchFilter.SearchText);
+        base.PostRefresh(matches, additions, removals);
     }
 
     protected override void ProcessMatch(RivalWingsMatch match, bool remove = false) {

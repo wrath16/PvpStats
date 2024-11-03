@@ -52,7 +52,7 @@ internal abstract class Refreshable<T> where T : PvpMatch {
     protected abstract void PostRefresh(List<T> matches, List<T> additions, List<T> removals);
 
     public virtual async Task Refresh(List<T> matches, List<T> additions, List<T> removals) {
-        await RefreshQueue.QueueDataOperation(async () => {
+        var task =  RefreshQueue.QueueDataOperation(async () => {
             RefreshActive = true;
             MatchesProcessed = 0;
             RefreshProgress = 0;
@@ -62,10 +62,11 @@ internal abstract class Refreshable<T> where T : PvpMatch {
             } finally {
                 s1.Stop();
                 Plugin.Log2.Debug(string.Format("{0,-25}: {1,4} ms", $"{Name} Refresh", s1.ElapsedMilliseconds.ToString()));
-                MatchesProcessed = 0;
-                RefreshActive = false;
+                //MatchesProcessed = 0;
+                //RefreshActive = false;
             }
         });
+        await task.Result;
     }
 
     protected virtual async Task RefreshInner(List<T> matches, List<T> additions, List<T> removals) {

@@ -17,10 +17,6 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
     private readonly FrontlinePlayerList _players;
     private readonly FrontlinePvPProfile _profile;
 
-    private bool _matchRefreshActive = true;
-    private bool _jobRefreshActive = true;
-    private bool _playerRefreshActive = true;
-
     public FLTrackerWindow(Plugin plugin) : base(plugin, plugin.FLStatsEngine, plugin.Configuration.FLWindowConfig, "Frontline Tracker") {
         SizeConstraints = new WindowSizeConstraints {
             MinimumSize = new Vector2(435, 400),
@@ -63,7 +59,7 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
             if(tabBar) {
                 Tab("Matches", () => {
                     _matches.Draw();
-                }, _matchRefreshActive, 0f);
+                }, _matches.RefreshActive, 0f);
                 Tab("Summary", () => {
                     using(ImRaii.Child("SummaryChild")) {
                         _summary.Draw();
@@ -71,8 +67,8 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
                 }, _summary.RefreshActive, _summary.RefreshProgress);
                 Tab("Jobs", () => {
                     _jobs.Draw();
-                }, _jobRefreshActive, _jobs.RefreshProgress);
-                Tab("Players", _players.Draw, _playerRefreshActive, _players.RefreshProgress);
+                }, _jobs.RefreshActive, _jobs.RefreshProgress);
+                Tab("Players", _players.Draw, _players.RefreshActive, _players.RefreshProgress);
                 Tab("Profile", () => {
                     using(ImRaii.Child("ProfileChild")) {
                         _profile.Draw();
@@ -85,16 +81,19 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
     public override async Task Refresh(bool fullRefresh = false) {
         Stopwatch s0 = new();
         s0.Start();
-        _matchRefreshActive = true;
+
+        _matches.RefreshProgress = 0f;
+        _matches.RefreshActive = true;
 
         _summary.RefreshProgress = 0f;
         _summary.RefreshActive = true;
 
         _jobs.RefreshProgress = 0f;
-        _jobRefreshActive = true;
+        _jobs.RefreshActive = true;
 
         _players.RefreshProgress = 0f;
-        _playerRefreshActive = true;
+        _players.RefreshActive = true;
+
         try {
             await RefreshLock.WaitAsync();
             //RefreshActive = true;
@@ -106,8 +105,8 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
             }
 
             var matchRefresh = RefreshTab(async () => {
-                await _matches.Refresh(updatedSet.Matches);
-                _matchRefreshActive = false;
+                await _matches.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
+                _matches.RefreshActive = false;
             });
             var summaryRefresh = RefreshTab(async () => {
                 await _summary.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
@@ -115,11 +114,11 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
             });
             var jobRefresh = RefreshTab(async () => {
                 await _jobs.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-                _jobRefreshActive = false;
+                _jobs.RefreshActive = false;
             });
             var playerRefresh = RefreshTab(async () => {
                 await _players.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-                _playerRefreshActive = false;
+                _players.RefreshActive = false;
             });
             await Task.WhenAll([
                 Task.Run(SaveFilters),
@@ -132,23 +131,23 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
             Plugin.Log.Error("FL tracker refresh failed.");
             throw;
         } finally {
-            _matchRefreshActive = false;
+            _matches.RefreshActive = false;
             _summary.RefreshActive = false;
-            _jobRefreshActive = false;
-            _playerRefreshActive = false;
+            _jobs.RefreshActive = false;
+            _players.RefreshActive = false;
             RefreshLock.Release();
             //RefreshActive = false;
             Plugin.Log.Information(string.Format("{0,-25}: {1,4} ms", $"FL tracker refresh time", s0.ElapsedMilliseconds.ToString()));
         }
     }
 
-    public async Task RefreshJobs() {
-        var jobRefresh = RefreshTab(async () => {
-            await _jobs.Refresh(Plugin.FLStatsEngine.Matches, Plugin.FLStatsEngine.Matches, Plugin.FLStatsEngine.Matches);
-            _jobRefreshActive = false;
-        });
-        await Task.WhenAll([
-            jobRefresh.Result,
-        ]);
-    }
+    //public async Task RefreshJobs() {
+    //    var jobRefresh = RefreshTab(async () => {
+    //        await _jobs.Refresh(Plugin.FLStatsEngine.Matches, Plugin.FLStatsEngine.Matches, Plugin.FLStatsEngine.Matches);
+    //        _jobRefreshActive = false;
+    //    });
+    //    await Task.WhenAll([
+    //        jobRefresh.Result,
+    //    ]);
+    //}
 }

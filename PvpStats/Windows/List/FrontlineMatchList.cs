@@ -10,6 +10,8 @@ using System.Threading;
 namespace PvpStats.Windows.List;
 internal class FrontlineMatchList : MatchList<FrontlineMatch> {
 
+    public override string Name => "FL Matches";
+
     //protected override ImGuiTableFlags TableFlags { get; set; } = ImGuiTableFlags.Hideable | ImGuiTableFlags.Borders;
 
     //protected override bool DynamicColumns { get; set; } = false;

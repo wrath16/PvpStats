@@ -10,6 +10,8 @@ using System.Numerics;
 namespace PvpStats.Windows.List;
 internal class CrystallineConflictMatchList : MatchList<CrystallineConflictMatch> {
 
+    public override string Name => "CC Matches";
+
     protected override List<ColumnParams> Columns { get; set; } = new() {
         new ColumnParams{Name = "Start Time", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 125f },
         new ColumnParams{Name = "Arena", Flags = ImGuiTableColumnFlags.WidthFixed, Width = 145f },

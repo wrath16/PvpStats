@@ -20,10 +20,6 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
     private readonly CrystallineConflictPvPProfile _profile;
     private readonly CrystallineConflictRankGraph _credit;
 
-    private bool _matchRefreshActive = true;
-    private bool _jobRefreshActive = true;
-    private bool _playerRefreshActive = true;
-
     internal CCTrackerWindow(Plugin plugin) : base(plugin, plugin.CCStatsEngine, plugin.Configuration.CCWindowConfig, "Crystalline Conflict Tracker") {
         //SizeConstraints = new WindowSizeConstraints {
         //    MinimumSize = new Vector2(425, 400),
@@ -75,6 +71,9 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
         Stopwatch s0 = new();
         s0.Start();
 
+        _matches.RefreshProgress = 0f;
+        _matches.RefreshActive = true;
+
         _summary.RefreshProgress = 0f;
         _summary.RefreshActive = true;
 
@@ -85,12 +84,13 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
         _credit.RefreshActive = true;
 
         _jobs.RefreshProgress = 0f;
-        _players.RefreshProgress = 0f;
-        _credit.RefreshProgress = 0f;
+        _jobs.RefreshActive = true;
 
-        _matchRefreshActive = true;
-        _jobRefreshActive = true;
-        _playerRefreshActive = true;
+        _players.RefreshProgress = 0f;
+        _players.RefreshActive = true;
+
+        _credit.RefreshProgress = 0f;
+        _credit.RefreshActive = true;
         try {
             await RefreshLock.WaitAsync();
             //RefreshActive = true;
@@ -102,8 +102,8 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
             }
 
             var matchRefresh = RefreshTab(async () => {
-                await _matches.Refresh(updatedSet.Matches);
-                _matchRefreshActive = false;
+                await _matches.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
+                _matches.RefreshActive = false;
             });
             var summaryRefresh = RefreshTab(async () => {
                 await _summary.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
@@ -115,11 +115,11 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
             });
             var jobRefresh = RefreshTab(async () => {
                 await _jobs.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-                _jobRefreshActive = false;
+                _jobs.RefreshActive = false;
             });
             var playerRefresh = RefreshTab(async () => {
                 await _players.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-                _playerRefreshActive = false;
+                _players.RefreshActive = false;
             });
             var creditRefresh = RefreshTab(async () => {
                 await _credit.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
@@ -138,11 +138,11 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
             Plugin.Log.Error("CC tracker refresh failed.");
             throw;
         } finally {
-            _matchRefreshActive = false;
+            _matches.RefreshActive = false;
             _summary.RefreshActive = false;
             _records.RefreshActive = false;
-            _jobRefreshActive = false;
-            _playerRefreshActive = false;
+            _jobs.RefreshActive = false;
+            _players.RefreshActive = false;
             _credit.RefreshActive = false;
             RefreshLock.Release();
             //RefreshActive = false;
@@ -157,7 +157,7 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
                 if(Plugin.Configuration.ResizeWindowLeft) {
                     ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 20f * ImGuiHelpers.GlobalScale);
                 }
-                Tab("Matches", _matches.Draw, _matchRefreshActive, 0f);
+                Tab("Matches", _matches.Draw, _matches.RefreshActive, 0f);
                 Tab("Summary", () => {
                     using(ImRaii.Child("SummaryChild")) {
                         _summary.Draw();
@@ -168,8 +168,8 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
                         _records.Draw();
                     }
                 }, _records.RefreshActive, _records.RefreshProgress);
-                Tab("Jobs", _jobs.Draw, _jobRefreshActive, _jobs.RefreshProgress);
-                Tab("Players", _players.Draw, _playerRefreshActive, _players.RefreshProgress);
+                Tab("Jobs", _jobs.Draw, _jobs.RefreshActive, _jobs.RefreshProgress);
+                Tab("Players", _players.Draw, _players.RefreshActive, _players.RefreshProgress);
                 Tab("Credit", () => {
                     using(ImRaii.Child("CreditChild")) {
                         _credit.Draw();

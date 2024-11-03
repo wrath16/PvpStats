@@ -8,6 +8,7 @@ using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
 internal abstract class PlayerStatsList<T, U> : StatsList<PlayerAlias, T, U> where T : PlayerJobStats where U : PvpMatch {
@@ -17,16 +18,41 @@ internal abstract class PlayerStatsList<T, U> : StatsList<PlayerAlias, T, U> whe
     public MinMatchFilter MinMatchFilter { get; protected set; }
     public PlayerQuickSearchFilter PlayerQuickSearchFilter { get; protected set; }
 
+    protected StatSourceFilter _lastStatSourceFilter = new();
+    protected OtherPlayerFilter _lastPlayerFilter = new();
+
     public Dictionary<PlayerAlias, Dictionary<PlayerAlias, int>> ActiveLinks { get; protected set; } = new();
 
     public PlayerStatsList(Plugin plugin, PlayerStatSourceFilter statSourceFilter, MinMatchFilter minMatchFilter, PlayerQuickSearchFilter quickSearchFilter, OtherPlayerFilter playerFilter) : base(plugin) {
-
         //note that draw and refresh are not utilized!
         StatSourceFilter = statSourceFilter;
         MinMatchFilter = minMatchFilter;
         PlayerQuickSearchFilter = quickSearchFilter;
         PlayerFilter = playerFilter;
         //Reset();
+    }
+
+    protected override async Task RefreshInner(List<U> matches, List<U> additions, List<U> removals) {
+        bool statFilterChange = !StatSourceFilter.Equals(_lastStatSourceFilter);
+        bool playerFilterChange = StatSourceFilter!.InheritFromPlayerFilter && !PlayerFilter.Equals(_lastPlayerFilter);
+        if(removals.Count * 2 >= _matches.Count || statFilterChange || playerFilterChange) {
+            //force full build
+            Reset();
+            MatchesTotal = matches.Count;
+            await ProcessMatches(matches);
+        } else {
+            MatchesTotal = removals.Count + additions.Count;
+            await ProcessMatches(removals, true);
+            await ProcessMatches(additions);
+        }
+        PostRefresh(matches, additions, removals);
+        _matches = matches;
+    }
+
+    protected override void PostRefresh(List<U> matches, List<U> additions, List<U> removals) {
+        _lastStatSourceFilter = new(StatSourceFilter!);
+        _lastPlayerFilter = new(PlayerFilter!);
+        base.PostRefresh(matches, additions, removals);
     }
 
     protected override void PreTableDraw() {

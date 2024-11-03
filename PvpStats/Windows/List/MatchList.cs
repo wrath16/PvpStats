@@ -10,7 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.List;
-internal abstract class MatchList<T> : FilteredList<T> where T : PvpMatch {
+internal abstract class MatchList<T> : FilteredList<T, T> where T : PvpMatch {
 
     protected MatchCacheService<T> Cache;
 
@@ -28,8 +28,25 @@ internal abstract class MatchList<T> : FilteredList<T> where T : PvpMatch {
         Cache = cache;
     }
 
-    public async override Task RefreshDataModel() {
-        await Task.CompletedTask;
+    protected override Task RefreshInner(List<T> matches, List<T> additions, List<T> removals) {
+        //PostRefresh(matches, additions, removals);
+        _matches = matches;
+        DataModel = matches;
+        ListCSV = CSVHeader();
+        GoToPage(0);
+        return Task.CompletedTask;
+    }
+
+    protected override void Reset() {
+        throw new System.NotImplementedException();
+    }
+
+    protected override void PostRefresh(List<T> matches, List<T> additions, List<T> removals) {
+        throw new System.NotImplementedException();
+    }
+
+    protected override void ProcessMatch(T match, bool remove = false) {
+        throw new System.NotImplementedException();
     }
 
     protected override void PreChildDraw() {
