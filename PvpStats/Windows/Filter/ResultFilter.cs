@@ -36,7 +36,7 @@ public class ResultFilter : DataFilter {
         //bool allSelected = AllSelected;
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2);
         if(ImGui.Combo($"##matchResultCombo", ref currentIndex, _resultCombo.ToArray(), _resultCombo.Count)) {
-            _plugin!.DataQueue.QueueDataOperation(async () => {
+            Task.Run(async () => {
                 Result = (MatchResult)currentIndex;
                 await Refresh();
             });

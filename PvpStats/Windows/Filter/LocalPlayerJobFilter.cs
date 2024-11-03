@@ -43,7 +43,7 @@ public class LocalPlayerJobFilter : DataFilter {
 
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
         if(ImGui.Combo("###LocalPlayerJobCombo", ref jobIndex, _jobCombo.ToArray(), _jobCombo.Count)) {
-            _plugin!.DataQueue.QueueDataOperation(async () => {
+            Task.Run(async () => {
                 if(jobIndex == 0) {
                     AnyJob = true;
                     JobRole = null;

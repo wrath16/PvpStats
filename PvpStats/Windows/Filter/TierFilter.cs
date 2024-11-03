@@ -34,7 +34,7 @@ public class TierFilter : DataFilter {
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2);
         var width = ImGui.CalcItemWidth();
         if(ImGui.Combo($"##tierComboLow", ref indexLow, _tierCombo.ToArray(), _tierCombo.Count)) {
-            _plugin!.DataQueue.QueueDataOperation(async () => {
+            Task.Run(async () => {
                 TierLow = (ArenaTier)indexLow;
                 await Refresh();
             });
@@ -44,7 +44,7 @@ public class TierFilter : DataFilter {
         ImGui.SameLine();
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
         if(ImGui.Combo($"##tierComboHigh", ref indexHigh, _tierCombo.ToArray(), _tierCombo.Count)) {
-            _plugin!.DataQueue.QueueDataOperation(async () => {
+            Task.Run(async () => {
                 TierHigh = (ArenaTier)indexHigh;
                 await Refresh();
             });

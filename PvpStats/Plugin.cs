@@ -271,7 +271,7 @@ public sealed class Plugin : IDalamudPlugin {
         }
         await MigrationManager.BulkUpdateCCMatchTypes();
         await MigrationManager.BulkCCUpdateValidatePlayerCount();
-        await WindowManager.RefreshAll();
+        _ = WindowManager.RefreshAll();
         Log.Information("PvP Tracker initialized.");
     }
 }

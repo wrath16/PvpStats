@@ -135,12 +135,13 @@ internal class CrystallineConflictMatchManager : IDisposable {
         unsafe {
             resultsPacket = *(CrystallineConflictResultsPacket*)p2;
         }
-        _plugin.DataQueue.QueueDataOperation(async () => {
+        var matchEndTask = _plugin.DataQueue.QueueDataOperation(async () => {
             if(ProcessMatchResults(resultsPacket)) {
                 await _plugin.CCCache.UpdateMatch(_currentMatch!);
-                await _plugin.WindowManager.RefreshCCWindow();
+                _ = _plugin.WindowManager.RefreshCCWindow();
             }
         });
+        //matchEndTask.Result.ContinueWith(t => _plugin.WindowManager.RefreshCCWindow());
         _ccMatchEndHook.Original(p1, p2, p3, p4);
     }
 

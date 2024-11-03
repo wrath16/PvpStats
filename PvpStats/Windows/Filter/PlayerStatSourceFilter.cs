@@ -42,7 +42,7 @@ public class PlayerStatSourceFilter : StatSourceFilter, IEquatable<PlayerStatSou
     internal override void Draw() {
         bool inheritFromPlayerFilter = InheritFromPlayerFilter;
         if(ImGui.Checkbox($"Inherit from player filter##{GetHashCode()}", ref inheritFromPlayerFilter)) {
-            _plugin!.DataQueue.QueueDataOperation(async () => {
+            Task.Run(async () => {
                 InheritFromPlayerFilter = inheritFromPlayerFilter;
                 await Refresh();
             });

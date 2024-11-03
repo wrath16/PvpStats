@@ -51,7 +51,7 @@ internal class FrontlineArenaFilter : DataFilter {
         //bool allSelected = AllSelected;
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2);
         if(ImGui.Combo($"##flMapRangeCombo", ref currentIndex, _range.ToArray(), _range.Count)) {
-            _plugin!.DataQueue.QueueDataOperation(async () => {
+            Task.Run(async () => {
                 CurrentIndex = currentIndex;
                 if(currentIndex == 0) {
                     foreach(var item in FilterState) {

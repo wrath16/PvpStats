@@ -53,7 +53,7 @@ public class TimeFilter : DataFilter {
         //ImGui.SetNextItemWidth(float.Min(ImGui.GetContentRegionAvail().X / 2f, ImGuiHelpers.GlobalScale * 125f));
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
         if(ImGui.Combo($"##timeRangeCombo", ref statRangeToInt, Range, Range.Length)) {
-            _plugin!.DataQueue.QueueDataOperation(async () => {
+            Task.Run(async () => {
                 StatRange = (TimeRange)statRangeToInt;
                 await Refresh();
             });
@@ -74,7 +74,7 @@ public class TimeFilter : DataFilter {
                     if(startTime != _lastStartTime) {
                         _lastStartTime = startTime;
                         if(DateTime.TryParse(startTime, out DateTime newStartTime)) {
-                            _plugin!.DataQueue.QueueDataOperation(async () => {
+                            Task.Run(async () => {
                                 StartTime = newStartTime;
                                 await Refresh();
                             });
@@ -90,7 +90,7 @@ public class TimeFilter : DataFilter {
                     if(endTime != _lastEndTime) {
                         _lastEndTime = endTime;
                         if(DateTime.TryParse(endTime, out DateTime newEndTime)) {
-                            _plugin!.DataQueue.QueueDataOperation(async () => {
+                            Task.Run(async () => {
                                 EndTime = newEndTime;
                                 await Refresh();
                             });
@@ -102,7 +102,7 @@ public class TimeFilter : DataFilter {
             ImGui.SameLine();
             ImGui.SetNextItemWidth(ImGuiHelpers.GlobalScale * 50f);
             if(ImGui.Combo($"##seasonCombo", ref seasonIndex, GamePeriod.Season.Keys.Select(x => x.ToString()).ToArray(), GamePeriod.Season.Count)) {
-                _plugin!.DataQueue.QueueDataOperation(async () => {
+                Task.Run(async () => {
                     Season = seasonIndex + 1;
                     await Refresh();
                 });
@@ -111,7 +111,7 @@ public class TimeFilter : DataFilter {
             ImGui.SameLine();
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
             if(ImGui.Combo($"##expansionCombo", ref expansionIndex, GamePeriod.Expansion.Select(x => x.Value.Name).ToArray(), GamePeriod.Expansion.Count)) {
-                _plugin!.DataQueue.QueueDataOperation(async () => {
+                Task.Run(async () => {
                     Expansion = expansionIndex + 6;
                     await Refresh();
                 });

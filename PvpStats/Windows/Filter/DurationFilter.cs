@@ -36,7 +36,7 @@ public class DurationFilter : DataFilter {
         int currentIndex = DirectionIndex;
         ImGui.SetNextItemWidth(ImGuiHelpers.GlobalScale * 50f);
         if(ImGui.Combo($"##durationCombo", ref currentIndex, _combo.ToArray(), _combo.Count)) {
-            _plugin!.DataQueue.QueueDataOperation(async () => {
+            Task.Run(async () => {
                 DirectionIndex = currentIndex;
                 await Refresh();
             });
@@ -48,7 +48,7 @@ public class DurationFilter : DataFilter {
             if(duration != _lastDuration) {
                 _lastDuration = duration;
                 if(TimeSpan.TryParseExact(duration, @"m\:ss", CultureInfo.CurrentCulture, out TimeSpan y)) {
-                    _plugin!.DataQueue.QueueDataOperation(async () => {
+                    Task.Run(async () => {
                         Duration = y;
                         await Refresh();
                     });
@@ -58,7 +58,7 @@ public class DurationFilter : DataFilter {
         ImGui.TableNextColumn();
         using(var font = ImRaii.PushFont(UiBuilder.IconFont)) {
             if(ImGui.Button($"{FontAwesomeIcon.Undo.ToIconString()}")) {
-                _plugin!.DataQueue.QueueDataOperation(async () => {
+                Task.Run(async () => {
                     DirectionIndex = 0;
                     Duration = TimeSpan.Zero;
                     await Refresh();

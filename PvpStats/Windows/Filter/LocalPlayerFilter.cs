@@ -19,7 +19,7 @@ public class LocalPlayerFilter : DataFilter {
     internal override void Draw() {
         bool currentPlayerOnly = CurrentPlayerOnly;
         if(ImGui.Checkbox("Current player only", ref currentPlayerOnly)) {
-            _plugin!.DataQueue.QueueDataOperation(async () => {
+            Task.Run(async () => {
                 CurrentPlayerOnly = currentPlayerOnly;
                 await Refresh();
             });

@@ -77,7 +77,7 @@ public class OtherPlayerFilter : DataFilter, IEquatable<OtherPlayerFilter> {
         if(ImGui.InputTextWithHint("###PlayerNameInput", "Enter player name and world", ref playerName, 50)) {
             if(playerName != _lastTextValue) {
                 _lastTextValue = playerName;
-                _plugin!.DataQueue.QueueDataOperation(() => {
+                Task.Run(() => {
                     PlayerNamesRaw = playerName;
                     //await Refresh();
                 });
@@ -85,7 +85,7 @@ public class OtherPlayerFilter : DataFilter, IEquatable<OtherPlayerFilter> {
         }
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2);
         if(ImGui.Combo("###TeamStatusCombo", ref teamIndex, _teamStatusCombo, _teamStatusCombo.Length)) {
-            _plugin!.DataQueue.QueueDataOperation(async () => {
+            Task.Run(async () => {
                 TeamStatus = (TeamStatus)teamIndex;
                 await Refresh();
             });
@@ -93,7 +93,7 @@ public class OtherPlayerFilter : DataFilter, IEquatable<OtherPlayerFilter> {
         ImGui.SameLine();
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
         if(ImGui.Combo("###JobCombo", ref jobIndex, _jobCombo.ToArray(), _jobCombo.Count)) {
-            _plugin!.DataQueue.QueueDataOperation(async () => {
+            Task.Run(async () => {
                 if(jobIndex == 0) {
                     AnyJob = true;
                 } else {

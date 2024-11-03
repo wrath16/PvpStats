@@ -78,7 +78,7 @@ public class StatSourceFilter : DataFilter, IEquatable<StatSourceFilter> {
             ImGui.TableNextColumn();
             bool allSelected = AllSelected;
             if(ImGui.Checkbox($"Select All##{GetHashCode()}", ref allSelected)) {
-                _plugin!.DataQueue.QueueDataOperation(async () => {
+                Task.Run(async () => {
                     foreach(var category in FilterState) {
                         FilterState[category.Key] = allSelected;
                     }
@@ -89,7 +89,7 @@ public class StatSourceFilter : DataFilter, IEquatable<StatSourceFilter> {
             ImGui.TableNextColumn();
             bool inheritFromPlayerFilter = InheritFromPlayerFilter;
             if(ImGui.Checkbox($"Inherit from player filter##{GetHashCode()}", ref inheritFromPlayerFilter)) {
-                _plugin!.DataQueue.QueueDataOperation(async () => {
+                Task.Run(async () => {
                     InheritFromPlayerFilter = inheritFromPlayerFilter;
                     await Refresh();
                 });
@@ -101,7 +101,7 @@ public class StatSourceFilter : DataFilter, IEquatable<StatSourceFilter> {
                 ImGui.TableNextColumn();
                 bool filterState = category.Value;
                 if(ImGui.Checkbox($"{FilterNames[category.Key]}##{GetHashCode()}", ref filterState)) {
-                    _plugin!.DataQueue.QueueDataOperation(async () => {
+                    Task.Run(async () => {
                         FilterState[category.Key] = filterState;
                         UpdateAllSelected();
                         await Refresh();

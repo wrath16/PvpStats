@@ -57,35 +57,26 @@ internal class PlayerLinkService {
         _plugin.Log.Information("Building player alias links cache from PlayerTrack IPC data...");
         return Task.Run(async () => {
             //get players
-            var allPlayers = await _plugin.DataQueue.QueueDataOperation(() => {
-                var ccMatches = _plugin.Storage.GetCCMatches().Query().ToList();
-                var flMatches = _plugin.Storage.GetFLMatches().Query().ToList();
-                var rwMatches = _plugin.Storage.GetRWMatches().Query().ToList();
-                List<PlayerAlias> allPlayers = new();
-                foreach(var match in ccMatches) {
-                    foreach(var player in match.Players) {
-                        if(!allPlayers.Contains(player.Alias)) {
-                            allPlayers.Add(player.Alias);
-                        }
-                    }
+            var ccMatches = _plugin.Storage.GetCCMatches().Query().ToList();
+            var flMatches = _plugin.Storage.GetFLMatches().Query().ToList();
+            var rwMatches = _plugin.Storage.GetRWMatches().Query().ToList();
+            HashSet<PlayerAlias> allPlayers = new();
+            foreach(var match in ccMatches) {
+                foreach(var player in match.Players) {
+                    allPlayers.Add(player.Alias);
                 }
-                foreach(var match in flMatches) {
-                    foreach(var player in match.Players) {
-                        if(!allPlayers.Contains(player.Name)) {
-                            allPlayers.Add(player.Name);
-                        }
-                    }
+            }
+            foreach(var match in flMatches) {
+                foreach(var player in match.Players) {
+                    allPlayers.Add(player.Name);
                 }
-                foreach(var match in rwMatches) {
-                    if(match.Players is null) continue;
-                    foreach(var player in match.Players) {
-                        if(!allPlayers.Contains(player.Name)) {
-                            allPlayers.Add(player.Name);
-                        }
-                    }
+            }
+            foreach(var match in rwMatches) {
+                if(match.Players is null) continue;
+                foreach(var player in match.Players) {
+                    allPlayers.Add(player.Name);
                 }
-                return allPlayers;
-            });
+            }
 
             if(!allPlayers.Any()) {
                 return;
@@ -94,7 +85,7 @@ internal class PlayerLinkService {
             //get auto links
             List<PlayerAliasLink> autoLinks = [];
             try {
-                autoLinks = GetPlayerNameHistory(allPlayers);
+                autoLinks = GetPlayerNameHistory(allPlayers.ToList());
                 _plugin.Log.Information($"players with previous aliases: {autoLinks.Count}");
             } catch(Exception e) {
                 if(e is IpcNotReadyError) {

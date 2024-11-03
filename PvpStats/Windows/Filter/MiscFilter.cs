@@ -32,21 +32,21 @@ public class MiscFilter : DataFilter {
         ImGui.TableNextColumn();
         bool mustHaveStats = MustHaveStats;
         if(ImGui.Checkbox("Must have post-game stats", ref mustHaveStats)) {
-            _plugin!.DataQueue.QueueDataOperation(async () => {
+            Task.Run(async () => {
                 MustHaveStats = mustHaveStats;
                 await Refresh();
             });
         }
         bool includeSpectated = IncludeSpectated;
         if(ImGui.Checkbox("Include spectated matches", ref includeSpectated)) {
-            _plugin!.DataQueue.QueueDataOperation(async () => {
+            Task.Run(async () => {
                 IncludeSpectated = includeSpectated;
                 await Refresh();
             });
         }
         //bool showDeleted = ShowDeleted;
         //if (ImGui.Checkbox("Show deleted/incomplete", ref showDeleted)) {
-        //    _plugin!.DataQueue.QueueDataOperation(() => {
+        //    Task.Run(() => {
         //        ShowDeleted = showDeleted;
         //        Refresh();
         //    });

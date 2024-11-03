@@ -35,7 +35,7 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
     public bool RefreshActive { get; protected set; }
     public float RefreshProgress { get; protected set; }
 
-    protected List<Refreshable<T>> Tabs;
+    protected List<Refreshable<T>> Tabs = [];
 
     protected TrackerWindow(Plugin plugin, StatsManager<T> statsManager, WindowConfiguration config, string name) : base(name) {
         Plugin = plugin;

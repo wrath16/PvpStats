@@ -22,7 +22,7 @@ public class MinMatchFilter : DataFilter {
         int minMatches = (int)MinMatches;
         ImGuiHelper.SetDynamicWidth(150f, 250f, 3f);
         if(ImGui.SliderInt("Min. matches", ref minMatches, 1, 100)) {
-            _plugin!.DataQueue.QueueDataOperation(async () => {
+            Task.Run(async () => {
                 MinMatches = (uint)minMatches;
                 await Refresh();
             });

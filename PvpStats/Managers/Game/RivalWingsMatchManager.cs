@@ -157,12 +157,14 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             //Plugin.Functions.CreateByteDump(p2, 0x3000, "rw_match_end");
 #endif
 
-            Plugin.DataQueue.QueueDataOperation(async () => {
+            var matchEndTask = Plugin.DataQueue.QueueDataOperation(async () => {
                 if(ProcessMatchResults(resultsPacket, director)) {
                     await Plugin.RWCache.UpdateMatch(CurrentMatch!);
-                    await Plugin.WindowManager.RefreshRWWindow();
+                    _ = Plugin.WindowManager.RefreshRWWindow();
                 }
             });
+            //matchEndTask.Result.ContinueWith(t => Plugin.WindowManager.RefreshRWWindow());
+
             unsafe {
                 Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9} {3,-9}", "TEAM", "CORE", "TOWER1", "TOWER2"));
                 Plugin.Log.Debug(string.Format("{0,-9} {1,-9} {2,-9} {3,-9}", RivalWingsTeamName.Falcons, director.FalconCore.Integrity, director.FalconTower1.Integrity, director.FalconTower2.Integrity));

@@ -47,7 +47,7 @@ public class MatchTypeFilter : DataFilter {
                 }
                 AllSelected = allSelected;
             });
-            //_plugin!.DataQueue.QueueDataOperation(async () => {
+            //Task.Run(async () => {
             //    foreach(var category in FilterState) {
             //        FilterState[category.Key] = allSelected;
             //    }
@@ -67,7 +67,7 @@ public class MatchTypeFilter : DataFilter {
                 bool filterState = category.Value;
                 if(ImGui.Checkbox($"{category.Key}##{GetHashCode()}", ref filterState)) {
                     //if(CurrentRefresh is null || CurrentRefresh.Result.IsCompleted) {
-                    //    CurrentRefresh = _plugin!.DataQueue.QueueDataOperation(async () => {
+                    //    CurrentRefresh = Task.Run(async () => {
                     //        FilterState[category.Key] = filterState;
                     //        UpdateAllSelected();
                     //        await Refresh();

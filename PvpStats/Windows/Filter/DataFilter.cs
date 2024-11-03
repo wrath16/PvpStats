@@ -35,7 +35,7 @@ public abstract class DataFilter {
     //must be invoked at point of input!
     protected void RateLimitRefresh(Action action) {
         if(CurrentRefresh is null || CurrentRefresh.Result.IsCompleted) {
-            CurrentRefresh = _plugin!.DataQueue.QueueDataOperation(async () => {
+            CurrentRefresh = (Task<Task>)Task.Run(async () => {
                 action.Invoke();
                 await Refresh();
             });

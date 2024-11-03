@@ -44,7 +44,7 @@ internal class TagFilter : DataFilter {
         if(ImGui.InputTextWithHint("##TagsInput", "Enter tags...", ref tags, 50)) {
             if(tags != _lastTextValue) {
                 _lastTextValue = tags;
-                _plugin!.DataQueue.QueueDataOperation(() => {
+                Task.Run(() => {
                     TagsRaw = tags;
                     //await Refresh();
                 });
@@ -53,7 +53,7 @@ internal class TagFilter : DataFilter {
         ImGui.SameLine();
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2);
         if(ImGui.Combo("##TagLogic", ref orLogicInt, _logicCombo, _logicCombo.Length)) {
-            _plugin!.DataQueue.QueueDataOperation(async () => {
+            Task.Run(async () => {
                 OrLogic = Convert.ToBoolean(orLogicInt);
                 await Refresh();
             });

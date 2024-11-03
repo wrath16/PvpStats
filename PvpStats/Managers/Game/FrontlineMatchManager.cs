@@ -117,15 +117,13 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
             unsafe {
                 resultsPacket = *(FrontlineResultsPacket*)p2;
             }
-            Plugin.DataQueue.QueueDataOperation(async () => {
+            var matchEndTask = Plugin.DataQueue.QueueDataOperation(async () => {
                 if(ProcessMatchResults(resultsPacket)) {
                     await Plugin.FLCache.UpdateMatch(CurrentMatch!);
 
                     //add delay to refresh to ensure all player payloads are received
                     _ = Task.Delay(1000).ContinueWith((t) => {
-                        Plugin.DataQueue.QueueDataOperation(async () => {
-                            await Plugin.WindowManager.RefreshFLWindow();
-                        });
+                        _ = Plugin.WindowManager.RefreshFLWindow();
                     });
                 }
             });
@@ -213,7 +211,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
 
     private bool ProcessPlayerResults(FrontlinePlayerResultsPacket results) {
         if(!IsMatchInProgress()) {
-            //Plugin.Log.Error("trying to process FL player results on no match!");
+            Plugin.Log.Error("trying to process FL player results on no match!");
             return false;
             //fallback for case where you load into a game after the match has completed creating a new match
         } else if((DateTime.Now - CurrentMatch!.DutyStartTime).TotalSeconds < 10) {

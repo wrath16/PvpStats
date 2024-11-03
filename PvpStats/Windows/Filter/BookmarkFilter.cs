@@ -19,7 +19,7 @@ public class BookmarkFilter : DataFilter {
     internal override void Draw() {
         bool bookMarkedOnly = BookmarkedOnly;
         if(ImGui.Checkbox("", ref bookMarkedOnly)) {
-            _plugin!.DataQueue.QueueDataOperation(async () => {
+            Task.Run(async () => {
                 BookmarkedOnly = bookMarkedOnly;
                 await Refresh();
             });
