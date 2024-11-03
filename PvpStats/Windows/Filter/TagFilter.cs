@@ -29,8 +29,8 @@ internal class TagFilter : DataFilter {
                 await periodicTimer.WaitForNextTickAsync();
                 if(_lastRefreshedValue != TagsRaw) {
                     _lastRefreshedValue = TagsRaw;
-                    _ = plugin!.DataQueue.QueueDataOperation(async () => {
-                        await Refresh();
+                    _ = Task.Run(() => {
+                        _ = Refresh();
                     });
                 }
             }
