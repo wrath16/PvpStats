@@ -120,7 +120,7 @@ internal abstract class FilteredList<T, U> : Refreshable<U> where T : notnull wh
             if(PageNumber > 0) {
                 ImGui.SameLine();
                 if(ImGui.Button($"Previous {PageSize}")) {
-                    _plugin.DataQueue.QueueDataOperation(() => {
+                    RefreshQueue.QueueDataOperation(() => {
                         PageNumber--;
                         GoToPage();
                     });
@@ -131,7 +131,7 @@ internal abstract class FilteredList<T, U> : Refreshable<U> where T : notnull wh
                 ImGui.SameLine();
                 ImGui.SetCursorPosX(ImGui.GetContentRegionMax().X - 65f * ImGuiHelpers.GlobalScale);
                 if(ImGui.Button($"Next {PageSize}")) {
-                    _plugin.DataQueue.QueueDataOperation(() => {
+                    RefreshQueue.QueueDataOperation(() => {
                         PageNumber++;
                         GoToPage();
                     });

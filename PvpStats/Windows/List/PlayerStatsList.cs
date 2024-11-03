@@ -29,6 +29,7 @@ internal abstract class PlayerStatsList<T, U> : StatsList<PlayerAlias, T, U> whe
         MinMatchFilter = new MinMatchFilter(plugin, Refresh, minMatchFilter);
         PlayerQuickSearchFilter = new PlayerQuickSearchFilter(plugin, Refresh, quickSearchFilter);
         PlayerFilter = playerFilter;
+        FullCSVRows = false;
         //Reset();
     }
 

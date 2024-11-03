@@ -51,20 +51,18 @@ internal abstract class MatchList<T> : FilteredList<T, T> where T : PvpMatch {
 
     protected override void PreChildDraw() {
         ImGuiHelper.CSVButton(() => {
-            _plugin.DataQueue.QueueDataOperation(() => {
+            Task.Run(() => {
                 ListCSV = CSVHeader();
                 foreach(var row in DataModel) {
                     ListCSV += CSVRow(row);
                 }
-                Task.Run(() => {
-                    ImGui.SetClipboardText(ListCSV);
-                });
+                ImGui.SetClipboardText(ListCSV);
             });
         });
         ImGui.SameLine();
         using(var font = ImRaii.PushFont(UiBuilder.IconFont)) {
             if(ImGui.Button($"{FontAwesomeIcon.Ban.ToIconString()}##CloseAllMatches")) {
-                _plugin.DataQueue.QueueDataOperation(_plugin.WindowManager.CloseAllMatchWindows);
+                Task.Run(_plugin.WindowManager.CloseAllMatchWindows);
             }
         }
         ImGuiHelper.WrappedTooltip("Close all open match windows");

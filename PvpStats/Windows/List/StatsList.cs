@@ -25,6 +25,7 @@ internal abstract class StatsList<T, U, V> : FilteredList<T, V> where T : notnul
     | ImGuiTableFlags.Borders | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX | ImGuiTableFlags.PadOuterX;
     protected override bool ShowHeader { get; set; } = true;
     protected override bool ChildWindow { get; set; } = false;
+    protected bool FullCSVRows { get; set; } = true;
     protected bool TriggerSort { get; set; }
     protected static float Offset => -5f;
 
@@ -150,14 +151,14 @@ internal abstract class StatsList<T, U, V> : FilteredList<T, V> where T : notnul
     protected void CSVButton() {
         using(ImRaii.PushFont(UiBuilder.IconFont)) {
             if(ImGui.Button($"{FontAwesomeIcon.Copy.ToIconString()}##--CopyCSV")) {
-                _plugin.DataQueue.QueueDataOperation(() => {
+                Task.Run(() => {
                     ListCSV = CSVHeader();
-                    foreach(var item in DataModel) {
-                        ListCSV += CSVRow(item);
+                    if(FullCSVRows) {
+                        DataModel.ForEach((x) => ListCSV += CSVRow(x));
+                    } else {
+                        CurrentPage.ForEach((x) => ListCSV += CSVRow(x));
                     }
-                    Task.Run(() => {
-                        ImGui.SetClipboardText(ListCSV);
-                    });
+                    ImGui.SetClipboardText(ListCSV);
                 });
             }
         }

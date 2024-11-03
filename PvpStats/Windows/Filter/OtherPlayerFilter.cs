@@ -60,8 +60,8 @@ public class OtherPlayerFilter : DataFilter, IEquatable<OtherPlayerFilter> {
                 await periodicTimer.WaitForNextTickAsync();
                 if(_lastRefreshedValue != PlayerNamesRaw) {
                     _lastRefreshedValue = PlayerNamesRaw;
-                    _ = plugin!.DataQueue.QueueDataOperation(async () => {
-                        await Refresh();
+                    _ = Task.Run(() => {
+                        _ = Refresh();
                     });
                 }
             }
