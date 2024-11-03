@@ -169,6 +169,13 @@ internal class ConfigWindow : Window {
         }
         ImGuiHelper.HelpMarker("Team stat rows will not be affected by sorting.", true, true);
 
+        //bool jobIconCells = _plugin.Configuration.JobIconCells ?? false;
+        //if(ImGui.Checkbox("Show job icons in scoreboard", ref jobIconCells)) {
+        //    _plugin.Configuration.JobIconCells = jobIconCells;
+        //    _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        //}
+        //ImGuiHelper.HelpMarker("Recommend increasing row height factor with this.", true, true);
+
         int stretchColumns = _plugin.Configuration.StretchScoreboardColumns ?? false ? 1 : 0;
         string[] columnStyles = ["Fixed", "Stretch"];
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 4f);
@@ -177,6 +184,13 @@ internal class ConfigWindow : Window {
             _plugin.Configuration.StretchScoreboardColumns = isStretch;
             _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
         }
+
+        //var scoreboardRowPadding = _plugin.Configuration.ScoreboardRowPaddingFactor;
+        //ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
+        //if(ImGui.SliderFloat("Scoreboard row height factor", ref scoreboardRowPadding, 1f, 5f)) {
+        //    _plugin.Configuration.ScoreboardRowPaddingFactor = scoreboardRowPadding;
+        //    _plugin.DataQueue.QueueDataOperation(_plugin.Configuration.Save);
+        //}
 
         var teamRowAlpha = _plugin.Configuration.TeamRowAlpha;
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
@@ -376,29 +390,29 @@ internal class ConfigWindow : Window {
     private void DrawPlayerLinkSettings() {
         bool playerLinking = _plugin.Configuration.EnablePlayerLinking;
         if(ImGui.Checkbox("Enable player linking", ref playerLinking)) {
-            _plugin.DataQueue.QueueDataOperation(async () => {
+            _plugin.DataQueue.QueueDataOperation(() => {
                 _plugin.Configuration.EnablePlayerLinking = playerLinking;
                 _plugin.Configuration.Save();
-                await _plugin.WindowManager.RefreshAll(true);
+                _ = _plugin.WindowManager.RefreshAll(true);
             });
         }
         ImGuiHelper.HelpMarker("Enable combining of player stats with different aliases linked with the same unique character or player.");
         bool autoLinking = _plugin.Configuration.EnableAutoPlayerLinking;
         if(ImGui.Checkbox("Enable auto linking (requires PlayerTrack)", ref autoLinking)) {
-            _plugin.DataQueue.QueueDataOperation(async () => {
+            _plugin.DataQueue.QueueDataOperation(() => {
                 _plugin.Configuration.EnableAutoPlayerLinking = autoLinking;
                 _plugin.Configuration.Save();
-                await _plugin.WindowManager.RefreshAll(true);
+                _ = _plugin.WindowManager.RefreshAll(true);
             });
         }
         ImGuiHelper.HelpMarker("Use name change data from PlayerTrack to create player links.\n\n" +
             "Does not work on your own character (for now).");
         bool manualLinking = _plugin.Configuration.EnableManualPlayerLinking;
         if(ImGui.Checkbox("Enable manual linking", ref manualLinking)) {
-            _plugin.DataQueue.QueueDataOperation(async () => {
+            _plugin.DataQueue.QueueDataOperation(() => {
                 _plugin.Configuration.EnableManualPlayerLinking = manualLinking;
                 _plugin.Configuration.Save();
-                await _plugin.WindowManager.RefreshAll(true);
+                _ = _plugin.WindowManager.RefreshAll(true);
             });
         }
         ImGuiHelper.HelpMarker("Use the manual tab to create player links by hand or to track" +
@@ -414,8 +428,8 @@ internal class ConfigWindow : Window {
                         Task.Run(async () => {
                             _ipcUpdateInProgress = true;
                             await _plugin.PlayerLinksService.BuildAutoLinksCache();
-                            _ = _plugin.DataQueue.QueueDataOperation(() => _plugin.WindowManager.RefreshAll(true));
                             _ipcUpdateInProgress = false;
+                            _ = _plugin.WindowManager.RefreshAll(true);
                         });
                     }
                     if(_ipcUpdateInProgress) {
@@ -476,7 +490,7 @@ internal class ConfigWindow : Window {
 
                 await _plugin.PlayerLinksService.SaveManualLinksCache(ManualLinks);
                 if(_plugin.Configuration.EnablePlayerLinking && _plugin.Configuration.EnableManualPlayerLinking) {
-                    await _plugin.WindowManager.RefreshAll(true);
+                    _ = _plugin.WindowManager.RefreshAll(true);
                 }
             }).ContinueWith((t) => {
                 _saveOpacity = 1f;
