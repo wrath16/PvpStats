@@ -26,14 +26,14 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
         var refreshAction = () => Refresh();
 
         var playerFilter = new OtherPlayerFilter(plugin, refreshAction);
-        var jobStatSourceFilter = new FLStatSourceFilter(plugin, refreshAction);
-        var playerStatSourceFilter = new PlayerStatSourceFilter(plugin, refreshAction, plugin.Configuration.FLWindowConfig.PlayerStatFilters.StatSourceFilter);
-        var playerMinMatchFilter = new MinMatchFilter(plugin, refreshAction, plugin.Configuration.FLWindowConfig.PlayerStatFilters.MinMatchFilter);
-        var playerQuickSearchFilter = new PlayerQuickSearchFilter(plugin, refreshAction);
+        //var jobStatSourceFilter = new FLStatSourceFilter(plugin, refreshAction);
+        //var playerStatSourceFilter = new PlayerStatSourceFilter(plugin, refreshAction, plugin.Configuration.FLWindowConfig.PlayerStatFilters.StatSourceFilter);
+        //var playerMinMatchFilter = new MinMatchFilter(plugin, refreshAction, plugin.Configuration.FLWindowConfig.PlayerStatFilters.MinMatchFilter);
+        //var playerQuickSearchFilter = new PlayerQuickSearchFilter(plugin, refreshAction);
 
         MatchFilters.Add(new FrontlineArenaFilter(plugin, refreshAction));
-        MatchFilters.Add(new TimeFilter(plugin, refreshAction, plugin.Configuration.FLWindowConfig.MatchFilters.TimeFilter));
-        MatchFilters.Add(new LocalPlayerFilter(plugin, refreshAction, plugin.Configuration.FLWindowConfig.MatchFilters.LocalPlayerFilter));
+        MatchFilters.Add(new TimeFilter(plugin, refreshAction, WindowConfig.MatchFilters.TimeFilter));
+        MatchFilters.Add(new LocalPlayerFilter(plugin, refreshAction, WindowConfig.MatchFilters.LocalPlayerFilter));
         MatchFilters.Add(new LocalPlayerJobFilter(plugin, refreshAction));
         MatchFilters.Add(playerFilter);
         MatchFilters.Add(new FLResultFilter(plugin, refreshAction));
@@ -41,15 +41,17 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
         MatchFilters.Add(new BookmarkFilter(plugin, refreshAction));
         MatchFilters.Add(new TagFilter(plugin, refreshAction));
 
-        JobStatFilters.Add(jobStatSourceFilter);
-        PlayerStatFilters.Add(playerStatSourceFilter);
-        PlayerStatFilters.Add(playerMinMatchFilter);
 
         _matches = new(plugin);
         _summary = new(plugin);
-        _jobs = new(plugin, jobStatSourceFilter, playerFilter);
-        _players = new(plugin, playerStatSourceFilter, playerMinMatchFilter, playerQuickSearchFilter, playerFilter);
+        _jobs = new(plugin, WindowConfig.JobStatFilters.StatSourceFilter, playerFilter);
+        _players = new(plugin, WindowConfig.PlayerStatFilters.StatSourceFilter, WindowConfig.PlayerStatFilters.MinMatchFilter, null, playerFilter);
         _profile = new(plugin);
+
+        JobStatFilters.Add(_jobs.StatSourceFilter);
+        PlayerStatFilters.Add(_players.StatSourceFilter);
+        PlayerStatFilters.Add(_players.MinMatchFilter);
+        PlayerStatFilters.Add(_players.PlayerQuickSearchFilter);
     }
 
     public override void DrawInternal() {

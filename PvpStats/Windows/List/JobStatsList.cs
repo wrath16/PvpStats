@@ -18,8 +18,9 @@ internal abstract class JobStatsList<T, U> : StatsList<Job, T, U> where T : Play
     protected StatSourceFilter _lastJobStatSourceFilter = new();
     protected OtherPlayerFilter _lastPlayerFilter = new();
 
-    public JobStatsList(Plugin plugin, StatSourceFilter statSourceFilter, OtherPlayerFilter playerFilter) : base(plugin) {
-        StatSourceFilter = statSourceFilter;
+    public JobStatsList(Plugin plugin, StatSourceFilter? statSourceFilter, OtherPlayerFilter playerFilter) : base(plugin) {
+        //StatSourceFilter = statSourceFilter;
+        StatSourceFilter = new StatSourceFilter(plugin, Refresh, statSourceFilter);
         PlayerFilter = playerFilter;
     }
 
@@ -33,8 +34,9 @@ internal abstract class JobStatsList<T, U> : StatsList<Job, T, U> where T : Play
             await ProcessMatches(matches);
         } else {
             MatchesTotal = removals.Count + additions.Count;
-            await ProcessMatches(removals, true);
-            await ProcessMatches(additions);
+            var removeTask = ProcessMatches(removals, true);
+            var addTask = ProcessMatches(additions);
+            await Task.WhenAll([removeTask, addTask]);
         }
         PostRefresh(matches, additions, removals);
         _matches = matches;

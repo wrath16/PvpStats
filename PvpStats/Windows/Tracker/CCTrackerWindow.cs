@@ -30,36 +30,33 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
         var refreshAction = () => Refresh();
 
         var playerFilter = new OtherPlayerFilter(plugin, refreshAction);
-        var jobStatSourceFilter = new StatSourceFilter(plugin, refreshAction, plugin.Configuration.CCWindowConfig.JobStatFilters.StatSourceFilter);
-        var playerStatSourceFilter = new PlayerStatSourceFilter(plugin, refreshAction, plugin.Configuration.CCWindowConfig.PlayerStatFilters.StatSourceFilter);
-        var playerMinMatchFilter = new MinMatchFilter(plugin, refreshAction, plugin.Configuration.CCWindowConfig.PlayerStatFilters.MinMatchFilter);
-        var playerQuickSearchFilter = new PlayerQuickSearchFilter(plugin, refreshAction);
 
-        MatchFilters.Add(new MatchTypeFilter(plugin, refreshAction, plugin.Configuration.CCWindowConfig.MatchFilters.MatchTypeFilter));
+        MatchFilters.Add(new MatchTypeFilter(plugin, refreshAction, WindowConfig.MatchFilters.MatchTypeFilter));
         MatchFilters.Add(new TierFilter(plugin, refreshAction));
         MatchFilters.Add(new ArenaFilter(plugin, refreshAction));
-        MatchFilters.Add(new TimeFilter(plugin, refreshAction, plugin.Configuration.CCWindowConfig.MatchFilters.TimeFilter));
-        MatchFilters.Add(new LocalPlayerFilter(plugin, refreshAction, plugin.Configuration.CCWindowConfig.MatchFilters.LocalPlayerFilter));
-        MatchFilters.Add(new LocalPlayerJobFilter(plugin, refreshAction, plugin.Configuration.CCWindowConfig.MatchFilters.LocalPlayerJobFilter));
+        MatchFilters.Add(new TimeFilter(plugin, refreshAction, WindowConfig.MatchFilters.TimeFilter));
+        MatchFilters.Add(new LocalPlayerFilter(plugin, refreshAction, WindowConfig.MatchFilters.LocalPlayerFilter));
+        MatchFilters.Add(new LocalPlayerJobFilter(plugin, refreshAction, WindowConfig.MatchFilters.LocalPlayerJobFilter));
         MatchFilters.Add(playerFilter);
         MatchFilters.Add(new ResultFilter(plugin, refreshAction));
         MatchFilters.Add(new DurationFilter(plugin, refreshAction));
         MatchFilters.Add(new BookmarkFilter(plugin, refreshAction));
         MatchFilters.Add(new TagFilter(plugin, refreshAction));
-        MatchFilters.Add(new MiscFilter(plugin, refreshAction, plugin.Configuration.CCWindowConfig.MatchFilters.MiscFilter));
-
-        JobStatFilters.Add(jobStatSourceFilter);
-        PlayerStatFilters.Add(playerStatSourceFilter);
-        PlayerStatFilters.Add(playerMinMatchFilter);
-        PlayerStatFilters.Add(playerQuickSearchFilter);
+        MatchFilters.Add(new MiscFilter(plugin, refreshAction, WindowConfig.MatchFilters.MiscFilter));
 
         _matches = new(plugin);
         _summary = new(plugin);
         _records = new(plugin);
-        _jobs = new(plugin, jobStatSourceFilter, playerFilter);
-        _players = new(plugin, playerStatSourceFilter, playerMinMatchFilter, playerQuickSearchFilter, playerFilter);
+        _jobs = new(plugin, WindowConfig.JobStatFilters.StatSourceFilter, playerFilter);
+        _players = new(plugin, WindowConfig.PlayerStatFilters.StatSourceFilter, WindowConfig.PlayerStatFilters.MinMatchFilter, null, playerFilter);
         _profile = new(plugin);
         _credit = new(plugin);
+
+        JobStatFilters.Add(_jobs.StatSourceFilter);
+        PlayerStatFilters.Add(_players.StatSourceFilter);
+        PlayerStatFilters.Add(_players.MinMatchFilter);
+        PlayerStatFilters.Add(_players.PlayerQuickSearchFilter);
+
         //Plugin.DataQueue.QueueDataOperation(Refresh);
     }
 

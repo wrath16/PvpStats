@@ -85,7 +85,7 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
         new NumericColumnParams{    Name = "KDA Ratio",                                                                 Id = (uint)"ScoreboardTotal.KDA".GetHashCode(),                     Width = 50f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
     };
 
-    public FrontlinePlayerList(Plugin plugin, PlayerStatSourceFilter statSourceFilter, MinMatchFilter minMatchFilter, PlayerQuickSearchFilter quickSearchFilter, OtherPlayerFilter playerFilter) : base(plugin, statSourceFilter, minMatchFilter, quickSearchFilter, playerFilter) {
+    public FrontlinePlayerList(Plugin plugin, StatSourceFilter? statSourceFilter, MinMatchFilter? minMatchFilter, PlayerQuickSearchFilter? quickSearchFilter, OtherPlayerFilter playerFilter) : base(plugin, statSourceFilter, minMatchFilter, quickSearchFilter, playerFilter) {
         Reset();
     }
 

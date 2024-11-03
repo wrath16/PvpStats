@@ -88,7 +88,7 @@ internal class RivalWingsPlayerList : PlayerStatsList<RWPlayerJobStats, RivalWin
         new NumericColumnParams{    Name = "KDA Ratio",                                                                 Id = (uint)"ScoreboardTotal.KDA".GetHashCode(),                     Width = 50f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
     };
 
-    public RivalWingsPlayerList(Plugin plugin, PlayerStatSourceFilter statSourceFilter, MinMatchFilter minMatchFilter, PlayerQuickSearchFilter quickSearchFilter, OtherPlayerFilter playerFilter) : base(plugin, statSourceFilter, minMatchFilter, quickSearchFilter, playerFilter) {
+    public RivalWingsPlayerList(Plugin plugin, StatSourceFilter? statSourceFilter, MinMatchFilter? minMatchFilter, PlayerQuickSearchFilter? quickSearchFilter, OtherPlayerFilter playerFilter) : base(plugin, statSourceFilter, minMatchFilter, quickSearchFilter, playerFilter) {
         Reset();
     }
 

@@ -28,13 +28,25 @@ internal static class ImGuiHelper {
     }
 
     internal static void CenterAlignCursor(string text) {
-        var posX = ImGui.GetCursorPosX() + (ImGui.GetColumnWidth() - ImGui.CalcTextSize(text).X) / 2f;
+        //var posX = ImGui.GetCursorPosX() + (ImGui.GetColumnWidth() - ImGui.CalcTextSize(text).X) / 2f;
+        //ImGui.SetCursorPosX(posX);
+        CenterAlignCursor(ImGui.CalcTextSize(text).X);
+    }
+
+    internal static void CenterAlignCursor(float width) {
+        var posX = ImGui.GetCursorPosX() + (ImGui.GetColumnWidth() - width) / 2f;
         ImGui.SetCursorPosX(posX);
     }
 
     internal static void CenterAlignCursorVertical(string text) {
-        var size = ImGui.CalcTextSize(text);
-        var posY = ImGui.GetCursorPosY() + (ImGui.GetContentRegionAvail().Y - ImGui.CalcTextSize(text).Y) / 2f;
+        //var size = ImGui.CalcTextSize(text);
+        //var posY = ImGui.GetCursorPosY() + (ImGui.GetContentRegionAvail().Y - ImGui.CalcTextSize(text).Y) / 2f;
+        //ImGui.SetCursorPosY(posY);
+        CenterAlignCursorVertical(ImGui.CalcTextSize(text).Y);
+    }
+
+    internal static void CenterAlignCursorVertical(float height) {
+        var posY = ImGui.GetCursorPosY() + (ImGui.GetContentRegionAvail().Y - height) / 2f;
         ImGui.SetCursorPosY(posY);
     }
 

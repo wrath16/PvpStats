@@ -25,25 +25,26 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
         var refreshAction = () => Refresh();
 
         var playerFilter = new OtherPlayerFilter(plugin, refreshAction);
-        var playerStatSourceFilter = new PlayerStatSourceFilter(plugin, refreshAction, plugin.Configuration.RWWindowConfig.PlayerStatFilters.StatSourceFilter);
-        var playerMinMatchFilter = new MinMatchFilter(plugin, refreshAction, plugin.Configuration.RWWindowConfig.PlayerStatFilters.MinMatchFilter);
-        var playerQuickSearchFilter = new PlayerQuickSearchFilter(plugin, refreshAction);
+        //var playerStatSourceFilter = new PlayerStatSourceFilter(plugin, refreshAction, plugin.Configuration.RWWindowConfig.PlayerStatFilters.StatSourceFilter);
+        //var playerMinMatchFilter = new MinMatchFilter(plugin, refreshAction, plugin.Configuration.RWWindowConfig.PlayerStatFilters.MinMatchFilter);
+        //var playerQuickSearchFilter = new PlayerQuickSearchFilter(plugin, refreshAction);
 
-        MatchFilters.Add(new TimeFilter(plugin, refreshAction, plugin.Configuration.RWWindowConfig.MatchFilters.TimeFilter));
-        MatchFilters.Add(new LocalPlayerFilter(plugin, refreshAction, plugin.Configuration.RWWindowConfig.MatchFilters.LocalPlayerFilter));
+        MatchFilters.Add(new TimeFilter(plugin, refreshAction, WindowConfig.MatchFilters.TimeFilter));
+        MatchFilters.Add(new LocalPlayerFilter(plugin, refreshAction, WindowConfig.MatchFilters.LocalPlayerFilter));
         MatchFilters.Add(playerFilter);
         MatchFilters.Add(new ResultFilter(plugin, refreshAction));
         MatchFilters.Add(new DurationFilter(plugin, refreshAction));
         MatchFilters.Add(new BookmarkFilter(plugin, refreshAction));
         MatchFilters.Add(new TagFilter(plugin, refreshAction));
 
-        PlayerStatFilters.Add(playerStatSourceFilter);
-        PlayerStatFilters.Add(playerMinMatchFilter);
-
         _matches = new(plugin);
         _summary = new(plugin);
-        _players = new(plugin, playerStatSourceFilter, playerMinMatchFilter, playerQuickSearchFilter, playerFilter);
+        _players = new(plugin, WindowConfig.PlayerStatFilters.StatSourceFilter, WindowConfig.PlayerStatFilters.MinMatchFilter, null, playerFilter);
         _profile = new(plugin);
+
+        PlayerStatFilters.Add(_players.StatSourceFilter);
+        PlayerStatFilters.Add(_players.MinMatchFilter);
+        PlayerStatFilters.Add(_players.PlayerQuickSearchFilter);
     }
 
     public override void DrawInternal() {

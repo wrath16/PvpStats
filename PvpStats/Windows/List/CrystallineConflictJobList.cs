@@ -87,7 +87,7 @@ internal class CrystallineConflictJobList : JobStatsList<CCPlayerJobStats, Cryst
         new NumericColumnParams{    Name = "KDA Ratio",                                                                 Id = (uint)"ScoreboardTotal.KDA".GetHashCode(),                     Width = 50f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
     };
 
-    public CrystallineConflictJobList(Plugin plugin, StatSourceFilter statSourceFilter, OtherPlayerFilter playerFilter) : base(plugin, statSourceFilter, playerFilter) {
+    public CrystallineConflictJobList(Plugin plugin, StatSourceFilter? statSourceFilter, OtherPlayerFilter playerFilter) : base(plugin, statSourceFilter, playerFilter) {
         Reset();
     }
 

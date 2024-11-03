@@ -23,11 +23,11 @@ internal abstract class PlayerStatsList<T, U> : StatsList<PlayerAlias, T, U> whe
 
     public Dictionary<PlayerAlias, Dictionary<PlayerAlias, int>> ActiveLinks { get; protected set; } = new();
 
-    public PlayerStatsList(Plugin plugin, PlayerStatSourceFilter statSourceFilter, MinMatchFilter minMatchFilter, PlayerQuickSearchFilter quickSearchFilter, OtherPlayerFilter playerFilter) : base(plugin) {
+    public PlayerStatsList(Plugin plugin, StatSourceFilter? statSourceFilter, MinMatchFilter? minMatchFilter, PlayerQuickSearchFilter? quickSearchFilter, OtherPlayerFilter playerFilter) : base(plugin) {
         //note that draw and refresh are not utilized!
-        StatSourceFilter = statSourceFilter;
-        MinMatchFilter = minMatchFilter;
-        PlayerQuickSearchFilter = quickSearchFilter;
+        StatSourceFilter = new PlayerStatSourceFilter(plugin, Refresh, statSourceFilter);
+        MinMatchFilter = new MinMatchFilter(plugin, Refresh, minMatchFilter);
+        PlayerQuickSearchFilter = new PlayerQuickSearchFilter(plugin, Refresh, quickSearchFilter);
         PlayerFilter = playerFilter;
         //Reset();
     }
@@ -42,8 +42,9 @@ internal abstract class PlayerStatsList<T, U> : StatsList<PlayerAlias, T, U> whe
             await ProcessMatches(matches);
         } else {
             MatchesTotal = removals.Count + additions.Count;
-            await ProcessMatches(removals, true);
-            await ProcessMatches(additions);
+            var removeTask = ProcessMatches(removals, true);
+            var addTask = ProcessMatches(additions);
+            await Task.WhenAll([removeTask, addTask]);
         }
         PostRefresh(matches, additions, removals);
         _matches = matches;

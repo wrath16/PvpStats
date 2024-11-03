@@ -3,6 +3,7 @@ using PvpStats.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -62,11 +63,16 @@ internal abstract class Refreshable<T> where T : PvpMatch {
             } finally {
                 s1.Stop();
                 Plugin.Log2.Debug(string.Format("{0,-25}: {1,4} ms", $"{Name} Refresh", s1.ElapsedMilliseconds.ToString()));
-                //MatchesProcessed = 0;
-                //RefreshActive = false;
+                MatchesProcessed = 0;
+                RefreshActive = false;
             }
         });
         await task.Result;
+    }
+
+    //full refresh
+    public async Task Refresh() {
+        await Refresh(_matches, _matches, _matches);
     }
 
     protected virtual async Task RefreshInner(List<T> matches, List<T> additions, List<T> removals) {
@@ -77,8 +83,9 @@ internal abstract class Refreshable<T> where T : PvpMatch {
             await ProcessMatches(matches);
         } else {
             MatchesTotal = removals.Count + additions.Count;
-            await ProcessMatches(removals, true);
-            await ProcessMatches(additions);
+            var removeTask = ProcessMatches(removals, true);
+            var addTask = ProcessMatches(additions);
+            await Task.WhenAll([removeTask, addTask]);
         }
         PostRefresh(matches, additions, removals);
         _matches = matches;
