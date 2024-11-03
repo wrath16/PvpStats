@@ -40,11 +40,12 @@ public class FLResultFilter : DataFilter {
     internal override void Draw() {
         bool allSelected = AllSelected;
         if(ImGui.Checkbox($"Select All##{GetHashCode()}", ref allSelected)) {
-            RateLimitRefresh(() => {
+            Task.Run(async () => {
                 foreach(var category in FilterState) {
                     FilterState[category.Key] = allSelected;
                 }
                 AllSelected = allSelected;
+                await Refresh();
             });
         }
 
@@ -59,9 +60,10 @@ public class FLResultFilter : DataFilter {
                 ImGui.TableNextColumn();
                 bool filterState = category.Value;
                 if(ImGui.Checkbox($"{ImGuiHelper.AddOrdinal(category.Key + 1).ToUpper()}##{GetHashCode()}", ref filterState)) {
-                    RateLimitRefresh(() => {
+                    Task.Run(async () => {
                         FilterState[category.Key] = filterState;
                         UpdateAllSelected();
+                        await Refresh();
                     });
                 }
             }

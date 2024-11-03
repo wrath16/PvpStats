@@ -65,7 +65,7 @@ internal class FLTeamQuickFilter : DataFilter {
 
                 bool filterState = category.Value;
                 if(ImGui.Checkbox($"##{category.Key}{GetHashCode()}", ref filterState)) {
-                    RateLimitRefresh(() => {
+                    Task.Run(() => {
                         FilterState[category.Key] = filterState;
                         UpdateAllSelected();
                     });

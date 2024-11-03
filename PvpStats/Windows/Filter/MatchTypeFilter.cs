@@ -41,11 +41,12 @@ public class MatchTypeFilter : DataFilter {
     internal override void Draw() {
         bool allSelected = AllSelected;
         if(ImGui.Checkbox($"Select All##{GetHashCode()}", ref allSelected)) {
-            RateLimitRefresh(() => {
+            Task.Run(async() => {
                 foreach(var category in FilterState) {
                     FilterState[category.Key] = allSelected;
                 }
                 AllSelected = allSelected;
+                await Refresh();
             });
             //Task.Run(async () => {
             //    foreach(var category in FilterState) {
@@ -73,9 +74,10 @@ public class MatchTypeFilter : DataFilter {
                     //        await Refresh();
                     //    });
                     //}
-                    RateLimitRefresh(() => {
+                    Task.Run(async () => {
                         FilterState[category.Key] = filterState;
                         UpdateAllSelected();
+                        await Refresh();
                     });
                 }
             }
