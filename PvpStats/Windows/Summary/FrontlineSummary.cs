@@ -8,16 +8,14 @@ using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Summary;
-internal class FrontlineSummary {
+internal class FrontlineSummary : RefreshableSync<FrontlineMatch> {
+
+    public override string Name => "FL Summary";
 
     private readonly Plugin Plugin;
-
-    public float RefreshProgress { get; set; } = 0f;
 
     internal FLAggregateStats OverallResults { get; private set; } = new();
     internal Dictionary<FrontlineMap, FLAggregateStats> MapResults { get; private set; } = new();
@@ -26,10 +24,6 @@ internal class FrontlineSummary {
     internal TimeSpan AverageMatchDuration { get; private set; } = new();
 
     //internal state
-    List<FrontlineMatch> _matches = new();
-    int _matchesProcessed = 0;
-    int _matchesTotal = 100;
-
     FLAggregateStats _overallResults = new();
     Dictionary<FrontlineMap, FLAggregateStats> _mapResults = [];
     Dictionary<Job, FLAggregateStats> _localPlayerJobResults = [];
@@ -46,7 +40,7 @@ internal class FrontlineSummary {
         Reset();
     }
 
-    private void Reset() {
+    protected override void Reset() {
         _overallResults = new();
         _mapResults = [];
         _localPlayerJobResults = [];
@@ -59,42 +53,7 @@ internal class FrontlineSummary {
         _totalShatterTime = TimeSpan.Zero;
     }
 
-    internal Task Refresh(List<FrontlineMatch> matches, List<FrontlineMatch> additions, List<FrontlineMatch> removals) {
-        _matchesProcessed = 0;
-        Stopwatch s1 = Stopwatch.StartNew();
-        try {
-            if(removals.Count * 2 >= _matches.Count) {
-                //force full build
-                Reset();
-                _matchesTotal = matches.Count;
-                ProcessMatches(matches);
-            } else {
-                _matchesTotal = removals.Count + additions.Count;
-                ProcessMatches(removals, true);
-                ProcessMatches(additions);
-            }
-            FrontlineStatsManager.SetScoreboardStats(_localPlayerStats, _localPlayerTeamContributions, _totalMatchTime);
-            FrontlineStatsManager.SetScoreboardStats(_shatterLocalPlayerStats, _shatterLocalPlayerTeamContributions, _totalShatterTime);
-            _localPlayerStats.ScoreboardTotal.DamageToOther = _shatterLocalPlayerStats.ScoreboardTotal.DamageToOther;
-            _localPlayerStats.ScoreboardPerMatch.DamageToOther = _shatterLocalPlayerStats.ScoreboardPerMatch.DamageToOther;
-            _localPlayerStats.ScoreboardPerMin.DamageToOther = _shatterLocalPlayerStats.ScoreboardPerMin.DamageToOther;
-            _localPlayerStats.ScoreboardContrib.DamageToOther = _shatterLocalPlayerStats.ScoreboardContrib.DamageToOther;
-
-            OverallResults = _overallResults;
-            MapResults = _mapResults.Where(x => x.Value.Matches > 0).ToDictionary();
-            LocalPlayerStats = _localPlayerStats;
-            LocalPlayerJobResults = _localPlayerJobResults.Where(x => x.Value.Matches > 0).ToDictionary();
-            AverageMatchDuration = matches.Count > 0 ? _totalMatchTime / matches.Count : TimeSpan.Zero;
-            _matches = matches;
-        } finally {
-            s1.Stop();
-            Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"FL Summary Refresh", s1.ElapsedMilliseconds.ToString()));
-            _matchesProcessed = 0;
-        }
-        return Task.CompletedTask;
-    }
-
-    private void ProcessMatch(FrontlineMatch match, bool remove = false) {
+    protected override void ProcessMatch(FrontlineMatch match, bool remove = false) {
         FrontlineStatsManager.IncrementAggregateStats(_overallResults, match, remove);
         if(remove) {
             _totalMatchTime -= match.MatchDuration ?? TimeSpan.Zero;
@@ -138,11 +97,19 @@ internal class FrontlineSummary {
         }
     }
 
-    private void ProcessMatches(List<FrontlineMatch> matches, bool remove = false) {
-        matches.ForEach(x => {
-            ProcessMatch(x, remove);
-            RefreshProgress = (float)_matchesProcessed++ / _matchesTotal;
-        });
+    protected override void PostRefresh(List<FrontlineMatch> matches, List<FrontlineMatch> additions, List<FrontlineMatch> removals) {
+        FrontlineStatsManager.SetScoreboardStats(_localPlayerStats, _localPlayerTeamContributions, _totalMatchTime);
+        FrontlineStatsManager.SetScoreboardStats(_shatterLocalPlayerStats, _shatterLocalPlayerTeamContributions, _totalShatterTime);
+        _localPlayerStats.ScoreboardTotal.DamageToOther = _shatterLocalPlayerStats.ScoreboardTotal.DamageToOther;
+        _localPlayerStats.ScoreboardPerMatch.DamageToOther = _shatterLocalPlayerStats.ScoreboardPerMatch.DamageToOther;
+        _localPlayerStats.ScoreboardPerMin.DamageToOther = _shatterLocalPlayerStats.ScoreboardPerMin.DamageToOther;
+        _localPlayerStats.ScoreboardContrib.DamageToOther = _shatterLocalPlayerStats.ScoreboardContrib.DamageToOther;
+
+        OverallResults = _overallResults;
+        MapResults = _mapResults.Where(x => x.Value.Matches > 0).ToDictionary();
+        LocalPlayerStats = _localPlayerStats;
+        LocalPlayerJobResults = _localPlayerJobResults.Where(x => x.Value.Matches > 0).ToDictionary();
+        AverageMatchDuration = matches.Count > 0 ? _totalMatchTime / matches.Count : TimeSpan.Zero;
     }
 
     public void Draw() {

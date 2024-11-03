@@ -20,7 +20,6 @@ internal abstract class StatsList<T, U, V> : FilteredList<T> where T : notnull w
     protected int MatchesProcessed { get; set; }
     protected int MatchesTotal { get; set; }
 
-
     protected List<T> DataModelUntruncated { get; set; } = [];
 
     protected Dictionary<T, U> StatsModel { get; set; } = [];

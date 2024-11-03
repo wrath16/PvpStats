@@ -21,10 +21,8 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
     private readonly CrystallineConflictRankGraph _credit;
 
     private bool _matchRefreshActive = true;
-    private bool _recordsRefreshActive = true;
     private bool _jobRefreshActive = true;
     private bool _playerRefreshActive = true;
-    private bool _creditRefreshActive = true;
 
     internal CCTrackerWindow(Plugin plugin) : base(plugin, plugin.CCStatsEngine, plugin.Configuration.CCWindowConfig, "Crystalline Conflict Tracker") {
         //SizeConstraints = new WindowSizeConstraints {
@@ -78,16 +76,21 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
         s0.Start();
 
         _summary.RefreshProgress = 0f;
+        _summary.RefreshActive = true;
+
+        _records.RefreshProgress = 0f;
+        _records.RefreshActive = true;
+
+        _credit.RefreshProgress = 0f;
+        _credit.RefreshActive = true;
+
         _jobs.RefreshProgress = 0f;
         _players.RefreshProgress = 0f;
         _credit.RefreshProgress = 0f;
-        _records.RefreshProgress = 0f;
-        _summary.RefreshActive = true;
+
         _matchRefreshActive = true;
-        _recordsRefreshActive = true;
         _jobRefreshActive = true;
         _playerRefreshActive = true;
-        _creditRefreshActive = true;
         try {
             await RefreshLock.WaitAsync();
             //RefreshActive = true;
@@ -108,7 +111,7 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
             });
             var recordsRefresh = RefreshTab(async () => {
                 await _records.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-                _recordsRefreshActive = false;
+                _records.RefreshActive = false;
             });
             var jobRefresh = RefreshTab(async () => {
                 await _jobs.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
@@ -120,7 +123,7 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
             });
             var creditRefresh = RefreshTab(async () => {
                 await _credit.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-                _creditRefreshActive = false;
+                _credit.RefreshActive = false;
             });
 
             await Task.WhenAll([
@@ -137,10 +140,10 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
         } finally {
             _matchRefreshActive = false;
             _summary.RefreshActive = false;
-            _recordsRefreshActive = false;
+            _records.RefreshActive = false;
             _jobRefreshActive = false;
             _playerRefreshActive = false;
-            _creditRefreshActive = false;
+            _credit.RefreshActive = false;
             RefreshLock.Release();
             //RefreshActive = false;
             Plugin.Log.Information(string.Format("{0,-25}: {1,4} ms", $"CC tracker refresh time", s0.ElapsedMilliseconds.ToString()));
@@ -164,14 +167,14 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
                     using(ImRaii.Child("RecordsChild")) {
                         _records.Draw();
                     }
-                }, _recordsRefreshActive, _records.RefreshProgress);
+                }, _records.RefreshActive, _records.RefreshProgress);
                 Tab("Jobs", _jobs.Draw, _jobRefreshActive, _jobs.RefreshProgress);
                 Tab("Players", _players.Draw, _playerRefreshActive, _players.RefreshProgress);
                 Tab("Credit", () => {
                     using(ImRaii.Child("CreditChild")) {
                         _credit.Draw();
                     }
-                }, _creditRefreshActive, _credit.RefreshProgress);
+                }, _credit.RefreshActive, _credit.RefreshProgress);
                 Tab("Profile", () => {
                     using(ImRaii.Child("ProfileChild")) {
                         _profile.Draw();

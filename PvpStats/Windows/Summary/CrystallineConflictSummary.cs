@@ -10,11 +10,8 @@ using PvpStats.Types.Player;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Summary;
 internal class CrystallineConflictSummary : Refreshable<CrystallineConflictMatch> {

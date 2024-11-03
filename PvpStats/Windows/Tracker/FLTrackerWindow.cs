@@ -18,7 +18,6 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
     private readonly FrontlinePvPProfile _profile;
 
     private bool _matchRefreshActive = true;
-    private bool _summaryRefreshActive = true;
     private bool _jobRefreshActive = true;
     private bool _playerRefreshActive = true;
 
@@ -69,7 +68,7 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
                     using(ImRaii.Child("SummaryChild")) {
                         _summary.Draw();
                     }
-                }, _summaryRefreshActive, _summary.RefreshProgress);
+                }, _summary.RefreshActive, _summary.RefreshProgress);
                 Tab("Jobs", () => {
                     _jobs.Draw();
                 }, _jobRefreshActive, _jobs.RefreshProgress);
@@ -86,12 +85,15 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
     public override async Task Refresh(bool fullRefresh = false) {
         Stopwatch s0 = new();
         s0.Start();
-        _summary.RefreshProgress = 0f;
-        _jobs.RefreshProgress = 0f;
-        _players.RefreshProgress = 0f;
-        _summaryRefreshActive = true;
         _matchRefreshActive = true;
+
+        _summary.RefreshProgress = 0f;
+        _summary.RefreshActive = true;
+
+        _jobs.RefreshProgress = 0f;
         _jobRefreshActive = true;
+
+        _players.RefreshProgress = 0f;
         _playerRefreshActive = true;
         try {
             await RefreshLock.WaitAsync();
@@ -109,7 +111,7 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
             });
             var summaryRefresh = RefreshTab(async () => {
                 await _summary.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-                _summaryRefreshActive = false;
+                _summary.RefreshActive = false;
             });
             var jobRefresh = RefreshTab(async () => {
                 await _jobs.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
@@ -131,7 +133,7 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
             throw;
         } finally {
             _matchRefreshActive = false;
-            _summaryRefreshActive = false;
+            _summary.RefreshActive = false;
             _jobRefreshActive = false;
             _playerRefreshActive = false;
             RefreshLock.Release();

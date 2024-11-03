@@ -17,7 +17,6 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
     private readonly RivalWingsPvPProfile _profile;
 
     private bool _matchRefreshActive = true;
-    private bool _summaryRefreshActive = true;
     private bool _jobRefreshActive = true;
     private bool _playerRefreshActive = true;
 
@@ -63,7 +62,7 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
                     using(ImRaii.Child("SummaryChild")) {
                         _summary.Draw();
                     }
-                }, _summaryRefreshActive, _summary.RefreshProgress);
+                }, _summary.RefreshActive, _summary.RefreshProgress);
                 Tab("Players", _players.Draw, _playerRefreshActive, _players.RefreshProgress);
                 Tab("Profile", () => {
                     using(ImRaii.Child("ProfileChild")) {
@@ -77,10 +76,12 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
     public override async Task Refresh(bool fullRefresh = false) {
         Stopwatch s0 = new();
         s0.Start();
-        _summary.RefreshProgress = 0f;
-        _players.RefreshProgress = 0f;
-        _summaryRefreshActive = true;
         _matchRefreshActive = true;
+
+        _summary.RefreshProgress = 0f;
+        _summary.RefreshActive = true;
+        
+        _players.RefreshProgress = 0f;
         _playerRefreshActive = true;
         try {
             await RefreshLock.WaitAsync();
@@ -98,7 +99,7 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
             });
             var summaryRefresh = RefreshTab(async () => {
                 await _summary.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-                _summaryRefreshActive = false;
+                _summary.RefreshActive = false;
             });
             var playerRefresh = RefreshTab(async () => {
                 await _players.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
@@ -116,7 +117,7 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
             throw;
         } finally {
             _matchRefreshActive = false;
-            _summaryRefreshActive = false;
+            _summary.RefreshActive = false;
             _playerRefreshActive = false;
             RefreshLock.Release();
             //RefreshActive = false;

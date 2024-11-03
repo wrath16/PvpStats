@@ -7,12 +7,13 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows;
-internal abstract class Refreshable<T> where T: PvpMatch {
+internal abstract class Refreshable<T> where T : PvpMatch {
 
     public virtual string Name => "";
 
     //private readonly SemaphoreSlim _refreshProgressLock = new(1);
     protected DataQueue RefreshQueue { get; private set; } = new();
+
     public bool RefreshActive { get; set; }
 
     private double _refreshProgress;
@@ -34,7 +35,15 @@ internal abstract class Refreshable<T> where T: PvpMatch {
             Interlocked.Exchange(ref _matchesProcessed, value);
         }
     }
-    protected int MatchesTotal { get; set; }
+    private int _matchesTotal;
+    public int MatchesTotal {
+        get {
+            return _matchesTotal;
+        }
+        protected set {
+            Interlocked.Exchange(ref _matchesTotal, value);
+        }
+    }
 
     protected List<T> _matches = [];
 
@@ -42,32 +51,37 @@ internal abstract class Refreshable<T> where T: PvpMatch {
     protected abstract void ProcessMatch(T match, bool remove = false);
     protected abstract void PostRefresh(List<T> matches, List<T> additions, List<T> removals);
 
-    public async Task Refresh(List<T> matches, List<T> additions, List<T> removals) {
+    public virtual async Task Refresh(List<T> matches, List<T> additions, List<T> removals) {
         await RefreshQueue.QueueDataOperation(async () => {
+            RefreshActive = true;
             MatchesProcessed = 0;
             RefreshProgress = 0;
             Stopwatch s1 = Stopwatch.StartNew();
             try {
-                if(removals.Count * 2 >= _matches.Count) {
-                    //force full build
-                    Reset();
-                    MatchesTotal = matches.Count;
-                    await ProcessMatches(matches);
-                } else {
-                    MatchesTotal = removals.Count + additions.Count;
-                    await ProcessMatches(removals, true);
-                    await ProcessMatches(additions);
-                }
-                PostRefresh(matches, additions, removals);
-                _matches = matches;
+                await RefreshInner(matches, additions, removals);
             } finally {
                 s1.Stop();
                 Plugin.Log2.Debug(string.Format("{0,-25}: {1,4} ms", $"{Name} Refresh", s1.ElapsedMilliseconds.ToString()));
                 MatchesProcessed = 0;
+                RefreshActive = false;
             }
         });
     }
 
+    protected virtual async Task RefreshInner(List<T> matches, List<T> additions, List<T> removals) {
+        if(removals.Count * 2 >= _matches.Count) {
+            //force full build
+            Reset();
+            MatchesTotal = matches.Count;
+            await ProcessMatches(matches);
+        } else {
+            MatchesTotal = removals.Count + additions.Count;
+            await ProcessMatches(removals, true);
+            await ProcessMatches(additions);
+        }
+        PostRefresh(matches, additions, removals);
+        _matches = matches;
+    }
 
     //public async Task Refresh() {
     //    MatchesProcessed = 0;

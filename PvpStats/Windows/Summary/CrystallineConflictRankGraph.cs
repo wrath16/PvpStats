@@ -10,9 +10,9 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Summary;
-internal class CrystallineConflictRankGraph {
+internal class CrystallineConflictRankGraph : Refreshable<CrystallineConflictMatch> {
 
-    public float RefreshProgress { get; set; } = 0f;
+    public override string Name => "CC Credit";
 
     private Plugin _plugin;
     private bool _triggerFit = false;
@@ -21,16 +21,12 @@ internal class CrystallineConflictRankGraph {
     private List<(DateTime, int)> LossData = new();
     private SemaphoreSlim _refreshLock = new SemaphoreSlim(1);
 
-    int _matchesProcessed = 0;
-    int _matchesTotal = 100;
-
     public CrystallineConflictRankGraph(Plugin plugin) {
         _plugin = plugin;
     }
 
-    public async Task Refresh(List<CrystallineConflictMatch> matches, List<CrystallineConflictMatch> additions, List<CrystallineConflictMatch> removals) {
-        _matchesProcessed = 0;
-        _matchesTotal = matches.Count;
+    protected override async Task RefreshInner(List<CrystallineConflictMatch> matches, List<CrystallineConflictMatch> additions, List<CrystallineConflictMatch> removals) {
+        MatchesTotal = matches.Count;
         List<(DateTime, int)> rankData = new();
         List<(DateTime, int)> winData = new();
         List<(DateTime, int)> lossData = new();
@@ -52,7 +48,7 @@ internal class CrystallineConflictRankGraph {
                     drawData.Add(((DateTime)match.MatchEndTime, match.PostMatch.RankAfter.TotalCredit));
                 }
             }
-            RefreshProgress = (float)_matchesProcessed++ / _matchesTotal;
+            RefreshProgress = (float)MatchesProcessed++ / MatchesTotal;
         }
         //_plugin.Log.Debug("...");
         //foreach(var x in rankData) {
@@ -68,6 +64,18 @@ internal class CrystallineConflictRankGraph {
         } finally {
             _refreshLock.Release();
         }
+    }
+
+    protected override void Reset() {
+        throw new NotImplementedException();
+    }
+
+    protected override void ProcessMatch(CrystallineConflictMatch match, bool remove = false) {
+        throw new NotImplementedException();
+    }
+
+    protected override void PostRefresh(List<CrystallineConflictMatch> matches, List<CrystallineConflictMatch> additions, List<CrystallineConflictMatch> removals) {
+        throw new NotImplementedException();
     }
 
     public unsafe void Draw() {
