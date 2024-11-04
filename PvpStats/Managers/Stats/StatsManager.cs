@@ -67,6 +67,8 @@ internal abstract class StatsManager<T> where T : PvpMatch {
 
     protected virtual List<T> ApplyFilter(TimeFilter filter, List<T> matches) {
         List<T> filteredMatches = new(matches);
+        DateTime? startDate;
+        DateTime? endDate;
         switch(filter.StatRange) {
             case TimeRange.PastDay:
                 filteredMatches = filteredMatches.Where(x => (DateTime.Now - x.DutyStartTime).TotalHours < 24).ToList();
@@ -91,16 +93,34 @@ internal abstract class StatsManager<T> where T : PvpMatch {
                 filteredMatches = filteredMatches.Where(x => x.DutyStartTime > filter.StartTime && x.DutyStartTime < filter.EndTime).ToList();
                 break;
             case TimeRange.Season:
-                filteredMatches = filteredMatches.Where(x => x.DutyStartTime > GamePeriod.Season[filter.Season].StartDate && x.DutyStartTime < GamePeriod.Season[filter.Season].EndDate).ToList();
+                filteredMatches = FilterByTimeRelation(filteredMatches, GamePeriod.Season[filter.Season].StartDate, GamePeriod.Season[filter.Season].EndDate, filter.SeasonRelation);
                 break;
             case TimeRange.Expansion:
-                filteredMatches = filteredMatches.Where(x => x.DutyStartTime > GamePeriod.Expansion[filter.Expansion].StartDate && x.DutyStartTime < GamePeriod.Expansion[filter.Expansion].EndDate).ToList();
+                filteredMatches = FilterByTimeRelation(filteredMatches, GamePeriod.Expansion[filter.Expansion].StartDate, GamePeriod.Expansion[filter.Expansion].EndDate, filter.ExpansionRelation);
+                break;
+            case TimeRange.Patch:
+                filteredMatches = FilterByTimeRelation(filteredMatches, GamePeriod.Patch[filter.Patch].StartDate, GamePeriod.Patch[filter.Patch].EndDate, filter.PatchRelation);
                 break;
             case TimeRange.All:
             default:
                 break;
         }
         return filteredMatches;
+    }
+
+    private List<T> FilterByTimeRelation(List<T> matches, DateTime startTime, DateTime? endTime, TimeRelation relation) {
+        switch(relation) {
+            case TimeRelation.Before:
+                return matches.Where(x => x.DutyStartTime < startTime).ToList();
+            case TimeRelation.Since:
+                return matches.Where(x => x.DutyStartTime >= startTime).ToList();
+            case TimeRelation.During:
+                return matches.Where(x => x.DutyStartTime >= startTime && x.DutyStartTime < (endTime ?? DateTime.MaxValue)).ToList();
+            case TimeRelation.After:
+                return matches.Where(x => x.DutyStartTime > (endTime ?? DateTime.MaxValue)).ToList();
+            default:
+                return matches;
+        }
     }
 
     protected virtual List<T> ApplyFilter(LocalPlayerFilter filter, List<T> matches) {

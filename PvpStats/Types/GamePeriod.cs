@@ -75,7 +75,14 @@ internal class GamePeriod {
         } },
     };
 
+    public static readonly Dictionary<int, GamePeriod> Patch = new() {
+        { 0, new GamePeriod() {
+            Name = "7.1",
+            StartDate = new DateTime(2024,11,12,10,0,0,DateTimeKind.Utc),
+        } },
+    };
+
     public string Name { get; set; }
     public DateTime StartDate { get; set; }
-    public DateTime EndDate { get; set; }
+    public DateTime? EndDate { get; set; }
 }
