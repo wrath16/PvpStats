@@ -30,13 +30,13 @@ public class MiscFilter : DataFilter {
         ImGui.TableSetupColumn($"c3", ImGuiTableColumnFlags.WidthFixed, float.Min(ImGui.GetContentRegionAvail().X / 3, ImGuiHelpers.GlobalScale * 350f));
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
-        bool mustHaveStats = MustHaveStats;
-        if(ImGui.Checkbox("Must have post-game stats", ref mustHaveStats)) {
-            Task.Run(async () => {
-                MustHaveStats = mustHaveStats;
-                await Refresh();
-            });
-        }
+        //bool mustHaveStats = MustHaveStats;
+        //if(ImGui.Checkbox("Must have post-game stats", ref mustHaveStats)) {
+        //    Task.Run(async () => {
+        //        MustHaveStats = mustHaveStats;
+        //        await Refresh();
+        //    });
+        //}
         bool includeSpectated = IncludeSpectated;
         if(ImGui.Checkbox("Include spectated matches", ref includeSpectated)) {
             Task.Run(async () => {
