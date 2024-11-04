@@ -162,16 +162,26 @@ internal abstract class StatsManager<T> where T : PvpMatch {
         var tags = filter.TagsRaw.Split(",");
         filteredMatches = filteredMatches.Where(x => {
             var matchTags = x.Tags.Split(",");
+            bool allMatch = true;
             foreach(var tag in tags) {
-                if(matchTags.Any(y => y.Trim().Equals(tag.Trim(), StringComparison.OrdinalIgnoreCase))) {
-                    if(filter.OrLogic) {
+                if(matchTags.Any(y => filter.AllowPartial && y.Trim().Contains(tag.Trim(), StringComparison.OrdinalIgnoreCase) || y.Trim().Equals(tag.Trim(), StringComparison.OrdinalIgnoreCase))) {
+                    if(filter.Logic == TagLogic.OR) {
                         return true;
+                    } else if(filter.Logic == TagLogic.NOR) {
+                        return false;
                     }
-                } else if(!filter.OrLogic) {
-                    return false;
+                } else {
+                    allMatch = false;
+                    if(filter.Logic == TagLogic.AND) {
+                        return false;
+                    }
                 }
             }
-            return !filter.OrLogic;
+            return filter.Logic switch {
+                TagLogic.NAND => !allMatch,
+                TagLogic.OR => false,
+                _ => true,
+            };
         }).ToList();
         return filteredMatches;
     }

@@ -4,13 +4,23 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Filter;
+
+public enum TagLogic {
+    AND,
+    OR,
+    NAND,
+    NOR
+}
+
+
 internal class TagFilter : DataFilter {
     public override string Name => "Tags";
-    public override string HelpMessage => "Comma-separate multiple tags. 'AND' will include matches that have all tags. 'OR' will include matches that have at least one tag.";
+    public override string HelpMessage => "Comma-separate multiple tags.\n'AND' will include matches that have all tags.\n'OR' will include matches that have at least one tag.\n'NAND' will include matches that don't have all tags.\n'NOR' will include matches that don't have any of the listed tags.";
     public string TagsRaw { get; set; } = "";
-    public bool OrLogic { get; set; } = false;
+    public TagLogic Logic { get; set; } = TagLogic.AND;
+    public bool AllowPartial {  get; set; } = true;
 
-    private string[] _logicCombo = { "AND", "OR" };
+    private string[] _logicCombo = { "AND", "OR", "NAND", "NOR" };
     private string _lastTextValue = "";
     private string _lastRefreshedValue = "";
 
@@ -19,7 +29,8 @@ internal class TagFilter : DataFilter {
     internal TagFilter(Plugin plugin, Func<Task> action, TagFilter? filter = null) : base(plugin, action) {
         if(filter is not null) {
             TagsRaw = filter.TagsRaw;
-            OrLogic = filter.OrLogic;
+            Logic = filter.Logic;
+            AllowPartial = filter.AllowPartial;
         }
 
         //refresh task
@@ -39,9 +50,10 @@ internal class TagFilter : DataFilter {
 
     internal override void Draw() {
         string tags = TagsRaw;
-        int orLogicInt = OrLogic ? 1 : 0;
-        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2);
-        if(ImGui.InputTextWithHint("##TagsInput", "Enter tags...", ref tags, 50)) {
+        int logicIndex = (int)Logic;
+        bool allowPartial = AllowPartial;
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
+        if(ImGui.InputTextWithHint("##TagsInput", "Enter tags...", ref tags, 100)) {
             if(tags != _lastTextValue) {
                 _lastTextValue = tags;
                 Task.Run(() => {
@@ -50,14 +62,19 @@ internal class TagFilter : DataFilter {
                 });
             }
         }
-        ImGui.SameLine();
-        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2);
-        if(ImGui.Combo("##TagLogic", ref orLogicInt, _logicCombo, _logicCombo.Length)) {
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 4);
+        if(ImGui.Combo("##TagLogic", ref logicIndex, _logicCombo, _logicCombo.Length)) {
             Task.Run(async () => {
-                OrLogic = Convert.ToBoolean(orLogicInt);
+                Logic = (TagLogic)logicIndex;
                 await Refresh();
             });
-
+        }
+        ImGui.SameLine();
+        if(ImGui.Checkbox("Partial matches", ref allowPartial)) {
+            Task.Run(async () => {
+                AllowPartial = allowPartial;
+                await Refresh();
+            });
         }
     }
 }

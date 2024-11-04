@@ -57,8 +57,11 @@ public class TimeFilter : DataFilter {
             StartTime = filter.StartTime;
             EndTime = filter.EndTime;
             Season = filter.Season;
+            SeasonRelation = filter.SeasonRelation;
             Expansion = filter.Expansion;
+            ExpansionRelation = filter.ExpansionRelation;
             Patch = filter.Patch;
+            PatchRelation = filter.PatchRelation;
         }
     }
 
