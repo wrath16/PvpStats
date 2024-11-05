@@ -18,7 +18,7 @@ internal class TagFilter : DataFilter {
     public override string HelpMessage => "Comma-separate multiple tags.\n'AND' will include matches that have all tags.\n'OR' will include matches that have at least one tag.\n'NAND' will include matches that don't have all tags.\n'NOR' will include matches that don't have any of the listed tags.";
     public string TagsRaw { get; set; } = "";
     public TagLogic Logic { get; set; } = TagLogic.AND;
-    public bool AllowPartial {  get; set; } = true;
+    public bool AllowPartial {  get; set; } = false;
 
     private string[] _logicCombo = { "AND", "OR", "NAND", "NOR" };
     private string _lastTextValue = "";

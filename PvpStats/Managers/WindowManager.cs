@@ -201,7 +201,7 @@ internal class WindowManager : IDisposable {
                 if(!opened) {
                     ImGui.SetKeyboardFocusHere(0);
                 }
-                if(ImGui.InputTextWithHint("##TagsInput", "Enter tags...", ref tagsText, 100, ImGuiInputTextFlags.EnterReturnsTrue)) {
+                if(ImGui.InputTextWithHint("##TagsInput", "Enter tags...", ref tagsText, 500, ImGuiInputTextFlags.EnterReturnsTrue)) {
                     match.Tags = tagsText;
                     ImGui.CloseCurrentPopup();
                     _plugin.DataQueue.QueueDataOperation(async () => {
