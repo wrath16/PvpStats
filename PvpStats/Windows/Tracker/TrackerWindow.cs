@@ -7,7 +7,6 @@ using PvpStats.Helpers;
 using PvpStats.Managers.Stats;
 using PvpStats.Settings;
 using PvpStats.Types.Match;
-using PvpStats.Utility;
 using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Generic;
@@ -33,7 +32,6 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
     internal List<DataFilter> JobStatFilters { get; private set; } = new();
     internal List<DataFilter> PlayerStatFilters { get; private set; } = new();
     protected List<Refreshable<T>> Tabs = [];
-    internal DataQueue RefreshQueue { get; private set; } = new();
 
     protected TrackerWindow(Plugin plugin, StatsManager<T> statsManager, WindowConfiguration config, string name) : base(name) {
         Plugin = plugin;
@@ -49,48 +47,40 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
     }
 
     public virtual async Task Refresh(bool fullRefresh = false) {
-        if(RefreshQueue.Count > 1) {
-            Plugin.Log2.Warning($"{WindowName} Refresh already queued");
-            return;
-        }
+        Stopwatch s0 = new();
+        s0.Start();
 
-        var task = RefreshQueue.QueueDataOperation(async () => {
-            Stopwatch s0 = new();
-            s0.Start();
+        Tabs.ForEach(x => {
+            x.RefreshProgress = 0f;
+            x.RefreshActive = true;
+        });
 
-            Tabs.ForEach(x => {
-                x.RefreshProgress = 0f;
-                x.RefreshActive = true;
+        try {
+            var updatedSet = StatsEngine.Refresh(MatchFilters);
+
+            if(fullRefresh) {
+                updatedSet.Removals = updatedSet.Matches;
+                updatedSet.Additions = updatedSet.Matches;
+            }
+
+            List<Task<Task>> refreshTasks = [];
+            Tabs.ForEach((x) => {
+                var task = RefreshTab(async () => {
+                    await x.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
+                });
+                refreshTasks.Add(task);
             });
 
-            try {
-                var updatedSet = StatsEngine.Refresh(MatchFilters);
-
-                if(fullRefresh) {
-                    updatedSet.Removals = updatedSet.Matches;
-                    updatedSet.Additions = updatedSet.Matches;
-                }
-
-                List<Task<Task>> refreshTasks = [];
-                Tabs.ForEach((x) => {
-                    var task = RefreshTab(async () => {
-                        await x.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-                    });
-                    refreshTasks.Add(task);
-                });
-
-                await Task.WhenAll([
-                    Task.Run(SaveFilters),
-                    .. refreshTasks.Select(x => x.Result),
-                ]);
-            } catch {
-                Plugin.Log.Error($"{WindowName} refresh failed.");
-                throw;
-            } finally {
-                Plugin.Log.Information(string.Format("{0,-50}: {1,4} ms", $"{WindowName} refresh time", s0.ElapsedMilliseconds.ToString()));
-            }
-        });
-        await task.Result;
+            await Task.WhenAll([
+                Task.Run(SaveFilters),
+                .. refreshTasks.Select(x => x.Result),
+            ]);
+        } catch {
+            Plugin.Log.Error($"{WindowName} refresh failed.");
+            throw;
+        } finally {
+            Plugin.Log.Information(string.Format("{0,-50}: {1,4} ms", $"{WindowName} refresh time", s0.ElapsedMilliseconds.ToString()));
+        }
     }
 
     protected void SaveFilters() {
@@ -229,7 +219,7 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
                 action.Invoke();
             } catch(Exception e) {
                 //suppress all exceptions while a refresh is in progress
-                if(!RefreshQueue.Active) {
+                if(!refreshActive) {
                     Plugin.Log2.Error(e, "Tab Draw Error");
                 }
             } finally {
