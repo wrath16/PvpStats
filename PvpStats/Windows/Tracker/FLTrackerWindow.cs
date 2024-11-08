@@ -3,6 +3,7 @@ using ImGuiNET;
 using PvpStats.Types.Match;
 using PvpStats.Windows.Filter;
 using PvpStats.Windows.List;
+using PvpStats.Windows.Records;
 using PvpStats.Windows.Summary;
 using System.Diagnostics;
 using System.Numerics;
@@ -13,6 +14,7 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
 
     private readonly FrontlineMatchList _matches;
     private readonly FrontlineSummary _summary;
+    private readonly FrontlineRecords _records;
     private readonly FrontlineJobList _jobs;
     private readonly FrontlinePlayerList _players;
     private readonly FrontlinePvPProfile _profile;
@@ -43,6 +45,7 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
 
         _matches = new(plugin);
         _summary = new(plugin);
+        _records = new(plugin);
         _jobs = new(plugin, WindowConfig.JobStatFilters.StatSourceFilter, playerFilter);
         _players = new(plugin, WindowConfig.PlayerStatFilters.StatSourceFilter, WindowConfig.PlayerStatFilters.MinMatchFilter, null, playerFilter);
         _profile = new(plugin);
@@ -66,6 +69,11 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
                         _summary.Draw();
                     }
                 }, _summary.RefreshActive, _summary.RefreshProgress);
+                Tab("Records", () => {
+                    using(ImRaii.Child("RecordsChild")) {
+                        _records.Draw();
+                    }
+                }, _records.RefreshActive, _records.RefreshProgress);
                 Tab("Jobs", () => {
                     _jobs.Draw();
                 }, _jobs.RefreshActive, _jobs.RefreshProgress);
@@ -89,6 +97,9 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
         _summary.RefreshProgress = 0f;
         _summary.RefreshActive = true;
 
+        _records.RefreshProgress = 0f;
+        _records.RefreshActive = true;
+
         _jobs.RefreshProgress = 0f;
         _jobs.RefreshActive = true;
 
@@ -96,8 +107,6 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
         _players.RefreshActive = true;
 
         try {
-            await RefreshLock.WaitAsync();
-            //RefreshActive = true;
             var updatedSet = Plugin.FLStatsEngine.Refresh(MatchFilters);
 
             if(fullRefresh) {
@@ -107,24 +116,24 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
 
             var matchRefresh = RefreshTab(async () => {
                 await _matches.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-                _matches.RefreshActive = false;
             });
             var summaryRefresh = RefreshTab(async () => {
                 await _summary.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-                _summary.RefreshActive = false;
+            });
+            var recordsRefresh = RefreshTab(async () => {
+                await _records.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
             });
             var jobRefresh = RefreshTab(async () => {
                 await _jobs.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-                _jobs.RefreshActive = false;
             });
             var playerRefresh = RefreshTab(async () => {
                 await _players.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-                _players.RefreshActive = false;
             });
             await Task.WhenAll([
                 Task.Run(SaveFilters),
                 matchRefresh.Result,
                 summaryRefresh.Result,
+                recordsRefresh.Result,
                 jobRefresh.Result,
                 playerRefresh.Result,
             ]);
@@ -132,12 +141,6 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
             Plugin.Log.Error("FL tracker refresh failed.");
             throw;
         } finally {
-            _matches.RefreshActive = false;
-            _summary.RefreshActive = false;
-            _jobs.RefreshActive = false;
-            _players.RefreshActive = false;
-            RefreshLock.Release();
-            //RefreshActive = false;
             Plugin.Log.Information(string.Format("{0,-25}: {1,4} ms", $"FL tracker refresh time", s0.ElapsedMilliseconds.ToString()));
         }
     }

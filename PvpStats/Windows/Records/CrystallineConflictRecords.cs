@@ -9,19 +9,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace PvpStats.Windows.Summary;
-internal class CrystallineConflictRecords : Refreshable<CrystallineConflictMatch> {
-
-    private readonly Plugin _plugin;
+namespace PvpStats.Windows.Records;
+internal class CrystallineConflictRecords : MatchRecords<CrystallineConflictMatch> {
 
     public override string Name => "CC Records";
 
-    internal Dictionary<CrystallineConflictMatch, List<(string, string)>> Superlatives = new();
     internal int LongestWinStreak { get; private set; }
     internal int LongestLossStreak { get; private set; }
 
-    internal CrystallineConflictRecords(Plugin plugin) {
-        _plugin = plugin;
+    internal CrystallineConflictRecords(Plugin plugin) : base(plugin) {
     }
 
     protected override Task RefreshInner(List<CrystallineConflictMatch> matches, List<CrystallineConflictMatch> additions, List<CrystallineConflictMatch> removals) {
@@ -58,15 +54,15 @@ internal class CrystallineConflictRecords : Refreshable<CrystallineConflictMatch
                 //continue;
             } else {
                 if(mostKills == null || match.LocalPlayerStats?.Kills > mostKills.LocalPlayerStats?.Kills
-                    || (match.LocalPlayerStats?.Kills == mostKills.LocalPlayerStats?.Kills && match.MatchDuration < mostKills.MatchDuration)) {
+                    || match.LocalPlayerStats?.Kills == mostKills.LocalPlayerStats?.Kills && match.MatchDuration < mostKills.MatchDuration) {
                     mostKills = match;
                 }
                 if(mostDeaths == null || match.LocalPlayerStats?.Deaths > mostDeaths.LocalPlayerStats?.Deaths
-                    || (match.LocalPlayerStats?.Deaths == mostDeaths.LocalPlayerStats?.Deaths && match.MatchDuration < mostDeaths.MatchDuration)) {
+                    || match.LocalPlayerStats?.Deaths == mostDeaths.LocalPlayerStats?.Deaths && match.MatchDuration < mostDeaths.MatchDuration) {
                     mostDeaths = match;
                 }
                 if(mostAssists == null || match.LocalPlayerStats?.Assists > mostAssists.LocalPlayerStats?.Assists
-                    || (match.LocalPlayerStats?.Assists == mostAssists.LocalPlayerStats?.Assists && match.MatchDuration < mostAssists.MatchDuration)) {
+                    || match.LocalPlayerStats?.Assists == mostAssists.LocalPlayerStats?.Assists && match.MatchDuration < mostAssists.MatchDuration) {
                     mostAssists = match;
                 }
                 if(mostDamageDealt == null || match.LocalPlayerStats?.DamageDealt > mostDamageDealt.LocalPlayerStats?.DamageDealt) {
@@ -154,28 +150,6 @@ internal class CrystallineConflictRecords : Refreshable<CrystallineConflictMatch
         return Task.CompletedTask;
     }
 
-    protected override void Reset() {
-        throw new NotImplementedException();
-    }
-
-    protected override void ProcessMatch(CrystallineConflictMatch match, bool remove = false) {
-        throw new NotImplementedException();
-    }
-
-    protected override void PostRefresh(List<CrystallineConflictMatch> matches, List<CrystallineConflictMatch> additions, List<CrystallineConflictMatch> removals) {
-        throw new NotImplementedException();
-    }
-
-    private void AddSuperlative(CrystallineConflictMatch? match, string sup, string val) {
-        if(match == null) return;
-        if(Superlatives.TryGetValue(match, out List<(string, string)>? value)) {
-            value.Add((sup, val));
-        } else {
-            //Plugin.Log.Debug($"adding superlative {sup} {val} to {match.Id.ToString()}");
-            Superlatives.Add(match, new() { (sup, val) });
-        }
-    }
-
     public void Draw() {
         using(var table = ImRaii.Table("streaks", 2, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
             if(table) {
@@ -183,11 +157,11 @@ internal class CrystallineConflictRecords : Refreshable<CrystallineConflictMatch
                 ImGui.TableSetupColumn($"value", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 60f);
 
                 ImGui.TableNextColumn();
-                ImGui.TextColored(_plugin.Configuration.Colors.Header, "Longest win streak:");
+                ImGui.TextColored(Plugin.Configuration.Colors.Header, "Longest win streak:");
                 ImGui.TableNextColumn();
                 ImGuiHelper.DrawNumericCell(LongestWinStreak.ToString());
                 ImGui.TableNextColumn();
-                ImGui.TextColored(_plugin.Configuration.Colors.Header, "Longest loss streak:");
+                ImGui.TextColored(Plugin.Configuration.Colors.Header, "Longest loss streak:");
                 ImGui.TableNextColumn();
                 ImGuiHelper.DrawNumericCell(LongestLossStreak.ToString());
             }
@@ -200,36 +174,7 @@ internal class CrystallineConflictRecords : Refreshable<CrystallineConflictMatch
         }
     }
 
-    private void DrawStat(CrystallineConflictMatch match, string[] superlatives, string[] values) {
-        using(var table = ImRaii.Table("headertable", 3, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
-            if(table) {
-                ImGui.TableSetupColumn("title", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 185f);
-                ImGui.TableSetupColumn($"value", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 60f);
-                ImGui.TableSetupColumn($"examine", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 40f);
-
-                for(int i = 0; i < superlatives.Length; i++) {
-                    ImGui.TableNextColumn();
-                    ImGui.AlignTextToFramePadding();
-                    ImGui.TextColored(_plugin.Configuration.Colors.Header, superlatives[i] + ":");
-                    ImGui.TableNextColumn();
-                    ImGuiHelper.DrawNumericCell(values[i]);
-                    //ImGui.Text(values[i]);
-                    ImGui.TableNextColumn();
-                    if(i == superlatives.Length - 1) {
-                        using(var font = ImRaii.PushFont(UiBuilder.IconFont)) {
-                            //ImGuiHelper.CenterAlignCursor(FontAwesomeIcon.Search.ToIconString());
-                            var buttonWidth = ImGui.GetStyle().FramePadding.X * 2 + ImGui.CalcTextSize(FontAwesomeIcon.Search.ToIconString()).X;
-                            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + (ImGui.GetColumnWidth() - buttonWidth) / 2f);
-                            if(ImGui.Button($"{FontAwesomeIcon.Search.ToIconString()}##{match.GetHashCode()}--ViewDetails")) {
-                                _plugin.WindowManager.OpenMatchDetailsWindow(match);
-                            }
-                            var x = ImGui.CalcItemWidth();
-                        }
-                    }
-                }
-            }
-        }
-
+    protected override void DrawMatchStat(CrystallineConflictMatch match) {
         using(var table = ImRaii.Table("match", 4, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
             if(table) {
                 ImGui.TableSetupColumn("Time", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 100f);
@@ -247,9 +192,9 @@ internal class CrystallineConflictRecords : Refreshable<CrystallineConflictMatch
                 if(!match.IsSpectated) {
                     var localPlayerJob = match.LocalPlayerTeamMember!.Job;
                     ImGuiHelper.CenterAlignCursor(localPlayerJob.ToString() ?? "");
-                    ImGui.TextColored(_plugin.Configuration.GetJobColor(localPlayerJob), localPlayerJob.ToString());
+                    ImGui.TextColored(Plugin.Configuration.GetJobColor(localPlayerJob), localPlayerJob.ToString());
                     ImGui.TableNextColumn();
-                    var color = match.IsWin ? _plugin.Configuration.Colors.Win : match.IsLoss ? _plugin.Configuration.Colors.Loss : _plugin.Configuration.Colors.Other;
+                    var color = match.IsWin ? Plugin.Configuration.Colors.Win : match.IsLoss ? Plugin.Configuration.Colors.Loss : Plugin.Configuration.Colors.Other;
                     var result = match.IsWin ? "WIN" : match.IsLoss ? "LOSS" : "???";
                     ImGuiHelper.CenterAlignCursor(result);
                     ImGui.TextColored(color, result);
