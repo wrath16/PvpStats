@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 
 namespace PvpStats.Windows.Records;
 internal abstract class MatchRecords<T> : Refreshable<T> where T : PvpMatch {
@@ -34,6 +35,16 @@ internal abstract class MatchRecords<T> : Refreshable<T> where T : PvpMatch {
         throw new NotImplementedException();
     }
 
+    protected void CompareValue<U>(T newMatch, ref T? currentRecordMatch, U newValue, ref U currentRecord, bool invert = false) where U : IComparable<U> {
+        var comparison = newValue.CompareTo(currentRecord);
+        if(currentRecordMatch is null 
+            || !invert && (comparison > 0 || comparison == 0 && newMatch.MatchDuration < currentRecordMatch.MatchDuration)
+            || invert && (comparison < 0 || comparison == 0 && newMatch.MatchDuration > currentRecordMatch.MatchDuration)) {
+            currentRecordMatch = newMatch;
+            currentRecord = newValue;
+        }
+    }
+
     protected void AddSuperlative(T? match, string sup, string val) {
         if(match == null) return;
         if(Superlatives.TryGetValue(match, out List<(string, string)>? value)) {
@@ -41,6 +52,14 @@ internal abstract class MatchRecords<T> : Refreshable<T> where T : PvpMatch {
         } else {
             //Plugin.Log.Debug($"adding superlative {sup} {val} to {match.Id.ToString()}");
             Superlatives.Add(match, new() { (sup, val) });
+        }
+    }
+
+    public void Draw() {
+        foreach(var match in Superlatives) {
+            var x = match.Value;
+            DrawStat(match.Key, match.Value.Select(x => x.Item1).ToArray(), match.Value.Select(x => x.Item2).ToArray());
+            ImGui.Separator();
         }
     }
 
