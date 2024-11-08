@@ -83,8 +83,6 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
         _players.RefreshProgress = 0f;
         _players.RefreshActive = true;
         try {
-            await RefreshLock.WaitAsync();
-            //RefreshActive = true;
             var updatedSet = Plugin.RWStatsEngine.Refresh(MatchFilters);
 
             if(fullRefresh) {
@@ -94,15 +92,12 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
 
             var matchRefresh = RefreshTab(async () => {
                 await _matches.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-                _matches.RefreshActive = false;
             });
             var summaryRefresh = RefreshTab(async () => {
                 await _summary.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-                _summary.RefreshActive = false;
             });
             var playerRefresh = RefreshTab(async () => {
                 await _players.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-                _players.RefreshActive = false;
             });
 
             await Task.WhenAll([
@@ -115,11 +110,6 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
             Plugin.Log.Error("RW tracker refresh failed.");
             throw;
         } finally {
-            _matches.RefreshActive = false;
-            _summary.RefreshActive = false;
-            _players.RefreshActive = false;
-            RefreshLock.Release();
-            //RefreshActive = false;
             Plugin.Log.Information(string.Format("{0,-25}: {1,4} ms", $"RW tracker refresh time", s0.ElapsedMilliseconds.ToString()));
         }
     }

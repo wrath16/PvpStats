@@ -8,6 +8,7 @@ namespace PvpStats.Utility;
 internal class DataQueue {
 
     //coordinates all data sequence-sensitive operations
+    internal int Count => DataTaskQueue.Count;
     private ConcurrentQueue<(Task, DateTime)> DataTaskQueue { get; init; } = new();
     private SemaphoreSlim DataLock { get; init; } = new SemaphoreSlim(1, 1);
     //private Plugin _plugin;

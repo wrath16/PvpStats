@@ -4,6 +4,7 @@ using ImGuiNET;
 using PvpStats.Types.Match;
 using PvpStats.Windows.Filter;
 using PvpStats.Windows.List;
+using PvpStats.Windows.Records;
 using PvpStats.Windows.Summary;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -89,8 +90,6 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
         _credit.RefreshProgress = 0f;
         _credit.RefreshActive = true;
         try {
-            await RefreshLock.WaitAsync();
-            //RefreshActive = true;
             var updatedSet = Plugin.CCStatsEngine.Refresh(MatchFilters);
 
             if(fullRefresh) {
@@ -100,27 +99,21 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
 
             var matchRefresh = RefreshTab(async () => {
                 await _matches.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-                _matches.RefreshActive = false;
             });
             var summaryRefresh = RefreshTab(async () => {
                 await _summary.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-                _summary.RefreshActive = false;
             });
             var recordsRefresh = RefreshTab(async () => {
                 await _records.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-                _records.RefreshActive = false;
             });
             var jobRefresh = RefreshTab(async () => {
                 await _jobs.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-                _jobs.RefreshActive = false;
             });
             var playerRefresh = RefreshTab(async () => {
                 await _players.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-                _players.RefreshActive = false;
             });
             var creditRefresh = RefreshTab(async () => {
                 await _credit.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-                _credit.RefreshActive = false;
             });
 
             await Task.WhenAll([
@@ -135,14 +128,6 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
             Plugin.Log.Error("CC tracker refresh failed.");
             throw;
         } finally {
-            _matches.RefreshActive = false;
-            _summary.RefreshActive = false;
-            _records.RefreshActive = false;
-            _jobs.RefreshActive = false;
-            _players.RefreshActive = false;
-            _credit.RefreshActive = false;
-            RefreshLock.Release();
-            //RefreshActive = false;
             Plugin.Log.Information(string.Format("{0,-25}: {1,4} ms", $"CC tracker refresh time", s0.ElapsedMilliseconds.ToString()));
         }
     }
