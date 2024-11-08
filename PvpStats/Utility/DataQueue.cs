@@ -21,7 +21,7 @@ internal class DataQueue {
     internal Task<T> QueueDataOperation<T>(Func<T> action) {
 #if DEBUG
         var x = new StackFrame(1, true).GetMethod();
-        Plugin.Log2.Verbose($"adding data operation from: {x.Name} {x.DeclaringType} tasks queued: {DataTaskQueue.Count + 1}");
+        Plugin.Log2.Verbose($"adding data operation from: {x?.Name} {x?.DeclaringType} tasks queued: {DataTaskQueue.Count + 1}");
 #endif
         Task<T> t = new(action);
         AddToTaskQueue(t);
@@ -31,7 +31,7 @@ internal class DataQueue {
     internal Task QueueDataOperation(Action action) {
 #if DEBUG
         var x = new StackFrame(1, true).GetMethod();
-        Plugin.Log2.Verbose($"adding data operation from: {x.Name} {x.DeclaringType} tasks queued: {DataTaskQueue.Count + 1}");
+        Plugin.Log2.Verbose($"adding data operation from: {x?.Name} {x?.DeclaringType} tasks queued: {DataTaskQueue.Count + 1}");
 #endif
         Task t = new(action);
         AddToTaskQueue(t);

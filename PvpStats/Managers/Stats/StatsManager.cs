@@ -67,8 +67,6 @@ internal abstract class StatsManager<T> where T : PvpMatch {
 
     protected virtual List<T> ApplyFilter(TimeFilter filter, List<T> matches) {
         List<T> filteredMatches = new(matches);
-        DateTime? startDate;
-        DateTime? endDate;
         switch(filter.StatRange) {
             case TimeRange.PastDay:
                 filteredMatches = filteredMatches.Where(x => (DateTime.Now - x.DutyStartTime).TotalHours < 24).ToList();
