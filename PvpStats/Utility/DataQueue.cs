@@ -9,15 +9,10 @@ internal class DataQueue {
 
     //coordinates all data sequence-sensitive operations
     internal int Count => DataTaskQueue.Count;
+    internal bool Active => DataLock.CurrentCount == 0;
     private ConcurrentQueue<(Task, DateTime)> DataTaskQueue { get; init; } = new();
     private SemaphoreSlim DataLock { get; init; } = new SemaphoreSlim(1, 1);
-    //private Plugin _plugin;
-
     internal DateTime LastTaskTime { get; set; }
-
-    //internal DataQueue(Plugin plugin) {
-    //    _plugin = plugin;
-    //}
 
     internal void Dispose() {
         DataTaskQueue.Clear();
@@ -66,7 +61,6 @@ internal class DataQueue {
                 }
             } catch(Exception e) {
                 Plugin.Log2.Error(e, $"Exception in data task.");
-                //_plugin.Log.Error(e.StackTrace ?? "");
             } finally {
                 DataLock.Release();
             }

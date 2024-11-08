@@ -170,12 +170,11 @@ internal abstract class StatsList<T, U, V> : FilteredList<T, V> where T : notnul
         //column sorting
         ImGuiTableSortSpecsPtr sortSpecs = ImGui.TableGetSortSpecs();
         if(sortSpecs.SpecsDirty || TriggerSort) {
-            TriggerSort = false;
-            sortSpecs.SpecsDirty = false;
-
             //removed from data queue for performance reasons
             SortByColumn(sortSpecs.Specs.ColumnUserID, sortSpecs.Specs.SortDirection);
             GoToPage(0);
+            TriggerSort = false;
+            sortSpecs.SpecsDirty = false;
         }
     }
 }

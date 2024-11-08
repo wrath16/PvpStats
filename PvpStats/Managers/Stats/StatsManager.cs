@@ -39,7 +39,7 @@ internal abstract class StatsManager<T> where T : PvpMatch {
             var toSubtract = Matches.Except(matches, new PvpMatchComparer<T>()).ToList();
             Matches = matches;
             matchesTimer.Stop();
-            Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"Matches Retrieval", matchesTimer.ElapsedMilliseconds.ToString()));
+            Plugin.Log.Debug(string.Format("{0,-50}: {1,4} ms", $"Matches Retrieval", matchesTimer.ElapsedMilliseconds.ToString()));
             Plugin.Log.Debug($"total: {matches.Count} additions: {toAdd.Count} removals: {toSubtract.Count}");
             return (matches, toAdd, toSubtract);
         } finally {

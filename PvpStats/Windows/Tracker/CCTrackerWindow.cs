@@ -6,8 +6,6 @@ using PvpStats.Windows.Filter;
 using PvpStats.Windows.List;
 using PvpStats.Windows.Records;
 using PvpStats.Windows.Summary;
-using System.Diagnostics;
-using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Tracker;
 
@@ -46,90 +44,27 @@ internal class CCTrackerWindow : TrackerWindow<CrystallineConflictMatch> {
         MatchFilters.Add(new MiscFilter(plugin, refreshAction, WindowConfig.MatchFilters.MiscFilter));
 
         _matches = new(plugin);
+        Tabs.Add(_matches);
         _summary = new(plugin);
+        Tabs.Add(_summary);
         _records = new(plugin);
+        Tabs.Add(_records);
         _jobs = new(plugin, WindowConfig.JobStatFilters.StatSourceFilter, playerFilter);
+        Tabs.Add(_jobs);
         _players = new(plugin, WindowConfig.PlayerStatFilters.StatSourceFilter, WindowConfig.PlayerStatFilters.MinMatchFilter, null, playerFilter);
-        _profile = new(plugin);
+        Tabs.Add(_players);
         _credit = new(plugin);
+        Tabs.Add(_credit);
+        _profile = new(plugin);
 
         JobStatFilters.Add(_jobs.StatSourceFilter);
         PlayerStatFilters.Add(_players.StatSourceFilter);
         PlayerStatFilters.Add(_players.MinMatchFilter);
         PlayerStatFilters.Add(_players.PlayerQuickSearchFilter);
-
-        //Plugin.DataQueue.QueueDataOperation(Refresh);
     }
 
     public override void OnClose() {
         base.OnClose();
-    }
-
-    public override async Task Refresh(bool fullRefresh = false) {
-        Stopwatch s0 = new();
-        s0.Start();
-
-        _matches.RefreshProgress = 0f;
-        _matches.RefreshActive = true;
-
-        _summary.RefreshProgress = 0f;
-        _summary.RefreshActive = true;
-
-        _records.RefreshProgress = 0f;
-        _records.RefreshActive = true;
-
-        _credit.RefreshProgress = 0f;
-        _credit.RefreshActive = true;
-
-        _jobs.RefreshProgress = 0f;
-        _jobs.RefreshActive = true;
-
-        _players.RefreshProgress = 0f;
-        _players.RefreshActive = true;
-
-        _credit.RefreshProgress = 0f;
-        _credit.RefreshActive = true;
-        try {
-            var updatedSet = Plugin.CCStatsEngine.Refresh(MatchFilters);
-
-            if(fullRefresh) {
-                updatedSet.Removals = updatedSet.Matches;
-                updatedSet.Additions = updatedSet.Matches;
-            }
-
-            var matchRefresh = RefreshTab(async () => {
-                await _matches.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-            });
-            var summaryRefresh = RefreshTab(async () => {
-                await _summary.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-            });
-            var recordsRefresh = RefreshTab(async () => {
-                await _records.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-            });
-            var jobRefresh = RefreshTab(async () => {
-                await _jobs.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-            });
-            var playerRefresh = RefreshTab(async () => {
-                await _players.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-            });
-            var creditRefresh = RefreshTab(async () => {
-                await _credit.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
-            });
-
-            await Task.WhenAll([
-                Task.Run(SaveFilters),
-                matchRefresh.Result,
-                summaryRefresh.Result,
-                recordsRefresh.Result,
-                jobRefresh.Result,
-                playerRefresh.Result,
-            ]);
-        } catch {
-            Plugin.Log.Error("CC tracker refresh failed.");
-            throw;
-        } finally {
-            Plugin.Log.Information(string.Format("{0,-25}: {1,4} ms", $"CC tracker refresh time", s0.ElapsedMilliseconds.ToString()));
-        }
     }
 
     public override void DrawInternal() {

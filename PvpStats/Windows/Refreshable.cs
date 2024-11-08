@@ -61,7 +61,7 @@ internal abstract class Refreshable<T> where T : PvpMatch {
                 await RefreshInner(matches, additions, removals);
             } finally {
                 s1.Stop();
-                Plugin.Log2.Debug(string.Format("{0,-25}: {1,4} ms", $"{Name} Refresh", s1.ElapsedMilliseconds.ToString()));
+                Plugin.Log2.Debug(string.Format("{0,-50}: {1,4} ms", $"{Name} Refresh", s1.ElapsedMilliseconds.ToString()));
                 MatchesProcessed = 0;
                 RefreshActive = false;
             }

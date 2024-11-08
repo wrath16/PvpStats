@@ -45,7 +45,6 @@ public class TimeFilter : DataFilter {
     public int Patch { get; set; } = GamePeriod.Patch.Last().Key;
     public TimeRelation PatchRelation { get; set; } = TimeRelation.Since;
 
-
     private string _lastStartTime = "";
     private string _lastEndTime = "";
 

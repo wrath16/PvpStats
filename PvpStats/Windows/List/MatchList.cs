@@ -6,7 +6,6 @@ using LiteDB;
 using PvpStats.Helpers;
 using PvpStats.Services.DataCache;
 using PvpStats.Types.Match;
-using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,7 +21,7 @@ internal abstract class MatchList<T> : FilteredList<T, T> where T : PvpMatch {
         Overwrite
     }
 
-    static string[] TagOperationCombo = {"Append", "Remove", "Overwrite" };
+    static string[] TagOperationCombo = { "Append", "Remove", "Overwrite" };
 
     protected MatchCacheService<T> Cache;
 

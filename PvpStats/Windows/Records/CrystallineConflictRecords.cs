@@ -26,8 +26,6 @@ internal class CrystallineConflictRecords : MatchRecords<CrystallineConflictMatc
         TimeSpan mostTimeOnCrystal = TimeSpan.Zero;
         double mostKillsPerMin = 0, mostDeathsPerMin = 0, mostAssistsPerMin = 0, mostDamageDealtPerMin = 0, mostDamageTakenPerMin = 0, mostHPRestoredPerMin = 0, mostTimeOnCrystalPerMin = 0;
 
-
-
         MatchesTotal = matches.Count;
 
         foreach(var match in matches) {
@@ -68,7 +66,6 @@ internal class CrystallineConflictRecords : MatchRecords<CrystallineConflictMatc
             } else {
                 currentLossStreak = 0;
             }
-
 
             if(match.IsSpectated) {
                 //spectatedMatchCount++;

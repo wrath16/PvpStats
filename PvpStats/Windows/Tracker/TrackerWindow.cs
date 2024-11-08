@@ -7,12 +7,13 @@ using PvpStats.Helpers;
 using PvpStats.Managers.Stats;
 using PvpStats.Settings;
 using PvpStats.Types.Match;
+using PvpStats.Utility;
 using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Numerics;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Tracker;
@@ -31,11 +32,8 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
     internal List<DataFilter> MatchFilters { get; private set; } = new();
     internal List<DataFilter> JobStatFilters { get; private set; } = new();
     internal List<DataFilter> PlayerStatFilters { get; private set; } = new();
-    internal SemaphoreSlim RefreshLock { get; init; } = new SemaphoreSlim(1);
-    public bool RefreshActive { get; protected set; }
-    public float RefreshProgress { get; protected set; }
-
     protected List<Refreshable<T>> Tabs = [];
+    internal DataQueue RefreshQueue { get; private set; } = new();
 
     protected TrackerWindow(Plugin plugin, StatsManager<T> statsManager, WindowConfiguration config, string name) : base(name) {
         Plugin = plugin;
@@ -50,8 +48,50 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
         Flags |= ImGuiWindowFlags.NoScrollbar;
     }
 
-    public abstract Task Refresh(bool fullRefresh = false);
-    public abstract void DrawInternal();
+    public virtual async Task Refresh(bool fullRefresh = false) {
+        if(RefreshQueue.Count > 1) {
+            Plugin.Log2.Warning($"{WindowName} Refresh already queued");
+            return;
+        }
+
+        var task = RefreshQueue.QueueDataOperation(async () => {
+            Stopwatch s0 = new();
+            s0.Start();
+
+            Tabs.ForEach(x => {
+                x.RefreshProgress = 0f;
+                x.RefreshActive = true;
+            });
+
+            try {
+                var updatedSet = StatsEngine.Refresh(MatchFilters);
+
+                if(fullRefresh) {
+                    updatedSet.Removals = updatedSet.Matches;
+                    updatedSet.Additions = updatedSet.Matches;
+                }
+
+                List<Task<Task>> refreshTasks = [];
+                Tabs.ForEach((x) => {
+                    var task = RefreshTab(async () => {
+                        await x.Refresh(updatedSet.Matches, updatedSet.Additions, updatedSet.Removals);
+                    });
+                    refreshTasks.Add(task);
+                });
+
+                await Task.WhenAll([
+                    Task.Run(SaveFilters),
+                    .. refreshTasks.Select(x => x.Result),
+                ]);
+            } catch {
+                Plugin.Log.Error($"{WindowName} refresh failed.");
+                throw;
+            } finally {
+                Plugin.Log.Information(string.Format("{0,-50}: {1,4} ms", $"{WindowName} refresh time", s0.ElapsedMilliseconds.ToString()));
+            }
+        });
+        await task.Result;
+    }
 
     protected void SaveFilters() {
         Stopwatch s1 = Stopwatch.StartNew();
@@ -60,7 +100,7 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
         WindowConfig.PlayerStatFilters.SetFilters(PlayerStatFilters);
         Plugin.Configuration.Save();
         s1.Stop();
-        Plugin.Log.Debug(string.Format("{0,-25}: {1,4} ms", $"save config", s1.ElapsedMilliseconds.ToString()));
+        Plugin.Log.Debug(string.Format("{0,-50}: {1,4} ms", $"{WindowName} save config", s1.ElapsedMilliseconds.ToString()));
     }
 
     public override void PreDraw() {
@@ -105,11 +145,7 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
         }
         _lastWindowSize = ImGui.GetWindowSize();
         _lastWindowPosition = ImGui.GetWindowPos();
-        //RefreshProgress = StatsEngine.RefreshProgress;
         DrawInternal();
-        //if(RefreshActive) {
-        //    ImGuiHelper.DrawRefreshProgressBar(RefreshProgress);
-        //}
 
         s1.Stop();
         if(_drawCycles % 5000 == 0) {
@@ -123,6 +159,8 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
         }
         _drawCycles++;
     }
+
+    public abstract void DrawInternal();
 
     protected void DrawFilters() {
         if(!CollapseFilters) {
@@ -187,20 +225,14 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
         using var tab = ImRaii.TabItem(name);
         if(tab) {
             ChangeTab(name);
-            //suppress errors and draw all tabs while a refresh is happening
-            bool refreshLockAcquired = RefreshLock.Wait(0);
             try {
                 action.Invoke();
             } catch(Exception e) {
                 //suppress all exceptions while a refresh is in progress
-                if(refreshLockAcquired) {
+                if(!RefreshQueue.Active) {
                     Plugin.Log2.Error(e, "Tab Draw Error");
                 }
             } finally {
-                if(refreshLockAcquired) {
-                    RefreshLock.Release();
-                }
-
                 if(refreshActive) {
                     ImGuiHelper.DrawRefreshProgressBar((float)refreshProgress);
                 }
