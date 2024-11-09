@@ -159,7 +159,7 @@ internal class RivalWingsPlayerList : PlayerStatsList<RWPlayerJobStats, RivalWin
                         _activeLinks[alias][player.Name].Add(1);
                     }
                 }
-                var teamScoreboard = new RWScoreboardTally(match.GetTeamScoreboards()[player.Team]);
+                var teamScoreboard = new RWScoreboardTally(teamScoreboards[player.Team]);
                 var enemyTeam = (RivalWingsTeamName)((int)(player.Team + 1) % 2);
                 _playerStats.TryAdd(alias, new());
                 _playerTeamContributions.TryAdd(alias, new());

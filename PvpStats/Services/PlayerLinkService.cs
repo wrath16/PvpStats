@@ -13,20 +13,84 @@ internal class PlayerLinkService {
     private Plugin _plugin;
     private ICallGateSubscriber<((string, uint), (string, uint)[])[]> GetPreviousAliasesFunction;
 
-    internal List<PlayerAliasLink> AutoPlayerLinksCache { get; private set; }
-    internal List<PlayerAliasLink> ManualPlayerLinksCache { get; private set; }
+    internal List<PlayerAliasLink> AutoPlayerLinksCache { get; private set; } = [];
+    internal List<PlayerAliasLink> ManualPlayerLinksCache { get; private set; } = [];
+
+    private List<PlayerAliasLink> Unlinks { get; set; } = [];
+    private List<PlayerAliasLink> FullLinks { get; set; } = [];
+    private List<PlayerAliasLink> ManualNoUnlink { get; set; } = [];
+    private Dictionary<PlayerAlias, PlayerAlias> LinkedAliases { get; set; } = [];
+
     internal bool RefreshInProgress { get; private set; }
 
     internal PlayerLinkService(Plugin plugin) {
         _plugin = plugin;
-        AutoPlayerLinksCache = new();
-        ManualPlayerLinksCache = new();
         _plugin.DataQueue.QueueDataOperation(() => {
             ManualPlayerLinksCache = _plugin.Storage.GetManualLinks().Query().ToList();
             AutoPlayerLinksCache = _plugin.Storage.GetAutoLinks().Query().ToList();
+            BuildLinkedAliases();
             _plugin.Log.Debug($"Restored auto link count: {AutoPlayerLinksCache.Count}");
         });
         GetPreviousAliasesFunction = _plugin.PluginInterface.GetIpcSubscriber<((string, uint), (string, uint)[])[]>("PlayerTrack.GetAllPlayerNameWorldHistories");
+    }
+
+    internal void BuildLinkedAliases() {
+        Unlinks = ManualPlayerLinksCache.Where(x => x.IsUnlink).ToList();
+        ManualNoUnlink = ManualPlayerLinksCache.Where(x => !x.IsUnlink && x.CurrentAlias != null).ToList();
+        FullLinks = [.. ManualNoUnlink, .. AutoPlayerLinksCache];
+
+        Dictionary<PlayerAlias, PlayerAlias> linkedAliases = [];
+        foreach(var link in FullLinks) {
+            foreach(var linkedAlias in link.LinkedAliases) {
+                if(linkedAlias != null) {
+                    linkedAliases.Add(linkedAlias, GetMainAlias(linkedAlias, new()));
+                }
+            }
+        }
+        LinkedAliases = linkedAliases;
+    }
+
+    private PlayerAlias GetMainAlias(PlayerAlias alias, List<PlayerAlias> prevAliases) {
+        if(!_plugin.Configuration.EnablePlayerLinking) {
+            return alias;
+        }
+
+        List<PlayerAliasLink> allLinks = [];
+        if(_plugin.Configuration.EnableAutoPlayerLinking && _plugin.Configuration.EnableManualPlayerLinking) {
+            allLinks = FullLinks;
+        } else if(_plugin.Configuration.EnableAutoPlayerLinking && !_plugin.Configuration.EnableManualPlayerLinking) {
+            allLinks = AutoPlayerLinksCache;
+        } else if(!_plugin.Configuration.EnableAutoPlayerLinking && _plugin.Configuration.EnableManualPlayerLinking) {
+            allLinks = ManualNoUnlink;
+        }
+
+        foreach(var link in allLinks) {
+            if(_plugin.Configuration.EnableManualPlayerLinking) {
+                bool unlinkFound = false;
+                foreach(var unlink in Unlinks) {
+                    var unlinkActive1 = unlink.LinkedAliases.Contains(alias) && unlink.CurrentAlias.Equals(link.CurrentAlias);
+                    var unlinkActive2 = unlink.LinkedAliases.Contains(link.CurrentAlias) && unlink.CurrentAlias.Equals(alias);
+                    if(unlinkActive1 || unlinkActive2) {
+                        unlinkFound = true;
+                        break;
+                    }
+                }
+                if(unlinkFound) continue;
+            }
+
+            if(link.LinkedAliases.Contains(alias)) {
+                //detect loop
+                if(prevAliases.Contains(link.CurrentAlias!)) {
+                    //_plugin.Log.Warning($"Player alias link loop detected! {alias} to {link.CurrentAlias}");
+                    return alias;
+                }
+                //search recursively
+                return GetMainAlias(link.CurrentAlias!, [.. prevAliases, alias]);
+            }
+        }
+
+        //not found
+        return alias;
     }
 
     internal async Task SaveManualLinksCache(List<PlayerAliasLink> playerLinks) {
@@ -47,6 +111,7 @@ internal class PlayerLinkService {
             }
         }
         ManualPlayerLinksCache = consolidatedList;
+        BuildLinkedAliases();
         if(consolidatedList.Any()) {
             await _plugin.Storage.SetManualLinks(consolidatedList);
         }
@@ -105,6 +170,7 @@ internal class PlayerLinkService {
             //save
             await _plugin.DataQueue.QueueDataOperation(async () => {
                 AutoPlayerLinksCache = autoLinks;
+                BuildLinkedAliases();
                 await _plugin.Storage.SetAutoLinks(AutoPlayerLinksCache);
             });
         });
@@ -154,83 +220,21 @@ internal class PlayerLinkService {
 
     //for a partial string match
     internal List<PlayerAlias> GetAllLinkedAliases(string playerNameFragment) {
-        //var manualLinks = _plugin.Storage.GetManualLinks().Query().ToList();
-        var unLinks = ManualPlayerLinksCache.Where(x => x.IsUnlink).ToList();
         List<PlayerAlias> linkedAliases = new();
-        var addAlias = ((PlayerAlias alias) => {
-            if(!linkedAliases.Contains(alias)) {
-                linkedAliases.Add(alias);
+        foreach(var link in LinkedAliases) {
+            if(link.Value.ToString().Contains(playerNameFragment, StringComparison.OrdinalIgnoreCase)) {
+                linkedAliases.Add(link.Key);
             }
-        });
-        var removeAlias = ((PlayerAlias alias) => {
-            linkedAliases.Remove(alias);
-        });
-        var checkPlayerLink = (PlayerAliasLink link) => {
-            if(!link.IsUnlink
-            && (link.CurrentAlias.FullName.Contains(playerNameFragment, StringComparison.OrdinalIgnoreCase)
-            || link.LinkedAliases.Any(x => x.FullName.Contains(playerNameFragment, StringComparison.OrdinalIgnoreCase)))) {
-                addAlias(link.CurrentAlias);
-                link.LinkedAliases.ForEach(addAlias);
-            } else if(link.IsUnlink) {
-                removeAlias(link.CurrentAlias);
-                link.LinkedAliases.ForEach(removeAlias);
-            }
-        };
-        if(_plugin.Configuration.EnableAutoPlayerLinking) {
-            AutoPlayerLinksCache.ForEach(checkPlayerLink);
-        }
-        if(_plugin.Configuration.EnableManualPlayerLinking) {
-            ManualPlayerLinksCache.ForEach(checkPlayerLink);
-            unLinks.ForEach(checkPlayerLink);
         }
         return linkedAliases;
     }
 
     internal PlayerAlias GetMainAlias(PlayerAlias alias) {
-        return GetMainAlias(alias, new());
-    }
-
-    private PlayerAlias GetMainAlias(PlayerAlias alias, List<PlayerAlias> prevAliases) {
         if(!_plugin.Configuration.EnablePlayerLinking) {
             return alias;
         }
-
-        List<PlayerAliasLink> unLinks = [];
-        if(_plugin.Configuration.EnableManualPlayerLinking) {
-            unLinks = ManualPlayerLinksCache.Where(x => x.IsUnlink).ToList();
-        }
-        List<PlayerAliasLink> allLinks = [];
-        if(_plugin.Configuration.EnableAutoPlayerLinking) {
-            allLinks = [.. allLinks, .. AutoPlayerLinksCache.Where(x => x.CurrentAlias != null)];
-        }
-        if(_plugin.Configuration.EnableManualPlayerLinking) {
-            allLinks = [.. allLinks, .. ManualPlayerLinksCache.Where(x => !x.IsUnlink && x.CurrentAlias != null)];
-        }
-
-        foreach(var link in allLinks) {
-            bool unlinkFound = false;
-            foreach(var unlink in unLinks) {
-                var unlinkActive1 = unlink.LinkedAliases.Contains(alias) && unlink.CurrentAlias.Equals(link.CurrentAlias);
-                var unlinkActive2 = unlink.LinkedAliases.Contains(link.CurrentAlias) && unlink.CurrentAlias.Equals(alias);
-                if(unlinkActive1 || unlinkActive2) {
-                    unlinkFound = true;
-                    break;
-                }
-            }
-            if(unlinkFound) continue;
-
-            if(link.LinkedAliases.Contains(alias)) {
-                //detect loop
-                if(prevAliases.Contains(link.CurrentAlias!)) {
-                    //_plugin.Log.Warning($"Player alias link loop detected! {alias} to {link.CurrentAlias}");
-                    return alias;
-                }
-                //search recursively
-                return GetMainAlias(link.CurrentAlias!, [.. prevAliases, alias]);
-            }
-        }
-
-        //not found
-        return alias;
+        LinkedAliases.TryGetValue(alias, out var linkedAlias);
+        linkedAlias ??= alias;
+        return linkedAlias;
     }
 }

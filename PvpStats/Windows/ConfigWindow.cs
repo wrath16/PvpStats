@@ -393,6 +393,7 @@ internal class ConfigWindow : Window {
             _plugin.DataQueue.QueueDataOperation(() => {
                 _plugin.Configuration.EnablePlayerLinking = playerLinking;
                 _plugin.Configuration.Save();
+                _plugin.PlayerLinksService.BuildLinkedAliases();
                 _ = _plugin.WindowManager.RefreshAll(true);
             });
         }
@@ -402,6 +403,7 @@ internal class ConfigWindow : Window {
             _plugin.DataQueue.QueueDataOperation(() => {
                 _plugin.Configuration.EnableAutoPlayerLinking = autoLinking;
                 _plugin.Configuration.Save();
+                _plugin.PlayerLinksService.BuildLinkedAliases();
                 _ = _plugin.WindowManager.RefreshAll(true);
             });
         }
@@ -412,6 +414,7 @@ internal class ConfigWindow : Window {
             _plugin.DataQueue.QueueDataOperation(() => {
                 _plugin.Configuration.EnableManualPlayerLinking = manualLinking;
                 _plugin.Configuration.Save();
+                _plugin.PlayerLinksService.BuildLinkedAliases();
                 _ = _plugin.WindowManager.RefreshAll(true);
             });
         }

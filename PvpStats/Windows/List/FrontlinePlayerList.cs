@@ -124,12 +124,13 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
         if(match.PlayerScoreboards != null) {
             var teamScoreboards = match.GetTeamScoreboards();
             foreach(var playerScoreboard in match.PlayerScoreboards) {
+                //performance impact here
                 var player = match.Players.FirstOrDefault(x => x.Name.Equals(playerScoreboard.Key));
                 if(player is null) return;
+                //performance impact here
                 bool isLocalPlayer = player.Name.Equals(match.LocalPlayer);
                 bool isTeammate = !isLocalPlayer && player.Team == match.LocalPlayerTeam;
                 bool isOpponent = !isLocalPlayer && !isTeammate;
-
                 bool statEligible = true;
                 bool nameMatch = player.Name.FullName.Contains(PlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase);
                 if(_plugin.Configuration.EnablePlayerLinking && !nameMatch) {
@@ -164,7 +165,10 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
                             _activeLinks[alias][player.Name].Add(1);
                         }
                     }
-                    var teamScoreboard = new FLScoreboardTally(match.GetTeamScoreboards()[player.Team]);
+
+                    var teamScoreboard = new FLScoreboardTally(teamScoreboards[player.Team]);
+
+                    //performance impact here
                     _playerStats.TryAdd(alias, new());
                     _playerTeamContributions.TryAdd(alias, new());
                     _playerJobStatsLookup.TryAdd(alias, new());
@@ -180,9 +184,12 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
                     }
 
                     FrontlineStatsManager.AddPlayerJobStat(_playerStats[alias], _playerTeamContributions[alias], match, player, teamScoreboard, remove);
+
+                    //performance impact here
                     if(player.Job != null) {
-                        _playerJobStatsLookup[alias].TryAdd((Job)player.Job, new());
-                        FrontlineStatsManager.IncrementAggregateStats(_playerJobStatsLookup[alias][(Job)player.Job], match, remove);
+                        var jobStatsLookup = _playerJobStatsLookup[alias];
+                        jobStatsLookup.TryAdd((Job)player.Job, new());
+                        FrontlineStatsManager.IncrementAggregateStats(jobStatsLookup[(Job)player.Job], match, remove);
                     }
 
                     //shatter only

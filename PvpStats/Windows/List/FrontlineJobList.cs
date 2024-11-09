@@ -154,7 +154,7 @@ internal class FrontlineJobList : JobStatsList<FLPlayerJobStats, FrontlineMatch>
 
                 if(player?.Job != null && player?.Team != null && jobStatsEligible) {
                     //Plugin.Log.Debug($"Adding job stats..{player.Name} {player.Job}");
-                    var teamScoreboard = new FLScoreboardTally(match.GetTeamScoreboards()[player.Team]);
+                    var teamScoreboard = new FLScoreboardTally(teamScoreboards[player.Team]);
                     var job = (Job)player.Job;
                     if(remove) {
                         _jobTimes[job].RemoveTime(match.MatchDuration ?? TimeSpan.Zero);

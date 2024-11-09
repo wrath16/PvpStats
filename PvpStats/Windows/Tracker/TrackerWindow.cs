@@ -56,7 +56,7 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
         });
 
         try {
-            var updatedSet = StatsEngine.Refresh(MatchFilters);
+            var updatedSet = await StatsEngine.Refresh(MatchFilters);
 
             if(fullRefresh) {
                 updatedSet.Removals = updatedSet.Matches;
