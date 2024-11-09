@@ -58,9 +58,10 @@ internal class CCTeamQuickFilter : DataFilter {
                 ImGui.TableNextColumn();
                 bool filterState = category.Value;
                 if(ImGui.Checkbox($"##{category.Key}{GetHashCode()}", ref filterState)) {
-                    Task.Run(() => {
+                    Task.Run(async() => {
                         FilterState[category.Key] = filterState;
                         UpdateAllSelected();
+                        await Refresh();
                     });
                 }
                 ImGui.SameLine();
