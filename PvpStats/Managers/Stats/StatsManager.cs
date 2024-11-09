@@ -3,6 +3,7 @@ using PvpStats.Helpers.Comparers;
 using PvpStats.Services.DataCache;
 using PvpStats.Types;
 using PvpStats.Types.Match;
+using PvpStats.Utility;
 using PvpStats.Windows.Filter;
 using System;
 using System.Collections.Generic;
@@ -10,12 +11,14 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace PvpStats.Managers.Stats;
 internal abstract class StatsManager<T> where T : PvpMatch {
     protected readonly Plugin Plugin;
     protected readonly MatchCacheService<T> MatchCache;
     internal SemaphoreSlim RefreshLock { get; private set; } = new SemaphoreSlim(1);
+    private DataQueue RefreshQueue { get; set; } = new();
 
     public bool RefreshActive { get; protected set; }
     public float RefreshProgress { get; protected set; }
@@ -29,8 +32,8 @@ internal abstract class StatsManager<T> where T : PvpMatch {
         MatchCache = cache;
     }
 
-    public (List<T> Matches, List<T> Additions, List<T> Removals) Refresh(List<DataFilter> matchFilters) {
-        try {
+    public async Task<(List<T> Matches, List<T> Additions, List<T> Removals)> Refresh(List<DataFilter> matchFilters) {
+        var task = RefreshQueue.QueueDataOperation(() => {
             RefreshActive = true;
             Stopwatch matchesTimer = Stopwatch.StartNew();
             var matches = MatchCache.Matches.Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
@@ -42,9 +45,9 @@ internal abstract class StatsManager<T> where T : PvpMatch {
             Plugin.Log.Debug(string.Format("{0,-50}: {1,4} ms", $"Matches Retrieval", matchesTimer.ElapsedMilliseconds.ToString()));
             Plugin.Log.Debug($"total: {matches.Count} additions: {toAdd.Count} removals: {toSubtract.Count}");
             return (matches, toAdd, toSubtract);
-        } finally {
-            RefreshActive = false;
-        }
+        });
+        await task;
+        return task.Result;
     }
 
     protected virtual List<T> FilterMatches(List<DataFilter> filters, List<T> matches) {
