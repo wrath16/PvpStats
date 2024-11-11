@@ -11,6 +11,7 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
 
     private readonly RivalWingsMatchList _matches;
     private readonly RivalWingsSummary _summary;
+    private readonly RivalWingsJobList _jobs;
     private readonly RivalWingsPlayerList _players;
     private readonly RivalWingsPvPProfile _profile;
 
@@ -41,6 +42,8 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
         Tabs.Add(_summary);
         _players = new(plugin, WindowConfig.PlayerStatFilters.StatSourceFilter, WindowConfig.PlayerStatFilters.MinMatchFilter, null, playerFilter);
         Tabs.Add(_players);
+        _jobs = new(plugin, WindowConfig.JobStatFilters.StatSourceFilter, playerFilter);
+        Tabs.Add(_jobs);
         _profile = new(plugin);
 
         PlayerStatFilters.Add(_players.StatSourceFilter);
@@ -61,6 +64,7 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
                         _summary.Draw();
                     }
                 }, _summary.RefreshActive, _summary.RefreshProgress);
+                Tab("Jobs", _jobs.Draw, _jobs.RefreshActive, _jobs.RefreshProgress);
                 Tab("Players", _players.Draw, _players.RefreshActive, _players.RefreshProgress);
                 Tab("Profile", () => {
                     using(ImRaii.Child("ProfileChild")) {
