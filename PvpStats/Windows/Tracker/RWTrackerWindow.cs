@@ -64,16 +64,16 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
                 Tab("Matches", () => {
                     _matches.Draw();
                 }, _matches.RefreshActive, 0f);
-                Tab("Records", () => {
-                    using(ImRaii.Child("RecordsChild")) {
-                        _records.Draw();
-                    }
-                }, _records.RefreshActive, _records.RefreshProgress);
                 Tab("Summary", () => {
                     using(ImRaii.Child("SummaryChild")) {
                         _summary.Draw();
                     }
                 }, _summary.RefreshActive, _summary.RefreshProgress);
+                Tab("Records", () => {
+                    using(ImRaii.Child("RecordsChild")) {
+                        _records.Draw();
+                    }
+                }, _records.RefreshActive, _records.RefreshProgress);
                 Tab("Jobs", _jobs.Draw, _jobs.RefreshActive, _jobs.RefreshProgress);
                 Tab("Players", _players.Draw, _players.RefreshActive, _players.RefreshProgress);
                 Tab("Profile", () => {
