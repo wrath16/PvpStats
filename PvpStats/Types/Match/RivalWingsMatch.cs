@@ -29,6 +29,38 @@ public class RivalWingsMatch : PvpMatch {
     public bool IsWin => MatchWinner == LocalPlayerTeam!;
     [BsonIgnore]
     public bool IsLoss => !IsWin && MatchWinner != null;
+    [BsonIgnore]
+    public RivalWingsTeamName? MatchLoser {
+        get {
+            if(MatchWinner is null || MatchWinner == RivalWingsTeamName.Unknown) {
+                return null;
+            }
+            return (RivalWingsTeamName)(((int)MatchWinner + 1) % 2);
+        }
+    }
+    [BsonIgnore]
+    public float? WinnerProgress {
+        get {
+            if(MatchWinner is null || StructureHealth is null) {
+                return null;
+            }
+            return StructureHealth[(RivalWingsTeamName)MatchWinner][RivalWingsStructure.Core];
+        }
+    }
+
+    [BsonIgnore]
+    public float? LoserProgress {
+        get {
+            if(MatchWinner is null || StructureHealth is null) {
+                return null;
+            }
+            var loser = MatchLoser;
+            if(loser is null) {
+                return null;
+            }
+            return StructureHealth[(RivalWingsTeamName)loser][RivalWingsStructure.Core];
+        }
+    }
 
     public RivalWingsMatch() : base() {
         Version = 0;

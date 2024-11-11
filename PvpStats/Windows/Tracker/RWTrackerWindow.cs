@@ -3,6 +3,7 @@ using ImGuiNET;
 using PvpStats.Types.Match;
 using PvpStats.Windows.Filter;
 using PvpStats.Windows.List;
+using PvpStats.Windows.Records;
 using PvpStats.Windows.Summary;
 using System.Numerics;
 
@@ -11,6 +12,7 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
 
     private readonly RivalWingsMatchList _matches;
     private readonly RivalWingsSummary _summary;
+    private readonly RivalWingsRecords _records;
     private readonly RivalWingsJobList _jobs;
     private readonly RivalWingsPlayerList _players;
     private readonly RivalWingsPvPProfile _profile;
@@ -40,6 +42,8 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
         Tabs.Add(_matches);
         _summary = new(plugin);
         Tabs.Add(_summary);
+        _records = new(plugin);
+        Tabs.Add(_records);
         _players = new(plugin, WindowConfig.PlayerStatFilters.StatSourceFilter, WindowConfig.PlayerStatFilters.MinMatchFilter, null, playerFilter);
         Tabs.Add(_players);
         _jobs = new(plugin, WindowConfig.JobStatFilters.StatSourceFilter, playerFilter);
@@ -49,6 +53,7 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
         PlayerStatFilters.Add(_players.StatSourceFilter);
         PlayerStatFilters.Add(_players.MinMatchFilter);
         PlayerStatFilters.Add(_players.PlayerQuickSearchFilter);
+        JobStatFilters.Add(_jobs.StatSourceFilter);
     }
 
     public override void DrawInternal() {
@@ -59,6 +64,11 @@ internal class RWTrackerWindow : TrackerWindow<RivalWingsMatch> {
                 Tab("Matches", () => {
                     _matches.Draw();
                 }, _matches.RefreshActive, 0f);
+                Tab("Records", () => {
+                    using(ImRaii.Child("RecordsChild")) {
+                        _records.Draw();
+                    }
+                }, _records.RefreshActive, _records.RefreshProgress);
                 Tab("Summary", () => {
                     using(ImRaii.Child("SummaryChild")) {
                         _summary.Draw();
