@@ -122,7 +122,7 @@ internal class CrystallineConflictJobList : JobStatsList<CCPlayerJobStats, Cryst
                 bool jobStatsEligible = true;
                 bool nameMatch = player.Alias.FullName.Contains(PlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase);
                 if(_plugin.Configuration.EnablePlayerLinking && !nameMatch) {
-                    nameMatch = _linkedPlayerAliases.Contains(player.Alias);
+                    nameMatch = _plugin.PlayerLinksService.GetAllLinkedAliases(PlayerFilter.PlayerNamesRaw).Contains(player.Alias);
                 }
                 bool sideMatch = PlayerFilter.TeamStatus == TeamStatus.Any
                     || PlayerFilter.TeamStatus == TeamStatus.Teammate && isTeammate

@@ -29,8 +29,6 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
     ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<int, FLScoreboardDouble>> _shatterTeamContributions = [];
     ConcurrentDictionary<PlayerAlias, TimeTally> _shatterTimes = [];
 
-    List<PlayerAlias> _linkedPlayerAliases = [];
-
     protected override List<ColumnParams> Columns { get; set; } = new() {
         new ColumnParams{           Name = "Name",                                                                      Id = 0,                                                             Width = 200f,                                   Flags = ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoHide },
         new ColumnParams{           Name = "Home World",                        Header = "Home World",                  Id = 1,                                                             Width = 110f,                                   Flags = ImGuiTableColumnFlags.WidthFixed },
@@ -132,9 +130,10 @@ internal class FrontlinePlayerList : PlayerStatsList<FLPlayerJobStats, Frontline
                 bool isTeammate = !isLocalPlayer && player.Team == match.LocalPlayerTeam;
                 bool isOpponent = !isLocalPlayer && !isTeammate;
                 bool statEligible = true;
+                //performance impact here
                 bool nameMatch = player.Name.FullName.Contains(PlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase);
                 if(_plugin.Configuration.EnablePlayerLinking && !nameMatch) {
-                    nameMatch = _linkedPlayerAliases.Contains(player.Name);
+                    nameMatch = _plugin.PlayerLinksService.GetAllLinkedAliases(PlayerFilter.PlayerNamesRaw).Contains(player.Name);
                 }
                 bool sideMatch = PlayerFilter.TeamStatus == TeamStatus.Any
                     || PlayerFilter.TeamStatus == TeamStatus.Teammate && isTeammate

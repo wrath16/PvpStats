@@ -220,13 +220,13 @@ internal class PlayerLinkService {
 
     //for a partial string match
     internal List<PlayerAlias> GetAllLinkedAliases(string playerNameFragment) {
-        List<PlayerAlias> linkedAliases = new();
+        HashSet<PlayerAlias> linkedAliases = new();
         foreach(var link in LinkedAliases) {
             if(link.Value.ToString().Contains(playerNameFragment, StringComparison.OrdinalIgnoreCase)) {
                 linkedAliases.Add(link.Key);
             }
         }
-        return linkedAliases;
+        return linkedAliases.ToList();
     }
 
     internal PlayerAlias GetMainAlias(PlayerAlias alias) {

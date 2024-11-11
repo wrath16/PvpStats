@@ -180,13 +180,11 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
                     if(!filter.AnyJob && player.Job != filter.PlayerJob) {
                         continue;
                     }
+                    if(player.Alias.FullName.Contains(filter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase)) {
+                        return true;
+                    }
                     if(Plugin.Configuration.EnablePlayerLinking) {
-                        if(player.Alias.FullName.Contains(filter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase)
-                        || linkedPlayerAliases.Any(x => x.Equals(player.Alias))) {
-                            return true;
-                        }
-                    } else {
-                        if(player.Alias.FullName.Contains(filter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase)) {
+                        if(linkedPlayerAliases.Any(x => x.Equals(player.Alias))) {
                             return true;
                         }
                     }

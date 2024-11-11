@@ -28,8 +28,6 @@ internal class RivalWingsPlayerList : PlayerStatsList<RWPlayerJobStats, RivalWin
     //Dictionary<PlayerAlias, CCAggregateStats> _playerMercStats = [];
     //Dictionary<PlayerAlias, CCAggregateStats> _playerMidStats = [];
 
-    List<PlayerAlias> _linkedPlayerAliases = [];
-
     protected override List<ColumnParams> Columns { get; set; } = new() {
         new ColumnParams{           Name = "Name",                                                                      Id = 0,                                                             Width = 200f,                                   Flags = ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoHide },
         new ColumnParams{           Name = "Home World",                        Header = "Home World",                  Id = 1,                                                             Width = 110f,                                   Flags = ImGuiTableColumnFlags.WidthFixed },
@@ -128,7 +126,7 @@ internal class RivalWingsPlayerList : PlayerStatsList<RWPlayerJobStats, RivalWin
             bool statEligible = true;
             bool nameMatch = player.Name.FullName.Contains(PlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase);
             if(_plugin.Configuration.EnablePlayerLinking && !nameMatch) {
-                nameMatch = _linkedPlayerAliases.Contains(player.Name);
+                nameMatch = _plugin.PlayerLinksService.GetAllLinkedAliases(PlayerFilter.PlayerNamesRaw).Contains(player.Name);
             }
             bool sideMatch = PlayerFilter.TeamStatus == TeamStatus.Any
                 || PlayerFilter.TeamStatus == TeamStatus.Teammate && isTeammate

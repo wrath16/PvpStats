@@ -25,8 +25,6 @@ internal class CrystallineConflictPlayerList : PlayerStatsList<CCPlayerJobStats,
     ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<Job, CCAggregateStats>> _playerJobStatsLookup = [];
     ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<PlayerAlias, InterlockedTally>> _activeLinks = [];
 
-    List<PlayerAlias> _linkedPlayerAliases = [];
-
     protected override List<ColumnParams> Columns { get; set; } = new() {
         new ColumnParams{           Name = "Name",                                                                      Id = 0,                                                             Width = 200f,                                   Flags = ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoHide },
         new ColumnParams{           Name = "Home World",                        Header = "Home World",                  Id = 1,                                                             Width = 110f,                                   Flags = ImGuiTableColumnFlags.WidthFixed },
@@ -123,7 +121,7 @@ internal class CrystallineConflictPlayerList : PlayerStatsList<CCPlayerJobStats,
                 bool playerStatsEligible = true;
                 bool nameMatch = player.Alias.FullName.Contains(PlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase);
                 if(_plugin.Configuration.EnablePlayerLinking && !nameMatch) {
-                    nameMatch = _linkedPlayerAliases.Contains(player.Alias);
+                    nameMatch = _plugin.PlayerLinksService.GetAllLinkedAliases(PlayerFilter.PlayerNamesRaw).Contains(player.Alias);
                 }
                 bool sideMatch = PlayerFilter.TeamStatus == TeamStatus.Any
                     || PlayerFilter.TeamStatus == TeamStatus.Teammate && isTeammate

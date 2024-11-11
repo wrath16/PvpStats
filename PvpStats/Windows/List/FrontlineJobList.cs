@@ -26,8 +26,6 @@ internal class FrontlineJobList : JobStatsList<FLPlayerJobStats, FrontlineMatch>
     ConcurrentDictionary<Job, ConcurrentDictionary<int, FLScoreboardDouble>> _shatterTeamContributions = [];
     ConcurrentDictionary<Job, TimeTally> _shatterTimes = [];
 
-    List<PlayerAlias> _linkedPlayerAliases = [];
-
     protected override List<ColumnParams> Columns { get; set; } = new() {
         new ColumnParams{           Name = "Job",                                                                       Id = 0,                                                             Width = 85f,                                    Flags = ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoHide },
         new ColumnParams{           Name = "Role",                                                                      Id = 1,                                                             Width = 50f,                                    Flags = ImGuiTableColumnFlags.WidthFixed },
@@ -133,7 +131,7 @@ internal class FrontlineJobList : JobStatsList<FLPlayerJobStats, FrontlineMatch>
                 bool jobStatsEligible = true;
                 bool nameMatch = player.Name.FullName.Contains(PlayerFilter.PlayerNamesRaw, StringComparison.OrdinalIgnoreCase);
                 if(_plugin.Configuration.EnablePlayerLinking && !nameMatch) {
-                    nameMatch = _linkedPlayerAliases.Contains(player.Name);
+                    nameMatch = _plugin.PlayerLinksService.GetAllLinkedAliases(PlayerFilter.PlayerNamesRaw).Contains(player.Name);
                 }
                 bool sideMatch = PlayerFilter.TeamStatus == TeamStatus.Any
                     || PlayerFilter.TeamStatus == TeamStatus.Teammate && isTeammate
