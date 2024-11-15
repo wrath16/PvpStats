@@ -1,6 +1,7 @@
 ﻿using Dalamud.Game;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
+using Lumina.Text.ReadOnly;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -58,7 +59,7 @@ internal class LocalizationService {
 
         //check to make sure column is string
         var columnProperty = type.GetProperty(column) ?? throw new InvalidOperationException($"No property of name: {column} on type {type.FullName}");
-        if(!columnProperty.PropertyType.IsAssignableTo(typeof(Lumina.Text.SeString))) {
+        if(!columnProperty.PropertyType.IsAssignableTo(typeof(ReadOnlySeString))) {
             throw new ArgumentException($"property {column} of type {columnProperty.PropertyType.FullName} on type {type.FullName} is not assignable to a SeString!");
         }
 

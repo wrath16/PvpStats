@@ -17,7 +17,7 @@ internal unsafe class MemoryService : IDisposable {
     private DateTime _lastSortTime;
     internal bool _qPopped = false;
 
-    private ushort[] _blacklistedOpcodes = [951, 593, 735, 453, 983, 567, 371, 272, 560, 873, 468, 407, 264, 947, 340, 578, 516, 399, 732, 858, 350, 785, 425, 570, 153, 956, 739, 452, 859, 404, 633, 583, 317, 211, 209, 758, 179, 298, 671, 990, 903, 289];
+    private ushort[] _blacklistedOpcodes = [];
 
     internal MemoryService(Plugin plugin) {
         _plugin = plugin;

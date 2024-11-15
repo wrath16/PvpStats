@@ -129,7 +129,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
         _plugin.Log.Debug("Match end detour occurred.");
 #if DEBUG
         //_plugin.Functions.FindValue<byte>(0, p2, 0x400, 0, true);
-        //_plugin.Functions.CreateByteDump(p2, 0x400, "cc_match_results");
+        _plugin.Functions.CreateByteDump(p2, 0x400, "cc_match_results");
 #endif
         CrystallineConflictResultsPacket resultsPacket;
         unsafe {
