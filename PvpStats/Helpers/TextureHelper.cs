@@ -73,9 +73,9 @@ internal static class TextureHelper {
 
     internal static uint? GetSoaringIcon(uint level) {
         if(level > 0 && level <= 19) {
-            return (level - 1) + 19181;
+            return (level - 1) + 219181;
         } else if(level == 20) {
-            return 14845;
+            return 214845;
         }
         return null;
     }
