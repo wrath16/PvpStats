@@ -3,7 +3,7 @@ using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
-using Lumina.Excel.GeneratedSheets2;
+using Lumina.Excel.Sheets;
 using PvpStats.Helpers;
 using PvpStats.Services;
 using PvpStats.Types.ClientStruct;
@@ -160,7 +160,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
         CurrentMatch.MatchEndTime = DateTime.Now;
         CurrentMatch.MatchStartTime = CurrentMatch.MatchEndTime - TimeSpan.FromSeconds(results.MatchLength);
         CurrentMatch.LocalPlayer ??= Plugin.GameState.CurrentPlayer;
-        CurrentMatch.DataCenter ??= Plugin.ClientState.LocalPlayer?.CurrentWorld.GameData?.DataCenter.Value?.Name.ToString();
+        CurrentMatch.DataCenter ??= Plugin.ClientState.LocalPlayer?.CurrentWorld.Value.DataCenter.Value.Name.ToString();
         CurrentMatch.PlayerCount = results.PlayerCount;
 
         var addTeamStats = (FrontlineResultsPacket.TeamStat teamStat, FrontlineTeamName name) => {
@@ -223,10 +223,10 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
 
         PlayerAlias playerName;
         unsafe {
-            playerName = (PlayerAlias)$"{MemoryService.ReadString(results.PlayerName, 32)} {Plugin.DataManager.GetExcelSheet<World>()?.GetRow(results.WorldId)?.Name}";
+            playerName = (PlayerAlias)$"{MemoryService.ReadString(results.PlayerName, 32)} {Plugin.DataManager.GetExcelSheet<World>()?.GetRow(results.WorldId).Name}";
         }
         //this should probably use id instead of name string
-        var job = PlayerJobHelper.GetJobFromName(Plugin.DataManager.GetExcelSheet<ClassJob>()?.GetRow(results.ClassJobId)?.NameEnglish ?? "");
+        var job = PlayerJobHelper.GetJobFromName(Plugin.DataManager.GetExcelSheet<ClassJob>()?.GetRow(results.ClassJobId).NameEnglish.ToString() ?? "");
 
         FrontlinePlayer newPlayer = new(playerName, job, (FrontlineTeamName)results.Team) {
             ClassJobId = results.ClassJobId,
@@ -281,7 +281,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
                     }
                 }
 
-                var alias = (PlayerAlias)$"{pc.Name} {pc.HomeWorld.GameData?.Name.ToString()}";
+                var alias = (PlayerAlias)$"{pc.Name} {pc.HomeWorld.Value.Name}";
                 _maxObservedBattleHigh.TryAdd(alias, 0);
                 if(_maxObservedBattleHigh[alias] < battleHigh) {
                     _maxObservedBattleHigh[alias] = battleHigh;

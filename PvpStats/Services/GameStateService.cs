@@ -34,7 +34,7 @@ internal class GameStateService : IDisposable {
 
     private void OnFrameworkUpdate(IFramework framework) {
         string? currentPlayerName = _plugin.ClientState.LocalPlayer?.Name?.ToString();
-        string? currentPlayerWorld = _plugin.ClientState.LocalPlayer?.HomeWorld?.GameData?.Name?.ToString();
+        string? currentPlayerWorld = _plugin.ClientState.LocalPlayer?.HomeWorld.Value.Name.ToString();
         if(currentPlayerName != null && currentPlayerWorld != null) {
             CurrentPlayer = (PlayerAlias)$"{currentPlayerName} {currentPlayerWorld}";
         }

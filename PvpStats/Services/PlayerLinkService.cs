@@ -1,7 +1,7 @@
 ﻿using Dalamud.Plugin.Ipc;
 using Dalamud.Plugin.Ipc.Exceptions;
 using Dalamud.Utility;
-using Lumina.Excel.GeneratedSheets2;
+using Lumina.Excel.Sheets;
 using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
@@ -182,7 +182,7 @@ internal class PlayerLinkService {
         var results = GetPreviousAliasesFunction.InvokeFunc();
         List<PlayerAliasLink> playersLinks = new();
         foreach(var result in results) {
-            PlayerAlias sourceAlias = (PlayerAlias)$"{result.Item1.Item1} {worlds.GetRow(result.Item1.Item2)?.Name}";
+            PlayerAlias sourceAlias = (PlayerAlias)$"{result.Item1.Item1} {worlds.GetRow(result.Item1.Item2).Name}";
             List<PlayerAlias> prevAliases = new();
             foreach(var prevResult in result.Item2) {
                 //ignore partial results, self results and duplicates
@@ -190,7 +190,7 @@ internal class PlayerLinkService {
                      && !(prevResult.Item1 == result.Item1.Item1 && prevResult.Item2 == result.Item1.Item2)) {
                     //string aliasString = $"{prevResult.Item1} {worlds.GetRow(prevResult.Item2).Name}";
                     try {
-                        var alias = (PlayerAlias)$"{prevResult.Item1} {worlds.GetRow(prevResult.Item2)?.Name}";
+                        var alias = (PlayerAlias)$"{prevResult.Item1} {worlds.GetRow(prevResult.Item2).Name}";
                         if(!prevAliases.Contains(alias) && players.Contains(alias)) {
                             prevAliases.Add(alias);
                         }

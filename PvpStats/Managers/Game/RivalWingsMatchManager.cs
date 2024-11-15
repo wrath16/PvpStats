@@ -8,7 +8,7 @@ using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using Lumina.Excel.GeneratedSheets2;
+using Lumina.Excel.Sheets;
 using PvpStats.Helpers;
 using PvpStats.Services;
 using PvpStats.Types.ClientStruct;
@@ -195,9 +195,9 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
 
                 for(int i = 0; i < resultsPacket.PlayerCount; i++) {
                     var player = resultsPacket.PlayerSpan[i];
-                    var playerName = (PlayerAlias)$"{MemoryService.ReadString(player.PlayerName, 32)} {Plugin.DataManager.GetExcelSheet<World>()?.GetRow(player.WorldId)?.Name}";
+                    var playerName = (PlayerAlias)$"{MemoryService.ReadString(player.PlayerName, 32)} {Plugin.DataManager.GetExcelSheet<World>()?.GetRow(player.WorldId).Name}";
                     //var playerName = MemoryService.ReadString(player.PlayerName, 32);
-                    var job = PlayerJobHelper.GetJobFromName(Plugin.DataManager.GetExcelSheet<ClassJob>()?.GetRow(player.ClassJobId)?.NameEnglish ?? "");
+                    var job = PlayerJobHelper.GetJobFromName(Plugin.DataManager.GetExcelSheet<ClassJob>()?.GetRow(player.ClassJobId).NameEnglish.ToString() ?? "");
                     Plugin.Log.Debug(string.Format("{0,-32} {1,-15} {2,-10} {3,-8} {4,-8} {5,-8} {6,-8} {7,-15} {8,-15} {9,-15} {10,-15} {11,-15} {12,-8}", playerName, player.Team, player.Alliance, job, player.Kills, player.Deaths, player.Assists, player.DamageDealt, player.DamageToOther, player.DamageTaken, player.HPRestored, player.Unknown1, player.Ceruleum));
                 }
             }
@@ -224,7 +224,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         CurrentMatch.MatchStartTime = CurrentMatch.MatchEndTime - TimeSpan.FromSeconds(results.MatchLength);
         CurrentMatch.LocalPlayer ??= Plugin.GameState.CurrentPlayer;
         //access object table out of main thread...
-        CurrentMatch.DataCenter ??= Plugin.ClientState.LocalPlayer?.CurrentWorld.GameData?.DataCenter.Value?.Name.ToString();
+        CurrentMatch.DataCenter ??= Plugin.ClientState.LocalPlayer?.CurrentWorld.Value.DataCenter.Value.Name.ToString();
 
         CurrentMatch.StructureHealth = new() {
         { RivalWingsTeamName.Falcons , new() {
@@ -257,9 +257,9 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             //}
             PlayerAlias playerName;
             unsafe {
-                playerName = (PlayerAlias)$"{MemoryService.ReadString(player.PlayerName, 32)} {Plugin.DataManager.GetExcelSheet<World>()?.GetRow(player.WorldId)?.Name}";
+                playerName = (PlayerAlias)$"{MemoryService.ReadString(player.PlayerName, 32)} {Plugin.DataManager.GetExcelSheet<World>()?.GetRow(player.WorldId).Name}";
             }
-            var job = PlayerJobHelper.GetJobFromName(Plugin.DataManager.GetExcelSheet<ClassJob>()?.GetRow(player.ClassJobId)?.NameEnglish ?? "");
+            var job = PlayerJobHelper.GetJobFromName(Plugin.DataManager.GetExcelSheet<ClassJob>()?.GetRow(player.ClassJobId).NameEnglish.ToString() ?? "");
 
             RivalWingsScoreboard playerScoreboard = new() {
                 Kills = player.Kills,
@@ -509,7 +509,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             foreach(IPlayerCharacter pc in Plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player).Cast<IPlayerCharacter>()) {
                 if(!_objIdToPlayer.ContainsKey(pc.GameObjectId)) {
                     try {
-                        var worldName = Plugin.DataManager.GetExcelSheet<World>()?.GetRow(pc.HomeWorld.Id)?.Name;
+                        var worldName = Plugin.DataManager.GetExcelSheet<World>()?.GetRow(pc.HomeWorld.RowId).Name;
                         var player = (PlayerAlias)$"{pc.Name} {worldName}";
                         _objIdToPlayer.Add(pc.GameObjectId, player);
                     } catch {

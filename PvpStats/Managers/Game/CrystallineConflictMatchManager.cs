@@ -7,7 +7,7 @@ using Dalamud.Utility;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using Lumina.Excel.GeneratedSheets2;
+using Lumina.Excel.Sheets;
 using PvpStats.Helpers;
 using PvpStats.Services;
 using PvpStats.Types.ClientStruct;
@@ -190,7 +190,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 jobId ??= _plugin.Localization.GetRowId<ClassJob>(jobRaw, "NameEnglish").FirstOrDefault();
                 string translatedJob = "";
                 if(jobId != null) {
-                    translatedJob = _plugin.DataManager.GetExcelSheet<ClassJob>().GetRow((uint)jobId).NameEnglish;
+                    translatedJob = _plugin.DataManager.GetExcelSheet<ClassJob>().GetRow((uint)jobId).NameEnglish.ToString();
                 }
                 Job? job = PlayerJobHelper.GetJobFromName(translatedJob);
 
@@ -226,8 +226,8 @@ internal class CrystallineConflictMatchManager : IDisposable {
                     _currentMatch!.NeedsPlayerNameValidation = true;
                     foreach(IPlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
                         //_plugin.Log.Debug($"name: {pc.Name} homeworld {pc.HomeWorld.GameData.Name.ToString()} job: {pc.ClassJob.GameData.NameEnglish}");
-                        bool homeWorldMatch = worldRaw.Equals(pc.HomeWorld.GameData?.Name.ToString(), StringComparison.OrdinalIgnoreCase);
-                        bool jobMatch = pc.ClassJob.GameData?.NameEnglish.ToString().Equals(translatedJob, StringComparison.OrdinalIgnoreCase) ?? false;
+                        bool homeWorldMatch = worldRaw.Equals(pc.HomeWorld.Value.Name.ToString(), StringComparison.OrdinalIgnoreCase);
+                        bool jobMatch = pc.ClassJob.Value.NameEnglish.ToString().Equals(translatedJob, StringComparison.OrdinalIgnoreCase);
                         bool nameMatch = PlayerJobHelper.IsAbbreviatedAliasMatch(playerRaw, pc.Name.ToString());
                         //_plugin.Log.Debug($"homeworld match:{homeWorldMatch} jobMatch:{jobMatch} nameMatch: {nameMatch}");
                         if(homeWorldMatch && jobMatch && nameMatch) {
@@ -277,7 +277,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
 
         CrystallineConflictPostMatch postMatch = new();
         _currentMatch.LocalPlayer ??= _plugin.GameState.CurrentPlayer;
-        _currentMatch.DataCenter ??= _plugin.ClientState.LocalPlayer?.CurrentWorld.GameData?.DataCenter.Value?.Name.ToString();
+        _currentMatch.DataCenter ??= _plugin.ClientState.LocalPlayer?.CurrentWorld.Value.DataCenter.Value.Name.ToString();
 
         //set teams
         CrystallineConflictTeam teamAstra = new() {
@@ -333,7 +333,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
 
             CrystallineConflictPostMatchRow playerStats = new() {
                 Team = player.Team == 0 ? CrystallineConflictTeamName.Astra : CrystallineConflictTeamName.Umbra,
-                Job = PlayerJobHelper.GetJobFromName(_plugin.DataManager.GetExcelSheet<ClassJob>()?.GetRow(player.ClassJobId)?.NameEnglish ?? ""),
+                Job = PlayerJobHelper.GetJobFromName(_plugin.DataManager.GetExcelSheet<ClassJob>()?.GetRow(player.ClassJobId).NameEnglish.ToString() ?? ""),
                 PlayerRank = new PlayerRank() {
                     Tier = (ArenaTier)player.ColosseumMatchRankId
                 },
@@ -346,7 +346,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 TimeOnCrystal = TimeSpan.FromSeconds(player.TimeOnCrystal),
             };
             unsafe {
-                playerStats.Player = (PlayerAlias)$"{MemoryService.ReadString(player.PlayerName, 32)} {_plugin.DataManager.GetExcelSheet<World>()?.GetRow((uint)player.WorldId)?.Name}";
+                playerStats.Player = (PlayerAlias)$"{MemoryService.ReadString(player.PlayerName, 32)} {_plugin.DataManager.GetExcelSheet<World>()?.GetRow((uint)player.WorldId).Name}";
             }
 
             //add to team

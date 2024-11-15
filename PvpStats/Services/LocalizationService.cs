@@ -1,6 +1,6 @@
 ﻿using Dalamud.Game;
 using Lumina.Excel;
-using Lumina.Excel.GeneratedSheets2;
+using Lumina.Excel.Sheets;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -51,7 +51,7 @@ internal class LocalizationService {
         return SupportedLanguages.Contains((ClientLanguage)language);
     }
 
-    public List<uint?> GetRowId<T>(string data, string column, ClientLanguage? language = null) where T : ExcelRow {
+    public List<uint?> GetRowId<T>(string data, string column, ClientLanguage? language = null) where T : struct, IExcelRow<T> {
         language ??= _plugin.ClientState.ClientLanguage;
         List<uint?> rowIds = new();
         Type type = typeof(T);
@@ -71,7 +71,7 @@ internal class LocalizationService {
         return rowIds;
     }
 
-    public string TranslateDataTableEntry<T>(string data, string column, ClientLanguage destinationLanguage, ClientLanguage? originLanguage = null) where T : ExcelRow {
+    public string TranslateDataTableEntry<T>(string data, string column, ClientLanguage destinationLanguage, ClientLanguage? originLanguage = null) where T : struct, IExcelRow<T> {
         originLanguage ??= _plugin.ClientState.ClientLanguage;
         uint? rowId = null;
         Type type = typeof(T);
