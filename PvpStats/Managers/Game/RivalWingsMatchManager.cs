@@ -453,9 +453,9 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         var now = DateTime.Now;
 
 #if DEBUG
-        //if(now - _lastUpdate > TimeSpan.FromSeconds(30)) {
-        //    Plugin.Functions.CreateByteDump((nint)director, 0x3000, "RWICD");
-        //}
+        if(now - _lastUpdate > TimeSpan.FromSeconds(30)) {
+            Plugin.Functions.CreateByteDump((nint)director, 0x3000, "RWICD");
+        }
 #endif
 
         try {
