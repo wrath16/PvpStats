@@ -6,34 +6,35 @@ namespace PvpStats.Types.ClientStruct;
 
 [StructLayout(LayoutKind.Explicit)]
 public unsafe struct RivalWingsContentDirector {
-    [FieldOffset(0x1E58)] public fixed byte PlayerAlliances[0x08 * 6];
+
+    [FieldOffset(0x000)] public fixed byte PlayerAlliances[0x08 * 6];
     public unsafe Span<AllianceStatus> AllianceSpan => new(Unsafe.AsPointer(ref PlayerAlliances[0]), 6);
 
-    [FieldOffset(0x1EB8)] public Structure FalconCore;
-    [FieldOffset(0x1F58)] public Structure RavenCore;
-    [FieldOffset(0x1FF8)] public Structure FalconTower1;
-    [FieldOffset(0x2098)] public Structure FalconTower2;
-    [FieldOffset(0x2138)] public Structure RavenTower1;
-    [FieldOffset(0x21D8)] public Structure RavenTower2;
+    [FieldOffset(0x060)] public Structure FalconCore;
+    [FieldOffset(0x100)] public Structure RavenCore;
+    [FieldOffset(0x1A0)] public Structure FalconTower1;
+    [FieldOffset(0x240)] public Structure FalconTower2;
+    [FieldOffset(0x2E0)] public Structure RavenTower1;
+    [FieldOffset(0x380)] public Structure RavenTower2;
 
-    [FieldOffset(0x24D8)] public short MercBalance;                 //50 to 100 for falcons, 0 to 50 for ravens
-    [FieldOffset(0x24DC)] public Team MercControl;
+    [FieldOffset(0x680)] public short MercBalance;                 //50 to 100 for falcons, 0 to 50 for ravens
+    [FieldOffset(0x684)] public Team MercControl;
 
-    [FieldOffset(0x2584)] public Supplies MidType;
-    [FieldOffset(0x2588)] public Team MidControl;
-    [FieldOffset(0x259C)] public byte FalconMidScore;
-    [FieldOffset(0x25A0)] public byte RavenMidScore;
+    [FieldOffset(0x72C)] public Supplies MidType;
+    [FieldOffset(0x730)] public Team MidControl;
+    [FieldOffset(0x744)] public byte FalconMidScore;
+    [FieldOffset(0x748)] public byte RavenMidScore;
     //to find: mid timer, mid status, num players per team, control prog.
 
-    [FieldOffset(0x2610)] public byte FalconChaserCount;
-    [FieldOffset(0x2614)] public byte FalconOppressorCount;
-    [FieldOffset(0x2618)] public byte FalconJusticeCount;
+    [FieldOffset(0x7B8)] public byte FalconChaserCount;
+    [FieldOffset(0x7BC)] public byte FalconOppressorCount;
+    [FieldOffset(0x7C0)] public byte FalconJusticeCount;
 
-    [FieldOffset(0x261C)] public byte RavenChaserCount;
-    [FieldOffset(0x2620)] public byte RavenOppressorCount;
-    [FieldOffset(0x2624)] public byte RavenJusticeCount;
+    [FieldOffset(0x7C4)] public byte RavenChaserCount;
+    [FieldOffset(0x7C8)] public byte RavenOppressorCount;
+    [FieldOffset(0x7CC)] public byte RavenJusticeCount;
 
-    [FieldOffset(0x2630)] public fixed byte FriendlyMechs[0x08 * 24];
+    [FieldOffset(0x7D8)] public fixed byte FriendlyMechs[0x08 * 24];
     public unsafe Span<Mech> FriendlyMechSpan => new(Unsafe.AsPointer(ref FriendlyMechs[0]), 24);
 
     //[FieldOffset(0x2B40)] enemy mech hmm...

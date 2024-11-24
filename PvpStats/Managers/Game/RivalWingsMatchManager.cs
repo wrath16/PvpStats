@@ -74,6 +74,8 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
     [Signature("E8 ?? ?? ?? ?? 48 8B 43 ?? 41 B2", DetourName = nameof(LeaveDutyDetour))]
     private readonly Hook<LeaveDutyDelegate> _leaveDutyHook;
 
+    public const uint RivalWingsContentDirectorOffset = 0x1E58;
+
     public RivalWingsMatchManager(Plugin plugin) : base(plugin) {
         plugin.DutyState.DutyCompleted += OnDutyCompleted;
         plugin.Framework.Update += OnFrameworkUpdate;
@@ -149,7 +151,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             RivalWingsResultsPacket resultsPacket;
             RivalWingsContentDirector director;
             unsafe {
-                director = *(RivalWingsContentDirector*)EventFramework.Instance()->GetInstanceContentDirector();
+                director = *(RivalWingsContentDirector*)((IntPtr)EventFramework.Instance()->GetInstanceContentDirector() + RivalWingsContentDirectorOffset);
                 resultsPacket = *(RivalWingsResultsPacket*)p2;
             }
 
@@ -445,7 +447,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         if(!IsMatchInProgress()) {
             return;
         }
-        var director = (RivalWingsContentDirector*)EventFramework.Instance()->GetInstanceContentDirector();
+        var director = (RivalWingsContentDirector*)((IntPtr)EventFramework.Instance()->GetInstanceContentDirector() + RivalWingsContentDirectorOffset);
         if(director == null) {
             return;
         }
@@ -453,9 +455,9 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         var now = DateTime.Now;
 
 #if DEBUG
-        if(now - _lastUpdate > TimeSpan.FromSeconds(30)) {
-            Plugin.Functions.CreateByteDump((nint)director, 0x3000, "RWICD");
-        }
+        //if(now - _lastUpdate > TimeSpan.FromSeconds(30)) {
+        //    Plugin.Functions.CreateByteDump((nint)director, 0x3000, "RWICD");
+        //}
 #endif
 
         try {

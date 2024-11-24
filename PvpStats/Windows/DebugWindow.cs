@@ -2,28 +2,20 @@
 #if DEBUG
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
-using Dalamud.Interface;
-using Dalamud.Interface.Colors;
-using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
-using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Game.InstanceContent;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using FFXIVClientStructs.Havok;
 using ImGuiNET;
+using PvpStats.Managers.Game;
 using PvpStats.Services;
 using PvpStats.Types.ClientStruct;
-using PvpStats.Types.Display;
-using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
@@ -169,6 +161,16 @@ internal unsafe class DebugWindow : Window {
                     if(instanceDirector != null && instanceDirector->InstanceContentType == InstanceContentType.RivalWing) {
                         DrawRivalWingsDirector();
                     }
+                    //ImGui.Text($"0x{new IntPtr(instanceDirector + RivalWingsMatchManager.RivalWingsContentDirectorOffset).ToString("X2")}");
+                    //ImGui.Text($"0x{new IntPtr(instanceDirector + 0x1E58).ToString("X2")}");
+                    //var x = (IntPtr)instanceDirector + 0x1E58;
+                    //ImGui.Text($"0x{x.ToString("X2")}");
+                    //var x = EventFramework.Instance()->GetInstanceContentDirector();
+                    //ImGui.Text($"0x{((IntPtr)x).ToString("X2")}");
+                    //var y = x + RivalWingsMatchManager.RivalWingsContentDirectorOffset;
+                    //ImGui.Text($"0x{((IntPtr)y).ToString("X2")}");
+                    //var z = (IntPtr)x + RivalWingsMatchManager.RivalWingsContentDirectorOffset;
+                    //ImGui.Text($"0x{((IntPtr)z).ToString("X2")}");
 
                     ImGui.Separator();
                 }
@@ -244,6 +246,28 @@ internal unsafe class DebugWindow : Window {
                         });
                     }
 
+                    if(ImGui.Button("Find shared accounts")) {
+                        Dictionary<ulong, PlayerAlias> accounts = new();
+                        Dictionary<ulong, HashSet<PlayerAlias>> linkedAliases = new();
+                        System.Threading.Tasks.Task.Run(() => {
+                            foreach(var match in _plugin.CCCache.Matches.Where(x => x.IsCompleted && !x.IsDeleted && x.PostMatch != null)) {
+                                foreach(var team in match.Teams) {
+                                    foreach(var player in team.Value.Players.Where(x => x.AccountId != null)) {
+                                        var accountId = (ulong)player.AccountId;
+                                        linkedAliases.TryAdd(accountId, new());
+                                        if(!accounts.TryAdd(accountId, player.Alias)) {
+                                            if(!player.Alias.Equals(accounts[accountId])) {
+                                                if(linkedAliases[accountId].Add(player.Alias)) {
+                                                    Plugin.Log2.Debug($"{accounts[accountId]} is {player.Alias}!");
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+
                     ImGui.Text(Framework.Instance()->GameVersionString);
                     ImGui.Text(Assembly.GetExecutingAssembly().GetName().Version.ToString());
                 }
@@ -264,7 +288,7 @@ internal unsafe class DebugWindow : Window {
     }
 
     private void DrawRivalWingsDirector() {
-        var instanceDirector = (RivalWingsContentDirector*)EventFramework.Instance()->GetInstanceContentDirector();
+        var instanceDirector = (RivalWingsContentDirector*)((IntPtr)EventFramework.Instance()->GetInstanceContentDirector() + RivalWingsMatchManager.RivalWingsContentDirectorOffset);
         using(var table = ImRaii.Table("core", 2)) {
             if(table) {
                 ImGui.TableSetupColumn("falcons");

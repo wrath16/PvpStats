@@ -36,9 +36,6 @@ internal unsafe class MemoryService : IDisposable {
     private unsafe void OnNetworkMessage(nint dataPtr, ushort opCode, uint sourceActorId, uint targetActorId, NetworkMessageDirection direction) {
         if(direction != NetworkMessageDirection.ZoneDown) {
             //_plugin.Log.Debug($"SEND OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
-            //if(opCode == 0x18B) {
-            //    _plugin.Log.Debug("");
-            //}
             return;
         }
 
