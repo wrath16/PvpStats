@@ -73,6 +73,11 @@ internal class GamePeriod {
             StartDate = new DateTime(2024,3,19,10,0,0,DateTimeKind.Utc),
             EndDate = new DateTime(2024,6,26,11,0,0,DateTimeKind.Utc),
         } },
+        { 12, new GamePeriod() {
+            Name = "12",
+            StartDate = new DateTime(2024,11,12,10,0,0,DateTimeKind.Utc),
+            EndDate = new DateTime(2025,5,5,11,0,0,DateTimeKind.Utc),
+        } },
     };
 
     public static readonly Dictionary<int, GamePeriod> Patch = new() {
