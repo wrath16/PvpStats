@@ -16,8 +16,8 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
     public static float[] KillsPerMatchRange = [1.0f, 4.0f];
     public static float[] DeathsPerMatchRange = [1.0f, 3.0f];
     public static float[] AssistsPerMatchRange = [4.0f, 8.0f];
-    public static float[] DamageDealtPerMatchRange = [400000f, 800000f];
-    public static float[] DamageTakenPerMatchRange = [400000f, 800000f];
+    public static float[] DamageDealtPerMatchRange = [450000f, 850000f];
+    public static float[] DamageTakenPerMatchRange = [450000f, 850000f];
     public static float[] HPRestoredPerMatchRange = [350000f, 1000000f];
     public static float[] TimeOnCrystalPerMatchRange = [35f, 110f];
     public static float AverageMatchLength = 5f;
@@ -29,9 +29,9 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
     public static float[] HPRestoredPerMinRange = [HPRestoredPerMatchRange[0] / AverageMatchLength, HPRestoredPerMatchRange[1] / AverageMatchLength];
     public static float[] TimeOnCrystalPerMinRange = [TimeOnCrystalPerMatchRange[0] / AverageMatchLength, TimeOnCrystalPerMatchRange[1] / AverageMatchLength];
     public static float[] ContribRange = [0.15f, 0.25f];
-    public static float[] DamagePerKARange = [52000f, 100000f];
+    public static float[] DamagePerKARange = [60000f, 120000f];
     public static float[] DamagePerLifeRange = [190000f, 400000f];
-    public static float[] DamageTakenPerLifeRange = [140000f, 300000f];
+    public static float[] DamageTakenPerLifeRange = [150000f, 320000f];
     public static float[] HPRestoredPerLifeRange = [120000f, 600000f];
     public static float[] KDARange = [(KillsPerMatchRange[0] + AssistsPerMatchRange[0]) / DeathsPerMatchRange[1], (KillsPerMatchRange[1] + AssistsPerMatchRange[1]) / DeathsPerMatchRange[1]];
 
