@@ -23,14 +23,18 @@ internal class CrystallineConflictPvPProfile {
         ImGuiHelper.HelpMarker("This data comes from SE's game servers.", false);
         ImGui.TextColored(_plugin.Configuration.Colors.Header, "Casual:");
         if(pvpProfile != null) {
-            DrawTable(pvpProfile->CrystallineConflictCasualMatches, pvpProfile->CrystallineConflictCasualMatchesWon);
+            using(ImRaii.PushId("casualTable")) {
+                DrawTable(pvpProfile->CrystallineConflictCasualMatches, pvpProfile->CrystallineConflictCasualMatchesWon);
+            }
         }
         ImGui.Separator();
         ImGui.TextColored(_plugin.Configuration.Colors.Header, "Current Ranked Season:");
         if(pvpProfile != null) {
-            DrawTable(pvpProfile->CrystallineConflictRankedMatches, pvpProfile->CrystallineConflictRankedMatchesWon);
+            using(ImRaii.PushId("rankedTable")) {
+                DrawTable(pvpProfile->CrystallineConflictRankedMatches, pvpProfile->CrystallineConflictRankedMatchesWon);
+            }
             ImGui.NewLine();
-            using(var table = ImRaii.Table("casual", 2, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
+            using(var table = ImRaii.Table("rankTable", 2, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
                 if(table) {
                     ImGui.TableSetupColumn("description", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 158f);
                     ImGui.TableSetupColumn($"value", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 45f);
@@ -61,7 +65,7 @@ internal class CrystallineConflictPvPProfile {
     }
 
     private void DrawTable(int matches, int wins) {
-        using(var table = ImRaii.Table("casual", 3, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
+        using(var table = ImRaii.Table("table", 3, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
             if(table) {
                 ImGui.TableSetupColumn("description", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 158f);
                 ImGui.TableSetupColumn($"value", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 45f);
