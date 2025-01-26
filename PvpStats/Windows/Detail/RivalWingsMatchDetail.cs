@@ -5,7 +5,10 @@ using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PvpStats.Helpers;
 using PvpStats.Types.Display;
+using PvpStats.Types.Event;
+using PvpStats.Types.Event.RivalWings;
 using PvpStats.Types.Match;
+using PvpStats.Types.Match.Timeline;
 using PvpStats.Types.Player;
 using PvpStats.Windows.Filter;
 using System;
@@ -17,6 +20,9 @@ using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Detail;
 internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
+
+    private RivalWingsMatchTimeline? _timeline;
+    private List<MatchEvent> _consolidatedEvents = new();
 
     private RWTeamQuickFilter _teamQuickFilter;
     private Dictionary<PlayerAlias, RWScoreboardDouble>? _playerContributions = [];
@@ -58,6 +64,15 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 }
             }
         }
+
+        if(match.TimelineId != null) {
+            _timeline = Plugin.Storage.GetRWTimelines().Query().Where(x => x.Id.Equals(match.TimelineId)).FirstOrDefault();
+            if(_timeline != null) {
+                _consolidatedEvents = [.. _timeline.MercClaims, .. _timeline.MidClaims];
+                _consolidatedEvents.Sort();
+            }
+        }
+
         CSV = BuildCSV();
         _teamQuickFilter = new(plugin, ApplyTeamFilter);
         _unfilteredScoreboard = match.PlayerScoreboards;
@@ -196,6 +211,16 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                     }
                     _teamQuickFilter.Draw();
                     DrawPlayerStatsTable();
+                }
+            }
+            if(_timeline != null) {
+                using var tab = ImRaii.TabItem("Timeline");
+                if(tab) {
+                    if(CurrentTab != "Timeline") {
+                        SetWindowSize(new Vector2(975, 800));
+                        CurrentTab = "Timeline";
+                    }
+                    DrawTimeline();
                 }
             }
         }
@@ -833,6 +858,58 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             }
         }
     }
+
+    private void DrawTimeline() {
+        //filters...
+
+        using var child = ImRaii.Child("timelineChild");
+        foreach(var matchEvent in _consolidatedEvents) {
+            var timeDiff =  Match.MatchStartTime - matchEvent.Timestamp;
+            var eventType = matchEvent.GetType();
+        }
+    }
+
+    private void DrawEvent(MidClaimEvent matchEvent) {
+        ImGui.Text("The ");
+        ImGui.SameLine();
+        var color = Plugin.Configuration.GetRivalWingsTeamColor(matchEvent.Team);
+        ImGui.TextColored(color, MatchHelper.GetTeamName(matchEvent.Team));
+        ImGui.SameLine();
+        ImGui.Text("have claimed a shipment of ");
+        ImGui.TextColored(ImGuiColors.DalamudYellow, MatchHelper.GetSuppliesName(matchEvent.Kind) + ".");
+    }
+
+    private void DrawEvent(MercClaimEvent matchEvent) {
+        ImGui.Text("The ");
+        ImGui.SameLine();
+        var color = Plugin.Configuration.GetRivalWingsTeamColor(matchEvent.Team);
+        ImGui.TextColored(color, MatchHelper.GetTeamName(matchEvent.Team));
+        ImGui.SameLine();
+        ImGui.Text("have won a contract with a ");
+        ImGui.TextColored(ImGuiColors.DalamudYellow, "goblin mercenary.");
+    }
+
+    private void DrawEvent(MatchEndEvent matchEvent) {
+        ImGui.Text("The ");
+        ImGui.SameLine();
+        var color = Plugin.Configuration.GetRivalWingsTeamColor(matchEvent.Team);
+        ImGui.TextColored(color, MatchHelper.GetTeamName(matchEvent.Team));
+        ImGui.SameLine();
+        ImGui.Text("are victorious!");
+    }
+
+    //private void DrawEvent(StructureHealthEvent matchEvent, RivalWingsTeamName team, RivalWingsStructure structure) {
+    //    if(matchEvent.Health <= 0) {
+    //        ImGui.Text("The ");
+    //        ImGui.SameLine();
+    //        //insert icon
+    //        var color = Plugin.Configuration.GetRivalWingsTeamColor(team);
+    //        ImGui.TextColored(color, MatchHelper.GetSuppliesName(matchEvent.Team));
+    //        ImGui.SameLine();
+    //        ImGui.Text("are victorious!");
+    //    }
+
+    //}
 
     private string GetAllianceLetter(int alliance) {
         return alliance switch {

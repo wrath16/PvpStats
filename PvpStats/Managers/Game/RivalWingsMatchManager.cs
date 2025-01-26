@@ -13,6 +13,7 @@ using PvpStats.Helpers;
 using PvpStats.Services;
 using PvpStats.Types.ClientStruct;
 using PvpStats.Types.Match;
+using PvpStats.Types.Match.Timeline;
 using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
@@ -23,6 +24,10 @@ using System.Threading.Tasks;
 
 namespace PvpStats.Managers.Game;
 internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
+
+    private RivalWingsMatchTimeline? _currentMatchTimeline;
+    private DateTime _lastStructurePoll = DateTime.UnixEpoch;
+    private uint _pollingThresholdMS = 5000;
 
     private IntPtr _leaveDutyButton = IntPtr.Zero;
     private IntPtr _leaveDutyButtonOwnerNode = IntPtr.Zero;
@@ -125,6 +130,22 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                     Arena = arena,
                     PluginVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString(),
                 };
+                _currentMatchTimeline = new() {
+                    StructureHealths = new() {
+                        {RivalWingsTeamName.Falcons, new() {
+                            { RivalWingsStructure.Core, new() },
+                            { RivalWingsStructure.Tower1, new() },
+                            { RivalWingsStructure.Tower2, new() },
+                        } },
+                        {RivalWingsTeamName.Falcons, new() {
+                            { RivalWingsStructure.Core, new() },
+                            { RivalWingsStructure.Tower1, new() },
+                            { RivalWingsStructure.Tower2, new() },
+                        } }
+                    },
+                    MercClaims = new(),
+                    MidClaims = new()
+                };
                 unsafe {
                     if(FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance() != null) {
                         CurrentMatch.GameVersion = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->GameVersionString;
@@ -162,6 +183,9 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             var matchEndTask = Plugin.DataQueue.QueueDataOperation(async () => {
                 if(ProcessMatchResults(resultsPacket, director)) {
                     await Plugin.RWCache.UpdateMatch(CurrentMatch!);
+                    if(_currentMatchTimeline != null) {
+                        await Plugin.Storage.AddRWTimeline(_currentMatchTimeline);
+                    }
                     _ = Plugin.WindowManager.RefreshRWWindow();
                 }
             });
@@ -338,6 +362,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         var enemyTeam = (RivalWingsTeamName)(((int)playerTeam! + 1) % 2);
         CurrentMatch.MatchWinner = results.Result == 0 ? playerTeam : results.Result == 1 ? enemyTeam : RivalWingsTeamName.Unknown;
         CurrentMatch.IsCompleted = true;
+        CurrentMatch.TimelineId = _currentMatchTimeline.Id;
         return true;
     }
 
@@ -461,6 +486,40 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
 #endif
 
         try {
+            //structure health
+            foreach(var team in _currentMatchTimeline!.StructureHealths!) {
+                foreach(var structure in team.Value) {
+                    var lastEvent = structure.Value.LastOrDefault();
+                    int? currentValue = null;
+                    switch(team.Key, structure.Key) {
+                        case (RivalWingsTeamName.Falcons, RivalWingsStructure.Core):
+                            currentValue = director->FalconCore.Integrity;
+                            break;
+                        case (RivalWingsTeamName.Falcons, RivalWingsStructure.Tower1):
+                            currentValue = director->FalconTower1.Integrity;
+                            break;
+                        case (RivalWingsTeamName.Falcons, RivalWingsStructure.Tower2):
+                            currentValue = director->FalconTower2.Integrity;
+                            break;
+                        case (RivalWingsTeamName.Ravens, RivalWingsStructure.Core):
+                            currentValue = director->RavenCore.Integrity;
+                            break;
+                        case (RivalWingsTeamName.Ravens, RivalWingsStructure.Tower1):
+                            currentValue = director->RavenTower1.Integrity;
+                            break;
+                        case (RivalWingsTeamName.Ravens, RivalWingsStructure.Tower2):
+                            currentValue = director->RavenTower2.Integrity;
+                            break;
+                        default:
+                            break;
+                    }
+                    if(currentValue != null && (lastEvent == null || lastEvent.Health != currentValue)) {
+                        structure.Value.Add(new(now, (int)currentValue));
+                    }
+                }
+            }
+
+
             //mech times
             if(!_matchEnded) {
                 _mechTime[RivalWingsTeamName.Falcons][RivalWingsMech.Chaser] += director->FalconChaserCount * (now - _lastUpdate).TotalSeconds;
@@ -474,16 +533,19 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             //merc win
             if(_lastMercControl == RivalWingsContentDirector.Team.None && director->MercControl != RivalWingsContentDirector.Team.None) {
                 _mercCounts[(RivalWingsTeamName)director->MercControl]++;
+                _currentMatchTimeline.MercClaims!.Add(new(now, (RivalWingsTeamName)director->MercControl));
             }
             _lastMercControl = director->MercControl;
 
             //mid win
             if(_lastFalconMidScore != 100 && director->FalconMidScore == 100) {
                 _midCounts[RivalWingsTeamName.Falcons][(RivalWingsSupplies)director->MidType]++;
+                _currentMatchTimeline.MidClaims!.Add(new(now, RivalWingsTeamName.Falcons, (RivalWingsSupplies)director->MidType));
             }
             _lastFalconMidScore = director->FalconMidScore;
             if(_lastRavenMidScore != 100 && director->RavenMidScore == 100) {
                 _midCounts[RivalWingsTeamName.Ravens][(RivalWingsSupplies)director->MidType]++;
+                _currentMatchTimeline.MidClaims!.Add(new(now, RivalWingsTeamName.Ravens, (RivalWingsSupplies)director->MidType));
             }
             _lastRavenMidScore = director->RavenMidScore;
 
