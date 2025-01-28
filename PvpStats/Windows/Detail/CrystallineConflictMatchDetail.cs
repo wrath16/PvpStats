@@ -15,6 +15,7 @@ using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Threading.Tasks;
+using static Lumina.Data.Parsing.Layer.LayerCommon;
 
 namespace PvpStats.Windows.Detail;
 
@@ -27,6 +28,8 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     private Dictionary<PlayerAlias, CCScoreboardDouble>? _playerContributions = [];
     private Dictionary<PlayerAlias, CCScoreboardTally>? _scoreboard;
     private Dictionary<PlayerAlias, CCScoreboardTally>? _unfilteredScoreboard;
+
+    private bool _easterEgg = false;
 
     internal CrystallineConflictMatchDetail(Plugin plugin, CrystallineConflictMatch match) : base(plugin, plugin.CCCache, match) {
         ForceMainWindow = true;
@@ -60,6 +63,9 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         }
         SortByColumn(0, ImGuiSortDirection.Ascending);
         CSV = BuildCSV();
+
+        var ms = DateTime.Now.Millisecond;
+        _easterEgg = ms % 100 == 0;
     }
 
     public void Open(CrystallineConflictMatch match) {
@@ -205,8 +211,20 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                             string playerName0 = player0.Alias.Name;
                             ImGuiHelper.RightAlignCursor(playerName0);
                             ImGui.AlignTextToFramePadding();
-                            ImGui.TextColored(playerColor0, playerName0);
-                            ImGuiHelper.WrappedTooltip(player0.Alias.HomeWorld);
+                            //easter egg
+                            if(_easterEgg && player0.Alias.Equals("Sarah Montcroix Siren")) {
+                                var cursorBefore = ImGui.GetCursorPos();
+                                using(var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 0f))) {
+                                    ImGui.TextColored(Vector4.Zero, player0.Alias.Name);
+                                    ImGuiHelper.WrappedTooltip(player0.Alias.HomeWorld);
+                                }
+                                ImGui.SetCursorPos(cursorBefore);
+                                ImGui.AlignTextToFramePadding();
+                                ImGuiHelper.DrawRainbowTextByChar(playerName0);
+                            } else {
+                                ImGui.TextColored(playerColor0, playerName0);
+                                ImGuiHelper.WrappedTooltip(player0.Alias.HomeWorld);
+                            }
 
                             ImGui.TableNextColumn();
                             using(var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero)) {
@@ -238,8 +256,20 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                             }
                             string playerName1 = secondTeam.Players[i].Alias.Name;
                             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetStyle().ItemSpacing.X * 2);
-                            ImGui.TextColored(playerColor1, playerName1);
-                            ImGuiHelper.WrappedTooltip(secondTeam.Players[i].Alias.HomeWorld);
+                            //easter egg
+                            if(_easterEgg && player1.Alias.Equals("Sarah Montcroix Siren")) {
+                                var cursorBefore = ImGui.GetCursorPos();
+                                using(var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 0f))) {
+                                    ImGui.TextColored(Vector4.Zero, player1.Alias.Name);
+                                    ImGuiHelper.WrappedTooltip(player1.Alias.HomeWorld);
+                                }
+                                ImGui.SetCursorPos(cursorBefore);
+                                ImGui.AlignTextToFramePadding();
+                                ImGuiHelper.DrawRainbowTextByChar(playerName1);
+                            } else {
+                                ImGui.TextColored(playerColor1, playerName1);
+                                ImGuiHelper.WrappedTooltip(secondTeam.Players[i].Alias.HomeWorld);
+                            }
 
                             ImGui.TableNextColumn();
                             using(var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero)) {

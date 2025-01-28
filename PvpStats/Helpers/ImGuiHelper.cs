@@ -323,6 +323,39 @@ internal static class ImGuiHelper {
         ImGui.SetCursorPos(cursorBefore);
     }
 
+    public static void DrawRainbowText(string text, int period = 30, float offset = 0) {
+        var index = (ImGui.GetFrameCount() + offset * period) % period;
+        var minColor = new Vector4(0f, 0f, 0f, 1f);
+        var maxColor = new Vector4(0f, 0f, 0f, 1f);
+        var percentile = 0f;
+        if(index >= 0 && index < period / 3) {
+            minColor = new Vector4(1f, 0f, 0f, 1f);
+            maxColor = new Vector4(0f, 1f, 0f, 1f);
+            percentile = index / (period / 3);
+        } else if(index >= period / 3 && index < 2 * period / 3) {
+            minColor = new Vector4(0f, 1f, 0f, 1f);
+            maxColor = new Vector4(0f, 0f, 1f, 1f);
+            percentile = (index - (period / 3)) / (period / 3);
+        } else {
+            minColor = new Vector4(0f, 0f, 1f, 1f);
+            maxColor = new Vector4(1f, 0f, 0f, 1f);
+            percentile = (index - (2 * period / 3)) / (period / 3);
+        }
+
+        var textColor = ColorScale(minColor, maxColor, 0f, 1f, percentile);
+        ImGui.TextColored(textColor, text);
+    }
+
+    public static void DrawRainbowTextByChar(string text) {
+        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(0f, ImGui.GetStyle().ItemSpacing.Y));
+        for(int i = 0; i < text.Length; i++) {
+            char c = text[i];
+            float offset = (float)i / text.Length;
+            DrawRainbowText(c.ToString(), 50, offset);
+            ImGui.SameLine();
+        }
+    }
+
     public static string AddOrdinal(int num) {
         if(num <= 0) return num.ToString();
 

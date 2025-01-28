@@ -9,6 +9,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.InstanceContent;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
+using PvpStats.Helpers;
 using PvpStats.Managers.Game;
 using PvpStats.Services;
 using PvpStats.Types.ClientStruct;
@@ -270,6 +271,15 @@ internal unsafe class DebugWindow : Window {
 
                     ImGui.Text(Framework.Instance()->GameVersionString);
                     ImGui.Text(Assembly.GetExecutingAssembly().GetName().Version.ToString());
+
+                    ImGuiHelper.DrawRainbowTextByChar("Sarah Montcroix");
+
+                    //using(var style = ImRaii.PushStyle(ImGuiStyleVar.Alpha, 0.5f)) {
+                    //    //ImGui.Rec
+                    //    ImGui.Text("Test Text");
+                    //}
+                    //ImGui.Text("Test no alpha text");
+
                 }
             }
         }
