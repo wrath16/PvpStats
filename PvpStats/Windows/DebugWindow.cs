@@ -13,6 +13,8 @@ using PvpStats.Helpers;
 using PvpStats.Managers.Game;
 using PvpStats.Services;
 using PvpStats.Types.ClientStruct;
+using PvpStats.Types.Match;
+using PvpStats.Types.Match.Timeline;
 using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
@@ -267,6 +269,13 @@ internal unsafe class DebugWindow : Window {
                                 }
                             }
                         });
+                    }
+
+                    if(ImGui.Button("Test Timeline")) {
+                        var x = new RivalWingsMatchTimeline();
+                        Plugin.Log2.Debug($"{x.Id}");
+                        _plugin.Storage.AddRWTimeline(x);
+                        Plugin.Log2.Debug($"{x.Id}");
                     }
 
                     ImGui.Text(Framework.Instance()->GameVersionString);

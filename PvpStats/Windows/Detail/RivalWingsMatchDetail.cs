@@ -69,6 +69,50 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             _timeline = Plugin.Storage.GetRWTimelines().Query().Where(x => x.Id.Equals(match.TimelineId)).FirstOrDefault();
             if(_timeline != null) {
                 _consolidatedEvents = [.. _timeline.MercClaims, .. _timeline.MidClaims];
+                //get structure destroyed events
+                foreach(var teamStructHealths in _timeline.StructureHealths ?? []) {
+                    foreach(var structHealths in teamStructHealths.Value) {
+                        var lastHealth = structHealths.Value.Last();
+                        if(lastHealth.Health <= 0) {
+                            _consolidatedEvents.Add(new StructureHealthEvent(lastHealth.Timestamp, lastHealth.Health) { 
+                                Structure = structHealths.Key,
+                                Team = teamStructHealths.Key,
+                            });
+                        }
+                    }
+                }
+                //get soaring high events
+                foreach(var allianceSoaringStacks in _timeline.AllianceStacks ?? []) {
+                    var flyingHighEvent = allianceSoaringStacks.Value.FirstOrDefault(x => x.Count == 20);
+                    if(flyingHighEvent != null) {
+                        _consolidatedEvents.Add(new AllianceSoaringEvent(flyingHighEvent.Timestamp, flyingHighEvent.Count) {
+                            Alliance = allianceSoaringStacks.Key,
+                        });
+                    }
+                }
+
+                //get first mech event
+                foreach(var teamMechCountEvents in _timeline.MechCounts ?? []) {
+                    MechCountEvent? teamFirstDeployEvent = null;
+                    RivalWingsMech? teamFirstDeployMech = null;
+                    foreach(var mechCountEvents in teamMechCountEvents.Value) {
+                        var firstDeployEvent = mechCountEvents.Value.FirstOrDefault(x => x.Count > 0);
+                        if(firstDeployEvent != null && (teamFirstDeployEvent == null || firstDeployEvent.Timestamp < teamFirstDeployEvent.Timestamp)) {
+                            teamFirstDeployEvent = firstDeployEvent;
+                            teamFirstDeployMech = mechCountEvents.Key;
+                        }
+                    }
+                    if(teamFirstDeployEvent != null) {
+                        _consolidatedEvents.Add(new MechCountEvent(teamFirstDeployEvent.Timestamp, teamFirstDeployEvent.Count) {
+                            Mech = teamFirstDeployMech,
+                            Team = teamMechCountEvents.Key,
+                        });
+                    }
+                }
+
+                if(match.MatchEndTime != null) {
+                    _consolidatedEvents.Add(new MatchEndEvent((DateTime)match.MatchEndTime, match.MatchWinner));
+                }
                 _consolidatedEvents.Sort();
             }
         }
@@ -183,11 +227,11 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 }
             }
             if(Match.PlayerScoreboards != null) {
-                using var tab = ImRaii.TabItem("Players");
+                using var tab = ImRaii.TabItem("Scoreboard");
                 if(tab) {
-                    if(CurrentTab != "Players") {
+                    if(CurrentTab != "Scoreboard") {
                         SetWindowSize(new Vector2(975, 800));
-                        CurrentTab = "Players";
+                        CurrentTab = "Scoreboard";
                     }
                     ImGuiHelper.HelpMarker("Right-click table header to show and hide columns including extra metrics.", false, true);
                     if(_playerContributions != null) {
@@ -217,7 +261,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 using var tab = ImRaii.TabItem("Timeline");
                 if(tab) {
                     if(CurrentTab != "Timeline") {
-                        SetWindowSize(new Vector2(975, 800));
+                        SetWindowSize(new Vector2(SizeConstraints!.Value.MinimumSize.X, 600));
                         CurrentTab = "Timeline";
                     }
                     DrawTimeline();
@@ -863,53 +907,114 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
         //filters...
 
         using var child = ImRaii.Child("timelineChild");
+        using var table = ImRaii.Table("timelineTable", 2);
+        ImGui.TableSetupColumn("time", ImGuiTableColumnFlags.WidthFixed, 50f * ImGuiHelpers.GlobalScale);
+        ImGui.TableSetupColumn("text", ImGuiTableColumnFlags.WidthStretch);
+
         foreach(var matchEvent in _consolidatedEvents) {
+            ImGui.TableNextColumn();
             var timeDiff =  Match.MatchStartTime - matchEvent.Timestamp;
+            ImGuiHelper.DrawNumericCell($"{ImGuiHelper.GetTimeSpanString(timeDiff ?? TimeSpan.Zero)} : ");
+            ImGui.TableNextColumn();
             var eventType = matchEvent.GetType();
+            switch(eventType) {
+                case Type _ when eventType == typeof(MidClaimEvent):
+                    DrawEvent(matchEvent as MidClaimEvent);
+                    break;
+                case Type _ when eventType == typeof(MercClaimEvent):
+                    DrawEvent(matchEvent as MercClaimEvent);
+                    break;
+                case Type _ when eventType == typeof(MatchEndEvent):
+                    DrawEvent(matchEvent as MatchEndEvent);
+                    break;
+                case Type _ when eventType == typeof(StructureHealthEvent):
+                    DrawEvent(matchEvent as StructureHealthEvent);
+                    break;
+                case Type _ when eventType == typeof(AllianceSoaringEvent):
+                    DrawEvent(matchEvent as AllianceSoaringEvent);
+                    break;
+                case Type _ when eventType == typeof(MechCountEvent):
+                    DrawEvent(matchEvent as MechCountEvent);
+                    break;
+                default:
+                    break;
+            }
         }
     }
 
     private void DrawEvent(MidClaimEvent matchEvent) {
+        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(0f, ImGui.GetStyle().ItemSpacing.Y));
         ImGui.Text("The ");
         ImGui.SameLine();
         var color = Plugin.Configuration.GetRivalWingsTeamColor(matchEvent.Team);
         ImGui.TextColored(color, MatchHelper.GetTeamName(matchEvent.Team));
         ImGui.SameLine();
-        ImGui.Text("have claimed a shipment of ");
-        ImGui.TextColored(ImGuiColors.DalamudYellow, MatchHelper.GetSuppliesName(matchEvent.Kind) + ".");
+        ImGui.Text(" have secured a ");
+        ImGui.SameLine();
+        ImGui.TextColored(ImGuiColors.DalamudYellow, MatchHelper.GetSuppliesName(matchEvent.Kind));
+        ImGui.SameLine();
+        ImGui.Text(" shipment.");
     }
 
     private void DrawEvent(MercClaimEvent matchEvent) {
+        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(0f, ImGui.GetStyle().ItemSpacing.Y));
         ImGui.Text("The ");
         ImGui.SameLine();
         var color = Plugin.Configuration.GetRivalWingsTeamColor(matchEvent.Team);
         ImGui.TextColored(color, MatchHelper.GetTeamName(matchEvent.Team));
         ImGui.SameLine();
-        ImGui.Text("have won a contract with a ");
+        ImGui.Text(" have won a contract with a ");
+        ImGui.SameLine();
         ImGui.TextColored(ImGuiColors.DalamudYellow, "goblin mercenary.");
     }
 
     private void DrawEvent(MatchEndEvent matchEvent) {
+        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(0f, ImGui.GetStyle().ItemSpacing.Y));
         ImGui.Text("The ");
         ImGui.SameLine();
         var color = Plugin.Configuration.GetRivalWingsTeamColor(matchEvent.Team);
         ImGui.TextColored(color, MatchHelper.GetTeamName(matchEvent.Team));
         ImGui.SameLine();
-        ImGui.Text("are victorious!");
+        ImGui.Text(" are victorious!");
     }
 
-    //private void DrawEvent(StructureHealthEvent matchEvent, RivalWingsTeamName team, RivalWingsStructure structure) {
-    //    if(matchEvent.Health <= 0) {
-    //        ImGui.Text("The ");
-    //        ImGui.SameLine();
-    //        //insert icon
-    //        var color = Plugin.Configuration.GetRivalWingsTeamColor(team);
-    //        ImGui.TextColored(color, MatchHelper.GetSuppliesName(matchEvent.Team));
-    //        ImGui.SameLine();
-    //        ImGui.Text("are victorious!");
-    //    }
+    private void DrawEvent(StructureHealthEvent matchEvent) {
+        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(0f, ImGui.GetStyle().ItemSpacing.Y));
+        if(matchEvent.Health <= 0) {
+            ImGui.Text("The ");
+            ImGui.SameLine();
+            var color = Plugin.Configuration.GetRivalWingsTeamColor(matchEvent.Team);
+            ImGui.TextColored(color, MatchHelper.GetTeamName(matchEvent.Team) + "' ");
+            //insert icon
+            ImGui.SameLine();
+            ImGui.TextColored(color, MatchHelper.GetStructureName(matchEvent.Structure));
+            ImGui.SameLine();
+            ImGui.Text(" was destroyed.");
+        }
+    }
 
-    //}
+    private void DrawEvent(AllianceSoaringEvent matchEvent) {
+        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(0f, ImGui.GetStyle().ItemSpacing.Y));
+        if(matchEvent.Count == 20) {
+            var color = Plugin.Configuration.GetRivalWingsTeamColor(Match.LocalPlayerTeam);
+            ImGui.TextColored(color, $"Alliance {GetAllianceLetter(matchEvent.Alliance ?? 777)}");
+            ImGui.SameLine();
+            ImGui.Text(" is ");
+            ImGui.SameLine();
+            //insert icon
+            ImGui.TextColored(ImGuiColors.DalamudOrange, "Flying High!");
+        }
+    }
+
+    private void DrawEvent(MechCountEvent matchEvent) {
+        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(0f, ImGui.GetStyle().ItemSpacing.Y));
+        ImGui.Text("The ");
+        ImGui.SameLine();
+        var color = Plugin.Configuration.GetRivalWingsTeamColor(matchEvent.Team);
+        ImGui.TextColored(color, MatchHelper.GetTeamName(matchEvent.Team));
+        ImGui.SameLine();
+        ImGui.Text($" have deployed their first warmachina ({matchEvent.Mech}).");
+    }
 
     private string GetAllianceLetter(int alliance) {
         return alliance switch {

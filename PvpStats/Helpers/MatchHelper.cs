@@ -218,7 +218,7 @@ public static class MatchHelper {
         }
     }
 
-    public static string GetSuppliesName(RivalWingsSupplies supplies) {
+    public static string GetSuppliesName(RivalWingsSupplies? supplies) {
         return supplies switch {
             RivalWingsSupplies.Gobtank => "Gobtank",
             RivalWingsSupplies.Ceruleum => "Main Ceruleum Tank",
@@ -228,7 +228,7 @@ public static class MatchHelper {
         };
     }
 
-    public static string GetStructureName(RivalWingsStructure structure) {
+    public static string GetStructureName(RivalWingsStructure? structure) {
         return structure switch {
             RivalWingsStructure.Core => "Core",
             RivalWingsStructure.Tower1 => "North Tower",

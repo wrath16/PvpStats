@@ -10,6 +10,8 @@ public class RivalWingsMatchTimeline : PvpMatchTimeline {
 
     //polled
     public Dictionary<RivalWingsTeamName, Dictionary<RivalWingsStructure, List<StructureHealthEvent>>>? StructureHealths { get; set; }
+    public Dictionary<RivalWingsTeamName, Dictionary<RivalWingsMech, List<MechCountEvent>>>? MechCounts { get; set; }
+    public Dictionary<int, List<AllianceSoaringEvent>>? AllianceStacks { get; set; }
 
     //triggered
     public List<MercClaimEvent>? MercClaims { get; set; }
