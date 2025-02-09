@@ -905,7 +905,9 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
 
     private void DrawTimeline() {
         //filters...
-
+        if(Match.DutyStartTime >= Match.MatchStartTime) {
+            ImGui.TextColored(ImGuiColors.DalamudRed, "Full timeline incomplete due to duty joined in progress.");
+        }
         using var child = ImRaii.Child("timelineChild");
         using var table = ImRaii.Table("timelineTable", 2);
         ImGui.TableSetupColumn("time", ImGuiTableColumnFlags.WidthFixed, 50f * ImGuiHelpers.GlobalScale);
