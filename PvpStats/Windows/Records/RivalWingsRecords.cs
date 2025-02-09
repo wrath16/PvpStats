@@ -192,6 +192,5 @@ internal class RivalWingsRecords : MatchRecords<RivalWingsMatch> {
             }
         }
 
-
     }
 }

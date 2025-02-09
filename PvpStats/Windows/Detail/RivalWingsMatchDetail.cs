@@ -74,7 +74,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                     foreach(var structHealths in teamStructHealths.Value) {
                         var lastHealth = structHealths.Value.Last();
                         if(lastHealth.Health <= 0) {
-                            _consolidatedEvents.Add(new StructureHealthEvent(lastHealth.Timestamp, lastHealth.Health) { 
+                            _consolidatedEvents.Add(new StructureHealthEvent(lastHealth.Timestamp, lastHealth.Health) {
                                 Structure = structHealths.Key,
                                 Team = teamStructHealths.Key,
                             });
@@ -913,7 +913,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
 
         foreach(var matchEvent in _consolidatedEvents) {
             ImGui.TableNextColumn();
-            var timeDiff =  Match.MatchStartTime - matchEvent.Timestamp;
+            var timeDiff = Match.MatchStartTime - matchEvent.Timestamp;
             ImGuiHelper.DrawNumericCell($"{ImGuiHelper.GetTimeSpanString(timeDiff ?? TimeSpan.Zero)} : ");
             ImGui.TableNextColumn();
             var eventType = matchEvent.GetType();

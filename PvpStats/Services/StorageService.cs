@@ -153,7 +153,6 @@ internal class StorageService {
         await WriteToDatabase(() => GetRWTimelines().Update(timeline));
     }
 
-
     internal async Task UpdateRWMatches(IEnumerable<RivalWingsMatch> matches) {
         LogUpdate(null, matches.Count());
         await WriteToDatabase(() => GetRWMatches().Update(matches.Where(m => m.Id != null)));

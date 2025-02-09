@@ -592,10 +592,10 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                     if(lastMercClaim != null && (now - lastMercClaim.Timestamp).TotalSeconds <= 30) {
                         Plugin.Log2.Warning("Double merc claim event detected.");
                     } else {
+                        Plugin.Log2.Debug($"Merc Claim Event: {(RivalWingsTeamName)director->MercControl}");
                         _mercCounts[(RivalWingsTeamName)director->MercControl]++;
                         _currentMatchTimeline.MercClaims.Add(new(now, (RivalWingsTeamName)director->MercControl));
                     }
-                    Plugin.Log2.Debug($"Merc Claim Event: {(RivalWingsTeamName)director->MercControl}");
                 }
 
                 //mid win
@@ -674,7 +674,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                     }
                 }
             }
-        } catch (Exception e) {
+        } catch(Exception e) {
 #if DEBUG
             Plugin.Log2.Error(e, "Exception in framework update");
 #endif

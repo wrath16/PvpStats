@@ -60,7 +60,7 @@ internal class RWTeamQuickFilter : DataFilter {
 
                 bool filterState = category.Value;
                 if(ImGui.Checkbox($"##{category.Key}{GetHashCode()}", ref filterState)) {
-                    Task.Run(async() => {
+                    Task.Run(async () => {
                         FilterState[category.Key] = filterState;
                         UpdateAllSelected();
                         await Refresh();

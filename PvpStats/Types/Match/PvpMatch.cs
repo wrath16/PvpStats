@@ -29,7 +29,7 @@ public abstract class PvpMatch : IEquatable<PvpMatch> {
     public string? GameVersion { get; set; }
     public string? PluginVersion { get; set; }
 
-    public ObjectId? TimelineId {  get; set; }
+    public ObjectId? TimelineId { get; set; }
 
     public PvpMatch() {
         Id = new();
