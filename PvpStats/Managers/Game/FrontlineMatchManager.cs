@@ -231,8 +231,8 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
         FrontlinePlayer newPlayer = new(playerName, job, (FrontlineTeamName)results.Team) {
             ClassJobId = results.ClassJobId,
             Alliance = results.Alliance % 3,
-            AccountId = results.AccountId,
-            ContentId = results.ContentId,
+            //AccountId = results.AccountId,
+            //ContentId = results.ContentId,
         };
         FrontlineScoreboard newScoreboard = new() {
             Kills = results.Kills,

@@ -1,5 +1,6 @@
 ﻿using Dalamud.Hooking;
 using PvpStats.Types.Match;
+using PvpStats.Types.Match.Timeline;
 using System;
 using System.Collections.Generic;
 
@@ -7,6 +8,7 @@ namespace PvpStats.Managers.Game;
 internal abstract class MatchManager<T> : IDisposable where T : PvpMatch {
     protected readonly Plugin Plugin;
     protected virtual T? CurrentMatch { get; set; }
+    protected virtual PvpMatchTimeline? CurrentTimeline { get; set; }
 
     protected List<(string fieldName, Hook<Delegate>)> Hooks = new();
 
@@ -55,6 +57,7 @@ internal abstract class MatchManager<T> : IDisposable where T : PvpMatch {
             Plugin.DataQueue.QueueDataOperation(() => {
                 Plugin.Functions._opcodeMatchCount++;
                 CurrentMatch = null;
+                CurrentTimeline = null;
                 //Plugin.WindowManager.Refresh();
             });
         }

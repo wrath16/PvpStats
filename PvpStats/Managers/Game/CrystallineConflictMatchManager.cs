@@ -355,8 +355,8 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 Job = playerStats.Job,
                 ClassJobId = player.ClassJobId,
                 Rank = playerStats.PlayerRank,
-                AccountId = player.AccountId,
-                ContentId = player.ContentId,
+                //AccountId = player.AccountId,
+                //ContentId = player.ContentId,
             };
             //set player riser from intro
             if(_currentMatch.IntroPlayerInfo.ContainsKey(newPlayer.Alias)) {

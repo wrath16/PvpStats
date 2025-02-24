@@ -182,7 +182,7 @@ public static class MatchHelper {
         };
     }
 
-    public static string GetTeamName(FrontlineTeamName team) {
+    public static string GetTeamName(FrontlineTeamName? team) {
         switch(team) {
             case FrontlineTeamName.Maelstrom: return "Maelstrom";
             case FrontlineTeamName.Adders: return "Order of the Twin Adder";
@@ -210,7 +210,7 @@ public static class MatchHelper {
         };
     }
 
-    public static string GetTeamName(RivalWingsTeamName team) {
+    public static string GetTeamName(RivalWingsTeamName? team) {
         switch(team) {
             case RivalWingsTeamName.Falcons: return "Falcons";
             case RivalWingsTeamName.Ravens: return "Ravens";
@@ -218,12 +218,21 @@ public static class MatchHelper {
         }
     }
 
-    public static string GetSuppliesName(RivalWingsSupplies supplies) {
+    public static string GetSuppliesName(RivalWingsSupplies? supplies) {
         return supplies switch {
             RivalWingsSupplies.Gobtank => "Gobtank",
             RivalWingsSupplies.Ceruleum => "Main Ceruleum Tank",
             RivalWingsSupplies.Gobbiejuice => "Gobbiejuice",
             RivalWingsSupplies.Gobcrate => "Gobcrate",
+            _ => "???",
+        };
+    }
+
+    public static string GetStructureName(RivalWingsStructure? structure) {
+        return structure switch {
+            RivalWingsStructure.Core => "Core",
+            RivalWingsStructure.Tower1 => "North Tower",
+            RivalWingsStructure.Tower2 => "South Tower",
             _ => "???",
         };
     }

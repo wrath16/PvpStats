@@ -1,6 +1,7 @@
 ﻿using Dalamud.Game.Addon.Events;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
+using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Hooking;
@@ -13,6 +14,7 @@ using PvpStats.Helpers;
 using PvpStats.Services;
 using PvpStats.Types.ClientStruct;
 using PvpStats.Types.Match;
+using PvpStats.Types.Match.Timeline;
 using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
@@ -23,6 +25,10 @@ using System.Threading.Tasks;
 
 namespace PvpStats.Managers.Game;
 internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
+
+    private RivalWingsMatchTimeline? _currentMatchTimeline;
+    private DateTime _lastStructurePoll = DateTime.UnixEpoch;
+    private uint _pollingThresholdMS = 5000;
 
     private IntPtr _leaveDutyButton = IntPtr.Zero;
     private IntPtr _leaveDutyButtonOwnerNode = IntPtr.Zero;
@@ -125,6 +131,42 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                     Arena = arena,
                     PluginVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString(),
                 };
+                _currentMatchTimeline = new() {
+                    StructureHealths = new() {
+                        {RivalWingsTeamName.Falcons, new() {
+                            { RivalWingsStructure.Core, new() },
+                            { RivalWingsStructure.Tower1, new() },
+                            { RivalWingsStructure.Tower2, new() },
+                        } },
+                        {RivalWingsTeamName.Ravens, new() {
+                            { RivalWingsStructure.Core, new() },
+                            { RivalWingsStructure.Tower1, new() },
+                            { RivalWingsStructure.Tower2, new() },
+                        } }
+                    },
+                    MechCounts = new() {
+                        {RivalWingsTeamName.Falcons, new() {
+                            { RivalWingsMech.Chaser, new() },
+                            { RivalWingsMech.Oppressor, new() },
+                            { RivalWingsMech.Justice, new() },
+                        } },
+                        {RivalWingsTeamName.Ravens, new() {
+                            { RivalWingsMech.Chaser, new() },
+                            { RivalWingsMech.Oppressor, new() },
+                            { RivalWingsMech.Justice, new() },
+                        } }
+                    },
+                    AllianceStacks = new() {
+                        { 0, new() },
+                        { 1, new() },
+                        { 2, new() },
+                        { 3, new() },
+                        { 4, new() },
+                        { 5, new() },
+                    },
+                    MercClaims = new(),
+                    MidClaims = new()
+                };
                 unsafe {
                     if(FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance() != null) {
                         CurrentMatch.GameVersion = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->GameVersionString;
@@ -133,6 +175,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                 Plugin.Log.Information($"starting new match on {CurrentMatch.Arena}");
                 Plugin.DataQueue.QueueDataOperation(async () => {
                     await Plugin.RWCache.AddMatch(CurrentMatch);
+                    await Plugin.Storage.AddRWTimeline(_currentMatchTimeline);
                 });
             });
             Reset();
@@ -162,6 +205,9 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             var matchEndTask = Plugin.DataQueue.QueueDataOperation(async () => {
                 if(ProcessMatchResults(resultsPacket, director)) {
                     await Plugin.RWCache.UpdateMatch(CurrentMatch!);
+                    if(_currentMatchTimeline != null) {
+                        await Plugin.Storage.UpdateRWTimeline(_currentMatchTimeline);
+                    }
                     _ = Plugin.WindowManager.RefreshRWWindow();
                 }
             });
@@ -280,8 +326,8 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                 Team = (RivalWingsTeamName)player.Team,
                 ClassJobId = player.ClassJobId,
                 Alliance = player.Alliance % 6,
-                AccountId = player.AccountId,
-                ContentId = player.ContentId,
+                //AccountId = player.AccountId,
+                //ContentId = player.ContentId,
             });
             CurrentMatch.PlayerScoreboards.Add(playerName, playerScoreboard);
         }
@@ -338,6 +384,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         var enemyTeam = (RivalWingsTeamName)(((int)playerTeam! + 1) % 2);
         CurrentMatch.MatchWinner = results.Result == 0 ? playerTeam : results.Result == 1 ? enemyTeam : RivalWingsTeamName.Unknown;
         CurrentMatch.IsCompleted = true;
+        CurrentMatch.TimelineId = _currentMatchTimeline?.Id;
         return true;
     }
 
@@ -448,7 +495,11 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             return;
         }
         var director = (RivalWingsContentDirector*)((IntPtr)EventFramework.Instance()->GetInstanceContentDirector() + RivalWingsContentDirectorOffset);
-        if(director == null) {
+        if(director is null) {
+            return;
+        }
+
+        if(Plugin.Condition[ConditionFlag.BetweenAreas] || Plugin.Condition[ConditionFlag.BetweenAreas51]) {
             return;
         }
 
@@ -461,92 +512,182 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
 #endif
 
         try {
-            //mech times
+            //structure health
+            foreach(var team in _currentMatchTimeline!.StructureHealths!) {
+                foreach(var structure in team.Value) {
+                    var lastEvent = structure.Value.LastOrDefault();
+                    int? currentValue = null;
+                    switch(team.Key, structure.Key) {
+                        case (RivalWingsTeamName.Falcons, RivalWingsStructure.Core):
+                            currentValue = director->FalconCore.Integrity;
+                            break;
+                        case (RivalWingsTeamName.Falcons, RivalWingsStructure.Tower1):
+                            currentValue = director->FalconTower1.Integrity;
+                            break;
+                        case (RivalWingsTeamName.Falcons, RivalWingsStructure.Tower2):
+                            currentValue = director->FalconTower2.Integrity;
+                            break;
+                        case (RivalWingsTeamName.Ravens, RivalWingsStructure.Core):
+                            currentValue = director->RavenCore.Integrity;
+                            break;
+                        case (RivalWingsTeamName.Ravens, RivalWingsStructure.Tower1):
+                            currentValue = director->RavenTower1.Integrity;
+                            break;
+                        case (RivalWingsTeamName.Ravens, RivalWingsStructure.Tower2):
+                            currentValue = director->RavenTower2.Integrity;
+                            break;
+                        default:
+                            break;
+                    }
+                    if(currentValue != null && (lastEvent == null || lastEvent.Health != currentValue)) {
+                        structure.Value.Add(new(now, (int)currentValue));
+                    }
+                }
+            }
+
             if(!_matchEnded) {
+                //mech times and counts
                 _mechTime[RivalWingsTeamName.Falcons][RivalWingsMech.Chaser] += director->FalconChaserCount * (now - _lastUpdate).TotalSeconds;
                 _mechTime[RivalWingsTeamName.Falcons][RivalWingsMech.Oppressor] += director->FalconOppressorCount * (now - _lastUpdate).TotalSeconds;
                 _mechTime[RivalWingsTeamName.Falcons][RivalWingsMech.Justice] += director->FalconJusticeCount * (now - _lastUpdate).TotalSeconds;
                 _mechTime[RivalWingsTeamName.Ravens][RivalWingsMech.Chaser] += director->RavenChaserCount * (now - _lastUpdate).TotalSeconds;
                 _mechTime[RivalWingsTeamName.Ravens][RivalWingsMech.Oppressor] += director->RavenOppressorCount * (now - _lastUpdate).TotalSeconds;
                 _mechTime[RivalWingsTeamName.Ravens][RivalWingsMech.Justice] += director->RavenJusticeCount * (now - _lastUpdate).TotalSeconds;
-            }
 
-            //merc win
-            if(_lastMercControl == RivalWingsContentDirector.Team.None && director->MercControl != RivalWingsContentDirector.Team.None) {
-                _mercCounts[(RivalWingsTeamName)director->MercControl]++;
-            }
-            _lastMercControl = director->MercControl;
-
-            //mid win
-            if(_lastFalconMidScore != 100 && director->FalconMidScore == 100) {
-                _midCounts[RivalWingsTeamName.Falcons][(RivalWingsSupplies)director->MidType]++;
-            }
-            _lastFalconMidScore = director->FalconMidScore;
-            if(_lastRavenMidScore != 100 && director->RavenMidScore == 100) {
-                _midCounts[RivalWingsTeamName.Ravens][(RivalWingsSupplies)director->MidType]++;
-            }
-            _lastRavenMidScore = director->RavenMidScore;
-
-            //alliance ceruleum stats
-            for(int i = 0; i < director->AllianceSpan.Length; i++) {
-                var alliance = director->AllianceSpan[i];
-                var allianceStats = _allianceStats[i];
-                var ceruleumChange = alliance.Ceruleum - _allianceStats[i].CeruleumLast;
-                //add input bounds for sanity check in case of missing alliance
-                if(ceruleumChange != 0 && alliance.Ceruleum <= 100 && alliance.Ceruleum >= 0) {
-                    if(allianceStats.CeruleumLast > alliance.Ceruleum) {
-                        allianceStats.CeruleumConsumed += -ceruleumChange;
-                        if(ceruleumChange % 5 != 0) {
-                            Plugin.Log.Debug($"ceruleum consumed not factor of 5! {i}: {ceruleumChange}");
+                foreach(var team in _currentMatchTimeline.MechCounts) {
+                    foreach(var mech in team.Value) {
+                        var lastEvent = mech.Value.LastOrDefault();
+                        int? currentValue = null;
+                        switch(team.Key, mech.Key) {
+                            case (RivalWingsTeamName.Falcons, RivalWingsMech.Chaser):
+                                currentValue = director->FalconChaserCount;
+                                break;
+                            case (RivalWingsTeamName.Falcons, RivalWingsMech.Oppressor):
+                                currentValue = director->FalconOppressorCount;
+                                break;
+                            case (RivalWingsTeamName.Falcons, RivalWingsMech.Justice):
+                                currentValue = director->FalconJusticeCount;
+                                break;
+                            case (RivalWingsTeamName.Ravens, RivalWingsMech.Chaser):
+                                currentValue = director->RavenChaserCount;
+                                break;
+                            case (RivalWingsTeamName.Ravens, RivalWingsMech.Oppressor):
+                                currentValue = director->RavenOppressorCount;
+                                break;
+                            case (RivalWingsTeamName.Ravens, RivalWingsMech.Justice):
+                                currentValue = director->RavenJusticeCount;
+                                break;
+                            default:
+                                break;
                         }
-                    } else if(allianceStats.CeruleumLast < alliance.Ceruleum) {
-                        allianceStats.CeruleumGenerated += ceruleumChange;
+                        if(currentValue != null && (lastEvent == null || lastEvent.Count != currentValue)) {
+                            mech.Value.Add(new(now, (int)currentValue));
+                        }
                     }
-                    allianceStats.CeruleumLast = alliance.Ceruleum;
-                    _allianceStats[i] = allianceStats;
                 }
-            }
 
-            //associate player Ids with aliases
-            foreach(IPlayerCharacter pc in Plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player).Cast<IPlayerCharacter>()) {
-                if(!_objIdToPlayer.ContainsKey(pc.GameObjectId)) {
-                    try {
-                        var worldName = Plugin.DataManager.GetExcelSheet<World>()?.GetRow(pc.HomeWorld.RowId).Name;
-                        var player = (PlayerAlias)$"{pc.Name} {worldName}";
-                        _objIdToPlayer.Add(pc.GameObjectId, player);
-                    } catch {
-                        //sometime encounter players with no object id...
+                //merc win
+                if(_lastMercControl == RivalWingsContentDirector.Team.None && director->MercControl != RivalWingsContentDirector.Team.None) {
+                    var lastMercClaim = _currentMatchTimeline.MercClaims.LastOrDefault();
+                    if(lastMercClaim != null && (now - lastMercClaim.Timestamp).TotalSeconds <= 30) {
+                        Plugin.Log2.Warning("Double merc claim event detected.");
+                    } else {
+                        Plugin.Log2.Debug($"Merc Claim Event: {(RivalWingsTeamName)director->MercControl}");
+                        _mercCounts[(RivalWingsTeamName)director->MercControl]++;
+                        _currentMatchTimeline.MercClaims.Add(new(now, (RivalWingsTeamName)director->MercControl));
                     }
                 }
-            }
 
-            //set friendly mech stats
-            for(int i = 0; i < director->FriendlyMechSpan.Length; i++) {
-                var friendlyMechNative = director->FriendlyMechSpan[i];
-                //var mechStats = _playerMechStats[i];
-                //add input bounds for sanity check in case of missing alliance
-                if(friendlyMechNative.Type != RivalWingsContentDirector.MechType.None) {
-                    var mech = (RivalWingsMech)friendlyMechNative.Type;
-                    if(!_playerMechStats.TryGetValue(friendlyMechNative.PlayerObjectId, out (RivalWingsMech? LastMech, Dictionary<RivalWingsMech, int> MechsDeployed, Dictionary<RivalWingsMech, double> MechTime) mechStats)) {
-                        mechStats = new() {
-                            MechTime = []
-                        };
-                        mechStats.MechTime.Add(RivalWingsMech.Chaser, 0);
-                        mechStats.MechTime.Add(RivalWingsMech.Oppressor, 0);
-                        mechStats.MechTime.Add(RivalWingsMech.Justice, 0);
-                        _playerMechStats.Add(friendlyMechNative.PlayerObjectId, mechStats);
-                        //Plugin.Log.Debug($"adding mech stats for: {friendlyMechNative.PlayerObjectId}");
+                //mid win
+                if(_lastFalconMidScore != 100 && director->FalconMidScore == 100) {
+                    _midCounts[RivalWingsTeamName.Falcons][(RivalWingsSupplies)director->MidType]++;
+                    _currentMatchTimeline.MidClaims!.Add(new(now, RivalWingsTeamName.Falcons, (RivalWingsSupplies)director->MidType));
+                    Plugin.Log2.Debug($"Mid Claim Event: {RivalWingsTeamName.Falcons} {(RivalWingsSupplies)director->MidType}");
+                }
+
+                if(_lastRavenMidScore != 100 && director->RavenMidScore == 100) {
+                    _midCounts[RivalWingsTeamName.Ravens][(RivalWingsSupplies)director->MidType]++;
+                    _currentMatchTimeline.MidClaims!.Add(new(now, RivalWingsTeamName.Ravens, (RivalWingsSupplies)director->MidType));
+                    Plugin.Log2.Debug($"Mid Claim Event: {RivalWingsTeamName.Ravens} {(RivalWingsSupplies)director->MidType}");
+                }
+
+                //alliance ceruleum stats and soaring
+                for(int i = 0; i < director->AllianceSpan.Length; i++) {
+                    var alliance = director->AllianceSpan[i];
+                    var allianceStats = _allianceStats[i];
+                    var ceruleumChange = alliance.Ceruleum - _allianceStats[i].CeruleumLast;
+                    //add input bounds for sanity check in case of missing alliance
+                    if(ceruleumChange != 0 && alliance.Ceruleum <= 100 && alliance.Ceruleum >= 0) {
+                        if(allianceStats.CeruleumLast > alliance.Ceruleum) {
+                            allianceStats.CeruleumConsumed += -ceruleumChange;
+                            if(ceruleumChange % 5 != 0) {
+                                Plugin.Log.Debug($"ceruleum consumed not factor of 5! {i}: {ceruleumChange}");
+                            }
+                        } else if(allianceStats.CeruleumLast < alliance.Ceruleum) {
+                            allianceStats.CeruleumGenerated += ceruleumChange;
+                        }
+                        allianceStats.CeruleumLast = alliance.Ceruleum;
+                        _allianceStats[i] = allianceStats;
                     }
-                    mechStats.MechTime[mech] += (now - _lastUpdate).TotalSeconds;
-                    //not sure if this needed
-                    _playerMechStats[friendlyMechNative.PlayerObjectId] = mechStats;
+
+                    var allianceStackList = _currentMatchTimeline.AllianceStacks[i];
+                    var lastEvent = allianceStackList.LastOrDefault();
+                    var currentSoaring = alliance.SoaringStacks;
+                    if(lastEvent == null || lastEvent.Count != currentSoaring) {
+                        allianceStackList.Add(new(now, currentSoaring));
+                    }
+                }
+
+                //associate player Ids with aliases
+                foreach(IPlayerCharacter pc in Plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player).Cast<IPlayerCharacter>()) {
+                    if(!_objIdToPlayer.ContainsKey(pc.GameObjectId)) {
+                        try {
+                            var worldName = Plugin.DataManager.GetExcelSheet<World>()?.GetRow(pc.HomeWorld.RowId).Name;
+                            var player = (PlayerAlias)$"{pc.Name} {worldName}";
+                            _objIdToPlayer.Add(pc.GameObjectId, player);
+                        } catch {
+                            //sometime encounter players with no object id...
+                        }
+                    }
+                }
+
+                //set friendly mech stats
+                for(int i = 0; i < director->FriendlyMechSpan.Length; i++) {
+                    var friendlyMechNative = director->FriendlyMechSpan[i];
+                    //var mechStats = _playerMechStats[i];
+                    //add input bounds for sanity check in case of missing alliance
+                    if(friendlyMechNative.Type != RivalWingsContentDirector.MechType.None) {
+                        var mech = (RivalWingsMech)friendlyMechNative.Type;
+                        if(!_playerMechStats.TryGetValue(friendlyMechNative.PlayerObjectId, out (RivalWingsMech? LastMech, Dictionary<RivalWingsMech, int> MechsDeployed, Dictionary<RivalWingsMech, double> MechTime) mechStats)) {
+                            mechStats = new() {
+                                MechTime = []
+                            };
+                            mechStats.MechTime.Add(RivalWingsMech.Chaser, 0);
+                            mechStats.MechTime.Add(RivalWingsMech.Oppressor, 0);
+                            mechStats.MechTime.Add(RivalWingsMech.Justice, 0);
+                            _playerMechStats.Add(friendlyMechNative.PlayerObjectId, mechStats);
+                            //Plugin.Log.Debug($"adding mech stats for: {friendlyMechNative.PlayerObjectId}");
+                        }
+                        mechStats.MechTime[mech] += (now - _lastUpdate).TotalSeconds;
+                        //not sure if this needed
+                        _playerMechStats[friendlyMechNative.PlayerObjectId] = mechStats;
+                    }
                 }
             }
+        } catch(Exception e) {
+#if DEBUG
+            Plugin.Log2.Error(e, "Exception in framework update");
+#endif
+        }
+        try {
+            _lastUpdate = now;
+            _lastMercControl = director->MercControl;
+            _lastFalconMidScore = director->FalconMidScore;
+            _lastRavenMidScore = director->RavenMidScore;
         } catch {
-
+            //suppress
         }
 
-        _lastUpdate = now;
     }
 
     private static Vector2 WorldPosToMapCoords(Vector3 pos) {

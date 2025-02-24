@@ -1,5 +1,6 @@
 ﻿using LiteDB;
 using PvpStats.Types.Match;
+using PvpStats.Types.Match.Timeline;
 using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
@@ -13,6 +14,9 @@ internal class StorageService {
     private const string CCTable = "ccmatch";
     private const string FLTable = "flmatch";
     private const string RWTable = "rwmatch";
+    private const string CCTimelineTable = "cctimeline";
+    private const string FLTimelineTable = "fltimeline";
+    private const string RWTimelineTable = "rwtimeline";
     private const string AutoPlayerLinksTable = "playerlinks_auto";
     private const string ManualPlayerLinksTable = "playerlinks_manual";
 
@@ -133,6 +137,20 @@ internal class StorageService {
     internal async Task UpdateRWMatch(RivalWingsMatch match) {
         LogUpdate(match.Id.ToString());
         await WriteToDatabase(() => GetRWMatches().Update(match));
+    }
+
+    internal ILiteCollection<RivalWingsMatchTimeline> GetRWTimelines() {
+        return Database.GetCollection<RivalWingsMatchTimeline>(RWTimelineTable);
+    }
+
+    internal async Task AddRWTimeline(RivalWingsMatchTimeline timeline) {
+        LogUpdate(timeline.Id.ToString());
+        await WriteToDatabase(() => GetRWTimelines().Insert(timeline));
+    }
+
+    internal async Task UpdateRWTimeline(RivalWingsMatchTimeline timeline) {
+        LogUpdate(timeline.Id.ToString());
+        await WriteToDatabase(() => GetRWTimelines().Update(timeline));
     }
 
     internal async Task UpdateRWMatches(IEnumerable<RivalWingsMatch> matches) {
