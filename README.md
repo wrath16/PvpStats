@@ -20,7 +20,6 @@ Final Fantasy XIV Dalamud plugin for recording PvP match history.
 
 ## Known Issues
 * Rematches in Crystalline Conflict custom matches are not recorded.
-* Merc counts for Rival Wings matches are currently not recording properly.
 
 ## Feature Roadmap
 May or may not eventually get implemented:
