@@ -376,8 +376,8 @@ internal class CrystallineConflictMatchManager : IDisposable {
             playerTeamPost.TeamStats.TimeOnCrystal += playerStats.TimeOnCrystal;
         }
 
-        //add players who left match. omit ones with incomplete name as a failsafe
-        foreach(var introPlayer in _currentMatch.IntroPlayerInfo.Where(x => !x.Value.Alias.FullName.Contains('.') && !x.Value.Alias.HomeWorld.Equals("Unknown", StringComparison.OrdinalIgnoreCase))) {
+        //add players who left match. omit ones with incomplete name or blacklisted name as a failsafe
+        foreach(var introPlayer in _currentMatch.IntroPlayerInfo.Where(x => !x.Value.Alias.FullName.Contains('.') && !Regex.IsMatch(x.Value.Alias.Name, @"\d+") && !x.Value.Alias.HomeWorld.Equals("Unknown", StringComparison.OrdinalIgnoreCase))) {
             bool isFound = false;
             foreach(var team in _currentMatch.Teams) {
                 foreach(var player in team.Value.Players) {
