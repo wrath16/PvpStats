@@ -24,21 +24,17 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
 
     private RivalWingsMatchTimeline? _timeline;
     private List<MatchEvent> _consolidatedEvents = new();
-    private float[] _falconCoreXs;
-    private float[] _falconCoreYs;
-    private float[] _ravenCoreXs;
-    private float[] _ravenCoreYs;
-    private float[] _falconTower1Xs;
-    private float[] _falconTower1Ys;
-    private float[] _ravenTower1Xs;
-    private float[] _ravenTower1Ys;
-    private float[] _falconTower2Xs;
-    private float[] _falconTower2Ys;
-    private float[] _ravenTower2Xs;
-    private float[] _ravenTower2Ys;
-    private double[] _axisTicks;
-    private string[] _axisLabels;
-    private Dictionary<RivalWingsTeamName, Dictionary<RivalWingsStructure, (float[] Xs, float[] Ys)>> _structureHealths;
+    private double[] _axisTicks = [];
+    private string[] _axisLabels = [];
+    private Dictionary<RivalWingsTeamName, Dictionary<RivalWingsStructure, (float[] Xs, float[] Ys)>> _structureHealths = new() {
+        { RivalWingsTeamName.Falcons, new() { { RivalWingsStructure.Core, new() }, { RivalWingsStructure.Tower1, new() }, { RivalWingsStructure.Tower2, new() } } },
+        { RivalWingsTeamName.Ravens, new() { { RivalWingsStructure.Core, new() }, { RivalWingsStructure.Tower1, new() }, { RivalWingsStructure.Tower2, new() } } },
+    };
+
+    private Dictionary<RivalWingsTeamName, Dictionary<int, (float[] Xs, float[] Ys)>> _allianceStacks = new() {
+                    {RivalWingsTeamName.Falcons, new() },
+                    {RivalWingsTeamName.Ravens, new() },
+    };
 
     private RWTeamQuickFilter _teamQuickFilter;
     private Dictionary<PlayerAlias, RWScoreboardDouble>? _playerContributions = [];
@@ -131,8 +127,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 }
                 _consolidatedEvents.Sort();
 
-                //graphs
-
+                //setup graphs
                 List<double> axisTicks = new();
                 List<string> axisLabels = new();
                 for(int i = 0; i <= 15; i++) {
@@ -142,49 +137,20 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 _axisTicks = axisTicks.ToArray();
                 _axisLabels = axisLabels.ToArray();
 
-                var falconCoreEvents = _timeline.StructureHealths[RivalWingsTeamName.Falcons][RivalWingsStructure.Core]
-                    .Where(x => x.Health != 0 || (x.Timestamp - Match.MatchStartTime).Value.TotalSeconds > 10)
-                    .Prepend(new((DateTime)Match.MatchStartTime!, 100))
-                    .Append(new((DateTime)Match.MatchEndTime!, _timeline.StructureHealths[RivalWingsTeamName.Falcons][RivalWingsStructure.Core].Last().Health));
+                //structure health graph
+                SetupGraph(RivalWingsTeamName.Falcons, RivalWingsStructure.Core);
+                SetupGraph(RivalWingsTeamName.Falcons, RivalWingsStructure.Tower1);
+                SetupGraph(RivalWingsTeamName.Falcons, RivalWingsStructure.Tower2);
+                SetupGraph(RivalWingsTeamName.Ravens, RivalWingsStructure.Core);
+                SetupGraph(RivalWingsTeamName.Ravens, RivalWingsStructure.Tower1);
+                SetupGraph(RivalWingsTeamName.Ravens, RivalWingsStructure.Tower2);
 
-                _falconCoreXs = falconCoreEvents.Select(x => (float)(x.Timestamp - Match.MatchStartTime).Value.TotalSeconds).ToArray();
-                _falconCoreYs = falconCoreEvents.Select(x => (float)x.Health).ToArray();
-
-                var ravenCoreEvents = _timeline.StructureHealths[RivalWingsTeamName.Ravens][RivalWingsStructure.Core]
-                    .Where(x => x.Health != 0 || (x.Timestamp - Match.MatchStartTime).Value.TotalSeconds > 10)
-                    .Prepend(new((DateTime)Match.MatchStartTime!, 100))
-                    .Append(new((DateTime)Match.MatchEndTime!, _timeline.StructureHealths[RivalWingsTeamName.Ravens][RivalWingsStructure.Core].Last().Health));
-                _ravenCoreXs = ravenCoreEvents.Select(x => (float)(x.Timestamp - Match.MatchStartTime).Value.TotalSeconds).ToArray();
-                _ravenCoreYs = ravenCoreEvents.Select(x => (float)x.Health).ToArray();
-
-                var falconTower1Events = _timeline.StructureHealths[RivalWingsTeamName.Falcons][RivalWingsStructure.Tower1]
-                    .Where(x => x.Health != 0 || (x.Timestamp - Match.MatchStartTime).Value.TotalSeconds > 10)
-                    .Prepend(new((DateTime)Match.MatchStartTime!, 100))
-                    .Append(new((DateTime)Match.MatchEndTime!, _timeline.StructureHealths[RivalWingsTeamName.Falcons][RivalWingsStructure.Tower1].Last().Health));
-                _falconTower1Xs = falconTower1Events.Select(x => (float)(x.Timestamp - Match.MatchStartTime).Value.TotalSeconds).ToArray();
-                _falconTower1Ys = falconTower1Events.Select(x => (float)x.Health).ToArray();
-
-                var ravenTower1Events = _timeline.StructureHealths[RivalWingsTeamName.Ravens][RivalWingsStructure.Tower1]
-                    .Where(x => x.Health != 0 || (x.Timestamp - Match.MatchStartTime).Value.TotalSeconds > 10)
-                    .Prepend(new((DateTime)Match.MatchStartTime!, 100))
-                    .Append(new((DateTime)Match.MatchEndTime!, _timeline.StructureHealths[RivalWingsTeamName.Ravens][RivalWingsStructure.Tower1].Last().Health));
-                _ravenTower1Xs = ravenTower1Events.Select(x => (float)(x.Timestamp - Match.MatchStartTime).Value.TotalSeconds).ToArray();
-                _ravenTower1Ys = ravenTower1Events.Select(x => (float)x.Health).ToArray();
-
-                var falconTower2Events = _timeline.StructureHealths[RivalWingsTeamName.Falcons][RivalWingsStructure.Tower2]
-                    .Where(x => x.Health != 0 || (x.Timestamp - Match.MatchStartTime).Value.TotalSeconds > 10)
-                    .Prepend(new((DateTime)Match.MatchStartTime!, 100))
-                    .Append(new((DateTime)Match.MatchEndTime!, _timeline.StructureHealths[RivalWingsTeamName.Falcons][RivalWingsStructure.Tower2].Last().Health));
-                _falconTower2Xs = falconTower2Events.Select(x => (float)(x.Timestamp - Match.MatchStartTime).Value.TotalSeconds).ToArray();
-                _falconTower2Ys = falconTower2Events.Select(x => (float)x.Health).ToArray();
-
-                var ravenTower2Events = _timeline.StructureHealths[RivalWingsTeamName.Ravens][RivalWingsStructure.Tower2]
-                    .Where(x => x.Health != 0 || (x.Timestamp - Match.MatchStartTime).Value.TotalSeconds > 10)
-                    .Prepend(new((DateTime)Match.MatchStartTime!, 100))
-                    .Append(new((DateTime)Match.MatchEndTime!, _timeline.StructureHealths[RivalWingsTeamName.Ravens][RivalWingsStructure.Tower2].Last().Health));
-                _ravenTower2Xs = ravenTower2Events.Select(x => (float)(x.Timestamp - Match.MatchStartTime).Value.TotalSeconds).ToArray();
-                _ravenTower2Ys = ravenTower2Events.Select(x => (float)x.Health).ToArray();
-
+                //soaring stacks graph
+                if(Match.LocalPlayerTeam != null) {
+                    foreach(var alliance in _timeline.AllianceStacks ?? []) {
+                        SetupGraph(alliance.Key, (RivalWingsTeamName)Match.LocalPlayerTeam);
+                    }
+                }
             }
         }
 
@@ -345,7 +311,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                             SetWindowSize(new Vector2(975, 800));
                             CurrentTab = "Graphs";
                         }
-                        DrawStructureHealthGraph();
+                        DrawGraphs();
                     }
                 }
             }
@@ -1100,8 +1066,24 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
         ImGui.Text($" have deployed their first warmachina ({matchEvent.Mech}).");
     }
 
+    private void DrawGraphs() {
+        using var child = ImRaii.Child("graphChild");
+        if(child) {
+            if(_timeline?.StructureHealths != null) {
+                DrawStructureHealthGraph();
+            }
+            if(_timeline?.AllianceStacks != null) {
+                DrawAllianceStacksGraph();
+            }
+        }
+    }
+
     private void DrawStructureHealthGraph() {
-        using var plot = ImRaii.Plot("Structure Health", ImGui.GetContentRegionAvail(), ImPlotFlags.None);
+        using var plot = ImRaii.Plot("Structure Health", new Vector2(ImGui.GetContentRegionAvail().X, 500f * ImGuiHelpers.GlobalScale), ImPlotFlags.None);
+
+        if(!plot) {
+            return;
+        }
 
         ImPlot.SetupAxisScale(ImAxis.X1, ImPlotScale.Linear);
         ImPlot.SetupAxesLimits(0, 900, 0, 110, ImPlotCond.Once);
@@ -1111,37 +1093,86 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
         ImPlot.SetupAxes("Match Time", "", ImPlotAxisFlags.None, ImPlotAxisFlags.None);
         ImPlot.SetupLegend(ImPlotLocation.NorthWest, ImPlotLegendFlags.Horizontal);
 
-
         ImPlot.SetupAxisTicks(ImAxis.X1, ref _axisTicks[0], _axisTicks.Length, _axisLabels);
 
         using(var style = ImRaii.PushColor(ImPlotCol.Line, Plugin.Configuration.GetRivalWingsTeamColor(RivalWingsTeamName.Falcons))) {
             using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 2f);
-            ImPlot.PlotStairs("Falcon Core", ref _falconCoreXs[0], ref _falconCoreYs[0], _falconCoreXs.Length, ImPlotStairsFlags.None);
+            ImPlot.PlotStairs("Falcon Core", ref _structureHealths[RivalWingsTeamName.Falcons][RivalWingsStructure.Core].Xs[0],
+                ref _structureHealths[RivalWingsTeamName.Falcons][RivalWingsStructure.Core].Ys[0],
+                _structureHealths[RivalWingsTeamName.Falcons][RivalWingsStructure.Core].Xs.Length, ImPlotStairsFlags.None);
         }
-        using(var style = ImRaii.PushColor(ImPlotCol.Line, Plugin.Configuration.GetRivalWingsTeamColor(RivalWingsTeamName.Falcons) - new Vector4(0f,0f,0f,0.6f))) {
+        using(var style = ImRaii.PushColor(ImPlotCol.Line, Plugin.Configuration.GetRivalWingsTeamColor(RivalWingsTeamName.Falcons) - new Vector4(0f, 0f, 0f, 0.6f))) {
             using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 1f);
-            ImPlot.PlotStairs("Falcon Tower 1", ref _falconTower1Xs[0], ref _falconTower1Ys[0], _falconTower1Xs.Length, ImPlotStairsFlags.None);
-            ImPlot.PlotStairs("Falcon Tower 2", ref _falconTower2Xs[0], ref _falconTower2Ys[0], _falconTower2Xs.Length, ImPlotStairsFlags.None);
+            ImPlot.PlotStairs("Falcon Tower 1", ref _structureHealths[RivalWingsTeamName.Falcons][RivalWingsStructure.Tower1].Xs[0],
+                ref _structureHealths[RivalWingsTeamName.Falcons][RivalWingsStructure.Tower1].Ys[0],
+                _structureHealths[RivalWingsTeamName.Falcons][RivalWingsStructure.Tower1].Xs.Length, ImPlotStairsFlags.None);
+            ImPlot.PlotStairs("Falcon Tower 2", ref _structureHealths[RivalWingsTeamName.Falcons][RivalWingsStructure.Tower2].Xs[0],
+                ref _structureHealths[RivalWingsTeamName.Falcons][RivalWingsStructure.Tower2].Ys[0],
+                _structureHealths[RivalWingsTeamName.Falcons][RivalWingsStructure.Tower2].Xs.Length, ImPlotStairsFlags.None);
         }
         using(var style = ImRaii.PushColor(ImPlotCol.Line, Plugin.Configuration.GetRivalWingsTeamColor(RivalWingsTeamName.Ravens))) {
             using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 2f);
-            ImPlot.PlotStairs("Raven Core", ref _ravenCoreXs[0], ref _ravenCoreYs[0], _ravenCoreXs.Length, ImPlotStairsFlags.None);
+            ImPlot.PlotStairs("Raven Core", ref _structureHealths[RivalWingsTeamName.Ravens][RivalWingsStructure.Core].Xs[0],
+                ref _structureHealths[RivalWingsTeamName.Ravens][RivalWingsStructure.Core].Ys[0],
+                _structureHealths[RivalWingsTeamName.Ravens][RivalWingsStructure.Core].Xs.Length, ImPlotStairsFlags.None);
         }
         using(var style = ImRaii.PushColor(ImPlotCol.Line, Plugin.Configuration.GetRivalWingsTeamColor(RivalWingsTeamName.Ravens) - new Vector4(0f, 0f, 0f, 0.6f))) {
             using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 1f);
-            ImPlot.PlotStairs("Raven Tower 1", ref _ravenTower1Xs[0], ref _ravenTower1Ys[0], _ravenTower1Xs.Length, ImPlotStairsFlags.None);
-            ImPlot.PlotStairs("Raven Tower 2", ref _ravenTower2Xs[0], ref _ravenTower2Ys[0], _ravenTower2Xs.Length, ImPlotStairsFlags.None);
+            ImPlot.PlotStairs("Raven Tower 1", ref _structureHealths[RivalWingsTeamName.Ravens][RivalWingsStructure.Tower1].Xs[0],
+                ref _structureHealths[RivalWingsTeamName.Ravens][RivalWingsStructure.Tower1].Ys[0],
+                _structureHealths[RivalWingsTeamName.Ravens][RivalWingsStructure.Tower1].Xs.Length, ImPlotStairsFlags.None);
+            ImPlot.PlotStairs("Raven Tower 2", ref _structureHealths[RivalWingsTeamName.Ravens][RivalWingsStructure.Tower2].Xs[0],
+                ref _structureHealths[RivalWingsTeamName.Ravens][RivalWingsStructure.Tower2].Ys[0],
+                _structureHealths[RivalWingsTeamName.Ravens][RivalWingsStructure.Tower2].Xs.Length, ImPlotStairsFlags.None);
+        }
+    }
+
+    private void DrawAllianceStacksGraph() {
+        using var plot = ImRaii.Plot("Soaring Stacks", new Vector2(ImGui.GetContentRegionAvail().X, 500f * ImGuiHelpers.GlobalScale), ImPlotFlags.None);
+
+        if(!plot) {
+            return;
         }
 
+        ImPlot.SetupAxisScale(ImAxis.X1, ImPlotScale.Linear);
+        ImPlot.SetupAxesLimits(0, 900, 0, 21, ImPlotCond.Once);
+        ImPlot.SetupAxisLimitsConstraints(ImAxis.X1, 0, 900);
+        ImPlot.SetupAxisLimitsConstraints(ImAxis.Y1, 0, 21);
 
+        ImPlot.SetupAxes("Match Time", "", ImPlotAxisFlags.None, ImPlotAxisFlags.None);
+        ImPlot.SetupLegend(ImPlotLocation.NorthWest, ImPlotLegendFlags.None);
+
+        ImPlot.SetupAxisTicks(ImAxis.X1, ref _axisTicks[0], _axisTicks.Length, _axisLabels);
+
+        foreach(var team in _allianceStacks) {
+            foreach(var alliance in team.Value) {
+                ImPlot.PlotStairs($"{MatchHelper.GetTeamName(team.Key)} {GetAllianceLetter(alliance.Key)}", ref alliance.Value.Xs[0], ref alliance.Value.Ys[0], alliance.Value.Xs.Length, ImPlotStairsFlags.None);
+            }
+        }
     }
 
     private void SetupGraph(RivalWingsTeamName team, RivalWingsStructure structure) {
+        if(_timeline?.StructureHealths == null) {
+            return;
+        }
         var structureEvents = _timeline.StructureHealths[team][structure]
             .Where(x => x.Health != 0 || (x.Timestamp - Match.MatchStartTime).Value.TotalSeconds > 10)
             .Prepend(new((DateTime)Match.MatchStartTime!, 100))
             .Append(new((DateTime)Match.MatchEndTime!, _timeline.StructureHealths[team][structure].Last().Health));
         _structureHealths[team][structure] = (structureEvents.Select(x => (float)(x.Timestamp - Match.MatchStartTime).Value.TotalSeconds).ToArray(), structureEvents.Select(x => (float)x.Health).ToArray());
+    }
+
+    private void SetupGraph(int alliance, RivalWingsTeamName team) {
+        if(team == Match.LocalPlayerTeam) {
+            if(_timeline?.AllianceStacks == null) {
+                return;
+            }
+            var stackEvents = _timeline.AllianceStacks[alliance]
+                .Append(new((DateTime)Match.MatchEndTime!, _timeline.AllianceStacks[alliance].Last().Count));
+            _allianceStacks[team].Add(alliance,
+                (stackEvents.Select(x => (float)(x.Timestamp - Match.MatchStartTime).Value.TotalSeconds).ToArray(),
+                stackEvents.Select(x => (float)x.Count).ToArray()));
+        }
     }
 
     private string GetAllianceLetter(int alliance) {
