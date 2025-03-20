@@ -1,5 +1,4 @@
-﻿using Dalamud.Interface;
-using Dalamud.Interface.Colors;
+﻿using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
@@ -19,6 +18,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
+using static PvpStats.Types.ClientStruct.RivalWingsContentDirector;
 
 namespace PvpStats.Windows.Detail;
 internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
@@ -30,6 +30,14 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
     private Dictionary<RivalWingsTeamName, Dictionary<RivalWingsStructure, (float[] Xs, float[] Ys)>> _structureHealths = new() {
         { RivalWingsTeamName.Falcons, new() { { RivalWingsStructure.Core, new() }, { RivalWingsStructure.Tower1, new() }, { RivalWingsStructure.Tower2, new() } } },
         { RivalWingsTeamName.Ravens, new() { { RivalWingsStructure.Core, new() }, { RivalWingsStructure.Tower1, new() }, { RivalWingsStructure.Tower2, new() } } },
+    };
+    private Dictionary<RivalWingsTeamName, Dictionary<RivalWingsMech, (float[] Xs, float[] Ys)>> _mechCounts = new() {
+        { RivalWingsTeamName.Falcons, new() { { RivalWingsMech.Chaser, new() }, { RivalWingsMech.Oppressor, new() }, { RivalWingsMech.Justice, new() } } },
+        { RivalWingsTeamName.Ravens, new() { { RivalWingsMech.Chaser, new() }, { RivalWingsMech.Oppressor, new() }, { RivalWingsMech.Justice, new() } } },
+    };
+    private Dictionary<RivalWingsTeamName, (float[] Xs, float[] Ys)> _totalMechCounts = new() {
+        { RivalWingsTeamName.Falcons, new() },
+        { RivalWingsTeamName.Ravens, new() },
     };
     private bool _includeEventIcons = true;
 
@@ -153,6 +161,17 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                         SetupGraph(alliance.Key, (RivalWingsTeamName)Match.LocalPlayerTeam);
                     }
                 }
+
+                //mech counts
+                SetupGraph(RivalWingsTeamName.Falcons, RivalWingsMech.Chaser);
+                SetupGraph(RivalWingsTeamName.Falcons, RivalWingsMech.Oppressor);
+                SetupGraph(RivalWingsTeamName.Falcons, RivalWingsMech.Justice);
+                SetupGraph(RivalWingsTeamName.Ravens, RivalWingsMech.Chaser);
+                SetupGraph(RivalWingsTeamName.Ravens, RivalWingsMech.Oppressor);
+                SetupGraph(RivalWingsTeamName.Ravens, RivalWingsMech.Justice);
+
+                SetupMechTotalGraph(RivalWingsTeamName.Falcons);
+                SetupMechTotalGraph(RivalWingsTeamName.Ravens);
             }
         }
 
@@ -1058,6 +1077,9 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             if(_timeline?.AllianceStacks != null) {
                 DrawAllianceStacksGraph();
             }
+            if(_timeline?.MechCounts != null) {
+                DrawMechCountGraphs();
+            }
         }
     }
 
@@ -1113,6 +1135,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             DrawGraphEventIcons();
         }
     }
+
     private void DrawAllianceStacksGraph() {
         using var plot = ImRaii.Plot("Soaring Stacks", new Vector2(ImGui.GetContentRegionAvail().X, 500f * ImGuiHelpers.GlobalScale), ImPlotFlags.None);
 
@@ -1135,6 +1158,72 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 ImPlot.PlotStairs($"{MatchHelper.GetTeamName(team.Key)} {GetAllianceLetter(alliance.Key)}", ref alliance.Value.Xs[0], ref alliance.Value.Ys[0], alliance.Value.Xs.Length, ImPlotStairsFlags.None);
             }
         }
+
+        if(_includeEventIcons) {
+            DrawGraphEventIcons();
+        }
+    }
+
+    private void DrawMechCountGraphs() {
+        using var plot = ImRaii.Plot("Mech Counts", new Vector2(ImGui.GetContentRegionAvail().X, 500f * ImGuiHelpers.GlobalScale), ImPlotFlags.None);
+
+        if(!plot) {
+            return;
+        }
+
+        ImPlot.SetupAxisScale(ImAxis.X1, ImPlotScale.Linear);
+        ImPlot.SetupAxesLimits(0, 900, 0, 7, ImPlotCond.Once);
+        ImPlot.SetupAxisLimitsConstraints(ImAxis.X1, 0, 900);
+        ImPlot.SetupAxisLimitsConstraints(ImAxis.Y1, 0, 7);
+
+        ImPlot.SetupAxes("Match Time", "", ImPlotAxisFlags.None, ImPlotAxisFlags.None);
+        ImPlot.SetupLegend(ImPlotLocation.NorthWest, ImPlotLegendFlags.Horizontal);
+
+        ImPlot.SetupAxisTicks(ImAxis.X1, ref _axisTicks[0], _axisTicks.Length, _axisLabels);
+
+        using(var style = ImRaii.PushColor(ImPlotCol.Line, Plugin.Configuration.GetRivalWingsTeamColor(RivalWingsTeamName.Falcons))) {
+            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 2f * ImGuiHelpers.GlobalScale);
+            ImPlot.PlotStairs("Falcon Total", ref _totalMechCounts[RivalWingsTeamName.Falcons].Xs[0],
+                ref _totalMechCounts[RivalWingsTeamName.Falcons].Ys[0],
+                _totalMechCounts[RivalWingsTeamName.Falcons].Xs.Length, ImPlotStairsFlags.None);
+        }
+        using(var style = ImRaii.PushColor(ImPlotCol.Line, Plugin.Configuration.GetRivalWingsTeamColor(RivalWingsTeamName.Falcons) - new Vector4(0f, 0f, 0f, 0.4f))) {
+            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 1f * ImGuiHelpers.GlobalScale);
+            ImPlot.HideNextItem(true, ImPlotCond.Once);
+            ImPlot.PlotStairs($"Chasers##{RivalWingsTeamName.Falcons}", ref _mechCounts[RivalWingsTeamName.Falcons][RivalWingsMech.Chaser].Xs[0],
+                ref _mechCounts[RivalWingsTeamName.Falcons][RivalWingsMech.Chaser].Ys[0],
+                _mechCounts[RivalWingsTeamName.Falcons][RivalWingsMech.Chaser].Xs.Length, ImPlotStairsFlags.None);
+            ImPlot.HideNextItem(true, ImPlotCond.Once);
+            ImPlot.PlotStairs($"Oppressors##{RivalWingsTeamName.Falcons}", ref _mechCounts[RivalWingsTeamName.Falcons][RivalWingsMech.Oppressor].Xs[0],
+                ref _mechCounts[RivalWingsTeamName.Falcons][RivalWingsMech.Oppressor].Ys[0],
+                _mechCounts[RivalWingsTeamName.Falcons][RivalWingsMech.Oppressor].Xs.Length, ImPlotStairsFlags.None);
+            ImPlot.HideNextItem(true, ImPlotCond.Once);
+            ImPlot.PlotStairs($"Justices##{RivalWingsTeamName.Falcons}", ref _mechCounts[RivalWingsTeamName.Falcons][RivalWingsMech.Justice].Xs[0],
+                ref _mechCounts[RivalWingsTeamName.Falcons][RivalWingsMech.Justice].Ys[0],
+                _mechCounts[RivalWingsTeamName.Falcons][RivalWingsMech.Justice].Xs.Length, ImPlotStairsFlags.None);
+        }
+        using(var style = ImRaii.PushColor(ImPlotCol.Line, Plugin.Configuration.GetRivalWingsTeamColor(RivalWingsTeamName.Ravens))) {
+            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 2f * ImGuiHelpers.GlobalScale);
+            ImPlot.PlotStairs("Raven Total", ref _totalMechCounts[RivalWingsTeamName.Ravens].Xs[0],
+                ref _totalMechCounts[RivalWingsTeamName.Ravens].Ys[0],
+                _totalMechCounts[RivalWingsTeamName.Ravens].Xs.Length, ImPlotStairsFlags.None);
+        }
+        using(var style = ImRaii.PushColor(ImPlotCol.Line, Plugin.Configuration.GetRivalWingsTeamColor(RivalWingsTeamName.Ravens) - new Vector4(0f, 0f, 0f, 0.6f))) {
+            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 1f * ImGuiHelpers.GlobalScale);
+            ImPlot.HideNextItem(true, ImPlotCond.Once);
+            ImPlot.PlotStairs($"Chasers##{RivalWingsTeamName.Ravens}", ref _mechCounts[RivalWingsTeamName.Ravens][RivalWingsMech.Chaser].Xs[0],
+                ref _mechCounts[RivalWingsTeamName.Ravens][RivalWingsMech.Chaser].Ys[0],
+                _mechCounts[RivalWingsTeamName.Ravens][RivalWingsMech.Chaser].Xs.Length, ImPlotStairsFlags.None);
+            ImPlot.HideNextItem(true, ImPlotCond.Once);
+            ImPlot.PlotStairs($"Oppressors##{RivalWingsTeamName.Ravens}", ref _mechCounts[RivalWingsTeamName.Ravens][RivalWingsMech.Oppressor].Xs[0],
+                ref _mechCounts[RivalWingsTeamName.Ravens][RivalWingsMech.Oppressor].Ys[0],
+                _mechCounts[RivalWingsTeamName.Ravens][RivalWingsMech.Oppressor].Xs.Length, ImPlotStairsFlags.None);
+            ImPlot.HideNextItem(true, ImPlotCond.Once);
+            ImPlot.PlotStairs($"Justices##{RivalWingsTeamName.Ravens}", ref _mechCounts[RivalWingsTeamName.Ravens][RivalWingsMech.Justice].Xs[0],
+                ref _mechCounts[RivalWingsTeamName.Ravens][RivalWingsMech.Justice].Ys[0],
+                _mechCounts[RivalWingsTeamName.Ravens][RivalWingsMech.Justice].Xs.Length, ImPlotStairsFlags.None);
+        }
+
 
         if(_includeEventIcons) {
             DrawGraphEventIcons();
@@ -1192,6 +1281,54 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 (stackEvents.Select(x => (float)(x.Timestamp - Match.MatchStartTime).Value.TotalSeconds).ToArray(),
                 stackEvents.Select(x => (float)x.Count).ToArray()));
         }
+    }
+
+    private void SetupGraph(RivalWingsTeamName team, RivalWingsMech mech) {
+        if(_timeline?.MechCounts == null) {
+            return;
+        }
+        var mechEvents = _timeline.MechCounts[team][mech]
+            .Append(new((DateTime)Match.MatchEndTime!, _timeline.MechCounts[team][mech].Last().Count));
+        _mechCounts[team][mech] = (mechEvents.Select(x => (float)(x.Timestamp - Match.MatchStartTime).Value.TotalSeconds).ToArray(), mechEvents.Select(x => (float)x.Count).ToArray());
+    }
+
+    private void SetupMechTotalGraph(RivalWingsTeamName team) {
+
+        //get increments
+        Dictionary<RivalWingsMech, List<MechCountEvent>> mechIncrements = new() {
+            {RivalWingsMech.Chaser, new() },
+            {RivalWingsMech.Oppressor, new() },
+            {RivalWingsMech.Justice, new() },
+        };
+        var getIncrements = (RivalWingsMech mech) => {
+            for(int i = 0; i < _timeline.MechCounts[team][mech].Count; i++) {
+                var mechEvent = _timeline.MechCounts[team][mech][i];
+                if(i == 0) {
+                    mechIncrements[mech].Add(mechEvent);
+                } else {
+                    var lastEvent = _timeline.MechCounts[team][mech][i - 1];
+                    var diffEvent = new MechCountEvent(mechEvent.Timestamp, mechEvent.Count - lastEvent.Count);
+                    mechIncrements[mech].Add(diffEvent);
+                }
+            }
+        };
+        getIncrements(RivalWingsMech.Chaser);
+        getIncrements(RivalWingsMech.Oppressor);
+        getIncrements(RivalWingsMech.Justice);
+
+        //combine and sort
+        List<MechCountEvent> allEvents = [.. mechIncrements[RivalWingsMech.Chaser], .. mechIncrements[RivalWingsMech.Oppressor], .. mechIncrements[RivalWingsMech.Justice]];
+        allEvents.Sort();
+        allEvents = allEvents.Append(new((DateTime)Match.MatchEndTime, 0)).ToList();
+
+        float currentCumulativeTotal = 0;
+        List<float> cumulativeTotals = new();
+        foreach(var mechEvent in allEvents) {
+            currentCumulativeTotal += mechEvent.Count;
+            cumulativeTotals.Add(currentCumulativeTotal);
+        }
+        cumulativeTotals.Add(currentCumulativeTotal);
+        _totalMechCounts[team] = (allEvents.Select(x => (float)(x.Timestamp - Match.MatchStartTime).Value.TotalSeconds).ToArray(), cumulativeTotals.ToArray());
     }
 
     private string GetAllianceLetter(int alliance) {
