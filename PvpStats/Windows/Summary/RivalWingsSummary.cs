@@ -349,7 +349,7 @@ internal class RivalWingsSummary : RefreshableSync<RivalWingsMatch> {
             var uv1 = new Vector2(0.85f);
 
             ImGui.TableNextColumn();
-            ImGui.Image(Plugin.WindowManager.GetTextureHandle(TextureHelper.GoblinMercIcon), size, uv0, uv1);
+            ImGui.Image(Plugin.WindowManager.GetTextureHandle(TextureHelper.GoblinMercIcons[RivalWingsTeamName.Unknown]), size, uv0, uv1);
             ImGuiHelper.WrappedTooltip("Mercenaries");
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();

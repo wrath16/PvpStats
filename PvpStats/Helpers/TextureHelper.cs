@@ -1,6 +1,9 @@
-﻿using PvpStats.Types.Match;
+﻿using Dalamud.Interface.Utility;
+using ImGuiNET;
+using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using System.Collections.Generic;
+using System.Numerics;
 
 namespace PvpStats.Helpers;
 internal static class TextureHelper {
@@ -32,11 +35,15 @@ internal static class TextureHelper {
     internal static uint TeamIcon => 60563;
     internal static uint EnemyIcon => 60562;
     internal static string CCTeamIconTexture => "ui/uld/PVPMKSResult_hr1.tex";
-
-    internal static uint GoblinMercIcon => 60976;
     internal static string RWTeamIconTexture => "ui/uld/PVPSimulationResult_hr1.tex";
     internal static string RWSuppliesTexture => "ui/uld/PVPSimulationHeader2_hr1.tex";
     internal static uint TrainIcon => 60980;
+
+    internal static Dictionary<RivalWingsTeamName, uint> GoblinMercIcons => new() {
+        { RivalWingsTeamName.Falcons, 60974 },
+        { RivalWingsTeamName.Ravens, 60975 },
+        { RivalWingsTeamName.Unknown, 60976 },
+    };
 
     internal static Dictionary<RivalWingsTeamName, uint> CoreIcons => new() {
         { RivalWingsTeamName.Falcons, 60947 },
@@ -85,5 +92,32 @@ internal static class TextureHelper {
             return (level - 1) + 61483;
         }
         return null;
+    }
+
+    internal static (Vector2 UV0, Vector2 UV1) GetSuppliesUVs(RivalWingsSupplies supplies) {
+        Vector2 uv0, uv1;
+        switch(supplies) {
+            case RivalWingsSupplies.Gobtank:
+                uv0 = new Vector2(0);
+                uv1 = new Vector2(0.2f, 1 / 3f);
+                break;
+            case RivalWingsSupplies.Ceruleum:
+                uv0 = new Vector2(0.2f, 0);
+                uv1 = new Vector2(0.4f, 1 / 3f);
+                break;
+            case RivalWingsSupplies.Gobbiejuice:
+                uv0 = new Vector2(0.4f, 0);
+                uv1 = new Vector2(0.6f, 1 / 3f);
+                break;
+            case RivalWingsSupplies.Gobcrate:
+                uv0 = new Vector2(0.6f, 0);
+                uv1 = new Vector2(0.8f, 1 / 3f);
+                break;
+            default:
+                uv0 = new Vector2(0.8f, 0);
+                uv1 = new Vector2(0.1f, 1 / 3f);
+                break;
+        };
+        return (uv0, uv1);
     }
 }

@@ -1,4 +1,5 @@
-﻿using Dalamud.Interface.Colors;
+﻿using Dalamud.Interface;
+using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
@@ -30,6 +31,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
         { RivalWingsTeamName.Falcons, new() { { RivalWingsStructure.Core, new() }, { RivalWingsStructure.Tower1, new() }, { RivalWingsStructure.Tower2, new() } } },
         { RivalWingsTeamName.Ravens, new() { { RivalWingsStructure.Core, new() }, { RivalWingsStructure.Tower1, new() }, { RivalWingsStructure.Tower2, new() } } },
     };
+    private bool _includeEventIcons = true;
 
     private Dictionary<RivalWingsTeamName, Dictionary<int, (float[] Xs, float[] Ys)>> _allianceStacks = new() {
                     {RivalWingsTeamName.Falcons, new() },
@@ -308,7 +310,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 using(var tab2 = ImRaii.TabItem("Graphs")) {
                     if(tab2) {
                         if(CurrentTab != "Graphs") {
-                            SetWindowSize(new Vector2(975, 800));
+                            SetWindowSize(new Vector2(975, 825));
                             CurrentTab = "Graphs";
                         }
                         DrawGraphs();
@@ -513,7 +515,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 ImGui.TableNextColumn();
                 drawText(Match.Mercs[firstTeam].ToString());
                 ImGui.TableNextColumn();
-                drawImage(Plugin.WindowManager.GetTextureHandle(TextureHelper.GoblinMercIcon), 25f);
+                drawImage(Plugin.WindowManager.GetTextureHandle(TextureHelper.GoblinMercIcons[RivalWingsTeamName.Unknown]), 25f);
                 ImGuiHelper.WrappedTooltip("Goblin Mercenary");
                 ImGui.TableNextColumn();
                 drawText(Match.Mercs[secondTeam].ToString());
@@ -534,30 +536,8 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
         }
     }
     private void DrawSuppliesIcon(RivalWingsSupplies supplies, float size) {
-        Vector2 uv0, uv1;
-        switch(supplies) {
-            case RivalWingsSupplies.Gobtank:
-                uv0 = new Vector2(0);
-                uv1 = new Vector2(0.2f, 1 / 3f);
-                break;
-            case RivalWingsSupplies.Ceruleum:
-                uv0 = new Vector2(0.2f, 0);
-                uv1 = new Vector2(0.4f, 1 / 3f);
-                break;
-            case RivalWingsSupplies.Gobbiejuice:
-                uv0 = new Vector2(0.4f, 0);
-                uv1 = new Vector2(0.6f, 1 / 3f);
-                break;
-            case RivalWingsSupplies.Gobcrate:
-                uv0 = new Vector2(0.6f, 0);
-                uv1 = new Vector2(0.8f, 1 / 3f);
-                break;
-            default:
-                uv0 = new Vector2(0.8f, 0);
-                uv1 = new Vector2(0.1f, 1 / 3f);
-                break;
-        };
-        ImGui.Image(Plugin.WindowManager.GetTextureHandle(TextureHelper.RWSuppliesTexture), new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), uv0, uv1);
+        var uvs = TextureHelper.GetSuppliesUVs(supplies);
+        ImGui.Image(Plugin.WindowManager.GetTextureHandle(TextureHelper.RWSuppliesTexture), new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), uvs.UV0, uvs.UV1);
         ImGuiHelper.WrappedTooltip(MatchHelper.GetSuppliesName(supplies));
     }
 
@@ -1067,7 +1047,10 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
     }
 
     private void DrawGraphs() {
-        using var child = ImRaii.Child("graphChild");
+        //filters
+        ImGui.Checkbox("Include event icons", ref _includeEventIcons);
+
+        using var child = ImRaii.Child("graphChild", ImGui.GetContentRegionAvail(), true);
         if(child) {
             if(_timeline?.StructureHealths != null) {
                 DrawStructureHealthGraph();
@@ -1096,13 +1079,13 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
         ImPlot.SetupAxisTicks(ImAxis.X1, ref _axisTicks[0], _axisTicks.Length, _axisLabels);
 
         using(var style = ImRaii.PushColor(ImPlotCol.Line, Plugin.Configuration.GetRivalWingsTeamColor(RivalWingsTeamName.Falcons))) {
-            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 2f);
+            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 2f * ImGuiHelpers.GlobalScale);
             ImPlot.PlotStairs("Falcon Core", ref _structureHealths[RivalWingsTeamName.Falcons][RivalWingsStructure.Core].Xs[0],
                 ref _structureHealths[RivalWingsTeamName.Falcons][RivalWingsStructure.Core].Ys[0],
                 _structureHealths[RivalWingsTeamName.Falcons][RivalWingsStructure.Core].Xs.Length, ImPlotStairsFlags.None);
         }
         using(var style = ImRaii.PushColor(ImPlotCol.Line, Plugin.Configuration.GetRivalWingsTeamColor(RivalWingsTeamName.Falcons) - new Vector4(0f, 0f, 0f, 0.6f))) {
-            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 1f);
+            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 1f * ImGuiHelpers.GlobalScale);
             ImPlot.PlotStairs("Falcon Tower 1", ref _structureHealths[RivalWingsTeamName.Falcons][RivalWingsStructure.Tower1].Xs[0],
                 ref _structureHealths[RivalWingsTeamName.Falcons][RivalWingsStructure.Tower1].Ys[0],
                 _structureHealths[RivalWingsTeamName.Falcons][RivalWingsStructure.Tower1].Xs.Length, ImPlotStairsFlags.None);
@@ -1111,13 +1094,13 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 _structureHealths[RivalWingsTeamName.Falcons][RivalWingsStructure.Tower2].Xs.Length, ImPlotStairsFlags.None);
         }
         using(var style = ImRaii.PushColor(ImPlotCol.Line, Plugin.Configuration.GetRivalWingsTeamColor(RivalWingsTeamName.Ravens))) {
-            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 2f);
+            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 2f * ImGuiHelpers.GlobalScale);
             ImPlot.PlotStairs("Raven Core", ref _structureHealths[RivalWingsTeamName.Ravens][RivalWingsStructure.Core].Xs[0],
                 ref _structureHealths[RivalWingsTeamName.Ravens][RivalWingsStructure.Core].Ys[0],
                 _structureHealths[RivalWingsTeamName.Ravens][RivalWingsStructure.Core].Xs.Length, ImPlotStairsFlags.None);
         }
         using(var style = ImRaii.PushColor(ImPlotCol.Line, Plugin.Configuration.GetRivalWingsTeamColor(RivalWingsTeamName.Ravens) - new Vector4(0f, 0f, 0f, 0.6f))) {
-            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 1f);
+            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 1f * ImGuiHelpers.GlobalScale);
             ImPlot.PlotStairs("Raven Tower 1", ref _structureHealths[RivalWingsTeamName.Ravens][RivalWingsStructure.Tower1].Xs[0],
                 ref _structureHealths[RivalWingsTeamName.Ravens][RivalWingsStructure.Tower1].Ys[0],
                 _structureHealths[RivalWingsTeamName.Ravens][RivalWingsStructure.Tower1].Xs.Length, ImPlotStairsFlags.None);
@@ -1125,8 +1108,11 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 ref _structureHealths[RivalWingsTeamName.Ravens][RivalWingsStructure.Tower2].Ys[0],
                 _structureHealths[RivalWingsTeamName.Ravens][RivalWingsStructure.Tower2].Xs.Length, ImPlotStairsFlags.None);
         }
-    }
 
+        if(_includeEventIcons) {
+            DrawGraphEventIcons();
+        }
+    }
     private void DrawAllianceStacksGraph() {
         using var plot = ImRaii.Plot("Soaring Stacks", new Vector2(ImGui.GetContentRegionAvail().X, 500f * ImGuiHelpers.GlobalScale), ImPlotFlags.None);
 
@@ -1148,6 +1134,39 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             foreach(var alliance in team.Value) {
                 ImPlot.PlotStairs($"{MatchHelper.GetTeamName(team.Key)} {GetAllianceLetter(alliance.Key)}", ref alliance.Value.Xs[0], ref alliance.Value.Ys[0], alliance.Value.Xs.Length, ImPlotStairsFlags.None);
             }
+        }
+
+        if(_includeEventIcons) {
+            DrawGraphEventIcons();
+        }
+    }
+
+    private void DrawGraphEventIcons() {
+        foreach(var mercEvent in _timeline?.MercClaims ?? []) {
+            var eventTime = (mercEvent.Timestamp - Match.MatchStartTime).Value.TotalSeconds;
+            var size = 25f * ImGuiHelpers.GlobalScale;
+
+            var startPosPixels = ImPlot.PlotToPixels(eventTime, ImPlot.GetPlotLimits().Y.Min);
+
+            var startPosPlot = ImPlot.PixelsToPlot(startPosPixels);
+            var def = ImPlot.PixelsToPlot(startPosPixels.X + size, startPosPixels.Y - size);
+
+            //var tint = Plugin.Configuration.GetRivalWingsTeamColor(mercEvent.Team);
+            ImPlot.PlotImage($"##mercEvent-{mercEvent.Timestamp.Ticks}", Plugin.WindowManager.GetTextureHandle(TextureHelper.GoblinMercIcons[mercEvent.Team]), startPosPlot, def, new Vector2(0.2f), new Vector2(0.8f));
+        }
+
+        foreach(var midEvent in _timeline?.MidClaims ?? []) {
+            var eventTime = (midEvent.Timestamp - Match.MatchStartTime).Value.TotalSeconds;
+            var size = 25f * ImGuiHelpers.GlobalScale;
+
+            var startPosPixels = ImPlot.PlotToPixels(eventTime - size / 2f, ImPlot.GetPlotLimits().Y.Min);
+
+            var startPosPlot = ImPlot.PixelsToPlot(startPosPixels);
+            var def = ImPlot.PixelsToPlot(startPosPixels.X + size, startPosPixels.Y - size);
+
+            var tint = Plugin.Configuration.GetRivalWingsTeamColor(midEvent.Team);
+            var uvs = TextureHelper.GetSuppliesUVs(midEvent.Kind);
+            ImPlot.PlotImage($"##midEvent-{midEvent.Timestamp.Ticks}", Plugin.WindowManager.GetTextureHandle(TextureHelper.RWSuppliesTexture), startPosPlot, def, uvs.UV0, uvs.UV1, tint);
         }
     }
 
