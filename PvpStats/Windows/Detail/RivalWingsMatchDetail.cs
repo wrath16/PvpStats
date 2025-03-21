@@ -1074,11 +1074,11 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             if(_timeline?.StructureHealths != null) {
                 DrawStructureHealthGraph();
             }
-            if(_timeline?.AllianceStacks != null) {
-                DrawAllianceStacksGraph();
-            }
             if(_timeline?.MechCounts != null) {
                 DrawMechCountGraphs();
+            }
+            if(_timeline?.AllianceStacks != null) {
+                DrawAllianceStacksGraph();
             }
         }
     }

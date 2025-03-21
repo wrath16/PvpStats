@@ -1,4 +1,6 @@
 ﻿using Dalamud.Interface.Colors;
+using Dalamud.Interface.Utility.Raii;
+using Dalamud.Interface.Utility;
 using ImGuiNET;
 using ImPlotNET;
 using PvpStats.Types.Match;
@@ -88,7 +90,8 @@ internal class CrystallineConflictRankGraph : Refreshable<CrystallineConflictMat
                 return;
             }
 
-            if(ImPlot.BeginPlot("rank graph", ImGui.GetContentRegionAvail(), ImPlotFlags.NoTitle | ImPlotFlags.NoLegend)) {
+            using var plot = ImRaii.Plot("rank graph", ImGui.GetContentRegionAvail(), ImPlotFlags.NoTitle | ImPlotFlags.NoLegend);
+            if(plot) {
                 ImDrawListPtr drawList = ImPlot.GetPlotDrawList();
                 float[] xs = RankData.Select(x => (float)((DateTimeOffset)x.Item1).ToUnixTimeSeconds()).ToArray();
                 float[] ys = RankData.Select(x => (float)x.Item2).ToArray();
@@ -122,33 +125,29 @@ internal class CrystallineConflictRankGraph : Refreshable<CrystallineConflictMat
                 //ImPlot.SetupAxisLinks(ImAxis.Y1, ref ymin, ref ymax);
                 ImPlot.SetupAxisLimitsConstraints(ImAxis.Y1, PlayerRank.MinRank.TotalCredit, 30000);
 
-                ImPlot.SetNextMarkerStyle(ImPlotMarker.None);
-                ImPlot.PushStyleColor(ImPlotCol.Line, ImGui.GetColorU32(ImGuiColors.DalamudWhite));
-                ImPlot.PlotLine("Crystal Credit", ref xs[0], ref ys[0], xs.Length, ImPlotLineFlags.None);
-                ImPlot.PopStyleColor();
+                using(var style = ImRaii.PushColor(ImPlotCol.Line, ImGui.GetColorU32(ImGuiColors.DalamudWhite))) {
+                    using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 5f * ImGuiHelpers.GlobalScale);
+                    ImPlot.SetNextMarkerStyle(ImPlotMarker.None);
+                    ImPlot.PlotLine("Crystal Credit", ref xs[0], ref ys[0], xs.Length, ImPlotLineFlags.None);
+                }
 
                 if(xsLoss.Length > 0) {
-                    ImPlot.SetNextMarkerStyle(ImPlotMarker.None);
-                    ImPlot.PushStyleColor(ImPlotCol.Line, ImGui.GetColorU32(_plugin.Configuration.Colors.Loss));
-                    ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, 10f);
-                    ImPlot.PlotLine("Losses", ref xsLoss[0], ref ysLoss[0], xsLoss.Length, ImPlotLineFlags.Segments);
-                    ImPlot.PopStyleColor();
+                    using(var style = ImRaii.PushColor(ImPlotCol.Line, ImGui.GetColorU32(_plugin.Configuration.Colors.Loss))) {
+                        using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 10f * ImGuiHelpers.GlobalScale);
+                        ImPlot.SetNextMarkerStyle(ImPlotMarker.None);
+                        ImPlot.PlotLine("Losses", ref xsLoss[0], ref ysLoss[0], xsLoss.Length, ImPlotLineFlags.Segments);
+                    }
                 }
 
                 if(xsWin.Length > 0) {
-                    ImPlot.SetNextMarkerStyle(ImPlotMarker.None);
-                    ImPlot.PushStyleColor(ImPlotCol.Line, ImGui.GetColorU32(_plugin.Configuration.Colors.Win));
-                    ImPlot.PushStyleVar(ImPlotStyleVar.LineWeight, 5f);
-                    ImPlot.PlotLine("Wins", ref xsWin[0], ref ysWin[0], xsWin.Length, ImPlotLineFlags.Segments);
-                    ImPlot.PopStyleColor();
+                    using(var style = ImRaii.PushColor(ImPlotCol.Line, ImGui.GetColorU32(_plugin.Configuration.Colors.Win))) {
+                        using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 5f * ImGuiHelpers.GlobalScale);
+                        ImPlot.SetNextMarkerStyle(ImPlotMarker.None);
+                        ImPlot.PlotLine("Wins", ref xsWin[0], ref ysWin[0], xsWin.Length, ImPlotLineFlags.Segments);
+                    }
                 }
 
                 ImPlot.PushPlotClipRect();
-                //for(int i = 0; i < xs.Length; i += 2) {
-                //    bool isGain = ys[i + 1] >= ys[i];
-                //    var color = isGain ? ImGuiColors.ParsedGreen : ImGuiColors.DalamudRed;
-                //    drawList.AddLine(ImPlot.PlotToPixels(xs[i], ys[i]), ImPlot.PlotToPixels(xs[i + 1], ys[i + 1]), ImGui.GetColorU32(color), 5f);
-                //}
 
                 //add rank shading
                 //bronze
@@ -177,7 +176,6 @@ internal class CrystallineConflictRankGraph : Refreshable<CrystallineConflictMat
                 //var cryp2 = ImPlot.PlotToPixels(xs[xs.Length - 1], 0);
                 //drawList.AddRectFilled(diap1, diap2, ImGui.GetColorU32(new Vector4(0.15f, 0.96f, 0.8f, 0.1f)), 0);
                 ImPlot.PopPlotClipRect();
-                ImPlot.EndPlot();
             }
         } finally {
             _refreshLock.Release();
