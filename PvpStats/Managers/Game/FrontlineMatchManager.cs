@@ -258,11 +258,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
         if(CurrentMatch.MaxBattleHigh != null) {
 
             int maxBattleHigh = 0;
-            if(newScoreboard.Deaths == 0) {
-                maxBattleHigh = int.Min(((int)newScoreboard.Kills * 10 + (int)newScoreboard.Assists * 2) / 20, 5);
-            } else {
-                _maxObservedBattleHigh.TryGetValue(playerName, out maxBattleHigh);
-            }
+            _maxObservedBattleHigh.TryGetValue(playerName, out maxBattleHigh);
             CurrentMatch.MaxBattleHigh.TryAdd(playerName, maxBattleHigh);
         }
         return true;

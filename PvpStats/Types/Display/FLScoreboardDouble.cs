@@ -3,8 +3,8 @@
 namespace PvpStats.Types.Display;
 public class FLScoreboardDouble : PvpScoreboardDouble, IEquatable<FLScoreboardDouble> {
 
-    public static int BattleHighPerKill => 10;
-    public static int BattleHighPerAssist => 2;
+    public static int BattleHighPerKill => 8;
+    public static int BattleHighPerAssist => 4;
 
     public double Occupations { get; set; }
     public double DamageToOther { get; set; }
