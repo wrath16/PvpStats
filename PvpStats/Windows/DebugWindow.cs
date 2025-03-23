@@ -20,9 +20,12 @@ using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
+using System.Text.RegularExpressions;
+using static Lumina.Data.Parsing.Uld.UldRoot;
 using static PvpStats.Types.ClientStruct.RivalWingsContentDirector;
 
 namespace PvpStats.Windows;
@@ -277,6 +280,33 @@ internal unsafe class DebugWindow : Window {
                         Plugin.Log2.Debug($"{x.Id}");
                         _plugin.Storage.AddRWTimeline(x);
                         Plugin.Log2.Debug($"{x.Id}");
+                    }
+
+                    if(ImGui.Button("First Mid wins...%")) {
+                        _plugin.DataQueue.QueueDataOperation(() => {
+                            int matchCount = 0;
+                            int firstMidWins = 0;
+
+                            var rwMatches = _plugin.RWCache.Matches.Where(x => x.IsCompleted && x.TimelineId != null);
+                            var timelines = _plugin.Storage.GetRWTimelines().Query().ToList();
+                            foreach(var rwMatch in rwMatches) {
+                                var timeline = timelines.Where(x => x.Id.Equals(rwMatch.TimelineId)).FirstOrDefault();
+                                if(timeline == null || timeline.MidClaims == null) {
+                                    continue;
+                                }
+                                if(timeline.MidClaims.First().Kind == RivalWingsSupplies.Gobbiejuice) {
+                                    continue;
+                                }
+                                matchCount++;
+                                var firstMid = timeline.MidClaims.First();
+                                if(firstMid.Team == rwMatch.MatchWinner) {
+                                    firstMidWins++;
+                                }
+                            }
+
+                            Plugin.Log2.Debug($"Matches: {matchCount}\nFirst Mid Winner Wins Match (no Gobbiejuice): {firstMidWins}\n{((float)firstMidWins / matchCount):P2}");
+                        });
+
                     }
 
                     ImGui.Text(Framework.Instance()->GameVersionString);

@@ -18,7 +18,6 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
-using static PvpStats.Types.ClientStruct.RivalWingsContentDirector;
 
 namespace PvpStats.Windows.Detail;
 internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
@@ -1223,7 +1222,6 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 ref _mechCounts[RivalWingsTeamName.Ravens][RivalWingsMech.Justice].Ys[0],
                 _mechCounts[RivalWingsTeamName.Ravens][RivalWingsMech.Justice].Xs.Length, ImPlotStairsFlags.None);
         }
-
 
         if(_includeEventIcons) {
             DrawGraphEventIcons();

@@ -1,6 +1,6 @@
 ﻿using Dalamud.Interface.Colors;
-using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using ImPlotNET;
 using PvpStats.Types.Match;

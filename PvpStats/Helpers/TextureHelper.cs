@@ -1,6 +1,4 @@
-﻿using Dalamud.Interface.Utility;
-using ImGuiNET;
-using PvpStats.Types.Match;
+﻿using PvpStats.Types.Match;
 using PvpStats.Types.Player;
 using System.Collections.Generic;
 using System.Numerics;
