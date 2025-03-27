@@ -111,7 +111,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
         Plugin.Log.Debug("Fl match end 10 detour entered.");
         try {
 #if DEBUG
-            //Plugin.Functions.CreateByteDump(p2, 0x400, "fl_match_results");
+            Plugin.Functions.CreateByteDump(p2, 0x400, "fl_match_results");
 #endif
             FrontlineResultsPacket resultsPacket;
             unsafe {
@@ -160,7 +160,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
         CurrentMatch.MatchEndTime = DateTime.Now;
         CurrentMatch.MatchStartTime = CurrentMatch.MatchEndTime - TimeSpan.FromSeconds(results.MatchLength);
         CurrentMatch.LocalPlayer ??= Plugin.GameState.CurrentPlayer;
-        CurrentMatch.DataCenter ??= Plugin.ClientState.LocalPlayer?.CurrentWorld.Value.DataCenter.Value.Name.ToString();
+        CurrentMatch.DataCenter ??= Plugin.GameState.DataCenterName;
         CurrentMatch.PlayerCount = results.PlayerCount;
 
         var addTeamStats = (FrontlineResultsPacket.TeamStat teamStat, FrontlineTeamName name) => {
@@ -168,6 +168,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
                 Placement = teamStat.Placement,
                 OccupationPoints = teamStat.OccupationPoints,
                 TargetablePoints = teamStat.IcePoints,
+                DronePoints = teamStat.DronePoints,
                 KillPoints = teamStat.EnemyKillPoints,
                 DeathPointLosses = teamStat.KOPointLosses,
                 TotalPoints = teamStat.TotalPoints

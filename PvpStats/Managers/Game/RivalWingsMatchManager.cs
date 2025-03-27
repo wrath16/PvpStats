@@ -271,8 +271,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         CurrentMatch.MatchEndTime = DateTime.Now;
         CurrentMatch.MatchStartTime = CurrentMatch.MatchEndTime - TimeSpan.FromSeconds(results.MatchLength);
         CurrentMatch.LocalPlayer ??= Plugin.GameState.CurrentPlayer;
-        //access object table out of main thread...
-        CurrentMatch.DataCenter ??= Plugin.ClientState.LocalPlayer?.CurrentWorld.Value.DataCenter.Value.Name.ToString();
+        CurrentMatch.DataCenter ??= Plugin.GameState.DataCenterName;
 
         CurrentMatch.StructureHealth = new() {
         { RivalWingsTeamName.Falcons , new() {

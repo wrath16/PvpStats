@@ -13,6 +13,7 @@ namespace PvpStats.Services;
 internal class GameStateService : IDisposable {
     private Plugin _plugin;
     public PlayerAlias? CurrentPlayer { get; private set; }
+    public string? DataCenterName { get; private set; }
     public Dictionary<uint, string> Worlds { get; private set; }
 
     internal GameStateService(Plugin plugin) {
@@ -38,6 +39,7 @@ internal class GameStateService : IDisposable {
         if(currentPlayerName != null && currentPlayerWorld != null) {
             CurrentPlayer = (PlayerAlias)$"{currentPlayerName} {currentPlayerWorld}";
         }
+        DataCenterName = _plugin.ClientState.LocalPlayer?.CurrentWorld.Value.DataCenter.Value.Name.ToString();
     }
 
     public void PrintAllPlayerObjects() {

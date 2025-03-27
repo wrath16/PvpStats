@@ -58,7 +58,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
         _plugin.InteropProvider.InitializeFromAttributes(this);
         _plugin.Log.Debug($"cc director .ctor address: 0x{_ccDirectorCtorHook!.Address.ToString("X2")}");
         _plugin.Log.Debug($"cc director .ctor 2 address: 0x{_ccDirectorCtor2Hook!.Address.ToString("X2")}");
-        _plugin.Log.Debug($"match end 1 address: 0x{_ccMatchEndHook!.Address.ToString("X2")}");
+        _plugin.Log.Debug($"cc match end 1 address: 0x{_ccMatchEndHook!.Address.ToString("X2")}");
         _ccDirectorCtorHook.Enable();
         _ccDirectorCtor2Hook.Enable();
         _ccMatchEndHook.Enable();
@@ -128,7 +128,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
     private void CCMatchEnd101Detour(IntPtr p1, IntPtr p2, IntPtr p3, uint p4) {
         _plugin.Log.Debug("Match end detour occurred.");
 #if DEBUG
-        //_plugin.Functions.CreateByteDump(p2, 0x400, "cc_match_results");
+        _plugin.Functions.CreateByteDump(p2, 0x400, "cc_match_results");
 #endif
         CrystallineConflictResultsPacket resultsPacket;
         unsafe {
@@ -276,7 +276,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
 
         CrystallineConflictPostMatch postMatch = new();
         _currentMatch.LocalPlayer ??= _plugin.GameState.CurrentPlayer;
-        _currentMatch.DataCenter ??= _plugin.ClientState.LocalPlayer?.CurrentWorld.Value.DataCenter.Value.Name.ToString();
+        _currentMatch.DataCenter ??= _plugin.GameState.DataCenterName;
 
         //set teams
         CrystallineConflictTeam teamAstra = new() {

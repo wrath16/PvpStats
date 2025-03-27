@@ -34,6 +34,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
 
         SizeCondition = ImGuiCond.Appearing;
         switch(match.Arena) {
+            case FrontlineMap.BorderlandRuins:
             case FrontlineMap.FieldsOfGlory:
                 Size = new Vector2(930, 800);
                 break;
@@ -111,6 +112,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         }
         //DrawTeamStatsTable();
         //ImGui.SetNextItemWidth(ImGui.GetContentRegionMax().X);
+        
         using(var table = ImRaii.Table("teamstats", 4, ImGuiTableFlags.None)) {
             if(table) {
                 ImGui.TableSetupColumn("descriptions", ImGuiTableColumnFlags.WidthFixed, 190f * ImGuiHelpers.GlobalScale);
@@ -132,12 +134,17 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
                         DrawRowDescription("Total points:");
                         ImGui.TableNextColumn();
                         string specialRow = Match.Arena switch {
+                            FrontlineMap.BorderlandRuins => "Points earned from occupations:",
                             FrontlineMap.FieldsOfGlory => "Points earned from ice:",
                             FrontlineMap.SealRock => "Points earned from tomeliths:",
                             FrontlineMap.OnsalHakair => "Points earned from ovoos:",
                             _ => "",
                         };
                         DrawRowDescription(specialRow);
+                        if(Match.Arena == FrontlineMap.BorderlandRuins) {
+                            ImGui.TableNextColumn();
+                            DrawRowDescription("Points earned from drones:");
+                        }
                         ImGui.TableNextColumn();
                         DrawRowDescription("Points earned from kills:");
                         ImGui.TableNextColumn();
@@ -218,10 +225,10 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         }
         //this is hacky
         int columnCount = 16;
-        if(Match.Arena == FrontlineMap.FieldsOfGlory) {
+        if(Match.Arena == FrontlineMap.FieldsOfGlory || Match.Arena == FrontlineMap.BorderlandRuins) {
             columnCount += 2;
         }
-        if(Match.Arena == FrontlineMap.SealRock) {
+        if(Match.Arena == FrontlineMap.SealRock || Match.Arena == FrontlineMap.BorderlandRuins) {
             columnCount += 1;
         }
         if(Match.MaxBattleHigh != null) {
@@ -248,13 +255,17 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
             ImGui.TableSetupColumn("Damage to PCs", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"DamageToPCs".GetHashCode());
             ImGui.TableSetupColumn("Ice Damage", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"DamageToOther".GetHashCode());
             ImGui.TableSetupColumn("Damage Dealt", widthStyle | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 65f, (uint)"DamageDealt".GetHashCode());
-        } else {
+        } else if(Match.Arena == FrontlineMap.BorderlandRuins) {
+            ImGui.TableSetupColumn("Damage to PCs", widthStyle | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 65f, (uint)"DamageToPCs".GetHashCode());
+            ImGui.TableSetupColumn("Drone Damage", widthStyle | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 65f, (uint)"DamageToOther".GetHashCode());
+            ImGui.TableSetupColumn("Damage Dealt", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"DamageDealt".GetHashCode());
+        } else{
             ImGui.TableSetupColumn("Damage Dealt", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"DamageDealt".GetHashCode());
         }
         ImGui.TableSetupColumn("Damage Taken", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"DamageTaken".GetHashCode());
         ImGui.TableSetupColumn("HP Restored", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"HPRestored".GetHashCode());
         ImGui.TableSetupColumn("Special", widthStyle | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 65f, (uint)"Special1".GetHashCode());
-        if(Match.Arena == FrontlineMap.SealRock) {
+        if(Match.Arena == FrontlineMap.SealRock || Match.Arena == FrontlineMap.BorderlandRuins) {
             ImGui.TableSetupColumn("Occupations", widthStyle, ImGuiHelpers.GlobalScale * 55f, (uint)"Occupations".GetHashCode());
         }
         ImGui.TableSetupColumn("Damage Dealt per Kill/Assist", widthStyle | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)"DamageDealtPerKA".GetHashCode());
@@ -311,7 +322,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         if(ImGui.TableNextColumn()) {
             ImGuiHelper.DrawTableHeader("Assists");
         }
-        if(Match.Arena == FrontlineMap.FieldsOfGlory) {
+        if(Match.Arena == FrontlineMap.FieldsOfGlory || Match.Arena == FrontlineMap.BorderlandRuins) {
             if(ImGui.TableNextColumn()) {
                 ImGuiHelper.DrawTableHeader("Damage\nto PCs");
             }
@@ -333,7 +344,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
             ImGui.TableHeader("");
             ImGuiHelper.HelpMarker("Not sure what this is. It's related to healing.", true);
         }
-        if(Match.Arena == FrontlineMap.SealRock) {
+        if(Match.Arena == FrontlineMap.SealRock || Match.Arena == FrontlineMap.BorderlandRuins) {
             if(ImGui.TableNextColumn()) {
                 ImGuiHelper.DrawTableHeader("Occup-\nations");
             }
@@ -378,7 +389,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
                 if(ImGui.TableNextColumn()) {
                     ImGuiHelper.DrawNumericCell($"{row.Value.Assists}", -11f);
                 }
-                if(Match.Arena == FrontlineMap.FieldsOfGlory) {
+                if(Match.Arena == FrontlineMap.FieldsOfGlory || Match.Arena == FrontlineMap.BorderlandRuins) {
                     if(ImGui.TableNextColumn()) {
                         ImGuiHelper.DrawNumericCell($"{row.Value.DamageToPCs}", -11f);
                     }
@@ -398,7 +409,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
                 if(ImGui.TableNextColumn()) {
                     ImGuiHelper.DrawNumericCell($"{row.Value.Special1}", -11f);
                 }
-                if(Match.Arena == FrontlineMap.SealRock) {
+                if(Match.Arena == FrontlineMap.SealRock || Match.Arena == FrontlineMap.BorderlandRuins) {
                     if(ImGui.TableNextColumn()) {
                         ImGuiHelper.DrawNumericCell($"{row.Value.Occupations}", -11f);
                     }
@@ -465,7 +476,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
             if(ImGui.TableNextColumn()) {
                 ImGuiHelper.DrawNumericCell($"{(ShowPercentages ? string.Format("{0:P1}", _playerContributions[player.Name].Assists) : row.Value.Assists)}", -11f, textColor);
             }
-            if(Match.Arena == FrontlineMap.FieldsOfGlory) {
+            if(Match.Arena == FrontlineMap.FieldsOfGlory || Match.Arena == FrontlineMap.BorderlandRuins) {
                 if(ImGui.TableNextColumn()) {
                     ImGuiHelper.DrawNumericCell($"{(ShowPercentages ? string.Format("{0:P1}", _playerContributions[player.Name].DamageToPCs) : row.Value.DamageToPCs)}", -11f, textColor);
                 }
@@ -485,7 +496,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
             if(ImGui.TableNextColumn()) {
                 ImGuiHelper.DrawNumericCell($"{(ShowPercentages ? string.Format("{0:P1}", _playerContributions[player.Name].Special1) : row.Value.Special1)}", -11f, textColor);
             }
-            if(Match.Arena == FrontlineMap.SealRock) {
+            if(Match.Arena == FrontlineMap.SealRock || Match.Arena == FrontlineMap.BorderlandRuins) {
                 if(ImGui.TableNextColumn()) {
                     ImGuiHelper.DrawNumericCell($"{(ShowPercentages ? string.Format("{0:P1}", _playerContributions[player.Name].Occupations) : row.Value.Occupations)}", -11f, textColor);
                 }
@@ -534,7 +545,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         ImGui.Text(totalPoints);
 
         ImGui.TableNextColumn();
-        if(Match.Arena == FrontlineMap.OnsalHakair || Match.Arena == FrontlineMap.SealRock) {
+        if(Match.Arena == FrontlineMap.OnsalHakair || Match.Arena == FrontlineMap.SealRock || Match.Arena == FrontlineMap.BorderlandRuins) {
             var specialPoints = team.OccupationPoints.ToString();
             ImGuiHelper.CenterAlignCursor(specialPoints);
             ImGui.Text(specialPoints);
@@ -542,6 +553,13 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
             var specialPoints = team.TargetablePoints.ToString();
             ImGuiHelper.CenterAlignCursor(specialPoints);
             ImGui.Text(specialPoints);
+        }
+
+        if(Match.Arena == FrontlineMap.BorderlandRuins) {
+            ImGui.TableNextColumn();
+            var dronePoints = team.DronePoints.ToString();
+            ImGuiHelper.CenterAlignCursor(dronePoints);
+            ImGui.Text(dronePoints);
         }
 
         ImGui.TableNextColumn();

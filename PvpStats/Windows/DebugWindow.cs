@@ -10,6 +10,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.InstanceContent;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
+using Lumina.Excel.Sheets;
 using PvpStats.Helpers;
 using PvpStats.Managers.Game;
 using PvpStats.Services;
@@ -165,7 +166,7 @@ internal unsafe class DebugWindow : Window {
                     }
 
                     ImGui.Separator();
-                    if(instanceDirector != null && instanceDirector->InstanceContentType == InstanceContentType.RivalWing) {
+                    if(instanceDirector != null && instanceDirector->InstanceContentType == FFXIVClientStructs.FFXIV.Client.Game.InstanceContent.InstanceContentType.RivalWing) {
                         DrawRivalWingsDirector();
                     }
                     //ImGui.Text($"0x{new IntPtr(instanceDirector + RivalWingsMatchManager.RivalWingsContentDirectorOffset).ToString("X2")}");
@@ -275,11 +276,16 @@ internal unsafe class DebugWindow : Window {
                         });
                     }
 
-                    if(ImGui.Button("Test Timeline")) {
-                        var x = new RivalWingsMatchTimeline();
-                        Plugin.Log2.Debug($"{x.Id}");
-                        _plugin.Storage.AddRWTimeline(x);
-                        Plugin.Log2.Debug($"{x.Id}");
+                    if(ImGui.Button("Show all Duties")) {
+                        foreach(var duty in _plugin.DataManager.GetExcelSheet<ContentFinderCondition>()) {
+                            _plugin.Log.Debug($"id: {duty.RowId} name: {duty.Name}");
+                        }
+                    }
+
+                    if(ImGui.Button("Show all Zones")) {
+                        foreach(var zone in _plugin.DataManager.GetExcelSheet<TerritoryType>()) {
+                            _plugin.Log.Debug($"id: {zone.RowId} name: {zone.PlaceName.Value.Name}");
+                        }
                     }
 
                     if(ImGui.Button("First Mid wins...%")) {

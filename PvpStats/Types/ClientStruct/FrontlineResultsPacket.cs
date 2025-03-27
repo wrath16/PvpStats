@@ -25,7 +25,7 @@ public unsafe struct FrontlineResultsPacket {
         [FieldOffset(0x00)] public ushort Placement;
         [FieldOffset(0x02)] public ushort OccupationPoints;     //ovoos, tomeliths
         [FieldOffset(0x04)] public ushort EnemyKillPoints;
-        [FieldOffset(0x06)] public ushort Unknown1;
+        [FieldOffset(0x06)] public ushort DronePoints;
         [FieldOffset(0x08)] public ushort IcePoints;
         [FieldOffset(0x0A)] public ushort TotalPoints;
         [FieldOffset(0x0C)] public ushort KOPointLosses;

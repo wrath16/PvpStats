@@ -176,7 +176,7 @@ internal class AtkNodeService {
             case ValueType.WideString:
             case ValueType.ManagedString:
             case ValueType.String8:
-                return Marshal.PtrToStringUTF8((nint)value.String) ?? "";
+                return value.String.AsDalamudSeString().TextValue ?? "";
             default:
                 break;
         }

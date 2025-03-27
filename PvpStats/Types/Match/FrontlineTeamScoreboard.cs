@@ -8,6 +8,7 @@ public class FrontlineTeamScoreboard {
     public int DeathPointLosses { get; set; }
     public int OccupationPoints { get; set; }
     public int TargetablePoints { get; set; }
+    public int DronePoints { get; set; }
 
     [BsonIgnore]
     public int KillPointsDiff => KillPoints - DeathPointLosses;
