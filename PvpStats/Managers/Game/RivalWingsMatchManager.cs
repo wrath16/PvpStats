@@ -66,7 +66,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
     //40 55 57 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 48 8B E9
     //48 89 6C 24 ?? 56 48 81 EC ?? ?? ?? ?? 48 8B E9 
     private delegate void RWMatchEnd10Delegate(IntPtr p1, IntPtr p2);
-    [Signature("48 89 6C 24 ?? 56 48 81 EC ?? ?? ?? ?? 48 8B E9 ", DetourName = nameof(RWMatchEnd10Detour))]
+    [Signature("48 89 6C 24 ?? 56 48 81 EC ?? ?? ?? ?? 48 8B E9 48 8B F2", DetourName = nameof(RWMatchEnd10Detour))]
     private readonly Hook<RWMatchEnd10Delegate> _rwMatchEndHook;
 
     //private delegate void MechDeployDelegate(IntPtr p1, IntPtr p2);
