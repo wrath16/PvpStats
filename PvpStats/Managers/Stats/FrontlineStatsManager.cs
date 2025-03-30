@@ -36,7 +36,7 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
     public static float[] DamageTakenPerLifeRange = [120000f, 300000f];
     public static float[] HPRestoredPerLifeRange = [120000f, 300000f];
     public static float[] KDARange = [4.0f, 20.0f];
-    public static float[] BattleHighPerLifeRange = [10.0f, 100.0f];
+    public static float[] BattleHighPerLifeRange = [20.0f, 100.0f];
 
     internal FrontlineStatsManager(Plugin plugin) : base(plugin, plugin.FLCache) {
     }
