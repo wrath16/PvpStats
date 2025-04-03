@@ -1,4 +1,5 @@
-﻿using Dalamud.Interface.Components;
+﻿using Dalamud.Interface.Colors;
+using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
@@ -223,7 +224,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
                 using(var tab2 = ImRaii.TabItem("Graphs")) {
                     if(tab2) {
                         if(CurrentTab != "Graphs") {
-                            SetWindowSize(new Vector2(975, 825));
+                            SetWindowSize(new Vector2(975, 800));
                             CurrentTab = "Graphs";
                         }
                         DrawGraphs();
@@ -722,9 +723,17 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
             return;
         }
 
+        var maxMatchLength = 1200;
+        float[] bhXs = [0, maxMatchLength];
+        float[] bh1Ys = [20, 20];
+        float[] bh2Ys = [40, 40];
+        float[] bh3Ys = [60, 60];
+        float[] bh4Ys = [80, 80];
+        float[] bh5Ys = [100, 100];
+
         ImPlot.SetupAxisScale(ImAxis.X1, ImPlotScale.Linear);
-        ImPlot.SetupAxesLimits(0, 1200, 0, 110, ImPlotCond.Once);
-        ImPlot.SetupAxisLimitsConstraints(ImAxis.X1, 0, 1200);
+        ImPlot.SetupAxesLimits(0, maxMatchLength, 0, 110, ImPlotCond.Once);
+        ImPlot.SetupAxisLimitsConstraints(ImAxis.X1, 0, maxMatchLength);
         ImPlot.SetupAxisLimitsConstraints(ImAxis.Y1, 0, 110);
 
         ImPlot.SetupAxes("Match Time", "", ImPlotAxisFlags.None, ImPlotAxisFlags.None);
@@ -732,10 +741,43 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
 
         ImPlot.SetupAxisTicks(ImAxis.X1, ref _axisTicks[0], _axisTicks.Length, _axisLabels);
 
-        using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 2f * ImGuiHelpers.GlobalScale);
-        ImPlot.PlotStairs("Battle High", ref _playerBattleHigh.Xs[0],
-            ref _playerBattleHigh.Ys[0],
-            _playerBattleHigh.Xs.Length, ImPlotStairsFlags.None);
+        using(var style = ImRaii.PushColor(ImPlotCol.Line, ImGuiColors.ParsedBlue)) {
+            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 1f * ImGuiHelpers.GlobalScale);
+            ImPlot.PlotStairs("BH1", ref bhXs[0],
+                ref bh1Ys[0],
+                2, ImPlotStairsFlags.None);
+        }
+        using(var style = ImRaii.PushColor(ImPlotCol.Line, ImGuiColors.ParsedGreen)) {
+            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 1f * ImGuiHelpers.GlobalScale);
+            ImPlot.PlotStairs("BH2", ref bhXs[0],
+                ref bh2Ys[0],
+                2, ImPlotStairsFlags.None);
+        }
+        using(var style = ImRaii.PushColor(ImPlotCol.Line, ImGuiColors.ParsedGold)) {
+            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 1f * ImGuiHelpers.GlobalScale);
+            ImPlot.PlotStairs("BH3", ref bhXs[0],
+                ref bh3Ys[0],
+                2, ImPlotStairsFlags.None);
+        }
+        using(var style = ImRaii.PushColor(ImPlotCol.Line, ImGuiColors.ParsedOrange)) {
+            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 1f * ImGuiHelpers.GlobalScale);
+            ImPlot.PlotStairs("BH4", ref bhXs[0],
+                ref bh4Ys[0],
+                2, ImPlotStairsFlags.None);
+        }
+        using(var style = ImRaii.PushColor(ImPlotCol.Line, ImGuiColors.DPSRed)) {
+            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 1f * ImGuiHelpers.GlobalScale);
+            ImPlot.PlotStairs("BH4", ref bhXs[0],
+                ref bh5Ys[0],
+                2, ImPlotStairsFlags.None);
+        }
+
+        using(var style = ImRaii.PushColor(ImPlotCol.Line, ImGuiColors.DalamudWhite)) {
+            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 2f * ImGuiHelpers.GlobalScale);
+            ImPlot.PlotStairs("Battle High", ref _playerBattleHigh.Xs[0],
+                ref _playerBattleHigh.Ys[0],
+                _playerBattleHigh.Xs.Length, ImPlotStairsFlags.None);
+        }
     }
 
     private void SortByColumn(uint columnId, ImGuiSortDirection direction) {
