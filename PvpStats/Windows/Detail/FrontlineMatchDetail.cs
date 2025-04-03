@@ -60,7 +60,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
                 _scoreboardSize = new Vector2(865, 800);
                 break;
         }
-        Size = _scoreboardSize;
+        Size = new Vector2(_scoreboardSize.X, _scoreboardSize.Y);
 
         if(Match.TimelineId != null) {
             _timeline = Plugin.Storage.GetFLTimelines().Query().Where(x => x.Id.Equals(match.TimelineId)).FirstOrDefault();
@@ -98,6 +98,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
     }
 
     public override void Draw() {
+        base.Draw();
         if(Plugin.Configuration.ShowBackgroundImage) {
             var cursorPosBefore = ImGui.GetCursorPos();
             ImGui.SetCursorPosX(ImGui.GetWindowSize().X / 2 - (259 / 2 + 0f) * ImGuiHelpers.GlobalScale);

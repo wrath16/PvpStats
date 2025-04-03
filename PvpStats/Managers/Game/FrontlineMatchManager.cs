@@ -17,8 +17,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using static PvpStats.Types.ClientStruct.CrystallineConflictResultsPacket;
-using static PvpStats.Types.ClientStruct.RivalWingsContentDirector;
 
 namespace PvpStats.Managers.Game;
 internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
