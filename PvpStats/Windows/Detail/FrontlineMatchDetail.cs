@@ -2,9 +2,11 @@
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
+using ImPlotNET;
 using PvpStats.Helpers;
 using PvpStats.Types.Display;
 using PvpStats.Types.Match;
+using PvpStats.Types.Match.Timeline;
 using PvpStats.Types.Player;
 using PvpStats.Windows.Filter;
 using System;
@@ -24,6 +26,17 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
     private Dictionary<string, FrontlineScoreboard> _unfilteredScoreboard;
     private bool _triggerSort;
     private bool _firstDrawComplete;
+    private Vector2 _scoreboardSize;
+
+    private FrontlineMatchTimeline? _timeline;
+    private double[] _axisTicks = [];
+    private string[] _axisLabels = [];
+    private Dictionary<FrontlineTeamName, (float[] Xs, float[] Ys)> _teamPoints = new() {
+        {FrontlineTeamName.Maelstrom, new() },
+        {FrontlineTeamName.Adders, new() },
+        {FrontlineTeamName.Flames, new() },
+    };
+    private (float[] Xs, float[] Ys) _playerBattleHigh = new();
 
     public FrontlineMatchDetail(Plugin plugin, FrontlineMatch match) : base(plugin, plugin.FLCache, match) {
         //Flags -= ImGuiWindowFlags.AlwaysAutoResize;
@@ -36,15 +49,42 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         switch(match.Arena) {
             case FrontlineMap.BorderlandRuins:
             case FrontlineMap.FieldsOfGlory:
-                Size = new Vector2(930, 800);
+                _scoreboardSize = new Vector2(930, 800);
                 break;
             case FrontlineMap.SealRock:
-                Size = new Vector2(920, 800);
+                _scoreboardSize = new Vector2(920, 800);
                 break;
             default:
             case FrontlineMap.OnsalHakair:
-                Size = new Vector2(865, 800);
+                _scoreboardSize = new Vector2(865, 800);
                 break;
+        }
+        Size = _scoreboardSize;
+
+        if(Match.TimelineId != null) {
+            _timeline = Plugin.Storage.GetFLTimelines().Query().Where(x => x.Id.Equals(match.TimelineId)).FirstOrDefault();
+            if(_timeline != null) {
+                //setup graphs
+                List<double> axisTicks = new();
+                List<string> axisLabels = new();
+                for(int i = 0; i <= 20; i++) {
+                    axisTicks.Add(i * 60);
+                    axisLabels.Add(ImGuiHelper.GetTimeSpanString(new TimeSpan(0, i, 0)));
+                }
+                _axisTicks = axisTicks.ToArray();
+                _axisLabels = axisLabels.ToArray();
+
+                //point graphs
+                SetupPointsGraph(FrontlineTeamName.Maelstrom);
+                SetupPointsGraph(FrontlineTeamName.Adders);
+                SetupPointsGraph(FrontlineTeamName.Flames);
+
+                if(_timeline.SelfBattleHigh != null) {
+                    var bhEvents = _timeline.SelfBattleHigh
+                    .Append(new((DateTime)Match.MatchEndTime!, _timeline.SelfBattleHigh.Last().Count));
+                    _playerBattleHigh = (bhEvents.Select(x => (float)(x.Timestamp - Match.MatchStartTime).Value.TotalSeconds).ToArray(), bhEvents.Select(x => (float)x.Count).ToArray());
+                }
+            }
         }
 
         CSV = BuildCSV();
@@ -167,27 +207,33 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
                 }
             }
         }
-        ImGui.NewLine();
-        ImGui.NewLine();
-        ImGuiHelper.HelpMarker("Right-click table header to show and hide columns including extra metrics.", true, true);
-        using(var _ = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing * 2.5f * ImGuiHelpers.GlobalScale)) {
-            ImGui.SameLine();
+
+        if(_timeline != null) {
+            using(var tabBar = ImRaii.TabBar("TabBar")) {
+                if(Match.PlayerScoreboards != null) {
+                    using var tab = ImRaii.TabItem("Scoreboard");
+                    if(tab) {
+                        if(CurrentTab != "Scoreboard") {
+                            SetWindowSize(_scoreboardSize);
+                            CurrentTab = "Scoreboard";
+                        }
+                        DrawScoreboard();
+                    }
+                }
+                using(var tab2 = ImRaii.TabItem("Graphs")) {
+                    if(tab2) {
+                        if(CurrentTab != "Graphs") {
+                            SetWindowSize(new Vector2(975, 825));
+                            CurrentTab = "Graphs";
+                        }
+                        DrawGraphs();
+                    }
+                }
+            }
+        } else {
+            ImGui.NewLine();
+            DrawScoreboard();
         }
-        //ImGui.AlignTextToFramePadding();
-        ImGuiComponents.ToggleButton("##showPercentages", ref ShowPercentages);
-        ImGui.SameLine();
-        ImGui.Text("Show team contributions");
-        using(var _ = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing * 2.5f * ImGuiHelpers.GlobalScale)) {
-            ImGui.SameLine();
-        }
-        ImGui.Checkbox("###showTeamRows", ref ShowTeamRows);
-        ImGui.SameLine();
-        ImGui.Text("Show team totals");
-        using(var _ = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing * 2.5f * ImGuiHelpers.GlobalScale)) {
-            ImGui.SameLine();
-        }
-        _teamQuickFilter.Draw();
-        DrawPlayerStatsTable();
     }
 
     private void DrawTeamName(FrontlineTeamName team) {
@@ -587,6 +633,111 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         ImGui.TableNextColumn();
     }
 
+    private void DrawScoreboard() {
+        ImGui.NewLine();
+        ImGuiHelper.HelpMarker("Right-click table header to show and hide columns including extra metrics.", true, true);
+        using(var _ = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing * 2.5f * ImGuiHelpers.GlobalScale)) {
+            ImGui.SameLine();
+        }
+        //ImGui.AlignTextToFramePadding();
+        ImGuiComponents.ToggleButton("##showPercentages", ref ShowPercentages);
+        ImGui.SameLine();
+        ImGui.Text("Show team contributions");
+        using(var _ = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing * 2.5f * ImGuiHelpers.GlobalScale)) {
+            ImGui.SameLine();
+        }
+        ImGui.Checkbox("###showTeamRows", ref ShowTeamRows);
+        ImGui.SameLine();
+        ImGui.Text("Show team totals");
+        using(var _ = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing * 2.5f * ImGuiHelpers.GlobalScale)) {
+            ImGui.SameLine();
+        }
+        _teamQuickFilter.Draw();
+        DrawPlayerStatsTable();
+    }
+
+    private void DrawGraphs() {
+        //filters
+
+        using var child = ImRaii.Child("graphChild", ImGui.GetContentRegionAvail(), true);
+        if(child) {
+            if(_timeline?.TeamPoints != null) {
+                DrawTeamPointsGraph();
+            }
+            if(_timeline?.SelfBattleHigh != null) {
+                DrawBattleHighGraph();
+            }
+        }
+    }
+
+    private void DrawTeamPointsGraph() {
+        using var plot = ImRaii.Plot("Team Points", new Vector2(ImGui.GetContentRegionAvail().X, 500f * ImGuiHelpers.GlobalScale), ImPlotFlags.None);
+
+        if(!plot) {
+            return;
+        }
+
+        var maxScore = Match.Arena switch {
+            FrontlineMap.BorderlandRuins => 3000,
+            FrontlineMap.FieldsOfGlory => 1600,
+            FrontlineMap.SealRock => 700,
+            FrontlineMap.OnsalHakair => 1400,
+            _ => 2000
+        };
+
+        ImPlot.SetupAxisScale(ImAxis.X1, ImPlotScale.Linear);
+        ImPlot.SetupAxesLimits(0, 1200, 0, maxScore, ImPlotCond.Once);
+        ImPlot.SetupAxisLimitsConstraints(ImAxis.X1, 0, 1200);
+        ImPlot.SetupAxisLimitsConstraints(ImAxis.Y1, 0, maxScore);
+
+        ImPlot.SetupAxes("Match Time", "", ImPlotAxisFlags.None, ImPlotAxisFlags.None);
+        ImPlot.SetupLegend(ImPlotLocation.NorthWest, ImPlotLegendFlags.None);
+
+        ImPlot.SetupAxisTicks(ImAxis.X1, ref _axisTicks[0], _axisTicks.Length, _axisLabels);
+
+        using(var style = ImRaii.PushColor(ImPlotCol.Line, Plugin.Configuration.GetFrontlineTeamColor(FrontlineTeamName.Maelstrom))) {
+            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 2f * ImGuiHelpers.GlobalScale);
+            ImPlot.PlotStairs("Maelstrom", ref _teamPoints[FrontlineTeamName.Maelstrom].Xs[0],
+                ref _teamPoints[FrontlineTeamName.Maelstrom].Ys[0],
+                _teamPoints[FrontlineTeamName.Maelstrom].Xs.Length, ImPlotStairsFlags.None);
+        }
+        using(var style = ImRaii.PushColor(ImPlotCol.Line, Plugin.Configuration.GetFrontlineTeamColor(FrontlineTeamName.Adders))) {
+            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 2f * ImGuiHelpers.GlobalScale);
+            ImPlot.PlotStairs("Adders", ref _teamPoints[FrontlineTeamName.Adders].Xs[0],
+                ref _teamPoints[FrontlineTeamName.Adders].Ys[0],
+                _teamPoints[FrontlineTeamName.Adders].Xs.Length, ImPlotStairsFlags.None);
+        }
+        using(var style = ImRaii.PushColor(ImPlotCol.Line, Plugin.Configuration.GetFrontlineTeamColor(FrontlineTeamName.Flames))) {
+            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 2f * ImGuiHelpers.GlobalScale);
+            ImPlot.PlotStairs("Flames", ref _teamPoints[FrontlineTeamName.Flames].Xs[0],
+                ref _teamPoints[FrontlineTeamName.Flames].Ys[0],
+                _teamPoints[FrontlineTeamName.Flames].Xs.Length, ImPlotStairsFlags.None);
+        }
+    }
+
+    private void DrawBattleHighGraph() {
+        using var plot = ImRaii.Plot("Self Battle High", new Vector2(ImGui.GetContentRegionAvail().X, 500f * ImGuiHelpers.GlobalScale), ImPlotFlags.NoLegend);
+
+        if(!plot) {
+            return;
+        }
+
+        ImPlot.SetupAxisScale(ImAxis.X1, ImPlotScale.Linear);
+        ImPlot.SetupAxesLimits(0, 1200, 0, 110, ImPlotCond.Once);
+        ImPlot.SetupAxisLimitsConstraints(ImAxis.X1, 0, 1200);
+        ImPlot.SetupAxisLimitsConstraints(ImAxis.Y1, 0, 110);
+
+        ImPlot.SetupAxes("Match Time", "", ImPlotAxisFlags.None, ImPlotAxisFlags.None);
+        //ImPlot.SetupLegend(ImPlotLocation.NorthWest, ImPlotLegendFlags.Horizontal);
+
+        ImPlot.SetupAxisTicks(ImAxis.X1, ref _axisTicks[0], _axisTicks.Length, _axisLabels);
+
+        using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 2f * ImGuiHelpers.GlobalScale);
+        ImPlot.PlotStairs("Battle High", ref _playerBattleHigh.Xs[0],
+            ref _playerBattleHigh.Ys[0],
+            _playerBattleHigh.Xs.Length, ImPlotStairsFlags.None);
+    }
+
     private void SortByColumn(uint columnId, ImGuiSortDirection direction) {
         Func<KeyValuePair<string, FrontlineScoreboard>, object> comparator = (r) => 0;
         Func<KeyValuePair<FrontlineTeamName, FrontlineScoreboard>, object> teamComparator = (r) => 0;
@@ -653,6 +804,16 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         }).ToDictionary();
         //_triggerSort = true;
         return Task.CompletedTask;
+    }
+
+    private void SetupPointsGraph(FrontlineTeamName team) {
+        if(_timeline?.TeamPoints == null) {
+            return;
+        }
+        var pointEvents = _timeline.TeamPoints[team]
+            //.Where(x => x.Points != 0 || (x.Timestamp - Match.MatchStartTime).Value.TotalSeconds > 10)
+            .Append(new((DateTime)Match.MatchEndTime!, _timeline.TeamPoints[team].Last().Points));
+        _teamPoints[team] = (pointEvents.Select(x => (float)(x.Timestamp - Match.MatchStartTime).Value.TotalSeconds).ToArray(), pointEvents.Select(x => (float)x.Points).ToArray());
     }
 
     protected override string BuildCSV() {

@@ -1,24 +1,34 @@
-﻿using Dalamud.Game.ClientState.Objects.Enums;
+﻿using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
+using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using Lumina.Excel.Sheets;
 using PvpStats.Helpers;
 using PvpStats.Services;
 using PvpStats.Types.ClientStruct;
 using PvpStats.Types.Match;
+using PvpStats.Types.Match.Timeline;
 using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using static PvpStats.Types.ClientStruct.CrystallineConflictResultsPacket;
+using static PvpStats.Types.ClientStruct.RivalWingsContentDirector;
 
 namespace PvpStats.Managers.Game;
 internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
 
     //protected FrontlineMatch? CurrentMatch { get; set; }
+
+    private DateTime _lastUpdate;
+    private DateTime _lastPrint = DateTime.MinValue;
+
+    private FrontlineMatchTimeline? _currentMatchTimeline;
 
     private Dictionary<PlayerAlias, int> _maxObservedBattleHigh = [];
 
@@ -95,9 +105,18 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
                     }
                 }
                 _maxObservedBattleHigh = [];
+                _currentMatchTimeline = new() {
+                    TeamPoints = new() {
+                        {FrontlineTeamName.Maelstrom, new()},
+                        {FrontlineTeamName.Adders, new()},
+                        {FrontlineTeamName.Flames, new()},
+                    },
+                    SelfBattleHigh = new(),
+                };
                 Plugin.Log.Information($"starting new match on {CurrentMatch.Arena}");
                 Plugin.DataQueue.QueueDataOperation(async () => {
                     await Plugin.FLCache.AddMatch(CurrentMatch);
+                    await Plugin.Storage.AddFLTimeline(_currentMatchTimeline);
                 });
             });
         } catch(Exception e) {
@@ -111,7 +130,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
         Plugin.Log.Debug("Fl match end 10 detour entered.");
         try {
 #if DEBUG
-            Plugin.Functions.CreateByteDump(p2, 0x400, "fl_match_results");
+            //Plugin.Functions.CreateByteDump(p2, 0x400, "fl_match_results");
 #endif
             FrontlineResultsPacket resultsPacket;
             unsafe {
@@ -120,7 +139,10 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
             var matchEndTask = Plugin.DataQueue.QueueDataOperation(async () => {
                 if(ProcessMatchResults(resultsPacket)) {
                     await Plugin.FLCache.UpdateMatch(CurrentMatch!);
-
+                    if(_currentMatchTimeline != null) {
+                        await Plugin.Storage.UpdateFLTimeline(_currentMatchTimeline);
+                    }
+                    
                     //add delay to refresh to ensure all player payloads are received
                     _ = Task.Delay(1000).ContinueWith((t) => {
                         _ = Plugin.WindowManager.RefreshFLWindow();
@@ -179,6 +201,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
         addTeamStats(results.FlameStats, FrontlineTeamName.Flames);
 
         CurrentMatch.IsCompleted = true;
+        CurrentMatch.TimelineId = _currentMatchTimeline?.Id;
         return true;
     }
 
@@ -269,6 +292,25 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
         if(!IsMatchInProgress()) {
             return;
         }
+        var director = (FrontlineContentDirector*)(IntPtr)EventFramework.Instance()->GetInstanceContentDirector();
+        if(director is null) {
+            return;
+        }
+        if(Plugin.Condition[ConditionFlag.BetweenAreas] || Plugin.Condition[ConditionFlag.BetweenAreas51]) {
+            return;
+        }
+
+        var now = DateTime.Now;
+
+#if DEBUG
+        if(now - _lastPrint > TimeSpan.FromSeconds(30)) {
+            _lastPrint = now;
+            Plugin.Functions.CreateByteDump((nint)director, 0x10000, "FLICD");
+            Plugin.Log2.Debug("creating fl content director dump");
+        }
+#endif
+
+        //max BH
         foreach(IPlayerCharacter pc in Plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player).Cast<IPlayerCharacter>()) {
             try {
                 var battleHigh = 0;
@@ -287,5 +329,46 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
                 //suppress all exceptions
             }
         }
+
+        
+        if(_currentMatchTimeline != null) {
+
+            //team points
+            foreach(var team in _currentMatchTimeline.TeamPoints ?? []) {
+                var lastEvent = team.Value.LastOrDefault();
+                int? currentValue = null;
+                switch(team.Key) {
+                    case FrontlineTeamName.Maelstrom:
+                        currentValue = director->MaelstromScore;
+                            break;
+                    case FrontlineTeamName.Adders:
+                        currentValue = director->AddersScore;
+                        break;
+                    case FrontlineTeamName.Flames:
+                        currentValue = director->FlamesScore;
+                        break;
+                    default:
+                        break;
+                }
+                if(currentValue != null && (lastEvent == null || lastEvent.Points != currentValue)) {
+                    team.Value.Add(new(now, (int)currentValue));
+                }
+            }
+
+            //self battle high
+            if(_currentMatchTimeline.SelfBattleHigh != null) {
+                var lastBattleHighEvent = _currentMatchTimeline.SelfBattleHigh.LastOrDefault();
+                int? currentBattleHigh = director->PlayerBattleHigh;
+                if(currentBattleHigh != null && (lastBattleHighEvent == null || lastBattleHighEvent.Count != currentBattleHigh)) {
+                    _currentMatchTimeline.SelfBattleHigh.Add(new(now, (int)currentBattleHigh));
+                }
+            }
+        }
+
+        _lastUpdate = now;
     }
+
+    //private void Reset() {
+    //    _maxObservedBattleHigh = [];
+    //}
 }

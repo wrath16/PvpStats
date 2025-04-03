@@ -168,6 +168,8 @@ internal unsafe class DebugWindow : Window {
                     ImGui.Separator();
                     if(instanceDirector != null && instanceDirector->InstanceContentType == FFXIVClientStructs.FFXIV.Client.Game.InstanceContent.InstanceContentType.RivalWing) {
                         DrawRivalWingsDirector();
+                    } else if(instanceDirector != null && instanceDirector->InstanceContentType == FFXIVClientStructs.FFXIV.Client.Game.InstanceContent.InstanceContentType.Frontlines) {
+                        DrawFrontlineDirector();
                     }
                     //ImGui.Text($"0x{new IntPtr(instanceDirector + RivalWingsMatchManager.RivalWingsContentDirectorOffset).ToString("X2")}");
                     //ImGui.Text($"0x{new IntPtr(instanceDirector + 0x1E58).ToString("X2")}");
@@ -473,6 +475,37 @@ internal unsafe class DebugWindow : Window {
                         ImGui.TextUnformatted(friendlyMechNative.Type.ToString());
                     }
                 }
+            }
+        }
+    }
+
+    private void DrawFrontlineDirector() {
+        var instanceDirector = (FrontlineContentDirector*)((IntPtr)EventFramework.Instance()->GetInstanceContentDirector());
+        using(var table = ImRaii.Table("main", 2)) {
+            if(table) {
+                ImGui.TableSetupColumn("c1");
+                ImGui.TableSetupColumn("c2");
+
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Battle High");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->PlayerBattleHigh.ToString());
+
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Maelstrom");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->MaelstromScore.ToString());
+
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Adders");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->AddersScore.ToString());
+
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Flames");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->FlamesScore.ToString());
+
             }
         }
     }

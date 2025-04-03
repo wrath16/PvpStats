@@ -139,6 +139,20 @@ internal class StorageService {
         await WriteToDatabase(() => GetRWMatches().Update(match));
     }
 
+    internal ILiteCollection<FrontlineMatchTimeline> GetFLTimelines() {
+        return Database.GetCollection<FrontlineMatchTimeline>(FLTimelineTable);
+    }
+
+    internal async Task AddFLTimeline(FrontlineMatchTimeline timeline) {
+        LogUpdate(timeline.Id.ToString());
+        await WriteToDatabase(() => GetFLTimelines().Insert(timeline));
+    }
+
+    internal async Task UpdateFLTimeline(FrontlineMatchTimeline timeline) {
+        LogUpdate(timeline.Id.ToString());
+        await WriteToDatabase(() => GetFLTimelines().Update(timeline));
+    }
+
     internal ILiteCollection<RivalWingsMatchTimeline> GetRWTimelines() {
         return Database.GetCollection<RivalWingsMatchTimeline>(RWTimelineTable);
     }
