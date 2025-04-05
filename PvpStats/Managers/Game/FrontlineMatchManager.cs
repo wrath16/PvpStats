@@ -301,11 +301,11 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
         var now = DateTime.Now;
 
 #if DEBUG
-        if(now - _lastPrint > TimeSpan.FromSeconds(30)) {
-            _lastPrint = now;
-            Plugin.Functions.CreateByteDump((nint)director, 0x10000, "FLICD");
-            Plugin.Log2.Debug("creating fl content director dump");
-        }
+        //if(now - _lastPrint > TimeSpan.FromSeconds(30)) {
+        //    _lastPrint = now;
+        //    Plugin.Functions.CreateByteDump((nint)director, 0x10000, "FLICD");
+        //    Plugin.Log2.Debug("creating fl content director dump");
+        //}
 #endif
 
         //max BH
