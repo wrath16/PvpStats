@@ -154,7 +154,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         }
         //DrawTeamStatsTable();
         //ImGui.SetNextItemWidth(ImGui.GetContentRegionMax().X);
-        
+
         using(var table = ImRaii.Table("teamstats", 4, ImGuiTableFlags.None)) {
             if(table) {
                 ImGui.TableSetupColumn("descriptions", ImGuiTableColumnFlags.WidthFixed, 190f * ImGuiHelpers.GlobalScale);
@@ -307,7 +307,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
             ImGui.TableSetupColumn("Damage to PCs", widthStyle | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 65f, (uint)"DamageToPCs".GetHashCode());
             ImGui.TableSetupColumn("Drone Damage", widthStyle | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 65f, (uint)"DamageToOther".GetHashCode());
             ImGui.TableSetupColumn("Damage Dealt", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"DamageDealt".GetHashCode());
-        } else{
+        } else {
             ImGui.TableSetupColumn("Damage Dealt", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"DamageDealt".GetHashCode());
         }
         ImGui.TableSetupColumn("Damage Taken", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"DamageTaken".GetHashCode());

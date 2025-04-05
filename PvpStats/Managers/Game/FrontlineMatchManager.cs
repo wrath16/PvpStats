@@ -140,7 +140,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
                     if(_currentMatchTimeline != null) {
                         await Plugin.Storage.UpdateFLTimeline(_currentMatchTimeline);
                     }
-                    
+
                     //add delay to refresh to ensure all player payloads are received
                     _ = Task.Delay(1000).ContinueWith((t) => {
                         _ = Plugin.WindowManager.RefreshFLWindow();
@@ -328,7 +328,6 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
             }
         }
 
-        
         if(_currentMatchTimeline != null) {
 
             //team points
@@ -338,7 +337,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
                 switch(team.Key) {
                     case FrontlineTeamName.Maelstrom:
                         currentValue = director->MaelstromScore;
-                            break;
+                        break;
                     case FrontlineTeamName.Adders:
                         currentValue = director->AddersScore;
                         break;
