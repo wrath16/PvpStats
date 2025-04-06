@@ -23,6 +23,7 @@ Final Fantasy XIV Dalamud plugin for recording PvP match history.
 * Rival Wings matches that end between 14:51 and 14:59 have skewed match timeline timestamps by a few seconds.
 * Rival Wings matches recorded before v2.3.0.0 may have incorrect merc counts.
 * Rival Wings matches recorded prior to game version 7.0 may have incorrect ceruleum counts for players with >255.
+* Rival Wings matches recorded during game version 7.2 and prior to v2.3.4.1 have incorrect alliance Soaring stacks.
 * Text may be clipped in some cases if using non-standard font settings.
 
 ## Feature Roadmap
