@@ -317,19 +317,16 @@ internal unsafe class DebugWindow : Window {
 
                     }
 
+                    if(ImGui.Button("Test Timeline doohicky")) {
+
+                    }
+
+
                     ImGui.Text(Framework.Instance()->GameVersionString);
                     ImGui.Text(Assembly.GetExecutingAssembly().GetName().Version.ToString());
 
                     ImGuiHelper.DrawRainbowTextByChar("Sarah Montcroix");
                     ImGui.NewLine();
-                    DrawSuppliesIcon(RivalWingsSupplies.Gobtank, RivalWingsTeamName.Falcons, 25f);
-                    DrawSuppliesIcon(RivalWingsSupplies.Gobtank, RivalWingsTeamName.Ravens, 25f);
-
-                    //using(var style = ImRaii.PushStyle(ImGuiStyleVar.Alpha, 0.5f)) {
-                    //    //ImGui.Rec
-                    //    ImGui.Text("Test Text");
-                    //}
-                    //ImGui.Text("Test no alpha text");
 
                 }
             }
@@ -477,6 +474,24 @@ internal unsafe class DebugWindow : Window {
                 }
             }
         }
+
+        using(var table = ImRaii.Table("Alliances", 3)) {
+            if(table) {
+                ImGui.TableSetupColumn("alliance");
+                ImGui.TableSetupColumn("soaring");
+                ImGui.TableSetupColumn("ceruleum");
+
+                for(int i = 0; i < instanceDirector->AllianceSpan.Length; i++) {
+                    var allianceStat = instanceDirector->AllianceSpan[i];
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted(i.ToString());
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted(allianceStat.SoaringStacks.ToString());
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted(allianceStat.Ceruleum.ToString());
+                }
+            }
+        }
     }
 
     private void DrawFrontlineDirector() {
@@ -518,36 +533,6 @@ internal unsafe class DebugWindow : Window {
         bool parseResult = TimeSpan.TryParse(matchTimer, out TimeSpan ts);
 
         _plugin.Log.Debug($"parse result: {parseResult} minutes: {ts.Minutes} seconds: {ts.Seconds}");
-    }
-
-    private void DrawSuppliesIcon(RivalWingsSupplies supplies, RivalWingsTeamName team, float size) {
-        Vector2 uv0, uv1;
-        switch(supplies) {
-            case RivalWingsSupplies.Gobtank:
-                uv0 = new Vector2(0);
-                uv1 = new Vector2(0.2f, 1 / 3f);
-                break;
-            case RivalWingsSupplies.Ceruleum:
-                uv0 = new Vector2(0.2f, 0);
-                uv1 = new Vector2(0.4f, 1 / 3f);
-                break;
-            case RivalWingsSupplies.Gobbiejuice:
-                uv0 = new Vector2(0.4f, 0);
-                uv1 = new Vector2(0.6f, 1 / 3f);
-                break;
-            case RivalWingsSupplies.Gobcrate:
-                uv0 = new Vector2(0.6f, 0);
-                uv1 = new Vector2(0.8f, 1 / 3f);
-                break;
-            default:
-                uv0 = new Vector2(0.8f, 0);
-                uv1 = new Vector2(0.1f, 1 / 3f);
-                break;
-        };
-        var tint = new Vector4(1.0f, 0.0f, 0.0f, 1.0f);
-        var color = _plugin.Configuration.GetRivalWingsTeamColor(team);
-        ImGui.Image(_plugin.WindowManager.GetTextureHandle(TextureHelper.RWSuppliesTexture), new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), uv0, uv1, color);
-        ImGuiHelper.WrappedTooltip(MatchHelper.GetSuppliesName(supplies));
     }
 }
 #endif
