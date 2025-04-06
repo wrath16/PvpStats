@@ -62,29 +62,27 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         }
         Size = new Vector2(_scoreboardSize.X, _scoreboardSize.Y);
 
-        if(Match.TimelineId != null) {
-            _timeline = Plugin.Storage.GetFLTimelines().Query().Where(x => x.Id.Equals(match.TimelineId)).FirstOrDefault();
-            if(_timeline != null) {
-                //setup graphs
-                List<double> axisTicks = new();
-                List<string> axisLabels = new();
-                for(int i = 0; i <= 20; i++) {
-                    axisTicks.Add(i * 60);
-                    axisLabels.Add(ImGuiHelper.GetTimeSpanString(new TimeSpan(0, i, 0)));
-                }
-                _axisTicks = axisTicks.ToArray();
-                _axisLabels = axisLabels.ToArray();
+        _timeline = Plugin.FLCache.GetTimeline(Match);
+        if(_timeline != null) {
+            //setup graphs
+            List<double> axisTicks = new();
+            List<string> axisLabels = new();
+            for(int i = 0; i <= 20; i++) {
+                axisTicks.Add(i * 60);
+                axisLabels.Add(ImGuiHelper.GetTimeSpanString(new TimeSpan(0, i, 0)));
+            }
+            _axisTicks = axisTicks.ToArray();
+            _axisLabels = axisLabels.ToArray();
 
-                //point graphs
-                SetupPointsGraph(FrontlineTeamName.Maelstrom);
-                SetupPointsGraph(FrontlineTeamName.Adders);
-                SetupPointsGraph(FrontlineTeamName.Flames);
+            //point graphs
+            SetupPointsGraph(FrontlineTeamName.Maelstrom);
+            SetupPointsGraph(FrontlineTeamName.Adders);
+            SetupPointsGraph(FrontlineTeamName.Flames);
 
-                if(_timeline.SelfBattleHigh != null) {
-                    var bhEvents = _timeline.SelfBattleHigh
-                    .Append(new((DateTime)Match.MatchEndTime!, _timeline.SelfBattleHigh.Last().Count));
-                    _playerBattleHigh = (bhEvents.Select(x => (float)(x.Timestamp - Match.MatchStartTime).Value.TotalSeconds).ToArray(), bhEvents.Select(x => (float)x.Count).ToArray());
-                }
+            if(_timeline.SelfBattleHigh != null) {
+                var bhEvents = _timeline.SelfBattleHigh
+                .Append(new((DateTime)Match.MatchEndTime!, _timeline.SelfBattleHigh.Last().Count));
+                _playerBattleHigh = (bhEvents.Select(x => (float)(x.Timestamp - Match.MatchStartTime).Value.TotalSeconds).ToArray(), bhEvents.Select(x => (float)x.Count).ToArray());
             }
         }
 
@@ -679,13 +677,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
             return;
         }
 
-        var maxScore = Match.Arena switch {
-            FrontlineMap.BorderlandRuins => 3000,
-            FrontlineMap.FieldsOfGlory => 1600,
-            FrontlineMap.SealRock => 700,
-            FrontlineMap.OnsalHakair => 1400,
-            _ => 2000
-        };
+        var maxScore = MatchHelper.GetFrontlineMaxPoints(Match.Arena);
 
         ImPlot.SetupAxisScale(ImAxis.X1, ImPlotScale.Linear);
         ImPlot.SetupAxesLimits(0, 1200, 0, maxScore, ImPlotCond.Once);

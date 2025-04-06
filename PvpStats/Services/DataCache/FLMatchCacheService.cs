@@ -1,4 +1,5 @@
 ﻿using PvpStats.Types.Match;
+using PvpStats.Types.Match.Timeline;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -21,5 +22,10 @@ internal class FLMatchCacheService : MatchCacheService<FrontlineMatch> {
 
     protected override async Task UpdateManyToStorage(IEnumerable<FrontlineMatch> matches) {
         await Plugin.Storage.UpdateFLMatches(matches);
+    }
+
+    internal FrontlineMatchTimeline? GetTimeline(FrontlineMatch match) {
+        if(match.TimelineId == null) return null;
+        return Plugin.Storage.GetFLTimelines().Query().Where(x => x.Id.Equals(match.TimelineId)).FirstOrDefault();
     }
 }

@@ -1,4 +1,5 @@
 ﻿using PvpStats.Types.Match;
+using PvpStats.Types.Match.Timeline;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -21,5 +22,10 @@ internal class RWMatchCacheService : MatchCacheService<RivalWingsMatch> {
 
     protected override async Task UpdateManyToStorage(IEnumerable<RivalWingsMatch> matches) {
         await Plugin.Storage.UpdateRWMatches(matches);
+    }
+
+    internal RivalWingsMatchTimeline? GetTimeline(RivalWingsMatch match) {
+        if(match.TimelineId == null) return null;
+        return Plugin.Storage.GetRWTimelines().Query().Where(x => x.Id.Equals(match.TimelineId)).FirstOrDefault();
     }
 }

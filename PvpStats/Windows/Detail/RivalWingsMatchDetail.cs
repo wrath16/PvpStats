@@ -86,92 +86,90 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             }
         }
 
-        if(match.TimelineId != null) {
-            _timeline = Plugin.Storage.GetRWTimelines().Query().Where(x => x.Id.Equals(match.TimelineId)).FirstOrDefault();
-            if(_timeline != null) {
-                _consolidatedEvents = [.. _timeline.MercClaims, .. _timeline.MidClaims];
-                //get structure destroyed events
-                foreach(var teamStructHealths in _timeline.StructureHealths ?? []) {
-                    foreach(var structHealths in teamStructHealths.Value) {
-                        var lastHealth = structHealths.Value.Last();
-                        if(lastHealth.Health <= 0) {
-                            _consolidatedEvents.Add(new StructureHealthEvent(lastHealth.Timestamp, lastHealth.Health) {
-                                Structure = structHealths.Key,
-                                Team = teamStructHealths.Key,
-                            });
-                        }
-                    }
-                }
-                //get soaring high events
-                foreach(var allianceSoaringStacks in _timeline.AllianceStacks ?? []) {
-                    var flyingHighEvent = allianceSoaringStacks.Value.FirstOrDefault(x => x.Count == 20);
-                    if(flyingHighEvent != null) {
-                        _consolidatedEvents.Add(new AllianceSoaringEvent(flyingHighEvent.Timestamp, flyingHighEvent.Count) {
-                            Alliance = allianceSoaringStacks.Key,
+        _timeline = Plugin.RWCache.GetTimeline(Match);
+        if(_timeline != null) {
+            _consolidatedEvents = [.. _timeline.MercClaims, .. _timeline.MidClaims];
+            //get structure destroyed events
+            foreach(var teamStructHealths in _timeline.StructureHealths ?? []) {
+                foreach(var structHealths in teamStructHealths.Value) {
+                    var lastHealth = structHealths.Value.Last();
+                    if(lastHealth.Health <= 0) {
+                        _consolidatedEvents.Add(new StructureHealthEvent(lastHealth.Timestamp, lastHealth.Health) {
+                            Structure = structHealths.Key,
+                            Team = teamStructHealths.Key,
                         });
                     }
                 }
-
-                //get first mech event
-                foreach(var teamMechCountEvents in _timeline.MechCounts ?? []) {
-                    MechCountEvent? teamFirstDeployEvent = null;
-                    RivalWingsMech? teamFirstDeployMech = null;
-                    foreach(var mechCountEvents in teamMechCountEvents.Value) {
-                        var firstDeployEvent = mechCountEvents.Value.FirstOrDefault(x => x.Count > 0);
-                        if(firstDeployEvent != null && (teamFirstDeployEvent == null || firstDeployEvent.Timestamp < teamFirstDeployEvent.Timestamp)) {
-                            teamFirstDeployEvent = firstDeployEvent;
-                            teamFirstDeployMech = mechCountEvents.Key;
-                        }
-                    }
-                    if(teamFirstDeployEvent != null) {
-                        _consolidatedEvents.Add(new MechCountEvent(teamFirstDeployEvent.Timestamp, teamFirstDeployEvent.Count) {
-                            Mech = teamFirstDeployMech,
-                            Team = teamMechCountEvents.Key,
-                        });
-                    }
-                }
-
-                if(match.MatchEndTime != null) {
-                    _consolidatedEvents.Add(new MatchEndEvent((DateTime)match.MatchEndTime, match.MatchWinner));
-                }
-                _consolidatedEvents.Sort();
-
-                //setup graphs
-                List<double> axisTicks = new();
-                List<string> axisLabels = new();
-                for(int i = 0; i <= 15; i++) {
-                    axisTicks.Add(i * 60);
-                    axisLabels.Add(ImGuiHelper.GetTimeSpanString(new TimeSpan(0, i, 0)));
-                }
-                _axisTicks = axisTicks.ToArray();
-                _axisLabels = axisLabels.ToArray();
-
-                //structure health graph
-                SetupGraph(RivalWingsTeamName.Falcons, RivalWingsStructure.Core);
-                SetupGraph(RivalWingsTeamName.Falcons, RivalWingsStructure.Tower1);
-                SetupGraph(RivalWingsTeamName.Falcons, RivalWingsStructure.Tower2);
-                SetupGraph(RivalWingsTeamName.Ravens, RivalWingsStructure.Core);
-                SetupGraph(RivalWingsTeamName.Ravens, RivalWingsStructure.Tower1);
-                SetupGraph(RivalWingsTeamName.Ravens, RivalWingsStructure.Tower2);
-
-                //soaring stacks graph
-                if(Match.LocalPlayerTeam != null) {
-                    foreach(var alliance in _timeline.AllianceStacks ?? []) {
-                        SetupGraph(alliance.Key, (RivalWingsTeamName)Match.LocalPlayerTeam);
-                    }
-                }
-
-                //mech counts
-                SetupGraph(RivalWingsTeamName.Falcons, RivalWingsMech.Chaser);
-                SetupGraph(RivalWingsTeamName.Falcons, RivalWingsMech.Oppressor);
-                SetupGraph(RivalWingsTeamName.Falcons, RivalWingsMech.Justice);
-                SetupGraph(RivalWingsTeamName.Ravens, RivalWingsMech.Chaser);
-                SetupGraph(RivalWingsTeamName.Ravens, RivalWingsMech.Oppressor);
-                SetupGraph(RivalWingsTeamName.Ravens, RivalWingsMech.Justice);
-
-                SetupMechTotalGraph(RivalWingsTeamName.Falcons);
-                SetupMechTotalGraph(RivalWingsTeamName.Ravens);
             }
+            //get soaring high events
+            foreach(var allianceSoaringStacks in _timeline.AllianceStacks ?? []) {
+                var flyingHighEvent = allianceSoaringStacks.Value.FirstOrDefault(x => x.Count == 20);
+                if(flyingHighEvent != null) {
+                    _consolidatedEvents.Add(new AllianceSoaringEvent(flyingHighEvent.Timestamp, flyingHighEvent.Count) {
+                        Alliance = allianceSoaringStacks.Key,
+                    });
+                }
+            }
+
+            //get first mech event
+            foreach(var teamMechCountEvents in _timeline.MechCounts ?? []) {
+                MechCountEvent? teamFirstDeployEvent = null;
+                RivalWingsMech? teamFirstDeployMech = null;
+                foreach(var mechCountEvents in teamMechCountEvents.Value) {
+                    var firstDeployEvent = mechCountEvents.Value.FirstOrDefault(x => x.Count > 0);
+                    if(firstDeployEvent != null && (teamFirstDeployEvent == null || firstDeployEvent.Timestamp < teamFirstDeployEvent.Timestamp)) {
+                        teamFirstDeployEvent = firstDeployEvent;
+                        teamFirstDeployMech = mechCountEvents.Key;
+                    }
+                }
+                if(teamFirstDeployEvent != null) {
+                    _consolidatedEvents.Add(new MechCountEvent(teamFirstDeployEvent.Timestamp, teamFirstDeployEvent.Count) {
+                        Mech = teamFirstDeployMech,
+                        Team = teamMechCountEvents.Key,
+                    });
+                }
+            }
+
+            if(match.MatchEndTime != null) {
+                _consolidatedEvents.Add(new MatchEndEvent((DateTime)match.MatchEndTime, match.MatchWinner));
+            }
+            _consolidatedEvents.Sort();
+
+            //setup graphs
+            List<double> axisTicks = new();
+            List<string> axisLabels = new();
+            for(int i = 0; i <= 15; i++) {
+                axisTicks.Add(i * 60);
+                axisLabels.Add(ImGuiHelper.GetTimeSpanString(new TimeSpan(0, i, 0)));
+            }
+            _axisTicks = axisTicks.ToArray();
+            _axisLabels = axisLabels.ToArray();
+
+            //structure health graph
+            SetupGraph(RivalWingsTeamName.Falcons, RivalWingsStructure.Core);
+            SetupGraph(RivalWingsTeamName.Falcons, RivalWingsStructure.Tower1);
+            SetupGraph(RivalWingsTeamName.Falcons, RivalWingsStructure.Tower2);
+            SetupGraph(RivalWingsTeamName.Ravens, RivalWingsStructure.Core);
+            SetupGraph(RivalWingsTeamName.Ravens, RivalWingsStructure.Tower1);
+            SetupGraph(RivalWingsTeamName.Ravens, RivalWingsStructure.Tower2);
+
+            //soaring stacks graph
+            if(Match.LocalPlayerTeam != null) {
+                foreach(var alliance in _timeline.AllianceStacks ?? []) {
+                    SetupGraph(alliance.Key, (RivalWingsTeamName)Match.LocalPlayerTeam);
+                }
+            }
+
+            //mech counts
+            SetupGraph(RivalWingsTeamName.Falcons, RivalWingsMech.Chaser);
+            SetupGraph(RivalWingsTeamName.Falcons, RivalWingsMech.Oppressor);
+            SetupGraph(RivalWingsTeamName.Falcons, RivalWingsMech.Justice);
+            SetupGraph(RivalWingsTeamName.Ravens, RivalWingsMech.Chaser);
+            SetupGraph(RivalWingsTeamName.Ravens, RivalWingsMech.Oppressor);
+            SetupGraph(RivalWingsTeamName.Ravens, RivalWingsMech.Justice);
+
+            SetupMechTotalGraph(RivalWingsTeamName.Falcons);
+            SetupMechTotalGraph(RivalWingsTeamName.Ravens);
         }
 
         CSV = BuildCSV();

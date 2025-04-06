@@ -1,4 +1,5 @@
 ﻿using PvpStats.Types.Match;
+using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
@@ -179,6 +180,16 @@ public static class MatchHelper {
             FrontlineMap.FieldsOfGlory => "Shatter",
             FrontlineMap.OnsalHakair => "Danshig Naadam",
             _ => "Unknown",
+        };
+    }
+
+    public static int GetFrontlineMaxPoints(FrontlineMap? map, DateTime? time = null) {
+        return map switch {
+            FrontlineMap.BorderlandRuins => 3000,
+            FrontlineMap.SealRock => 700,
+            FrontlineMap.FieldsOfGlory => 1600,
+            FrontlineMap.OnsalHakair => 1400,
+            _ => 2000,
         };
     }
 

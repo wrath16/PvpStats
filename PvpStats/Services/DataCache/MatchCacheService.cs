@@ -46,7 +46,7 @@ internal abstract class MatchCacheService<T> where T : PvpMatch {
     }
 
     private void RebuildCache() {
-        _matches = GetFromStorage().ToList().ToList();
+        _matches = GetFromStorage().ToList();
     }
 
     internal async Task AddMatch(T match) {
