@@ -1,6 +1,7 @@
 ﻿using LiteDB;
 using PvpStats.Types.Display;
 using PvpStats.Types.Player;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -17,6 +18,13 @@ public class FrontlineMatch : PvpMatch {
     public Dictionary<FrontlineTeamName, FrontlineTeamScoreboard> Teams { get; set; } = new();
 
     public Dictionary<string, int>? MaxBattleHigh { get; set; }
+
+    //Timeline pre-processed data
+    public TimeSpan? BattleHighVTime { get; set; }
+    public int? BattleHighSpike { get; set; }
+    public TimeSpan? BattleHighSpikeTime { get; set; }
+    public int? MomentaryPointAdvantage { get; set; }
+    public int? MomentaryPointDeficit { get; set; }
 
     [BsonIgnore]
     public FrontlinePlayer? LocalPlayerTeamMember => Players.FirstOrDefault(x => x.Name.Equals(LocalPlayer));
