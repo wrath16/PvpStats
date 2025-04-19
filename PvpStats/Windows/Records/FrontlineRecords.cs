@@ -230,8 +230,8 @@ internal class FrontlineRecords : MatchRecords<FrontlineMatch> {
 
         AddSuperlative(fastestBHVMatch, "* Fastest Battle High V", ImGuiHelper.GetTimeSpanString(fastestBHV));
         AddSuperlative(battleHighSpikeMatch, "* Highest Battle High chain", battleHighSpikeMatch?.BattleHighSpike.ToString() ?? "");
-        AddSuperlative(momentaryPointAdvantageMatch, "* Highest momentary point lead", momentaryPointAdvantageMatch?.MomentaryPointAdvantage.ToString() ?? "");
-        AddSuperlative(momentaryPointDeficitMatch, "* Highest momentary point deficit", momentaryPointDeficitMatch?.MomentaryPointDeficit.ToString() ?? "");
+        AddSuperlative(momentaryPointAdvantageMatch, "* Highest momentary point lead", momentaryAdvantageSpan.ToString("P0"));
+        AddSuperlative(momentaryPointDeficitMatch, "* Highest momentary point deficit", momentaryDeficitSpan.ToString("P0"));
 
         return Task.CompletedTask;
     }

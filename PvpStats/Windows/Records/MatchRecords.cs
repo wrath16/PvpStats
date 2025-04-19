@@ -53,6 +53,8 @@ internal abstract class MatchRecords<T> : Refreshable<T> where T : PvpMatch {
     }
 
     public void Draw() {
+        ImGuiHelper.HelpMarker("Records marked with an asterisk (*) not all matches are eligible for.");
+        ImGui.Separator();
         foreach(var match in Superlatives) {
             var x = match.Value;
             DrawStat(match.Key, match.Value.Select(x => x.Item1).ToArray(), match.Value.Select(x => x.Item2).ToArray());
