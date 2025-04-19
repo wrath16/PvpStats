@@ -5,10 +5,10 @@ using System.Linq;
 using System.Threading.Tasks;
 
 namespace PvpStats.Managers;
-internal class MigrationManager {
+internal class ValidationManager {
     private Plugin _plugin;
 
-    public MigrationManager(Plugin plugin) {
+    public ValidationManager(Plugin plugin) {
         _plugin = plugin;
     }
 

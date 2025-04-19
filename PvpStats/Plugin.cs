@@ -14,6 +14,7 @@ using PvpStats.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace PvpStats;
@@ -57,7 +58,7 @@ public sealed class Plugin : IDalamudPlugin {
     internal FrontlineMatchManager? FLMatchManager { get; init; }
     internal RivalWingsMatchManager? RWMatchManager { get; init; }
     internal WindowManager WindowManager { get; init; }
-    internal MigrationManager MigrationManager { get; init; }
+    internal ValidationManager Validation { get; init; }
     internal CrystallineConflictStatsManager CCStatsEngine { get; init; }
     internal FrontlineStatsManager FLStatsEngine { get; init; }
     internal RivalWingsStatsManager RWStatsEngine { get; init; }
@@ -139,7 +140,7 @@ public sealed class Plugin : IDalamudPlugin {
             FLStatsEngine = new(this);
             RWStatsEngine = new(this);
             WindowManager = new(this);
-            MigrationManager = new(this);
+            Validation = new(this);
             try {
                 CCMatchManager = new(this);
             } catch(SignatureException e) {
@@ -269,9 +270,13 @@ public sealed class Plugin : IDalamudPlugin {
         if(Configuration.EnableDBCachingRW ?? true) {
             RWCache.EnableCaching();
         }
-        await MigrationManager.BulkUpdateCCMatchTypes();
-        await MigrationManager.BulkCCUpdateValidatePlayerCount();
-        _ = WindowManager.RefreshAll();
+        
+        //evergreen
+        await Validation.BulkUpdateCCMatchTypes();
+        await Validation.BulkCCUpdateValidatePlayerCount();
+
+        await WindowManager.RefreshAll();
+        Configuration.LastGameVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0.0";
         Log.Information("PvP Tracker initialized.");
     }
 }

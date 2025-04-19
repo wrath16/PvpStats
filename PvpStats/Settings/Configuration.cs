@@ -14,6 +14,7 @@ namespace PvpStats.Settings;
 public class Configuration : IPluginConfiguration {
     public static readonly int CurrentVersion = 0;
     public int Version { get; set; } = CurrentVersion;
+    public string LastGameVersion { get; set; } = "";
     public bool? EnableDBCachingCC { get; set; }
     public bool? EnableDBCachingFL { get; set; }
     public bool? EnableDBCachingRW { get; set; }
@@ -24,6 +25,7 @@ public class Configuration : IPluginConfiguration {
     public bool LeftPlayerTeam { get; set; } = false;
     public bool? OrderFrontlineTeamsByPlacement { get; set; }
     public bool AnchorTeamNames { get; set; } = true;
+    //public bool? JobIconCells { get; set; }
     public bool ResizeableMatchWindow { get; set; } = true;
     public bool ShowBackgroundImage { get; set; } = true;
     public bool? StretchScoreboardColumns { get; set; }
@@ -37,6 +39,7 @@ public class Configuration : IPluginConfiguration {
 
     public float TeamRowAlpha { get; set; } = 0.6f;
     public float PlayerRowAlpha { get; set; } = 0.3f;
+    //public float ScoreboardRowPaddingFactor { get; set; } = 1f;
     public WindowConfiguration CCWindowConfig { get; set; } = new();
     public WindowConfiguration FLWindowConfig { get; set; } = new();
     public WindowConfiguration RWWindowConfig { get; set; } = new();
