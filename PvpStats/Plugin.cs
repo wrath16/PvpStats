@@ -278,7 +278,7 @@ public sealed class Plugin : IDalamudPlugin {
         await Validation.BulkCCUpdateValidatePlayerCount();
 
         //current version validations
-        if(lastVersion < new Version(2, 3, 5, 0)) {
+        if(lastVersion < new Version(2, 4, 0, 0)) {
             var ccValidationTask = new Task<Task>(async () => {
                 await Validation.BulkUpdateCCMatchTypes();
             });
