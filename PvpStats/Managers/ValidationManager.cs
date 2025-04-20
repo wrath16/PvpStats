@@ -1,5 +1,6 @@
 ﻿using PvpStats.Helpers;
 using PvpStats.Types.Match;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,7 +18,7 @@ internal class ValidationManager {
         if(!matches.Any()) {
             return;
         }
-        _plugin.Log.Information("attempting to update unknown match types...");
+        _plugin.Log.Information("Attempting to update unknown match types...");
         foreach(var match in matches) {
             match.MatchType = MatchHelper.GetMatchType(match.DutyId);
         }
@@ -30,7 +31,7 @@ internal class ValidationManager {
         if(!matches.Any()) {
             return;
         }
-        _plugin.Log.Information("removing erroneously added players...");
+        _plugin.Log.Information("Removing erroneously added players...");
         foreach(var match in matches) {
             foreach(var team in match.Teams) {
                 if(team.Value.Players.Count > 5) {
@@ -54,5 +55,57 @@ internal class ValidationManager {
         }
         //await _plugin.Storage.UpdateCCMatches(matches);
         await _plugin.CCCache.UpdateMatches(matches);
+    }
+
+    internal async Task SetRivalWingsMatchFlags() {
+        var matches = _plugin.RWCache.Matches.Where(x => x.IsCompleted).ToList();
+        if(!matches.Any()) {
+            return;
+        }
+
+        Plugin.Log2.Information("Setting Rival Wings match flags...");
+
+        foreach(var match in matches) {
+            //var flags = (RWValidationFlag)match.Flags;
+
+            //plugin and game version added v2.1.11.0, 2024-10-16
+
+            Version? pluginVersion = null;
+            if(match.PluginVersion != null) {
+                pluginVersion = new Version(match.PluginVersion);
+            }
+
+            DateTime gameVersionDate = DateTime.MinValue;
+            if(match.GameVersion != null) {
+                var splitString = match.GameVersion.Split(".");
+                if(splitString.Length >= 3) {
+                    var year = int.Parse(splitString[0]);
+                    gameVersionDate = new DateTime(int.Parse(splitString[0]), int.Parse(splitString[1]), int.Parse(splitString[2]));
+                }
+            }
+
+            //Match flag 0: Possibly invalid ceruleum due to overflow
+            //start: beginning
+            //fixed: v2.1.2.0, 2024-07-28
+            //game and plugin version unavailable at this time
+            if(match.DutyStartTime < new DateTime(2024, 07, 28)) {
+                match.Flags |= RWValidationFlag.InvalidCeruleum;
+            }
+
+            //Match flag 1: mercs double counted
+            //start: beginning
+            //fixed: v2.3.0.0, 2025-02-08
+            if(pluginVersion <= new Version(2, 3, 0, 0)) {
+                match.Flags |= RWValidationFlag.DoubleMerc;
+            }
+
+            //Match flag 2: invalid soaring stacks
+            //start: game version 2025-03-27
+            //fixed: v2.3.4.1, 2025-02-08
+            if(pluginVersion <= new Version(2, 3, 4, 1) && gameVersionDate >= new DateTime(2025, 03, 27)) {
+                match.Flags |= RWValidationFlag.InvalidSoaring;
+            }
+        }
+        await _plugin.RWCache.UpdateMatches(matches);
     }
 }

@@ -170,7 +170,7 @@ internal class FrontlineRecords : MatchRecords<FrontlineMatch> {
                                     biggestAdvantage = advantage;
                                 }
                             } else {
-                                var deficit =  sortedPoints[(FrontlineTeamName)playerTeam] - sortedPoints.ElementAt(0).Value;
+                                var deficit = sortedPoints[(FrontlineTeamName)playerTeam] - sortedPoints.ElementAt(0).Value;
                                 //Plugin.Log2.Debug($"{pEvent} {sortedPoints.ElementAt(0).Key} {sortedPoints.ElementAt(0).Value} {sortedPoints.ElementAt(1).Key} {sortedPoints.ElementAt(1).Value} {sortedPoints.ElementAt(2).Key} {sortedPoints.ElementAt(2).Value} deficit {deficit}");
                                 if(deficit < biggestDeficit) {
                                     biggestDeficit = deficit;

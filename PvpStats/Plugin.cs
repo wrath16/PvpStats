@@ -270,13 +270,24 @@ public sealed class Plugin : IDalamudPlugin {
         if(Configuration.EnableDBCachingRW ?? true) {
             RWCache.EnableCaching();
         }
-        
-        //evergreen
+
+        var lastVersion = new Version(Configuration.LastPluginVersion);
+        var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
+
+        //on all initializations
         await Validation.BulkUpdateCCMatchTypes();
         await Validation.BulkCCUpdateValidatePlayerCount();
 
+        //on upgrades only
+        if(currentVersion > lastVersion) {
+            await Validation.SetRivalWingsMatchFlags();
+        }
+
+        //by flag
+
         await WindowManager.RefreshAll();
-        Configuration.LastGameVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0.0";
+        Configuration.LastPluginVersion = currentVersion?.ToString() ?? "0.0.0.0";
+        Configuration.Save();
         Log.Information("PvP Tracker initialized.");
     }
 }

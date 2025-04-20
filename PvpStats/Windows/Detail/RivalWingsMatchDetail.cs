@@ -529,12 +529,20 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
 
             if(Match.Mercs != null) {
                 ImGui.TableNextColumn();
-                drawText(Match.Mercs[firstTeam].ToString());
+                var mercCount1 = Match.Mercs[firstTeam];
+                if(Match.Flags.HasFlag(RWValidationFlag.DoubleMerc)) {
+                    mercCount1 = (int)Math.Ceiling((double)mercCount1 / 2);
+                }
+                drawText(mercCount1.ToString());
                 ImGui.TableNextColumn();
                 drawImage(Plugin.WindowManager.GetTextureHandle(TextureHelper.GoblinMercIcons[RivalWingsTeamName.Unknown]), 25f);
                 ImGuiHelper.WrappedTooltip("Goblin Mercenary");
                 ImGui.TableNextColumn();
-                drawText(Match.Mercs[secondTeam].ToString());
+                var mercCount2 = Match.Mercs[secondTeam];
+                if(Match.Flags.HasFlag(RWValidationFlag.DoubleMerc)) {
+                    mercCount2 = (int)Math.Ceiling((double)mercCount2 / 2);
+                }
+                drawText(mercCount2.ToString());
             }
 
             if(Match.Supplies != null) {

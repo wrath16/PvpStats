@@ -14,7 +14,7 @@ namespace PvpStats.Settings;
 public class Configuration : IPluginConfiguration {
     public static readonly int CurrentVersion = 0;
     public int Version { get; set; } = CurrentVersion;
-    public string LastGameVersion { get; set; } = "";
+    public string LastPluginVersion { get; set; } = "0.0.0.0";
     public bool? EnableDBCachingCC { get; set; }
     public bool? EnableDBCachingFL { get; set; }
     public bool? EnableDBCachingRW { get; set; }
