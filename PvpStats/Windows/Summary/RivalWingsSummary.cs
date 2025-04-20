@@ -11,8 +11,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using static Lumina.Data.Parsing.Layer.LayerCommon;
-using System.Threading;
 
 namespace PvpStats.Windows.Summary;
 internal class RivalWingsSummary : RefreshableSync<RivalWingsMatch> {

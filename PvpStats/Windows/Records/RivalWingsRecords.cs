@@ -4,8 +4,10 @@ using ImGuiNET;
 using PvpStats.Helpers;
 using PvpStats.Types.Display;
 using PvpStats.Types.Match;
+using PvpStats.Types.Match.Timeline;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 
@@ -20,10 +22,12 @@ internal class RivalWingsRecords : MatchRecords<RivalWingsMatch> {
         Dictionary<RivalWingsMatch, List<(string, string)>> superlatives = new();
         RivalWingsMatch? shortestMatch = null, highestLoserProgMatch = null, lowestWinnerProgMatch = null, longestWinStreakMatch = null, longestLossStreakMatch = null,
             mostKillsMatch = null, mostDeathsMatch = null, mostAssistsMatch = null, mostDamageToPCsMatch = null, mostDamageToOtherMatch = null, mostDamageTakenMatch = null, mostHPRestoredMatch = null, mostCeruleumMatch = null,
-            highestKillsPerMinMatch = null, highestDeathsPerMinMatch = null, highestAssistsPerMinMatch = null, highestDamageToPCsPerMinMatch = null, highestDamageToOtherPerMinMatch = null, highestDamageTakenPerMinMatch = null, highestHPRestoredPerMinMatch = null, highestCeruleumPerMinMatch = null;
+            highestKillsPerMinMatch = null, highestDeathsPerMinMatch = null, highestAssistsPerMinMatch = null, highestDamageToPCsPerMinMatch = null, highestDamageToOtherPerMinMatch = null, highestDamageTakenPerMinMatch = null, highestHPRestoredPerMinMatch = null, highestCeruleumPerMinMatch = null,
+            fastestFlyingHighMatch = null;
         int longestWinStreak = 0, longestLossStreak = 0, currentWinStreak = 0, currentLossStreak = 0;
         long mostKills = 0, mostDeaths = 0, mostAssists = 0, mostDamageToPCs = 0, mostDamageToOther = 0, mostDamageTaken = 0, mostHPRestored = 0, mostCeruleum = 0;
         double mostKillsPerMin = 0, mostDeathsPerMin = 0, mostAssistsPerMin = 0, mostDamageToPCsPerMin = 0, mostDamageToOtherPerMin = 0, mostDamageTakenPerMin = 0, mostHPRestoredPerMin = 0, mostCeruleumPerMin = 0;
+        TimeSpan fastestFlyingHigh = TimeSpan.MaxValue;
 
         MatchesTotal = matches.Count;
 
@@ -79,6 +83,31 @@ internal class RivalWingsRecords : MatchRecords<RivalWingsMatch> {
                 CompareValue(match, ref highestHPRestoredPerMinMatch, playerScoreboardPerMin.HPRestored, ref mostHPRestoredPerMin);
                 CompareValue(match, ref highestCeruleumPerMinMatch, playerScoreboardPerMin.Ceruleum, ref mostCeruleumPerMin);
             }
+
+            //timeline only
+            if(match.TimelineId != null) {
+                RivalWingsMatchTimeline? timeline = null;
+
+                //fastest flying high
+                if(match.FlyingHighTime == null && !match.Flags.HasFlag(RWValidationFlag.InvalidSoaring)) {
+                    //process value if not already pre-processed
+                    timeline ??= Plugin.RWCache.GetTimeline(match);
+                    var localPlayerAlliance = match.LocalPlayerTeamMember?.Alliance;
+                    if(timeline != null && timeline.AllianceStacks != null && localPlayerAlliance != null) {
+                        var flyingHighEvent = timeline.AllianceStacks[(int)localPlayerAlliance].FirstOrDefault(x => x.Count >= 20);
+                        var flyingHighTime = flyingHighEvent?.Timestamp - match.MatchStartTime ?? TimeSpan.MaxValue;
+                        match.FlyingHighTime = flyingHighTime;
+                        _ = Plugin.RWCache.UpdateMatch(match);
+                    }
+                }
+                if(match.FlyingHighTime != null && match.FlyingHighTime != TimeSpan.MaxValue && !match.Flags.HasFlag(RWValidationFlag.InvalidSoaring)) {
+                    if(match.FlyingHighTime < fastestFlyingHigh) {
+                        fastestFlyingHigh = (TimeSpan)match.FlyingHighTime;
+                        fastestFlyingHighMatch = match;
+                    }
+                }
+            }
+
             RefreshProgress = (float)MatchesProcessed++ / MatchesTotal;
         }
 
@@ -104,6 +133,7 @@ internal class RivalWingsRecords : MatchRecords<RivalWingsMatch> {
         AddSuperlative(highestDamageTakenPerMinMatch, "Most damage taken per min", mostDamageTakenPerMin.ToString("0"));
         AddSuperlative(highestHPRestoredPerMinMatch, "Most HP restored per min", mostHPRestoredPerMin.ToString("0"));
         AddSuperlative(highestCeruleumPerMinMatch, "Most ceruleum earned per min", mostCeruleumPerMin.ToString("0.00"));
+        AddSuperlative(fastestFlyingHighMatch, "* Fastest Flying High", ImGuiHelper.GetTimeSpanString(fastestFlyingHigh));
         return Task.CompletedTask;
     }
 

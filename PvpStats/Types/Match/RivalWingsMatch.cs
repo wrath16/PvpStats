@@ -9,12 +9,13 @@ namespace PvpStats.Types.Match;
 
 [Flags]
 public enum RWValidationFlag : ulong {
-    None                = 0,
-    InvalidCeruleum     = 1 << 0,       //ceruleum may be overflowed
-    DoubleMerc          = 1 << 1,       //mercs likely double counted
-    InvalidSoaring      = 1 << 2,       //soaring stacks not trused
+    None = 0,
+    InvalidCeruleum = 1 << 0,       //ceruleum may be overflowed
+    DoubleMerc = 1 << 1,       //mercs likely double counted
+    InvalidSoaring = 1 << 2,       //soaring stacks not trused
 }
 public class RivalWingsMatch : PvpMatch {
+    public RWValidationFlag Flags { get; set; }
 
     public RivalWingsMap? Arena { get; set; }
     public RivalWingsTeamName? MatchWinner { get; set; }
@@ -30,7 +31,8 @@ public class RivalWingsMatch : PvpMatch {
     public Dictionary<string, Dictionary<RivalWingsMech, double>>? PlayerMechTime { get; set; }
     public Dictionary<int, RivalWingsAllianceScoreboard>? AllianceStats { get; set; }
 
-    public RWValidationFlag Flags { get; set; }
+    //Timeline pre-processed data
+    public TimeSpan? FlyingHighTime { get; set; }
 
     [BsonIgnore]
     public RivalWingsTeamName? LocalPlayerTeam => Players?.FirstOrDefault(x => x.Name.Equals(LocalPlayer))?.Team;
