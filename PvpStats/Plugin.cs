@@ -274,16 +274,21 @@ public sealed class Plugin : IDalamudPlugin {
         var lastVersion = new Version(Configuration.LastPluginVersion);
         var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
 
-        //on all initializations
-        await Validation.BulkUpdateCCMatchTypes();
-        await Validation.BulkCCUpdateValidatePlayerCount();
-
-        //on upgrades only
+        //validation on upgrades only
         if(currentVersion > lastVersion) {
-            await Validation.SetRivalWingsMatchFlags();
-        }
+            var ccValidationTask = new Task<Task>(async () => {
+                await Validation.BulkUpdateCCMatchTypes();
+                await Validation.BulkCCUpdateValidatePlayerCount();
+            });
+            ccValidationTask.Start();
 
-        //by flag
+            var rwValidationTask = new Task<Task>(async () => {
+                await Validation.SetRivalWingsMatchFlags();
+            });
+            rwValidationTask.Start();
+
+            Task.WaitAll([ccValidationTask.Result, rwValidationTask.Result]);
+        }
 
         await WindowManager.RefreshAll();
         Configuration.LastPluginVersion = currentVersion?.ToString() ?? "0.0.0.0";

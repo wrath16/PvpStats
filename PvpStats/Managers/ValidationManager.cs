@@ -66,7 +66,7 @@ internal class ValidationManager {
         Plugin.Log2.Information("Setting Rival Wings match flags...");
 
         foreach(var match in matches) {
-            //var flags = (RWValidationFlag)match.Flags;
+            match.Flags = RWValidationFlag.None;
 
             //plugin and game version added v2.1.11.0, 2024-10-16
 
@@ -95,14 +95,14 @@ internal class ValidationManager {
             //Match flag 1: mercs double counted
             //start: beginning
             //fixed: v2.3.0.0, 2025-02-08
-            if(pluginVersion <= new Version(2, 3, 0, 0)) {
+            if(pluginVersion < new Version(2, 3, 0, 0)) {
                 match.Flags |= RWValidationFlag.DoubleMerc;
             }
 
             //Match flag 2: invalid soaring stacks
             //start: game version 2025-03-27
             //fixed: v2.3.4.1, 2025-02-08
-            if(pluginVersion <= new Version(2, 3, 4, 1) && gameVersionDate >= new DateTime(2025, 03, 27)) {
+            if(pluginVersion < new Version(2, 3, 4, 1) && gameVersionDate >= new DateTime(2025, 03, 27)) {
                 match.Flags |= RWValidationFlag.InvalidSoaring;
             }
         }
