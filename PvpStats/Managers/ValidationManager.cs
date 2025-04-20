@@ -28,7 +28,7 @@ internal class ValidationManager {
     internal async Task BulkCCUpdateValidatePlayerCount() {
         var matches = _plugin.CCCache.Matches
             .Where(x => x.PostMatch != null && x.Teams.Count == 2 && (x.Teams.ElementAt(0).Value.Players.Count > 5 || x.Teams.ElementAt(1).Value.Players.Count > 5)).ToList();
-        if(!matches.Any()) {
+        if(matches.Count == 0) {
             return;
         }
         _plugin.Log.Information("Removing erroneously added players...");
@@ -59,7 +59,7 @@ internal class ValidationManager {
 
     internal async Task SetRivalWingsMatchFlags() {
         var matches = _plugin.RWCache.Matches.Where(x => x.IsCompleted).ToList();
-        if(!matches.Any()) {
+        if(matches.Count == 0) {
             return;
         }
 
