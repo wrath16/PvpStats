@@ -14,7 +14,7 @@ internal class ValidationManager {
     }
 
     internal async Task BulkUpdateCCMatchTypes() {
-        var matches = _plugin.CCCache.Matches.Where(x => x.MatchType == Types.Match.CrystallineConflictMatchType.Unknown);
+        var matches = _plugin.CCCache.Matches.Where(x => x.MatchType == CrystallineConflictMatchType.Unknown);
         if(!matches.Any()) {
             return;
         }
