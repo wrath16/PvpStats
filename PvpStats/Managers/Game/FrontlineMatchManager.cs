@@ -290,7 +290,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
         if(!IsMatchInProgress()) {
             return;
         }
-        var director = (FrontlineContentDirector*)(IntPtr)EventFramework.Instance()->GetInstanceContentDirector();
+        var director = (FrontlineContentDirector*)((IntPtr)EventFramework.Instance()->GetInstanceContentDirector() + FrontlineContentDirector.Offset);
         if(director is null) {
             return;
         }

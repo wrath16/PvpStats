@@ -495,7 +495,7 @@ internal unsafe class DebugWindow : Window {
     }
 
     private void DrawFrontlineDirector() {
-        var instanceDirector = (FrontlineContentDirector*)((IntPtr)EventFramework.Instance()->GetInstanceContentDirector());
+        var instanceDirector = (FrontlineContentDirector*)((IntPtr)EventFramework.Instance()->GetInstanceContentDirector() + FrontlineContentDirector.Offset);
         using(var table = ImRaii.Table("main", 2)) {
             if(table) {
                 ImGui.TableSetupColumn("c1");
