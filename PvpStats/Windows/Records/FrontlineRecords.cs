@@ -229,9 +229,9 @@ internal class FrontlineRecords : MatchRecords<FrontlineMatch> {
         AddSuperlative(mostHPRestoredPerMinMatch, "Most HP restored per min", mostHPRestoredPerMin.ToString("0"));
 
         AddSuperlative(fastestBHVMatch, "* Fastest Battle High V", ImGuiHelper.GetTimeSpanString(fastestBHV));
-        AddSuperlative(battleHighSpikeMatch, "* Highest Battle High chain", battleHighSpikeMatch?.BattleHighSpike.ToString() ?? "");
-        AddSuperlative(momentaryPointAdvantageMatch, "* Highest momentary point lead", momentaryAdvantageSpan.ToString("P0"));
-        AddSuperlative(momentaryPointDeficitMatch, "* Highest momentary point deficit", momentaryDeficitSpan.ToString("P0"));
+        AddSuperlative(battleHighSpikeMatch, "* Highest Battle High chain", $"+{battleHighSpikeMatch?.BattleHighSpike.ToString() ?? ""} in {battleHighSpikeMatch?.BattleHighSpikeTime.Value.TotalSeconds:#.0}s");
+        AddSuperlative(momentaryPointAdvantageMatch, "* Highest momentary point lead", $"{momentaryPointAdvantageMatch?.MomentaryPointAdvantage} ({momentaryAdvantageSpan:P0})");
+        AddSuperlative(momentaryPointDeficitMatch, "* Highest momentary point deficit", $"{momentaryPointDeficitMatch?.MomentaryPointDeficit} ({Math.Abs(momentaryDeficitSpan):P0})");
 
         return Task.CompletedTask;
     }
@@ -240,8 +240,8 @@ internal class FrontlineRecords : MatchRecords<FrontlineMatch> {
         using(var table = ImRaii.Table("match", 4, ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
             if(table) {
                 var widthStyle = Plugin.Configuration.StretchScoreboardColumns ?? false ? ImGuiTableColumnFlags.WidthStretch : ImGuiTableColumnFlags.WidthFixed;
-                ImGui.TableSetupColumn("Time", widthStyle, ImGuiHelpers.GlobalScale * 100f);
-                ImGui.TableSetupColumn("Arena", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 145f);
+                ImGui.TableSetupColumn("Time", widthStyle, ImGuiHelpers.GlobalScale * 110f);
+                ImGui.TableSetupColumn("Arena", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 155f);
                 ImGui.TableSetupColumn("Job", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 40f);
                 ImGui.TableSetupColumn("Result", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 40f);
 
