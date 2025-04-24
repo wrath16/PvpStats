@@ -219,23 +219,25 @@ public sealed class Plugin : IDalamudPlugin {
     }
 
     private void OnLastMatchCommand(string command, string args) {
-        var lastMatchCC = CCStatsEngine.Matches.FirstOrDefault();
-        var lastMatchFL = FLStatsEngine.Matches.FirstOrDefault();
-        var lastMatchRW = RWStatsEngine.Matches.FirstOrDefault();
-        List<PvpMatch> matches = [];
-        if(lastMatchCC != null) {
-            matches.Add(lastMatchCC);
-        }
-        if(lastMatchFL != null) {
-            matches.Add(lastMatchFL);
-        }
-        if(lastMatchRW != null) {
-            matches.Add(lastMatchRW);
-        }
-        var lastMatch = matches.OrderByDescending(x => x.DutyStartTime).FirstOrDefault();
-        if(lastMatch != null) {
-            WindowManager.OpenMatchDetailsWindow(lastMatch);
-        }
+        Task.Run(() => {
+            var lastMatchCC = CCCache.Matches.OrderByDescending(x => x.DutyStartTime).FirstOrDefault(x => x.IsCompleted && !x.IsQuarantined && !x.IsDeleted);
+            var lastMatchFL = FLCache.Matches.OrderByDescending(x => x.DutyStartTime).FirstOrDefault(x => x.IsCompleted && !x.IsQuarantined && !x.IsDeleted);
+            var lastMatchRW = RWCache.Matches.OrderByDescending(x => x.DutyStartTime).FirstOrDefault(x => x.IsCompleted && !x.IsQuarantined && !x.IsDeleted);
+            List<PvpMatch> matches = [];
+            if(lastMatchCC != null) {
+                matches.Add(lastMatchCC);
+            }
+            if(lastMatchFL != null) {
+                matches.Add(lastMatchFL);
+            }
+            if(lastMatchRW != null) {
+                matches.Add(lastMatchRW);
+            }
+            var lastMatch = matches.OrderByDescending(x => x.DutyStartTime).FirstOrDefault();
+            if(lastMatch != null) {
+                WindowManager.OpenMatchDetailsWindow(lastMatch);
+            }
+        });
     }
 
     private void OnCCCommand(string command, string args) {
