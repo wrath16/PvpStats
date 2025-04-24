@@ -1,6 +1,8 @@
 ﻿using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
+using FFXIVClientStructs.FFXIV.Common.Lua;
 using ImGuiNET;
+using Newtonsoft.Json.Linq;
 using PvpStats.Helpers;
 using PvpStats.Managers.Stats;
 using PvpStats.Types.Display;
@@ -82,16 +84,41 @@ internal class FrontlineMeta : Refreshable<FrontlineMatch> {
         (Top1Contribs.DamageToOther, Top1ContribFactor.DamageToOther, Top4Contribs.DamageToOther, Top4ContribFactor.DamageToOther) = GetContribs(_damageToOtherBuckets);
         (Top1Contribs.DamageTaken, Top1ContribFactor.DamageTaken, Top4Contribs.DamageTaken, Top4ContribFactor.DamageTaken) = GetContribs(_damageTakenBuckets);
         (Top1Contribs.HPRestored, Top1ContribFactor.HPRestored, Top4Contribs.HPRestored, Top4ContribFactor.HPRestored) = GetContribs(_HPRestoredBuckets);
+
+        GiniCoefficients.Kills = CalculateGini(_killBuckets);
+        GiniCoefficients.Deaths = CalculateGini(_deathBuckets);
+        GiniCoefficients.Assists = CalculateGini(_assistBuckets);
+        GiniCoefficients.DamageToPCs = CalculateGini(_damageToPCsBuckets);
+        GiniCoefficients.DamageToOther = CalculateGini(_damageToOtherBuckets);
+        GiniCoefficients.DamageTaken = CalculateGini(_damageTakenBuckets);
+        GiniCoefficients.HPRestored = CalculateGini(_HPRestoredBuckets);
     }
 
     private static void IncrementBucket(ref long[] buckets, long[] bucket, bool remove = false) {
+        double total = 0;
+        foreach(var value in bucket) {
+            total += value;
+        }
+
         for(int i = 0; i < bucket.Length && i < MaxPlayers; i++) {
+            var contrib = (long)(((double)bucket[i] / total) * 10000L); //5-point precision
             if(remove) {
-                Interlocked.Add(ref buckets[i], -bucket[i]);
+                Interlocked.Add(ref buckets[i], -contrib);
             } else {
-                Interlocked.Add(ref buckets[i], bucket[i]);
+                Interlocked.Add(ref buckets[i], contrib);
             }
         }
+    }
+
+    public static double ThreadsafeDoubleAdd(ref double value, double amount) {
+        double initialValue, computedValue;
+        do {
+            initialValue = value;
+            computedValue = initialValue + amount;
+        }
+        while(Interlocked.CompareExchange(ref value, computedValue, initialValue) != initialValue);
+
+        return computedValue;
     }
 
     private static (double Top1Contribution, double Top1Factor, double Top4Contribution, double Top4Factor) GetContribs(long[] buckets) {
@@ -99,19 +126,42 @@ internal class FrontlineMeta : Refreshable<FrontlineMatch> {
         long top1Value = 0;
         long top4Value = 0;
         for(int i = 0; i < buckets.Length; i++) {
+            var value = buckets[i];
             if(i == 0) {
-                top1Value += buckets[i];
+                top1Value += value;
             }
             if(i < 4) {
-                top4Value += buckets[i];
+                top4Value += value;
             }
-            totalValue += buckets[i];
+            totalValue += value;
         }
         var top1Contrib = (double)top1Value / totalValue;
         var top4Contrib = (double)top4Value / totalValue;
         var top1ContribFactor = top1Contrib / (1d / MaxPlayers);
         var top4ContribFactor = top4Contrib / (4d / MaxPlayers);
         return (top1Contrib, top1ContribFactor, top4Contrib, top4ContribFactor);
+    }
+
+    public static double CalculateGini(long[] buckets) {
+        if(buckets == null || buckets.Length == 0)
+            return 0;
+
+        int n = buckets.Length;
+        var sorted = buckets.OrderByDescending(v => v).ToArray();
+        long cumulativeTotal = 0;
+        long cumulativeSum = 0;
+
+        for(int i = 0; i < n; i++) {
+            cumulativeSum += sorted[i];
+            cumulativeTotal += cumulativeSum;
+        }
+
+        double mean = sorted.Average();
+        if(mean == 0) return 0;
+
+        double gini = (2.0d * cumulativeTotal) / (n * cumulativeSum) - (n + 1.0) / n;
+        Plugin.Log2.Debug($"Gini: {gini:0.00}");
+        return gini;
     }
 
     public void Draw() {
@@ -121,9 +171,10 @@ internal class FrontlineMeta : Refreshable<FrontlineMatch> {
     }
 
     private void DrawMetaStatsTable() {
-        using(var table = ImRaii.Table($"MatchStatsTable", 7, ImGuiTableFlags.PadOuterX | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
+        using(var table = ImRaii.Table($"MatchStatsTable", 8, ImGuiTableFlags.PadOuterX | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoClip | ImGuiTableFlags.NoSavedSettings)) {
             if(table) {
                 float offset = -1f;
+                ImGui.TableSetupColumn("Description", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 120f);
                 ImGui.TableSetupColumn("Kills");
                 ImGui.TableSetupColumn($"Deaths");
                 ImGui.TableSetupColumn($"Assists");
@@ -132,6 +183,8 @@ internal class FrontlineMeta : Refreshable<FrontlineMatch> {
                 ImGui.TableSetupColumn($"Damage Taken");
                 ImGui.TableSetupColumn($"HP Restored");
 
+                ImGui.TableNextColumn();
+                ImGuiHelper.DrawTableHeader("", 2, true, true, offset);
                 ImGui.TableNextColumn();
                 ImGuiHelper.DrawTableHeader("Kills", 2, true, true, offset);
                 ImGui.TableNextColumn();
@@ -147,23 +200,34 @@ internal class FrontlineMeta : Refreshable<FrontlineMatch> {
                 ImGui.TableNextColumn();
                 ImGuiHelper.DrawTableHeader("HP\nRestored", 2, true, true, offset);
 
-                //top 4 contribution
-                ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell($"{Top1Contribs.Kills:P1}", offset);
-                ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell($"{Top1Contribs.Deaths:P1}", offset);
-                ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell($"{Top1Contribs.Assists:P1}", offset);
-                ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell($"{Top1Contribs.DamageToPCs:P1}", offset);
-                ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell($"{Top1Contribs.DamageToOther:P1}", offset);
-                ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell($"{Top1Contribs.DamageTaken:P1}", offset);
-                ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell($"{Top1Contribs.HPRestored:P1}", offset);
+                var minFactor = 1.5f;
+                var maxFactor = 4f;
+                var minContrib = minFactor / 24f;
+                var maxContrib = maxFactor / 24f;
+                var giniMin = 0.25f;
+                var giniMax = 0.6f;
 
-                //top 4 factor
+                //top 1 contribution
+                ImGui.TableNextColumn();
+                ImGui.Text("Top 1 Team Contrib.");
+                ImGui.TableNextColumn();
+                ImGuiHelper.DrawNumericCell((float)Top1Contribs.Kills, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, minContrib, maxContrib, Plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGui.TableNextColumn();
+                ImGuiHelper.DrawNumericCell((float)Top1Contribs.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, minContrib, maxContrib, Plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGui.TableNextColumn();
+                ImGuiHelper.DrawNumericCell((float)Top1Contribs.Assists, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, minContrib, maxContrib, Plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGui.TableNextColumn();
+                ImGuiHelper.DrawNumericCell((float)Top1Contribs.DamageToPCs, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, minContrib, maxContrib, Plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGui.TableNextColumn();
+                ImGuiHelper.DrawNumericCell((float)Top1Contribs.DamageToOther, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, minContrib, maxContrib, Plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGui.TableNextColumn();
+                ImGuiHelper.DrawNumericCell((float)Top1Contribs.DamageTaken, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, minContrib, maxContrib, Plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGui.TableNextColumn();
+                ImGuiHelper.DrawNumericCell((float)Top1Contribs.HPRestored, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, minContrib, maxContrib, Plugin.Configuration.ColorScaleStats, "P1", offset);
+
+                //top 1 factor
+                ImGui.TableNextColumn();
+                ImGui.Text("Factor");
                 ImGui.TableNextColumn();
                 ImGuiHelper.DrawNumericCell($"{Top1ContribFactor.Kills:#.0}x", offset);
                 ImGui.TableNextColumn();
@@ -179,23 +243,31 @@ internal class FrontlineMeta : Refreshable<FrontlineMatch> {
                 ImGui.TableNextColumn();
                 ImGuiHelper.DrawNumericCell($"{Top1ContribFactor.HPRestored:#.0}x", offset);
 
+                ImGui.TableNextRow();
+                ImGui.TableNextRow();
+                ImGui.TableNextRow();
+
                 //top 4 contribution
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell($"{Top4Contribs.Kills:P1}", offset);
+                ImGui.Text("Top 4 Team Contrib.");
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell($"{Top4Contribs.Deaths:P1}", offset); 
+                ImGuiHelper.DrawNumericCell((float)Top4Contribs.Kills, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, minContrib * 4, maxContrib * 4, Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell($"{Top4Contribs.Assists:P1}", offset); 
+                ImGuiHelper.DrawNumericCell((float)Top4Contribs.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, minContrib * 4, maxContrib * 4, Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell($"{Top4Contribs.DamageToPCs:P1}", offset);
+                ImGuiHelper.DrawNumericCell((float)Top4Contribs.Assists, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, minContrib * 4, maxContrib* 4, Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell($"{Top4Contribs.DamageToOther:P1}", offset);
+                ImGuiHelper.DrawNumericCell((float)Top4Contribs.DamageToPCs, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, minContrib * 4, maxContrib * 4, Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell($"{Top4Contribs.DamageTaken:P1}", offset);
+                ImGuiHelper.DrawNumericCell((float)Top4Contribs.DamageToOther, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, minContrib * 4, maxContrib * 4, Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell($"{Top4Contribs.HPRestored:P1}", offset);
+                ImGuiHelper.DrawNumericCell((float)Top4Contribs.DamageTaken, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, minContrib * 4, maxContrib * 4, Plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGui.TableNextColumn();
+                ImGuiHelper.DrawNumericCell((float)Top4Contribs.HPRestored, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, minContrib * 4, maxContrib * 4, Plugin.Configuration.ColorScaleStats, "P1", offset);
 
                 //top 4 factor
+                ImGui.TableNextColumn();
+                ImGui.Text("Factor");
                 ImGui.TableNextColumn();
                 ImGuiHelper.DrawNumericCell($"{Top4ContribFactor.Kills:#.0}x", offset);
                 ImGui.TableNextColumn();
@@ -210,6 +282,28 @@ internal class FrontlineMeta : Refreshable<FrontlineMatch> {
                 ImGuiHelper.DrawNumericCell($"{Top4ContribFactor.DamageTaken:#.0}x", offset);
                 ImGui.TableNextColumn();
                 ImGuiHelper.DrawNumericCell($"{Top4ContribFactor.HPRestored:#.0}x", offset);
+
+                ImGui.TableNextRow();
+                ImGui.TableNextRow();
+                ImGui.TableNextRow();
+
+                //gini coefficients
+                ImGui.TableNextColumn();
+                ImGui.Text("Gini coeff.");
+                ImGui.TableNextColumn();
+                ImGuiHelper.DrawNumericCell($"{GiniCoefficients.Kills:0.00}", offset);
+                ImGui.TableNextColumn();
+                ImGuiHelper.DrawNumericCell($"{GiniCoefficients.Deaths:0.00}", offset);
+                ImGui.TableNextColumn();
+                ImGuiHelper.DrawNumericCell($"{GiniCoefficients.Assists:0.00}", offset);
+                ImGui.TableNextColumn();
+                ImGuiHelper.DrawNumericCell($"{GiniCoefficients.DamageToPCs:0.00}", offset);
+                ImGui.TableNextColumn();
+                ImGuiHelper.DrawNumericCell($"{GiniCoefficients.DamageToOther:0.00}", offset);
+                ImGui.TableNextColumn();
+                ImGuiHelper.DrawNumericCell($"{GiniCoefficients.DamageTaken:0.00}", offset);
+                ImGui.TableNextColumn();
+                ImGuiHelper.DrawNumericCell($"{GiniCoefficients.HPRestored:0.00}", offset);
             }
         }
     }
