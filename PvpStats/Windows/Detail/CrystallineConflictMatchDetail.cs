@@ -3,9 +3,11 @@ using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
+using ImPlotNET;
 using PvpStats.Helpers;
 using PvpStats.Types.Display;
 using PvpStats.Types.Match;
+using PvpStats.Types.Match.Timeline;
 using PvpStats.Types.Player;
 using PvpStats.Windows.Filter;
 using System;
@@ -20,15 +22,34 @@ namespace PvpStats.Windows.Detail;
 
 internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictMatch> {
 
-    private Plugin _plugin;
+    //private Plugin _plugin;
     private CCTeamQuickFilter _teamQuickFilter;
-    private CrystallineConflictMatch _dataModel;
+    //private CrystallineConflictMatch _dataModel;
     private Dictionary<CrystallineConflictTeamName, CCScoreboardTally>? _teamScoreboard;
     private Dictionary<PlayerAlias, CCScoreboardDouble>? _playerContributions = [];
     private Dictionary<PlayerAlias, CCScoreboardTally>? _scoreboard;
     private Dictionary<PlayerAlias, CCScoreboardTally>? _unfilteredScoreboard;
+    private CrystallineConflictTeamName? _localPlayerTeam;
 
+    private Vector2 _scoreboardSize;
+    private Vector2? _savedScoreboardSize;
+    private Vector2 _graphSize;
+    private bool _firstDraw = true;
+    private ulong _scoreboardTicks = 0;
     private bool _easterEgg = false;
+
+    private CrystallineConflictMatchTimeline? _timeline;
+    private double[] _xAxisTicks = [];
+    private string[] _xAxisLabels = [];
+    private Dictionary<CrystallineConflictTeamName, (float[] Xs, float[] Ys)> _teamPoints = new() {
+        {CrystallineConflictTeamName.Astra, new() },
+        {CrystallineConflictTeamName.Umbra, new() },
+    };
+    private Dictionary<CrystallineConflictTeamName, (float[] Xs, float[] Ys)> _teamMidPoints = new() {
+        {CrystallineConflictTeamName.Astra, new() },
+        {CrystallineConflictTeamName.Umbra, new() },
+    };
+    private (float[] Xs, float[] Ys) _crystalPosition = new();
 
     internal CrystallineConflictMatchDetail(Plugin plugin, CrystallineConflictMatch match) : base(plugin, plugin.CCCache, match) {
         ForceMainWindow = true;
@@ -41,39 +62,69 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             MaximumSize = new Vector2(5000, 5000)
         };
         Flags |= ImGuiWindowFlags.NoSavedSettings;
+
+        switch(match.MatchType) {
+            default:
+                _scoreboardSize = new Vector2(700, 680);
+                _graphSize = new Vector2(975, 875);
+                break;
+            case CrystallineConflictMatchType.Ranked:
+                _scoreboardSize = new Vector2(700, 700);
+                _graphSize = new Vector2(975, 895);
+                break;
+        }
+
         //if(!plugin.Configuration.ResizeableMatchWindow) {
         //    Flags |= ImGuiWindowFlags.AlwaysAutoResize;
         //}
-        _plugin = plugin;
-        _dataModel = match;
+        //_plugin = plugin;
+        //_dataModel = match;
         _teamQuickFilter = new(plugin, ApplyTeamFilter);
 
         //sort team players
-        foreach(var team in _dataModel.Teams) {
+        foreach(var team in Match.Teams) {
             team.Value.Players = [.. team.Value.Players.OrderBy(p => p.Job)];
         }
 
+        _localPlayerTeam = Match.LocalPlayerTeam?.TeamName;
+
         //setup post match data
-        if(_dataModel.PostMatch is not null) {
+        if(Match.PostMatch is not null) {
             _unfilteredScoreboard = match.GetPlayerScoreboards();
             _scoreboard = _unfilteredScoreboard;
             _teamScoreboard = match.GetTeamScoreboards();
             _playerContributions = match.GetPlayerContributions();
         }
         SortByColumn(0, ImGuiSortDirection.Ascending);
+
+        _timeline = Plugin.CCCache.GetTimeline(Match);
+        if(_timeline != null) {
+            //setup graphs
+            List<double> axisTicks = new();
+            List<string> axisLabels = new();
+            for(int i = 0; i <= 15; i++) {
+                axisTicks.Add(i * 60);
+                axisLabels.Add(ImGuiHelper.GetTimeSpanString(new TimeSpan(0, i, 0)));
+            }
+            _xAxisTicks = axisTicks.ToArray();
+            _xAxisLabels = axisLabels.ToArray();
+
+            //point graphs
+            SetupProgressGraph(CrystallineConflictTeamName.Astra);
+            SetupProgressGraph(CrystallineConflictTeamName.Umbra);
+            SetupMidProgressGraph(CrystallineConflictTeamName.Astra);
+            SetupMidProgressGraph(CrystallineConflictTeamName.Umbra);
+            SetupCrystalPositionGraph();
+        }
+
         CSV = BuildCSV();
 
         var ms = DateTime.Now.Millisecond;
         _easterEgg = ms % 100 == 0;
     }
 
-    public void Open(CrystallineConflictMatch match) {
-        _dataModel = match;
-        IsOpen = true;
-    }
-
     public override void OnClose() {
-        _plugin.WindowManager.RemoveWindow(this);
+        Plugin.WindowManager.RemoveWindow(this);
     }
 
     public override void PreDraw() {
@@ -81,14 +132,15 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     }
 
     public override void Draw() {
-        if(_plugin.Configuration.ShowBackgroundImage) {
+        base.Draw();
+        if(Plugin.Configuration.ShowBackgroundImage) {
             var cursorPosBefore = ImGui.GetCursorPos();
             //ImGui.SetCursorPosX(ImGui.GetWindowSize().X / 2 - (250f + 3f) * ImGuiHelpers.GlobalScale);
             //ImGui.SetCursorPosY((ImGui.GetCursorPos().Y + 50f * ImGuiHelpers.GlobalScale));
-            //ImGui.Image(_plugin.WindowManager.CCBannerImage.ImGuiHandle, new Vector2(500, 230) * ImGuiHelpers.GlobalScale, Vector2.Zero, Vector2.One, new Vector4(1, 1, 1, 0.1f));
+            //ImGui.Image(Plugin.WindowManager.CCBannerImage.ImGuiHandle, new Vector2(500, 230) * ImGuiHelpers.GlobalScale, Vector2.Zero, Vector2.One, new Vector4(1, 1, 1, 0.1f));
             ImGui.SetCursorPosX(ImGui.GetWindowSize().X / 2 - (243 / 2 + 3f) * ImGuiHelpers.GlobalScale);
             ImGui.SetCursorPosY((ImGui.GetCursorPos().Y + 40f * ImGuiHelpers.GlobalScale));
-            ImGui.Image(_plugin.TextureProvider.GetFromFile(Path.Combine(_plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "cc_logo_full.png")).GetWrapOrEmpty().ImGuiHandle,
+            ImGui.Image(Plugin.TextureProvider.GetFromFile(Path.Combine(Plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "cc_logo_full.png")).GetWrapOrEmpty().ImGuiHandle,
                 new Vector2(243, 275) * ImGuiHelpers.GlobalScale, Vector2.Zero, Vector2.One, new Vector4(1, 1, 1, 0.1f));
 
             ImGui.SetCursorPos(cursorPosBefore);
@@ -102,32 +154,32 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
                 //ImGui.Indent();
-                if(_dataModel.Arena != null) {
-                    ImGui.Text($"{MatchHelper.GetArenaName((CrystallineConflictMap)_dataModel.Arena)}");
+                if(Match.Arena != null) {
+                    ImGui.Text($"{MatchHelper.GetArenaName((CrystallineConflictMap)Match.Arena)}");
                 }
                 ImGui.TableNextColumn();
                 DrawFunctions();
                 ImGui.TableNextColumn();
-                var dutyStartTime = _dataModel.DutyStartTime.ToString();
+                var dutyStartTime = Match.DutyStartTime.ToString();
                 ImGuiHelper.RightAlignCursor(dutyStartTime);
                 ImGui.Text($"{dutyStartTime}");
 
                 ImGui.TableNextRow(ImGuiTableRowFlags.None, 5f * ImGuiHelpers.GlobalScale);
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
-                ImGui.Text($"{_dataModel.MatchType}");
+                ImGui.Text($"{Match.MatchType}");
                 ImGui.TableNextColumn();
-                bool noWinner = _dataModel.MatchWinner is null;
-                bool isWin = _dataModel.MatchWinner == _dataModel.LocalPlayerTeam?.TeamName;
+                bool noWinner = Match.MatchWinner is null;
+                bool isWin = Match.MatchWinner == Match.LocalPlayerTeam?.TeamName;
                 var color = ImGuiColors.DalamudWhite;
                 color = noWinner ? ImGuiColors.DalamudGrey : color;
                 string resultText = "";
-                if(_dataModel.IsSpectated && _dataModel.MatchWinner is not null) {
-                    color = _dataModel.MatchWinner == CrystallineConflictTeamName.Astra ? _plugin.Configuration.Colors.CCPlayerTeam : _plugin.Configuration.Colors.CCEnemyTeam;
-                    resultText = MatchHelper.GetTeamName((CrystallineConflictTeamName)_dataModel.MatchWinner) + " WINS";
+                if(Match.IsSpectated && Match.MatchWinner is not null) {
+                    color = Match.MatchWinner == CrystallineConflictTeamName.Astra ? Plugin.Configuration.Colors.CCPlayerTeam : Plugin.Configuration.Colors.CCEnemyTeam;
+                    resultText = MatchHelper.GetTeamName((CrystallineConflictTeamName)Match.MatchWinner) + " WINS";
                 } else {
-                    color = isWin ? _plugin.Configuration.Colors.Win : _plugin.Configuration.Colors.Loss;
-                    color = noWinner ? _plugin.Configuration.Colors.Other : color;
+                    color = isWin ? Plugin.Configuration.Colors.Win : Plugin.Configuration.Colors.Loss;
+                    color = noWinner ? Plugin.Configuration.Colors.Other : color;
                     resultText = isWin ? "WIN" : "LOSS";
                     resultText = noWinner ? "UNKNOWN" : resultText;
                 }
@@ -135,8 +187,8 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 ImGui.TextColored(color, resultText);
                 ImGui.TableNextColumn();
                 string durationText = "";
-                if(_dataModel.MatchStartTime != null && _dataModel.MatchEndTime != null) {
-                    var duration = _dataModel.MatchEndTime - _dataModel.MatchStartTime;
+                if(Match.MatchStartTime != null && Match.MatchEndTime != null) {
+                    var duration = Match.MatchEndTime - Match.MatchStartTime;
                     durationText = $"{duration.Value.Minutes}{duration.Value.ToString(@"\:ss")}";
                     ImGuiHelper.RightAlignCursor(durationText);
                     ImGui.Text(durationText);
@@ -144,12 +196,12 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             }
         }
 
-        if(_dataModel.Teams.Count == 2) {
-            var firstTeam = _dataModel.Teams.ElementAt(0).Value;
-            var secondTeam = _dataModel.Teams.ElementAt(1).Value;
-            if(_plugin.Configuration.LeftPlayerTeam && !_dataModel.IsSpectated) {
-                firstTeam = _dataModel.Teams.Where(x => x.Key == _dataModel.LocalPlayerTeam!.TeamName).FirstOrDefault().Value;
-                secondTeam = _dataModel.Teams.Where(x => x.Key != _dataModel.LocalPlayerTeam!.TeamName).FirstOrDefault().Value;
+        if(Match.Teams.Count == 2) {
+            var firstTeam = Match.Teams.ElementAt(0).Value;
+            var secondTeam = Match.Teams.ElementAt(1).Value;
+            if(Plugin.Configuration.LeftPlayerTeam && !Match.IsSpectated) {
+                firstTeam = Match.Teams.Where(x => x.Key == Match.LocalPlayerTeam!.TeamName).FirstOrDefault().Value;
+                secondTeam = Match.Teams.Where(x => x.Key != Match.LocalPlayerTeam!.TeamName).FirstOrDefault().Value;
             }
 
             using(var table = ImRaii.Table("teams", 2, ImGuiTableFlags.PadOuterX)) {
@@ -176,7 +228,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 }
             }
 
-            using(var table = ImRaii.Table($"players##{_dataModel.Id}", 6, ImGuiTableFlags.PadOuterX | ImGuiTableFlags.NoClip)) {
+            using(var table = ImRaii.Table($"players##{Match.Id}", 6, ImGuiTableFlags.PadOuterX | ImGuiTableFlags.NoClip)) {
 
                 if(table) {
                     ////ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
@@ -202,9 +254,9 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                                 ImGui.Text(rank0);
                             }
                             ImGui.TableNextColumn();
-                            var playerColor0 = _dataModel.LocalPlayerTeam is not null && firstTeam.TeamName == _dataModel.LocalPlayerTeam.TeamName ? _plugin.Configuration.Colors.CCPlayerTeam : _plugin.Configuration.Colors.CCEnemyTeam;
-                            playerColor0 = _dataModel.LocalPlayer is not null && _dataModel.LocalPlayer.Equals(player0) ? _plugin.Configuration.Colors.CCLocalPlayer : playerColor0;
-                            if(_dataModel.IsSpectated) {
+                            var playerColor0 = Match.LocalPlayerTeam is not null && firstTeam.TeamName == Match.LocalPlayerTeam.TeamName ? Plugin.Configuration.Colors.CCPlayerTeam : Plugin.Configuration.Colors.CCEnemyTeam;
+                            playerColor0 = Match.LocalPlayer is not null && Match.LocalPlayer.Equals(player0) ? Plugin.Configuration.Colors.CCLocalPlayer : playerColor0;
+                            if(Match.IsSpectated) {
                                 playerColor0 = firstTeam.TeamName == CrystallineConflictTeamName.Astra ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
                             }
                             string playerName0 = player0.Alias.Name;
@@ -228,7 +280,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                             ImGui.TableNextColumn();
                             using(var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero)) {
                                 if(player0.Job != null && TextureHelper.JobIcons.TryGetValue((Job)player0.Job, out var icon)) {
-                                    ImGui.Image(_plugin.WindowManager.GetTextureHandle(icon), new Vector2(24 * ImGuiHelpers.GlobalScale));
+                                    ImGui.Image(Plugin.WindowManager.GetTextureHandle(icon), new Vector2(24 * ImGuiHelpers.GlobalScale));
                                 }
                             }
                         } else {
@@ -242,15 +294,15 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                             ImGui.TableNextColumn();
                             using(var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero)) {
                                 if(player1.Job != null && TextureHelper.JobIcons.TryGetValue((Job)player1.Job, out var icon)) {
-                                    //ImGui.Image(_plugin.WindowManager.JobIcons[(Job)player1.Job]?.ImGuiHandle ?? _plugin.WindowManager.Icon0.ImGuiHandle, new Vector2(24 * ImGuiHelpers.GlobalScale, 24 * ImGuiHelpers.GlobalScale));
-                                    ImGui.Image(_plugin.WindowManager.GetTextureHandle(icon), new Vector2(24 * ImGuiHelpers.GlobalScale));
+                                    //ImGui.Image(Plugin.WindowManager.JobIcons[(Job)player1.Job]?.ImGuiHandle ?? Plugin.WindowManager.Icon0.ImGuiHandle, new Vector2(24 * ImGuiHelpers.GlobalScale, 24 * ImGuiHelpers.GlobalScale));
+                                    ImGui.Image(Plugin.WindowManager.GetTextureHandle(icon), new Vector2(24 * ImGuiHelpers.GlobalScale));
                                 }
                             }
 
                             ImGui.TableNextColumn();
-                            var playerColor1 = _dataModel.LocalPlayerTeam is not null && secondTeam.TeamName == _dataModel.LocalPlayerTeam.TeamName ? _plugin.Configuration.Colors.CCPlayerTeam : _plugin.Configuration.Colors.CCEnemyTeam;
-                            playerColor1 = _dataModel.LocalPlayer is not null && _dataModel.LocalPlayer.Equals(player1) ? _plugin.Configuration.Colors.CCLocalPlayer : playerColor1;
-                            if(_dataModel.IsSpectated) {
+                            var playerColor1 = Match.LocalPlayerTeam is not null && secondTeam.TeamName == Match.LocalPlayerTeam.TeamName ? Plugin.Configuration.Colors.CCPlayerTeam : Plugin.Configuration.Colors.CCEnemyTeam;
+                            playerColor1 = Match.LocalPlayer is not null && Match.LocalPlayer.Equals(player1) ? Plugin.Configuration.Colors.CCLocalPlayer : playerColor1;
+                            if(Match.IsSpectated) {
                                 playerColor1 = secondTeam.TeamName == CrystallineConflictTeamName.Astra ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
                             }
                             string playerName1 = secondTeam.Players[i].Alias.Name;
@@ -287,44 +339,76 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             }
         }
         ImGui.NewLine();
-        if(_dataModel.PostMatch is null) {
+        if(Match.PostMatch is null) {
             ImGui.Text("Post game statistics unavailable.");
         } else {
-            if((_dataModel.MatchType == CrystallineConflictMatchType.Ranked || _dataModel.MatchType == CrystallineConflictMatchType.Unknown)
-                && _dataModel.PostMatch.RankBefore is not null && _dataModel.PostMatch.RankAfter is not null) {
-                ImGui.Text($"{_dataModel.PostMatch.RankBefore.ToString()} → {_dataModel.PostMatch.RankAfter.ToString()}");
+            if((Match.MatchType == CrystallineConflictMatchType.Ranked || Match.MatchType == CrystallineConflictMatchType.Unknown)
+                && Match.PostMatch.RankBefore is not null && Match.PostMatch.RankAfter is not null) {
+                ImGui.Text($"{Match.PostMatch.RankBefore.ToString()} → {Match.PostMatch.RankAfter.ToString()}");
             }
             ImGui.NewLine();
-            ImGui.NewLine();
-            //ImGui.AlignTextToFramePadding();
-            ImGuiHelper.HelpMarker("Right-click table header to show and hide columns including extra metrics.", true, true);
-            using(var _ = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing * 2.5f * ImGuiHelpers.GlobalScale)) {
-                ImGui.SameLine();
+
+            if(_timeline != null) {
+                using(var tabBar = ImRaii.TabBar("TabBar")) {
+                    if(Match.PostMatch != null) {
+                        using var tab = ImRaii.TabItem("Scoreboard");
+                        if(tab) {
+                            if(CurrentTab != "Scoreboard") {
+                                Flags |= ImGuiWindowFlags.AlwaysAutoResize;
+                                CurrentTab = "Scoreboard";
+                            } else if(_scoreboardTicks >= 20) {
+                                Flags &= ~ImGuiWindowFlags.AlwaysAutoResize;
+                            }
+                            _scoreboardTicks++;
+                            DrawScoreboard();
+                        } else {
+                            _scoreboardTicks = 0;
+                        }
+                    }
+                    using(var tab2 = ImRaii.TabItem("Graphs")) {
+                        if(tab2) {
+                            if(CurrentTab != "Graphs") {
+                                SetWindowSize(_graphSize);
+                                CurrentTab = "Graphs";
+                            }
+                            DrawGraphs();
+                        }
+                    }
+                }
+            } else {
+                DrawScoreboard();
             }
-            ImGuiComponents.ToggleButton("##showPercentages", ref ShowPercentages);
-            ImGui.SameLine();
-            //ImGui.AlignTextToFramePadding();
-            ImGui.Text("Show team contributions");
-            using(var _ = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing * 2.5f * ImGuiHelpers.GlobalScale)) {
-                ImGui.SameLine();
-            }
-            ImGui.Checkbox("###showTeamRows", ref ShowTeamRows);
-            ImGui.SameLine();
-            ImGui.Text("Show team totals");
-            using(var _ = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing * 2.5f * ImGuiHelpers.GlobalScale)) {
-                ImGui.SameLine();
-            }
-            _teamQuickFilter.Draw();
-            DrawStatsTable();
         }
+        _firstDraw = false;
     }
 
-    private void DrawStatsTable() {
+    private void DrawScoreboard() {
+        ImGui.NewLine();
+        //ImGui.AlignTextToFramePadding();
+        ImGuiHelper.HelpMarker("Right-click table header to show and hide columns including extra metrics.", true, true);
+        using(var _ = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing * 2.5f * ImGuiHelpers.GlobalScale)) {
+            ImGui.SameLine();
+        }
+        ImGuiComponents.ToggleButton("##showPercentages", ref ShowPercentages);
+        ImGui.SameLine();
+        //ImGui.AlignTextToFramePadding();
+        ImGui.Text("Show team contributions");
+        using(var _ = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing * 2.5f * ImGuiHelpers.GlobalScale)) {
+            ImGui.SameLine();
+        }
+        ImGui.Checkbox("###showTeamRows", ref ShowTeamRows);
+        ImGui.SameLine();
+        ImGui.Text("Show team totals");
+        using(var _ = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing * 2.5f * ImGuiHelpers.GlobalScale)) {
+            ImGui.SameLine();
+        }
+        _teamQuickFilter.Draw();
+
         var tableFlags = ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.ScrollX | ImGuiTableFlags.NoSavedSettings | ImGuiTableFlags.PadOuterX;
         if(Plugin.Configuration.StretchScoreboardColumns ?? false) {
             tableFlags -= ImGuiTableFlags.ScrollX;
         }
-        using var table = ImRaii.Table($"postmatchplayers##{_dataModel.Id}", 15, tableFlags);
+        using var table = ImRaii.Table($"postmatchplayers##{Match.Id}", 15, tableFlags);
         if(!table) return;
         var widthStyle = Plugin.Configuration.StretchScoreboardColumns ?? false ? ImGuiTableColumnFlags.WidthStretch : ImGuiTableColumnFlags.WidthFixed;
         ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, ImGuiHelpers.GlobalScale * 100f, 0);
@@ -401,12 +485,12 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             foreach(var row in _teamScoreboard.Where(x => _teamQuickFilter.FilterState[x.Key])) {
                 ImGui.TableNextColumn();
                 Vector4 rowColor = ImGuiColors.DalamudWhite;
-                if(row.Key == _dataModel.LocalPlayerTeam?.TeamName || (_dataModel.IsSpectated && row.Key == CrystallineConflictTeamName.Astra)) {
-                    rowColor = _plugin.Configuration.Colors.CCPlayerTeam;
+                if(row.Key == Match.LocalPlayerTeam?.TeamName || (Match.IsSpectated && row.Key == CrystallineConflictTeamName.Astra)) {
+                    rowColor = Plugin.Configuration.Colors.CCPlayerTeam;
                 } else {
-                    rowColor = _plugin.Configuration.Colors.CCEnemyTeam;
+                    rowColor = Plugin.Configuration.Colors.CCEnemyTeam;
                 }
-                rowColor.W = _plugin.Configuration.TeamRowAlpha;
+                rowColor.W = Plugin.Configuration.TeamRowAlpha;
 
                 ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(rowColor));
                 ImGui.TextUnformatted(MatchHelper.GetTeamName(row.Key));
@@ -457,14 +541,14 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             var player = Match.Players!.Where(x => x.Alias.Equals(row.Key)).FirstOrDefault();
             ImGui.TableNextColumn();
             Vector4 rowColor = ImGuiColors.DalamudWhite;
-            if(player?.Team == _dataModel.LocalPlayerTeam?.TeamName || (_dataModel.IsSpectated && player?.Team == CrystallineConflictTeamName.Astra)) {
-                rowColor = _plugin.Configuration.Colors.CCPlayerTeam;
+            if(player?.Team == Match.LocalPlayerTeam?.TeamName || (Match.IsSpectated && player?.Team == CrystallineConflictTeamName.Astra)) {
+                rowColor = Plugin.Configuration.Colors.CCPlayerTeam;
             } else {
-                rowColor = _plugin.Configuration.Colors.CCEnemyTeam;
+                rowColor = Plugin.Configuration.Colors.CCEnemyTeam;
             }
-            rowColor.W = _plugin.Configuration.PlayerRowAlpha;
+            rowColor.W = Plugin.Configuration.PlayerRowAlpha;
 
-            var textColor = _dataModel.LocalPlayer is not null && _dataModel.LocalPlayer.Equals(row.Key) ? _plugin.Configuration.Colors.CCLocalPlayer : Plugin.Configuration.Colors.PlayerRowText;
+            var textColor = Match.LocalPlayer is not null && Match.LocalPlayer.Equals(row.Key) ? Plugin.Configuration.Colors.CCLocalPlayer : Plugin.Configuration.Colors.PlayerRowText;
             ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(rowColor));
             ImGui.TextColored(textColor, $"{row.Key.Name}");
             if(ImGui.TableNextColumn()) {
@@ -513,6 +597,142 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 ImGuiHelper.DrawNumericCell($"{string.Format("{0:0.00}", row.Value.KDA)}", -11f, textColor);
             }
         }
+    }
+
+    private void DrawGraphs() {
+        //filters
+
+        using var child = ImRaii.Child("graphChild", ImGui.GetContentRegionAvail(), true);
+        if(child) {
+            if(_timeline?.CrystalPosition != null) {
+                DrawCrystalProgressGraph();
+            }
+        }
+    }
+
+    private void DrawCrystalProgressGraph() {
+        using var plot = ImRaii.Plot("Crystal Progress", new Vector2(ImGui.GetContentRegionAvail().X, 500f * ImGuiHelpers.GlobalScale), ImPlotFlags.None);
+
+        if(!plot) {
+            return;
+        }
+
+        double[] yTicks = [-100, -50, 0, 50, 100];
+
+        float[] fiftyXs = [300, 300];
+        float[] fiftyYs = [-120, 100];
+
+        float[] xInitialLimits = [0, 900];
+        if(Match.MatchDuration <= TimeSpan.FromMinutes(5)) {
+            xInitialLimits[1] = 300;
+        }
+
+        ImPlot.SetupAxisScale(ImAxis.X1, ImPlotScale.Linear);
+        ImPlot.SetupAxesLimits(xInitialLimits[0], xInitialLimits[1], -100, 100, ImPlotCond.Once);
+        ImPlot.SetupAxisLimitsConstraints(ImAxis.X1, 0, 900);
+        ImPlot.SetupAxisLimitsConstraints(ImAxis.Y1, -100, 100);
+
+        ImPlot.SetupAxes("Match Time", "", ImPlotAxisFlags.None, ImPlotAxisFlags.None);
+        ImPlot.SetupLegend(ImPlotLocation.NorthWest, ImPlotLegendFlags.Horizontal | ImPlotLegendFlags.Outside);
+
+        ImPlot.SetupAxisTicks(ImAxis.X1, ref _xAxisTicks[0], _xAxisTicks.Length, _xAxisLabels);
+        ImPlot.SetupAxisTicks(ImAxis.Y1, ref yTicks[0], yTicks.Length);
+
+        var astraColor = _localPlayerTeam == CrystallineConflictTeamName.Umbra ? Plugin.Configuration.Colors.CCEnemyTeam : Plugin.Configuration.Colors.CCPlayerTeam;
+        var umbraColor = _localPlayerTeam == CrystallineConflictTeamName.Umbra ? Plugin.Configuration.Colors.CCPlayerTeam : Plugin.Configuration.Colors.CCEnemyTeam;
+
+
+
+        using(var style = ImRaii.PushColor(ImPlotCol.Line, ImGuiColors.DalamudOrange)) {
+            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 1f * ImGuiHelpers.GlobalScale);
+            ImPlot.PlotStairs("Overtime", ref fiftyXs[0],
+                ref fiftyYs[0],
+                fiftyXs.Length, ImPlotStairsFlags.None);
+        }
+
+        using(var style = ImRaii.PushColor(ImPlotCol.Line, ImGuiColors.DalamudWhite)) {
+            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 1f * ImGuiHelpers.GlobalScale);
+            ImPlot.PlotStairs("Crystal Position", ref _crystalPosition.Xs[0],
+                ref _crystalPosition.Ys[0],
+                _crystalPosition.Xs.Length, ImPlotStairsFlags.None);
+        }
+
+        using(var style = ImRaii.PushColor(ImPlotCol.Line, astraColor)) {
+            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 3f * ImGuiHelpers.GlobalScale);
+            ImPlot.PlotStairs("Astra Progress", ref _teamPoints[CrystallineConflictTeamName.Astra].Xs[0],
+                ref _teamPoints[CrystallineConflictTeamName.Astra].Ys[0],
+                _teamPoints[CrystallineConflictTeamName.Astra].Xs.Length, ImPlotStairsFlags.None);
+        }
+
+        using(var style = ImRaii.PushColor(ImPlotCol.Line, umbraColor)) {
+            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 3f * ImGuiHelpers.GlobalScale);
+            ImPlot.PlotStairs("Umbra Progress", ref _teamPoints[CrystallineConflictTeamName.Umbra].Xs[0],
+                ref _teamPoints[CrystallineConflictTeamName.Umbra].Ys[0],
+                _teamPoints[CrystallineConflictTeamName.Umbra].Xs.Length, ImPlotStairsFlags.None);
+        }
+
+        using(var style = ImRaii.PushColor(ImPlotCol.Line, astraColor - new Vector4(0f, 0f, 0f, 0.6f))) {
+            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 2f * ImGuiHelpers.GlobalScale);
+            ImPlot.PlotStairs("Astra Mid Progress", ref _teamMidPoints[CrystallineConflictTeamName.Astra].Xs[0],
+                ref _teamMidPoints[CrystallineConflictTeamName.Astra].Ys[0],
+                _teamMidPoints[CrystallineConflictTeamName.Astra].Xs.Length, ImPlotStairsFlags.None);
+        }
+
+        using(var style = ImRaii.PushColor(ImPlotCol.Line, umbraColor - new Vector4(0f, 0f, 0f, 0.6f))) {
+            using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 2f * ImGuiHelpers.GlobalScale);
+            ImPlot.PlotStairs("Umbra Mid Progress", ref _teamMidPoints[CrystallineConflictTeamName.Umbra].Xs[0],
+                ref _teamMidPoints[CrystallineConflictTeamName.Umbra].Ys[0],
+                _teamMidPoints[CrystallineConflictTeamName.Umbra].Xs.Length, ImPlotStairsFlags.None);
+        }
+    }
+
+    private void SetupCrystalPositionGraph() {
+        if(_timeline?.CrystalPosition == null) {
+            return;
+        }
+
+        int direction = 1;
+        if(_localPlayerTeam == CrystallineConflictTeamName.Umbra) {
+            direction = -1;
+        }
+
+        var pointEvents = _timeline.CrystalPosition
+            //.Where(x => x.Points != 0 || (x.Timestamp - Match.MatchStartTime).Value.TotalSeconds > 10)
+            .Prepend(new((DateTime)Match.MatchStartTime!, 0))
+            .Append(new((DateTime)Match.MatchEndTime!, _timeline.CrystalPosition.Last().Points));
+        _crystalPosition = (pointEvents.Select(x => (float)(x.Timestamp - Match.MatchStartTime).Value.TotalSeconds).ToArray(), pointEvents.Select(x => direction * x.Points / 10f).ToArray());
+    }
+
+    private void SetupProgressGraph(CrystallineConflictTeamName team) {
+        if(_timeline?.TeamProgress == null) {
+            return;
+        }
+        int direction = 1;
+        if(_localPlayerTeam == null && team == CrystallineConflictTeamName.Umbra 
+            || _localPlayerTeam != null && team != _localPlayerTeam) {
+            direction = -1;
+        }
+
+        var pointEvents = _timeline.TeamProgress[team]
+            //.Where(x => x.Points != 0 || (x.Timestamp - Match.MatchStartTime).Value.TotalSeconds > 10)
+            .Append(new((DateTime)Match.MatchEndTime!, _timeline.TeamProgress[team].Last().Points));
+        _teamPoints[team] = (pointEvents.Select(x => (float)(x.Timestamp - Match.MatchStartTime).Value.TotalSeconds).ToArray(), pointEvents.Select(x => direction * x.Points / 10f).ToArray());
+    }
+
+    private void SetupMidProgressGraph(CrystallineConflictTeamName team) {
+        if(_timeline?.TeamMidProgress == null) {
+            return;
+        }
+        int direction = 1;
+        if(_localPlayerTeam == null && team == CrystallineConflictTeamName.Umbra
+            || _localPlayerTeam != null && team != _localPlayerTeam) {
+            direction = -1;
+        }
+
+        var pointEvents = _timeline.TeamMidProgress[team]
+            //.Where(x => x.Points != 0 || (x.Timestamp - Match.MatchStartTime).Value.TotalSeconds > 10)
+            .Append(new((DateTime)Match.MatchEndTime!, _timeline.TeamMidProgress[team].Last().Points));
+        _teamMidPoints[team] = (pointEvents.Select(x => (float)(x.Timestamp - Match.MatchStartTime).Value.TotalSeconds).ToArray(), pointEvents.Select(x => direction * (float)x.Points).ToArray());
     }
 
     private void SortByColumn(uint columnId, ImGuiSortDirection direction) {
@@ -572,7 +792,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         _unfilteredScoreboard = direction == ImGuiSortDirection.Ascending ? _unfilteredScoreboard.OrderBy(comparator).ToDictionary()
             : _unfilteredScoreboard.OrderByDescending(comparator).ToDictionary();
 
-        if(_teamScoreboard != null && !_plugin.Configuration.AnchorTeamNames) {
+        if(_teamScoreboard != null && !Plugin.Configuration.AnchorTeamNames) {
             _teamScoreboard = direction == ImGuiSortDirection.Ascending ? _teamScoreboard.OrderBy(teamComparator).ToDictionary()
             : _teamScoreboard.OrderByDescending(teamComparator).ToDictionary();
         }
@@ -593,17 +813,17 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         string csv = "";
         //header
         csv += "Id,Start Time,Arena,Queue,Winner,Duration,Astra Progress,Umbra Progress,\n";
-        csv += _dataModel.Id + "," + _dataModel.DutyStartTime + ","
-            + (_dataModel.Arena != null ? MatchHelper.GetArenaName((CrystallineConflictMap)_dataModel.Arena!) : "") + ","
-            + _dataModel.MatchType + "," + _dataModel.MatchWinner + "," + _dataModel.MatchDuration + ","
-            + _dataModel.Teams[CrystallineConflictTeamName.Astra].Progress + "," + _dataModel.Teams[CrystallineConflictTeamName.Umbra].Progress + ","
+        csv += Match.Id + "," + Match.DutyStartTime + ","
+            + (Match.Arena != null ? MatchHelper.GetArenaName((CrystallineConflictMap)Match.Arena!) : "") + ","
+            + Match.MatchType + "," + Match.MatchWinner + "," + Match.MatchDuration + ","
+            + Match.Teams[CrystallineConflictTeamName.Astra].Progress + "," + Match.Teams[CrystallineConflictTeamName.Umbra].Progress + ","
             + "\n";
 
         //post match
         if(_scoreboard != null) {
             csv += "\n\n\n";
             csv += "Name,HomeWorld,Job,Team,Kills,Deaths,Assists,Damage Dealt,Damage Taken,HP Restored,Time on Crystal,\n";
-            var players = _dataModel.Players;
+            var players = Match.Players;
             foreach(var row in _scoreboard) {
                 var player = players.Where(x => x.Alias.Equals(row.Key)).FirstOrDefault();
                 csv += row.Key.Name + "," + row.Key.HomeWorld + "," + player?.Job + ",";

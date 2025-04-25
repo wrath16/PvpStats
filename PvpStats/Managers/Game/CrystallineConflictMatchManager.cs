@@ -15,6 +15,7 @@ using PvpStats.Helpers;
 using PvpStats.Services;
 using PvpStats.Types.ClientStruct;
 using PvpStats.Types.Match;
+using PvpStats.Types.Match.Timeline;
 using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
@@ -27,6 +28,8 @@ internal class CrystallineConflictMatchManager : IDisposable {
 
     private Plugin _plugin;
     private CrystallineConflictMatch? _currentMatch;
+
+    private CrystallineConflictMatchTimeline? _currentMatchTimeline;
 
     private DateTime _lastUpdate;
     private DateTime _lastPrint = DateTime.MinValue;
@@ -121,9 +124,21 @@ internal class CrystallineConflictMatchManager : IDisposable {
                     _currentMatch.GameVersion = Framework.Instance()->GameVersionString;
                 }
             }
+            _currentMatchTimeline = new() {
+                CrystalPosition = new(),
+                TeamProgress = new() {
+                    {CrystallineConflictTeamName.Astra, new() },
+                    {CrystallineConflictTeamName.Umbra, new() },
+                },
+                TeamMidProgress = new() {
+                    {CrystallineConflictTeamName.Astra, new() },
+                    {CrystallineConflictTeamName.Umbra, new() },
+                },
+            };
             _plugin.Log.Information($"starting new match on {_currentMatch.Arena}");
             _plugin.DataQueue.QueueDataOperation(async () => {
                 await _plugin.CCCache.AddMatch(_currentMatch);
+                await _plugin.Storage.AddCCTimeline(_currentMatchTimeline);
             });
         });
     }
@@ -145,6 +160,9 @@ internal class CrystallineConflictMatchManager : IDisposable {
         var matchEndTask = _plugin.DataQueue.QueueDataOperation(async () => {
             if(ProcessMatchResults(resultsPacket)) {
                 await _plugin.CCCache.UpdateMatch(_currentMatch!);
+                if(_currentMatchTimeline != null) {
+                    await _plugin.Storage.UpdateCCTimeline(_currentMatchTimeline);
+                }
                 _ = _plugin.WindowManager.RefreshCCWindow();
             }
         });
@@ -446,12 +464,8 @@ internal class CrystallineConflictMatchManager : IDisposable {
         _currentMatch.MatchWinner = postMatch.MatchWinner;
 
         _currentMatch.PostMatch = postMatch;
-        _currentMatch!.IsCompleted = true;
-        //this should really happen in same Task...
-        //_plugin.DataQueue.QueueDataOperation(async () => {
-        //    await _plugin.Storage.UpdateCCMatch(_currentMatch);
-        //});
-        //await _plugin.Storage.UpdateCCMatch(_currentMatch);
+        _currentMatch.IsCompleted = true;
+        _currentMatch.TimelineId = _currentMatchTimeline?.Id;
         return true;
     }
 
@@ -459,7 +473,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
         if(!IsMatchInProgress()) {
             return;
         }
-        var director = EventFramework.Instance()->GetInstanceContentDirector();
+        var director = (CrystallineConflictContentDirector*)((IntPtr)EventFramework.Instance()->GetInstanceContentDirector() + CrystallineConflictContentDirector.Offset);
         if(director is null) {
             return;
         }
@@ -470,11 +484,67 @@ internal class CrystallineConflictMatchManager : IDisposable {
         var now = DateTime.Now;
 
 #if DEBUG
-        if(now - _lastPrint > TimeSpan.FromSeconds(15)) {
+        if(now - _lastPrint > TimeSpan.FromSeconds(30)) {
             _lastPrint = now;
             _plugin.Functions.CreateByteDump((nint)director, 0x10000, "CCICD");
             Plugin.Log2.Debug("creating cc content director dump");
         }
 #endif
+
+        if(_currentMatchTimeline != null) {
+            //crystal position
+            if(_currentMatchTimeline.CrystalPosition != null) {
+                var lastEvent = _currentMatchTimeline.CrystalPosition?.LastOrDefault();
+                int? currentPosition = director->CrystalPosition;
+                if(currentPosition != null && 
+                    (lastEvent == null || 
+                    (lastEvent.Points != currentPosition && now - lastEvent.Timestamp >= TimeSpan.FromSeconds(1)))) {
+                    _currentMatchTimeline.CrystalPosition.Add(new(now, (int)currentPosition));
+                }
+            }
+            //team progress
+            foreach(var team in _currentMatchTimeline.TeamProgress ?? []) {
+                var lastEvent = team.Value.LastOrDefault();
+                var x = now - lastEvent?.Timestamp;
+                //rate limit to once a second
+                if(now - lastEvent?.Timestamp < TimeSpan.FromSeconds(1)) {
+                    continue;
+                }
+                int? currentValue = null;
+                switch(team.Key) {
+                    case CrystallineConflictTeamName.Astra:
+                        currentValue = director->AstraProgress;
+                        break;
+                    case CrystallineConflictTeamName.Umbra:
+                        currentValue = director->UmbraProgress;
+                        break;
+                    default:
+                        break;
+                }
+                if(currentValue != null && (lastEvent == null || lastEvent.Points != currentValue)) {
+                    team.Value.Add(new(now, (int)currentValue));
+                }
+            }
+
+            //team mid progress
+            foreach(var team in _currentMatchTimeline.TeamMidProgress ?? []) {
+                var lastEvent = team.Value.LastOrDefault();
+                var x = now - lastEvent?.Timestamp;
+                int? currentValue = null;
+                switch(team.Key) {
+                    case CrystallineConflictTeamName.Astra:
+                        currentValue = director->AstraMidpointProgress;
+                        break;
+                    case CrystallineConflictTeamName.Umbra:
+                        currentValue = director->UmbraMidpointProgress;
+                        break;
+                    default:
+                        break;
+                }
+                if(currentValue != null && (lastEvent == null || lastEvent.Points != currentValue)) {
+                    team.Value.Add(new(now, (int)currentValue));
+                }
+            }
+        }
     }
 }
