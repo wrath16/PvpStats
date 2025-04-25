@@ -74,22 +74,6 @@ internal abstract class FilteredList<T, U> : Refreshable<U> where T : notnull wh
         return Task.CompletedTask;
     }
 
-    //internal async Task Refresh(List<T> dataModel) {
-    //    try {
-    //        await RefreshLock.WaitAsync();
-    //        DataModel = dataModel;
-    //        ListCSV = CSVHeader();
-    //        await RefreshDataModel();
-    //        GoToPage(0);
-    //    } finally {
-    //        RefreshLock.Release();
-    //    }
-    //}
-
-    //public virtual async Task RefreshDataModel() {
-    //    await Task.CompletedTask;
-    //}
-
     public void GoToPage(int? pageNumber = null) {
         pageNumber ??= PageNumber;
         PageNumber = (int)pageNumber;
@@ -204,9 +188,14 @@ internal abstract class FilteredList<T, U> : Refreshable<U> where T : notnull wh
         }
 
         foreach(var i in clipper.Rows) {
-            var item = CurrentPage[i];
+            T? item = CurrentPage[0];
+            try {
+                item = CurrentPage[i];
+            } catch(ArgumentOutOfRangeException) {
+                //suppress: this will happen during refreshes
+            }
             ImGui.TableNextColumn();
-            if(ImGui.Selectable($"##{item!.GetHashCode()}-selectable", false, ImGuiSelectableFlags.SpanAllColumns)) {
+            if(ImGui.Selectable($"##{item.GetHashCode()}-selectable", false, ImGuiSelectableFlags.SpanAllColumns)) {
                 OpenItemDetail(item);
             }
 

@@ -64,8 +64,10 @@ internal abstract class PlayerStatsList<T, U> : StatsList<PlayerAlias, T, U> whe
         ImGuiHelper.SetDynamicWidth(150f, 250f, 3f);
         if(ImGui.SliderInt("Min. matches", ref minMatches, 1, 100)) {
             MinMatchFilter.MinMatches = (uint)minMatches;
+            //RefreshActive = true;
             RefreshQueue.QueueDataOperation(() => {
                 ApplyQuickFilters(MinMatchFilter.MinMatches, PlayerQuickSearchFilter.SearchText);
+                //RefreshActive = false;
             });
         }
         ImGui.SameLine();
@@ -73,8 +75,10 @@ internal abstract class PlayerStatsList<T, U> : StatsList<PlayerAlias, T, U> whe
         ImGuiHelper.SetDynamicWidth(150f, 250f, 3f);
         if(ImGui.InputTextWithHint("###playerQuickSearch", "Search...", ref quickSearch, 100)) {
             PlayerQuickSearchFilter.SearchText = quickSearch;
+            //RefreshActive = true;
             RefreshQueue.QueueDataOperation(() => {
                 ApplyQuickFilters(MinMatchFilter.MinMatches, PlayerQuickSearchFilter.SearchText);
+                //RefreshActive = false;
             });
         }
         ImGuiHelper.HelpMarker("Comma separate multiple players.");
