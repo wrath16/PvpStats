@@ -354,15 +354,21 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                         using var tab = ImRaii.TabItem("Scoreboard");
                         if(tab) {
                             if(CurrentTab != "Scoreboard") {
-                                Flags |= ImGuiWindowFlags.AlwaysAutoResize;
+                                if(_scoreboardTicks < 20) {
+                                    Flags |= ImGuiWindowFlags.AlwaysAutoResize;
+                                } else {
+                                    Flags &= ~ImGuiWindowFlags.AlwaysAutoResize;
+                                    SetWindowSize(_savedScoreboardSize ?? _scoreboardSize);
+                                }
                                 CurrentTab = "Scoreboard";
                             } else if(_scoreboardTicks >= 20) {
+                                _savedScoreboardSize ??= ImGui.GetWindowSize();
                                 Flags &= ~ImGuiWindowFlags.AlwaysAutoResize;
                             }
                             _scoreboardTicks++;
                             DrawScoreboard();
                         } else {
-                            _scoreboardTicks = 0;
+                            Flags &= ~ImGuiWindowFlags.AlwaysAutoResize;
                         }
                     }
                     using(var tab2 = ImRaii.TabItem("Graphs")) {
