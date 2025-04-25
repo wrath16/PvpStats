@@ -170,6 +170,8 @@ internal unsafe class DebugWindow : Window {
                         DrawRivalWingsDirector();
                     } else if(instanceDirector != null && instanceDirector->InstanceContentType == FFXIVClientStructs.FFXIV.Client.Game.InstanceContent.InstanceContentType.Frontlines) {
                         DrawFrontlineDirector();
+                    } else if(instanceDirector != null && instanceDirector->InstanceContentType == FFXIVClientStructs.FFXIV.Client.Game.InstanceContent.InstanceContentType.CrystallineConflict) {
+                        DrawCrystallineConflictDirector();
                     }
                     //ImGui.Text($"0x{new IntPtr(instanceDirector + RivalWingsMatchManager.RivalWingsContentDirectorOffset).ToString("X2")}");
                     //ImGui.Text($"0x{new IntPtr(instanceDirector + 0x1E58).ToString("X2")}");
@@ -185,6 +187,13 @@ internal unsafe class DebugWindow : Window {
                     ImGui.Separator();
                 }
             }
+
+            using(var tab = ImRaii.TabItem("Object Table")) {
+                if(tab) {
+                    DrawObjectTable();
+                }
+            }
+
 
             using(var tab = ImRaii.TabItem("Network Messages")) {
                 if(tab) {
@@ -523,6 +532,116 @@ internal unsafe class DebugWindow : Window {
 
             }
         }
+    }
+
+    private void DrawCrystallineConflictDirector() {
+        var instanceDirector = (CrystallineConflictContentDirector*)((IntPtr)EventFramework.Instance()->GetInstanceContentDirector() + CrystallineConflictContentDirector.Offset);
+        using(var table = ImRaii.Table("main", 2)) {
+            if(table) {
+                ImGui.TableSetupColumn("c1");
+                ImGui.TableSetupColumn("c2");
+
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Crystal unbinding in:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->CrystalUnbindTimeRemaining.ToString());
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Crystal position:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->CrystalPosition.ToString());
+
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Astra prog:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->AstraProgress.ToString());
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Astra midpoint prog:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->AstraMidpointProgress.ToString());
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Astra dudes on point:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->AstraOnPoint.ToString());
+
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Umbra prog:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->UmbraProgress.ToString());
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Umbra midpoint prog:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->UmbraMidpointProgress.ToString());
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Umbra dudes on point:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->UmbraOnPoint.ToString());
+
+
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Unknown0:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->Unknown0.ToString());
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Unknown1:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->Unknown1.ToString());
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Unknown2:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->Unknown2.ToString());
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Unknown3:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->Unknown3.ToString());
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Unknown4:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->Unknown4.ToString());
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Unknown5:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->Unknown5.ToString());
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Unknown6:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->Unknown6.ToString());
+
+            }
+        }
+    }
+
+    private void DrawObjectTable() {
+        var playerAddress = _plugin.ClientState.LocalPlayer.Address;
+        ImGui.Text($"Local Player Address: 0x{new IntPtr(playerAddress).ToString("X2")}");
+
+        using(var table = ImRaii.Table("object_table", 3)) {
+            ImGui.TableSetupColumn("name");
+            ImGui.TableSetupColumn("objId");
+            ImGui.TableSetupColumn("address");
+
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("Name");
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("EntityId");
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("Address");
+
+            foreach(IPlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player).Cast<IPlayerCharacter>()) {
+                try {
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{pc.Name}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{pc.GameObjectId}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"0x{pc.Address:X2}");
+                } catch {
+                    //suppress all exceptions
+                }
+            }
+        }
+
+
+
     }
 
 

@@ -46,6 +46,12 @@ internal unsafe class MemoryService : IDisposable {
         }
 
         if(!_blacklistedOpcodes.Contains(opCode)) {
+            if(opCode == 738) {
+                //_plugin.Log.Debug($"OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
+                //_plugin.Functions.FindValue<byte>(0, dataPtr, 0x100, 0, true);
+                //CreateByteDump(dataPtr, 0x100, "LB opcode");
+                //_plugin.Functions.PrintAllChars(dataPtr, 0x100, 8);
+            }
             //_plugin.Log.Debug($"OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
             //_plugin.Functions.PrintAllChars(dataPtr, 0x2000, 8);
             //_plugin.Functions.PrintAllStrings(dataPtr, 0x500);
@@ -60,7 +66,7 @@ internal unsafe class MemoryService : IDisposable {
     internal void CreateByteDump(nint ptr, int length, string name) {
         var bytes = new ReadOnlySpan<byte>((void*)ptr, length);
         var timeStamp = DateTime.Now;
-        using(FileStream fs = File.Create($"{_plugin.PluginInterface.GetPluginConfigDirectory()}\\{name}_{timeStamp.Year}{timeStamp.Month}{timeStamp.Day}{timeStamp.Hour}{timeStamp.Minute}_{timeStamp.Second}{timeStamp.Millisecond}_dump.bin")) {
+        using(FileStream fs = File.Create($"{_plugin.PluginInterface.GetPluginConfigDirectory()}\\{name}_{timeStamp:yyyy_mm_dd-hh_mm_ss_fff}_dump.bin")) {
             fs.Write(bytes);
         }
     }

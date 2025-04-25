@@ -1,10 +1,13 @@
 ﻿using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
+using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Hooking;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using Dalamud.Utility.Signatures;
+using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.Sheets;
@@ -24,6 +27,9 @@ internal class CrystallineConflictMatchManager : IDisposable {
 
     private Plugin _plugin;
     private CrystallineConflictMatch? _currentMatch;
+
+    private DateTime _lastUpdate;
+    private DateTime _lastPrint = DateTime.MinValue;
 
     //p1 = director
     //p2 = results packet
@@ -53,6 +59,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
     public CrystallineConflictMatchManager(Plugin plugin) {
         _plugin = plugin;
 
+        _plugin.Framework.Update += OnFrameworkUpdate;
         _plugin.ClientState.TerritoryChanged += OnTerritoryChanged;
         _plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "PvPMKSIntroduction", OnPvPIntro);
         _plugin.InteropProvider.InitializeFromAttributes(this);
@@ -66,6 +73,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
     }
 
     public void Dispose() {
+        _plugin.Framework.Update -= OnFrameworkUpdate;
         _plugin.ClientState.TerritoryChanged -= OnTerritoryChanged;
         _plugin.AddonLifecycle.UnregisterListener(OnPvPIntro);
         _ccMatchEndHook.Dispose();
@@ -445,5 +453,28 @@ internal class CrystallineConflictMatchManager : IDisposable {
         //});
         //await _plugin.Storage.UpdateCCMatch(_currentMatch);
         return true;
+    }
+
+    private unsafe void OnFrameworkUpdate(IFramework framework) {
+        if(!IsMatchInProgress()) {
+            return;
+        }
+        var director = EventFramework.Instance()->GetInstanceContentDirector();
+        if(director is null) {
+            return;
+        }
+        if(_plugin.Condition[ConditionFlag.BetweenAreas] || _plugin.Condition[ConditionFlag.BetweenAreas51]) {
+            return;
+        }
+
+        var now = DateTime.Now;
+
+#if DEBUG
+        if(now - _lastPrint > TimeSpan.FromSeconds(15)) {
+            _lastPrint = now;
+            _plugin.Functions.CreateByteDump((nint)director, 0x10000, "CCICD");
+            Plugin.Log2.Debug("creating cc content director dump");
+        }
+#endif
     }
 }
