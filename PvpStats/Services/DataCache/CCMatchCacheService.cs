@@ -1,4 +1,5 @@
 ﻿using PvpStats.Types.Match;
+using PvpStats.Types.Match.Timeline;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -22,5 +23,10 @@ internal class CCMatchCacheService : MatchCacheService<CrystallineConflictMatch>
 
     protected override async Task UpdateManyToStorage(IEnumerable<CrystallineConflictMatch> matches) {
         await Plugin.Storage.UpdateCCMatches(matches);
+    }
+
+    internal CrystallineConflictMatchTimeline? GetTimeline(CrystallineConflictMatch match) {
+        if(match.TimelineId == null) return null;
+        return Plugin.Storage.GetCCTimelines().Query().Where(x => x.Id.Equals(match.TimelineId)).FirstOrDefault();
     }
 }
