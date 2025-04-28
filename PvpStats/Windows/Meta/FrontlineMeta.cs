@@ -160,7 +160,6 @@ internal class FrontlineMeta : Refreshable<FrontlineMatch> {
         if(mean == 0) return 0;
 
         double gini = (2.0d * cumulativeTotal) / (n * cumulativeSum) - (n + 1.0) / n;
-        Plugin.Log2.Debug($"Gini: {gini:0.00}");
         return gini;
     }
 
