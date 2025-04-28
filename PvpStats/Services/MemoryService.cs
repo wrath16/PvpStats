@@ -17,7 +17,7 @@ internal unsafe class MemoryService : IDisposable {
     private DateTime _lastSortTime;
     internal bool _qPopped = false;
 
-    private ushort[] _blacklistedOpcodes = [];
+    private ushort[] _blacklistedOpcodes = [487, 738, 156, 432, 141, 149, 121, 141, 635];
 
     internal MemoryService(Plugin plugin) {
         _plugin = plugin;
@@ -46,18 +46,28 @@ internal unsafe class MemoryService : IDisposable {
         }
 
         if(!_blacklistedOpcodes.Contains(opCode)) {
-            if(opCode == 738) {
+            if(opCode == 171) {
                 //_plugin.Log.Debug($"OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
                 //_plugin.Functions.FindValue<byte>(0, dataPtr, 0x100, 0, true);
                 //CreateByteDump(dataPtr, 0x100, "LB opcode");
                 //_plugin.Functions.PrintAllChars(dataPtr, 0x100, 8);
             }
-            //_plugin.Log.Debug($"OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
+            //Plugin.Log2.Debug($"OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
             //_plugin.Functions.PrintAllChars(dataPtr, 0x2000, 8);
             //_plugin.Functions.PrintAllStrings(dataPtr, 0x500);
+
+            //look for player entity id in dataptr
+            //var playerEntityId = _plugin.ClientState.LocalPlayer?.EntityId;
+            //if(playerEntityId != null) {
+            //    var bytes = new ReadOnlySpan<byte>((void*)dataPtr, 0x100).ToArray();
+            //    var indexes = FindValue<int>(bytes, (long)playerEntityId);
+            //    if(indexes.Length > 0) {
+            //        Plugin.Log2.Debug($"player entity id found for opcode {opCode}");
+            //    }
+            //}
         }
 
-        if(DateTime.Now - _lastSortTime > TimeSpan.FromSeconds(60)) {
+        if(DateTime.Now - _lastSortTime > TimeSpan.FromSeconds(30)) {
             _lastSortTime = DateTime.Now;
             _opCodeCount = _opCodeCount.OrderBy(x => x.Value).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         }
@@ -66,7 +76,7 @@ internal unsafe class MemoryService : IDisposable {
     internal void CreateByteDump(nint ptr, int length, string name) {
         var bytes = new ReadOnlySpan<byte>((void*)ptr, length);
         var timeStamp = DateTime.Now;
-        using(FileStream fs = File.Create($"{_plugin.PluginInterface.GetPluginConfigDirectory()}\\{name}_{timeStamp:yyyy_mm_dd-hh_mm_ss_fff}_dump.bin")) {
+        using(FileStream fs = File.Create($"{_plugin.PluginInterface.GetPluginConfigDirectory()}\\{name}_{timeStamp:yyyy_MM_dd-hh_mm_ss_fff}_dump.bin")) {
             fs.Write(bytes);
         }
     }
@@ -109,6 +119,61 @@ internal unsafe class MemoryService : IDisposable {
                 }
             }
         }
+    }
+
+    //thanks ChatGPT
+    public static long[] FindValue<T>(byte[] bytes, long toFind, bool littleEndian = true, bool printLocations = false) {
+        //if(toFind is not null) {
+        //    _plugin.Log.Debug($"checking for value...{toFind.GetType().Name} offset: {offset}");
+        //}
+
+        int size = 0;
+        List<long> locations = new();
+        
+        switch(typeof(T)) {
+            case Type _ when typeof(T) == typeof(short):
+                size = 2;
+                break;
+            case Type _ when typeof(T) == typeof(int):
+                size = 4;
+                break;
+            case Type _ when typeof(T) == typeof(long):
+                size = 8;
+                break;
+        }
+
+        for(int i = 0; i <= bytes.Length - size; i++) {
+            long candidate = 0l;
+            switch(typeof(T)) {
+                case Type _ when typeof(T) == typeof(short):
+                    candidate = BitConverter.ToInt16(GetBytes(bytes, i, size, littleEndian));
+                    break;
+                case Type _ when typeof(T) == typeof(int):
+                    candidate = BitConverter.ToInt32(GetBytes(bytes, i, size, littleEndian));
+                    break;
+                case Type _ when typeof(T) == typeof(long):
+                    candidate = BitConverter.ToInt64(GetBytes(bytes, i, size, littleEndian));
+                    break;
+            }
+
+            if(candidate == toFind) {
+                locations.Add(i);
+                if(printLocations) {
+                    Plugin.Log2.Debug($"{toFind} found at index 0x{i:X2}");
+                }
+            }
+        }
+        return locations.ToArray();
+    }
+
+    private static byte[] GetBytes(byte[] source, int index, int length, bool littleEndian) {
+        byte[] bytes = new byte[length];
+        Array.Copy(source, index, bytes, 0, length);
+
+        if(BitConverter.IsLittleEndian != littleEndian)
+            Array.Reverse(bytes);
+
+        return bytes;
     }
 
     public int[] FindValue<T>(T toFind, nint ptr, int length, int offset = 0, bool printOnly = false) {

@@ -6,6 +6,9 @@ using ImGuiNET;
 using ImPlotNET;
 using PvpStats.Helpers;
 using PvpStats.Types.Display;
+using PvpStats.Types.Event;
+using PvpStats.Types.Event.CrystallineConflict;
+using PvpStats.Types.Event.RivalWings;
 using PvpStats.Types.Match;
 using PvpStats.Types.Match.Timeline;
 using PvpStats.Types.Player;
@@ -17,6 +20,7 @@ using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Threading.Tasks;
+using static Lumina.Data.Parsing.Layer.LayerCommon;
 
 namespace PvpStats.Windows.Detail;
 
@@ -30,6 +34,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     private Dictionary<PlayerAlias, CCScoreboardTally>? _scoreboard;
     private Dictionary<PlayerAlias, CCScoreboardTally>? _unfilteredScoreboard;
     private CrystallineConflictTeamName? _localPlayerTeam;
+    private List<CrystallineConflictPlayer> _players;
 
     private Vector2 _scoreboardSize;
     private Vector2? _savedScoreboardSize;
@@ -39,6 +44,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     private bool _easterEgg = false;
 
     private CrystallineConflictMatchTimeline? _timeline;
+    private List<MatchEvent> _consolidatedEvents = new();
     private double[] _xAxisTicks = [];
     private string[] _xAxisLabels = [];
     private Dictionary<CrystallineConflictTeamName, (float[] Xs, float[] Ys)> _teamPoints = new() {
@@ -87,6 +93,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         }
 
         _localPlayerTeam = Match.LocalPlayerTeam?.TeamName;
+        _players = Match.Players;
 
         //setup post match data
         if(Match.PostMatch is not null) {
@@ -99,6 +106,9 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
 
         _timeline = Plugin.CCCache.GetTimeline(Match);
         if(_timeline != null) {
+            //setup timeline
+            _consolidatedEvents = [.. _timeline.Kills ?? []];
+
             //setup graphs
             List<double> axisTicks = new();
             List<string> axisLabels = new();
@@ -371,8 +381,20 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                             Flags &= ~ImGuiWindowFlags.AlwaysAutoResize;
                         }
                     }
-                    using(var tab2 = ImRaii.TabItem("Graphs")) {
-                        if(tab2) {
+                    if(_timeline.Kills != null) {
+                        using(var tab = ImRaii.TabItem("Timeline")) {
+                            if(tab) {
+                                if(CurrentTab != "Timeline") {
+                                    //SetWindowSize(new Vector2(SizeConstraints!.Value.MinimumSize.X, 600));
+                                    SetWindowSize(_savedScoreboardSize ?? _scoreboardSize);
+                                    CurrentTab = "Timeline";
+                                }
+                                DrawTimeline();
+                            }
+                        }
+                    }
+                    using(var tab = ImRaii.TabItem("Graphs")) {
+                        if(tab) {
                             if(CurrentTab != "Graphs") {
                                 SetWindowSize(_graphSize);
                                 CurrentTab = "Graphs";
@@ -605,6 +627,92 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         }
     }
 
+    private void DrawTimeline() {
+        //filters...
+        if(Match.DutyStartTime >= Match.MatchStartTime) {
+            ImGui.TextColored(ImGuiColors.DalamudRed, "Full timeline incomplete due to duty joined in progress.");
+        }
+        using var child = ImRaii.Child("timelineChild");
+        using var table = ImRaii.Table("timelineTable", 2);
+        ImGui.TableSetupColumn("time", ImGuiTableColumnFlags.WidthFixed, 50f * ImGuiHelpers.GlobalScale);
+        ImGui.TableSetupColumn("text", ImGuiTableColumnFlags.WidthStretch);
+
+        foreach(var matchEvent in _consolidatedEvents) {
+            ImGui.TableNextColumn();
+            var timeDiff = Match.MatchStartTime - matchEvent.Timestamp;
+            ImGuiHelper.DrawNumericCell($"{ImGuiHelper.GetTimeSpanString(timeDiff ?? TimeSpan.Zero)} : ");
+            ImGui.TableNextColumn();
+            var eventType = matchEvent.GetType();
+            switch(eventType) {
+                case Type _ when eventType == typeof(KnockoutEvent):
+                    DrawEvent(matchEvent as KnockoutEvent);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    private void DrawEvent(KnockoutEvent mEvent) {
+        var victimPlayer = _players.FirstOrDefault(x => x.Alias.Equals(mEvent.Victim));
+        var killerPlayer = _players.FirstOrDefault(x => x.Alias.Equals(mEvent.CreditedKiller));
+        Vector4 victimColor = Plugin.Configuration.Colors.CCEnemyTeam;
+        Vector4 killerColor = Plugin.Configuration.Colors.CCEnemyTeam;
+        if(_localPlayerTeam == null && victimPlayer?.Team == CrystallineConflictTeamName.Astra
+            || victimPlayer?.Team == _localPlayerTeam) {
+            victimColor = Plugin.Configuration.Colors.CCPlayerTeam;
+        }
+        if(_localPlayerTeam == null && killerPlayer?.Team == CrystallineConflictTeamName.Astra
+            || killerPlayer?.Team == _localPlayerTeam) {
+            killerColor = Plugin.Configuration.Colors.CCPlayerTeam;
+        }
+
+        using(var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero)) {
+            if(victimPlayer?.Job != null && TextureHelper.JobIcons.TryGetValue((Job)victimPlayer.Job, out var icon)) {
+                ImGui.Image(Plugin.WindowManager.GetTextureHandle(icon), new Vector2(24 * ImGuiHelpers.GlobalScale));
+                ImGui.SameLine();
+            }
+        }
+        using(var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(0f, ImGui.GetStyle().ItemSpacing.Y))) {
+            ImGui.AlignTextToFramePadding();
+            ImGui.TextColored(victimColor, mEvent.Victim.Name);
+            ImGui.SameLine();
+            ImGui.Text($" was slain by ");
+            ImGui.SameLine();
+            if(mEvent.KillerNameId != null) {
+                ImGui.Text($" {mEvent.KillerNameId}.");
+                if(mEvent.CreditedKiller != null) {
+                    ImGui.SameLine();
+                    ImGui.Text(" (Credit: ");
+                    ImGui.SameLine();
+                    using(var style2 = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero)) {
+                        if(killerPlayer?.Job != null && TextureHelper.JobIcons.TryGetValue((Job)killerPlayer.Job, out var icon)) {
+                            ImGui.Image(Plugin.WindowManager.GetTextureHandle(icon), new Vector2(24 * ImGuiHelpers.GlobalScale));
+                            ImGui.SameLine();
+                        }
+                    }
+                    ImGui.TextColored(killerColor, mEvent.CreditedKiller.Name);
+                    ImGui.SameLine();
+                    ImGui.Text(")");
+                }
+            } else {
+                if(mEvent.CreditedKiller != null) {
+                    using(var style2 = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero)) {
+                        if(killerPlayer?.Job != null && TextureHelper.JobIcons.TryGetValue((Job)killerPlayer.Job, out var icon)) {
+                            ImGui.Image(Plugin.WindowManager.GetTextureHandle(icon), new Vector2(24 * ImGuiHelpers.GlobalScale));
+                            ImGui.SameLine();
+                        }
+                    }
+                    ImGui.TextColored(killerColor, mEvent.CreditedKiller.Name);
+                    ImGui.SameLine();
+                    ImGui.Text(".");
+                } else {
+                    ImGui.Text($" nobody it seems...");
+                }
+            }
+        }
+    }
+
     private void DrawGraphs() {
         //filters
 
@@ -626,7 +734,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         double[] yTicks = [-100, -50, 0, 50, 100];
 
         float[] fiftyXs = [300, 300];
-        float[] fiftyYs = [-120, 100];
+        float[] fiftyYs = [-100, 100];
 
         float[] xInitialLimits = [0, 900];
         if(Match.MatchDuration <= TimeSpan.FromMinutes(5)) {

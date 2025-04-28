@@ -2,11 +2,13 @@
 #if DEBUG
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
+using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Game.InstanceContent;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
@@ -20,6 +22,7 @@ using PvpStats.Types.Match.Timeline;
 using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -100,7 +103,6 @@ internal unsafe class DebugWindow : Window {
 
                     }
 
-
                     if(ImGui.Button("GetNodeByIDChain")) {
                         unsafe {
                             var x = AtkNodeService.GetNodeByIDChain(_addon, _idParams);
@@ -111,6 +113,18 @@ internal unsafe class DebugWindow : Window {
 
                     if(ImGui.Button("Print ATKStage String data")) {
                         _plugin.AtkNodeService.PrintAtkStringArray();
+                    }
+
+
+                    var battleLog  = AtkStage.Instance()->RaptureAtkUnitManager->GetAddonByName("PvPMKSBattleLog");
+                    //Plugin.Log2.Debug($"{new IntPtr(battleLog):X2}");
+                    //Plugin.Log2.Debug($"{battleLog != null}");
+                    if(battleLog != null) {
+                        var valueAddress = new IntPtr(battleLog->AtkValues);
+                        ImGui.Text($"Battle Log Values Address: 0x{valueAddress:X2}");
+                        if(ImGui.Button("Copy")) {
+                            ImGui.SetClipboardText($"{valueAddress:X2}");
+                        }
                     }
                 }
             }
@@ -141,7 +155,6 @@ internal unsafe class DebugWindow : Window {
                         ImGui.SetClipboardText(new IntPtr(instanceDirector).ToString("X2"));
                     }
 
-
                     if(ImGui.Button("Print ICD Bytes")) {
                         _plugin.Functions.FindValue<byte>(0, (nint)instanceDirector, 0x2000, 0, true);
                         //var x = _plugin.Functions.GetRawInstanceContentDirector();
@@ -166,6 +179,15 @@ internal unsafe class DebugWindow : Window {
                     }
 
                     ImGui.Separator();
+                    var directorToDo = UIState.Instance()->DirectorTodo;
+                    ImGui.Text($"ToDo Director: 0x{new IntPtr(directorToDo.Director):X2}");
+                    ImGui.Text($"Title: {directorToDo.Title}");
+                    ImGui.Text($"Description: {directorToDo.Description}");
+                    ImGui.Text($"Relief Text: {directorToDo.ReliefText}");
+                    ImGui.Text($"Update pending?: {directorToDo.IsFullUpdatePending}");
+                    ImGui.Text($"Shown?: {directorToDo.IsShown}");
+
+                    ImGui.Separator();
                     if(instanceDirector != null && instanceDirector->InstanceContentType == FFXIVClientStructs.FFXIV.Client.Game.InstanceContent.InstanceContentType.RivalWing) {
                         DrawRivalWingsDirector();
                     } else if(instanceDirector != null && instanceDirector->InstanceContentType == FFXIVClientStructs.FFXIV.Client.Game.InstanceContent.InstanceContentType.Frontlines) {
@@ -184,7 +206,7 @@ internal unsafe class DebugWindow : Window {
                     //var z = (IntPtr)x + RivalWingsMatchManager.RivalWingsContentDirectorOffset;
                     //ImGui.Text($"0x{((IntPtr)z).ToString("X2")}");
 
-                    ImGui.Separator();
+                    
                 }
             }
 
@@ -325,11 +347,6 @@ internal unsafe class DebugWindow : Window {
                         });
 
                     }
-
-                    if(ImGui.Button("Test Timeline doohicky")) {
-
-                    }
-
 
                     ImGui.Text(Framework.Instance()->GameVersionString);
                     ImGui.Text(Assembly.GetExecutingAssembly().GetName().Version.ToString());
@@ -535,7 +552,7 @@ internal unsafe class DebugWindow : Window {
     }
 
     private void DrawCrystallineConflictDirector() {
-        var instanceDirector = (CrystallineConflictContentDirector*)((IntPtr)EventFramework.Instance()->GetInstanceContentDirector() + CrystallineConflictContentDirector.Offset);
+        var instanceDirector = (CrystallineConflictContentDirector*)((IntPtr)EventFramework.Instance()->GetInstanceContentDirector());
         using(var table = ImRaii.Table("main", 2)) {
             if(table) {
                 ImGui.TableSetupColumn("c1");
@@ -611,16 +628,22 @@ internal unsafe class DebugWindow : Window {
     }
 
     private void DrawObjectTable() {
-        var playerAddress = _plugin.ClientState.LocalPlayer.Address;
-        ImGui.Text($"Local Player Address: 0x{new IntPtr(playerAddress).ToString("X2")}");
+        //var playerAddress = _plugin.ClientState.LocalPlayer.Address;
+        //ImGui.Text($"Local Player Address: 0x{new IntPtr(playerAddress).ToString("X2")}");
 
-        using(var table = ImRaii.Table("object_table", 3)) {
+        using(var table = ImRaii.Table("object_table", 5)) {
             ImGui.TableSetupColumn("name");
-            ImGui.TableSetupColumn("objId");
+            ImGui.TableSetupColumn("objType");
+            ImGui.TableSetupColumn("index");
+            ImGui.TableSetupColumn("entityId");
             ImGui.TableSetupColumn("address");
 
             ImGui.TableNextColumn();
             ImGui.TableHeader("Name");
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("ObjType");
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("Index");
             ImGui.TableNextColumn();
             ImGui.TableHeader("EntityId");
             ImGui.TableNextColumn();
@@ -631,17 +654,35 @@ internal unsafe class DebugWindow : Window {
                     ImGui.TableNextColumn();
                     ImGui.Text($"{pc.Name}");
                     ImGui.TableNextColumn();
-                    ImGui.Text($"{pc.GameObjectId}");
+                    ImGui.Text($"{pc.ObjectKind}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{pc.ObjectIndex}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{pc.EntityId}");
                     ImGui.TableNextColumn();
                     ImGui.Text($"0x{pc.Address:X2}");
                 } catch {
                     //suppress all exceptions
                 }
             }
+
+            foreach(var obj in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.BattleNpc).Cast<IBattleNpc>()) {
+                try {
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{obj.Name} {obj.NameId}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{obj.ObjectKind}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{obj.ObjectIndex}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{obj.EntityId}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"0x{obj.Address:X2}");
+                } catch {
+                    //suppress all exceptions
+                }
+            }
         }
-
-
-
     }
 
 
