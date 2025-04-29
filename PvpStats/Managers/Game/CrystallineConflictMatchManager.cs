@@ -200,11 +200,13 @@ internal class CrystallineConflictMatchManager : IDisposable {
                     nameId = (killer as IBattleNpc)?.NameId;
                 }
 
-                if(_currentMatchTimeline != null && _currentMatchTimeline.Kills != null && victim?.ObjectKind is ObjectKind.Player) {
+                if(!_currentMatch!.IsCompleted && _currentMatchTimeline != null && _currentMatchTimeline.Kills != null && victim?.ObjectKind is ObjectKind.Player) {
                     var killQueueEvent = _killQueue.LastOrDefault(x => x.VictimId == victim.EntityId && (now - x.Timestamp) <= TimeSpan.FromSeconds(8));
                     IGameObject? creditedKiller = null;
+                    DateTime killTime = killQueueEvent.Timestamp;
                     if(killQueueEvent.KillerId == 0) {
                         Plugin.Log2.Warning($"No credited killer found for death for: {victim.Name}");
+                        killTime = now;
                     } else {
                         creditedKiller = _plugin.ObjectTable.Where(x => x.EntityId == killQueueEvent.KillerId).FirstOrDefault();
                     }
@@ -218,7 +220,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                     var creditedKillerAlias = creditedKiller != null ? (PlayerAlias)$"{creditedKiller.Name} {killerWorld}" : null;
                     var victimAlias = (PlayerAlias)$"{victim.Name} {victimWorld}";
 
-                    _currentMatchTimeline.Kills.Add(new(killQueueEvent.Timestamp, victimAlias) {
+                    _currentMatchTimeline.Kills.Add(new(killTime, victimAlias) {
                         CreditedKiller = creditedKillerAlias,
                         KillerNameId = nameId,
                     });
@@ -286,9 +288,13 @@ internal class CrystallineConflictMatchManager : IDisposable {
         var dutyId = _plugin.GameState.GetCurrentDutyId();
         _plugin.Log.Debug($"Territory changed: {territoryId}, Current duty: {dutyId}");
         if(IsMatchInProgress()) {
-            _plugin.DataQueue.QueueDataOperation(() => {
+            _plugin.DataQueue.QueueDataOperation(async () => {
                 _plugin.Functions._opcodeMatchCount++;
+                if(_currentMatchTimeline != null) {
+                    await _plugin.Storage.UpdateCCTimeline(_currentMatchTimeline);
+                }
                 _currentMatch = null;
+                _currentMatchTimeline = null;
                 //_plugin.WindowManager.Refresh();
             });
         }
