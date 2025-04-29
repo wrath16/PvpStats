@@ -686,48 +686,51 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             ImGui.TextColored(ImGuiColors.DalamudRed, "Full timeline incomplete due to duty joined in progress.");
         }
         using var child = ImRaii.Child("timelineChild");
-        using var table = ImRaii.Table("timelineTable", 5);
-        ImGui.TableSetupColumn("time", ImGuiTableColumnFlags.WidthFixed, 50f * ImGuiHelpers.GlobalScale);
-        ImGui.TableSetupColumn("team1", ImGuiTableColumnFlags.WidthFixed, 30f * ImGuiHelpers.GlobalScale);
-        ImGui.TableSetupColumn("crystal", ImGuiTableColumnFlags.WidthFixed, 30f * ImGuiHelpers.GlobalScale);
-        ImGui.TableSetupColumn("team2", ImGuiTableColumnFlags.WidthFixed, 30f * ImGuiHelpers.GlobalScale);
-        ImGui.TableSetupColumn("text", ImGuiTableColumnFlags.WidthStretch);
+        using(var table = ImRaii.Table("timelineTable", 5)) {
+            if(table) {
+                ImGui.TableSetupColumn("time", ImGuiTableColumnFlags.WidthFixed, 50f * ImGuiHelpers.GlobalScale);
+                ImGui.TableSetupColumn("team1", ImGuiTableColumnFlags.WidthFixed, 30f * ImGuiHelpers.GlobalScale);
+                ImGui.TableSetupColumn("crystal", ImGuiTableColumnFlags.WidthFixed, 30f * ImGuiHelpers.GlobalScale);
+                ImGui.TableSetupColumn("team2", ImGuiTableColumnFlags.WidthFixed, 30f * ImGuiHelpers.GlobalScale);
+                ImGui.TableSetupColumn("text", ImGuiTableColumnFlags.WidthStretch);
 
-        for(var i = 0; i < _consolidatedEvents.Count; i++) {
-            var matchEvent = _consolidatedEvents[i];
-            var astraColor = _localPlayerTeam == CrystallineConflictTeamName.Umbra ? Plugin.Configuration.Colors.CCEnemyTeam : Plugin.Configuration.Colors.CCPlayerTeam;
-            var umbraColor = _localPlayerTeam == CrystallineConflictTeamName.Umbra ? Plugin.Configuration.Colors.CCPlayerTeam : Plugin.Configuration.Colors.CCEnemyTeam;
-            var crystalColor = ImGuiColors.DalamudWhite;
-            if(_consolidatedEventTeamPoints[i].Crystal > 0) {
-                crystalColor = astraColor;
-            } else if(_consolidatedEventTeamPoints[i].Crystal < 0) {
-                crystalColor = umbraColor;
-            }
+                for(var i = 0; i < _consolidatedEvents.Count; i++) {
+                    var matchEvent = _consolidatedEvents[i];
+                    var astraColor = _localPlayerTeam == CrystallineConflictTeamName.Umbra ? Plugin.Configuration.Colors.CCEnemyTeam : Plugin.Configuration.Colors.CCPlayerTeam;
+                    var umbraColor = _localPlayerTeam == CrystallineConflictTeamName.Umbra ? Plugin.Configuration.Colors.CCPlayerTeam : Plugin.Configuration.Colors.CCEnemyTeam;
+                    var crystalColor = ImGuiColors.DalamudWhite;
+                    if(_consolidatedEventTeamPoints[i].Crystal > 0) {
+                        crystalColor = astraColor;
+                    } else if(_consolidatedEventTeamPoints[i].Crystal < 0) {
+                        crystalColor = umbraColor;
+                    }
 
-            ImGui.TableNextColumn();
-            var timeDiff = Match.MatchStartTime - matchEvent.Timestamp;
-            ImGui.AlignTextToFramePadding();
-            ImGuiHelper.DrawNumericCell($"{ImGuiHelper.GetTimeSpanString(timeDiff ?? TimeSpan.Zero)} : ");
-            ImGui.TableNextColumn();
-            ImGuiHelper.DrawNumericCell($"{_consolidatedEventTeamPoints[i].Astra:0.0}", 0f, astraColor);
-            ImGui.TableNextColumn();
-            ImGuiHelper.DrawNumericCell($"{Math.Abs(_consolidatedEventTeamPoints[i].Crystal):0.0}", 0f, crystalColor);
-            ImGui.TableNextColumn();
-            ImGuiHelper.DrawNumericCell($"{_consolidatedEventTeamPoints[i].Umbra:0.0}", 0f, umbraColor);
-            ImGui.TableNextColumn();
-            var eventType = matchEvent.GetType();
-            switch(eventType) {
-                case Type _ when eventType == typeof(GenericMatchEvent):
-                    DrawEvent(matchEvent as GenericMatchEvent);
-                    break;
-                case Type _ when eventType == typeof(KnockoutEvent):
-                    DrawEvent(matchEvent as KnockoutEvent);
-                    break;
-                case Type _ when eventType == typeof(ProgressEvent):
-                    DrawEvent(matchEvent as ProgressEvent);
-                    break;
-                default:
-                    break;
+                    ImGui.TableNextColumn();
+                    var timeDiff = Match.MatchStartTime - matchEvent.Timestamp;
+                    ImGui.AlignTextToFramePadding();
+                    ImGuiHelper.DrawNumericCell($"{ImGuiHelper.GetTimeSpanString(timeDiff ?? TimeSpan.Zero)} : ");
+                    ImGui.TableNextColumn();
+                    ImGuiHelper.DrawNumericCell($"{_consolidatedEventTeamPoints[i].Astra:0.0}", 0f, astraColor);
+                    ImGui.TableNextColumn();
+                    ImGuiHelper.DrawNumericCell($"{Math.Abs(_consolidatedEventTeamPoints[i].Crystal):0.0}", 0f, crystalColor);
+                    ImGui.TableNextColumn();
+                    ImGuiHelper.DrawNumericCell($"{_consolidatedEventTeamPoints[i].Umbra:0.0}", 0f, umbraColor);
+                    ImGui.TableNextColumn();
+                    var eventType = matchEvent.GetType();
+                    switch(eventType) {
+                        case Type _ when eventType == typeof(GenericMatchEvent):
+                            DrawEvent(matchEvent as GenericMatchEvent);
+                            break;
+                        case Type _ when eventType == typeof(KnockoutEvent):
+                            DrawEvent(matchEvent as KnockoutEvent);
+                            break;
+                        case Type _ when eventType == typeof(ProgressEvent):
+                            DrawEvent(matchEvent as ProgressEvent);
+                            break;
+                        default:
+                            break;
+                    }
+                }
             }
         }
     }
@@ -807,7 +810,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 ImGui.Text($"{_bNPCNames[(uint)mEvent.KillerNameId]}.");
                 if(mEvent.CreditedKiller != null) {
                     ImGui.SameLine();
-                    ImGui.Text(" (Credit: ");
+                    ImGui.Text(" (");
                     ImGui.SameLine();
                     using(var style2 = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero)) {
                         if(killerPlayer?.Job != null && TextureHelper.JobIcons.TryGetValue((Job)killerPlayer.Job, out var icon)) {
