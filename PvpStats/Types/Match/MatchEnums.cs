@@ -39,12 +39,11 @@ public enum ArenaTier {
     Crystal = 6
 }
 
-//public enum MatchResult {
-//    Win,
-//    Loss,
-//    Draw,
-//    Unknown,
-//}
+public enum CrystallineConflictMatchEvent {
+    CrystalUnchained,
+    OvertimeCommenced,
+    MatchEnded
+}
 
 public enum FrontlineMap {
     BorderlandRuins,
