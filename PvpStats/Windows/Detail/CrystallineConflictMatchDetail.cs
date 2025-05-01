@@ -47,6 +47,8 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     private List<MatchEvent> _consolidatedEvents = new();
     private List<(float Crystal, float Astra, float Umbra)> _consolidatedEventTeamPoints = new();
     private Dictionary<uint, string> _bNPCNames = new();
+    private Dictionary<uint, string> _actionNames = new();
+    private Dictionary<uint, uint> _actionIcons = new();
     private double[] _xAxisTicks = [];
     private string[] _xAxisLabels = [];
     private Dictionary<CrystallineConflictTeamName, (float[] Xs, float[] Ys)> _teamPoints = new() {
@@ -125,6 +127,20 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                     });
                 }
             }
+            //limit break events
+            List<CombinedActionEvent> limitBreakCasts = new();
+            foreach(var mEvent in _timeline.LimitBreakCasts ?? []) {
+                if(mEvent.ActionId == (uint)LimitBreak.SkyShatter2) continue;
+                var action = Plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Action>(ClientLanguage.English).GetRow(mEvent.ActionId);
+                if(!_actionNames.ContainsKey(action.RowId)) {
+                    _actionNames.Add(action.RowId, action.Name.ToString());
+                    _actionIcons.Add(action.RowId, action.Icon);
+                }
+                var effectEvent = _timeline.LimitBreakEffects?.FirstOrDefault(x => x.ActionId == mEvent.ActionId 
+                && x.Actor.Equals(mEvent.Actor) && (x.Timestamp - mEvent.Timestamp) <= TimeSpan.FromSeconds(8));
+                limitBreakCasts.Add(new(mEvent, effectEvent));
+            }
+            _consolidatedEvents = [.. _consolidatedEvents, ..limitBreakCasts];
             _consolidatedEvents.Sort();
 
             //setup team point events
@@ -727,6 +743,9 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                         case Type _ when eventType == typeof(ProgressEvent):
                             DrawEvent(matchEvent as ProgressEvent);
                             break;
+                        case Type _ when eventType == typeof(CombinedActionEvent):
+                            DrawEvent(matchEvent as CombinedActionEvent);
+                            break;
                         default:
                             break;
                     }
@@ -783,26 +802,8 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     private void DrawEvent(KnockoutEvent mEvent) {
         var victimPlayer = _players.FirstOrDefault(x => x.Alias.Equals(mEvent.Victim));
         var killerPlayer = _players.FirstOrDefault(x => x.Alias.Equals(mEvent.CreditedKiller));
-        Vector4 victimColor = Plugin.Configuration.Colors.CCEnemyTeam;
-        Vector4 killerColor = Plugin.Configuration.Colors.CCEnemyTeam;
-        if(_localPlayerTeam == null && victimPlayer?.Team == CrystallineConflictTeamName.Astra
-            || victimPlayer?.Team == _localPlayerTeam) {
-            victimColor = Plugin.Configuration.Colors.CCPlayerTeam;
-        }
-        if(_localPlayerTeam == null && killerPlayer?.Team == CrystallineConflictTeamName.Astra
-            || killerPlayer?.Team == _localPlayerTeam) {
-            killerColor = Plugin.Configuration.Colors.CCPlayerTeam;
-        }
-
-        using(var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero)) {
-            if(victimPlayer?.Job != null && TextureHelper.JobIcons.TryGetValue((Job)victimPlayer.Job, out var icon)) {
-                ImGui.Image(Plugin.WindowManager.GetTextureHandle(icon), new Vector2(24 * ImGuiHelpers.GlobalScale));
-                ImGui.SameLine();
-            }
-        }
+        DrawPlayer(mEvent.Victim);
         using(var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(0f, ImGui.GetStyle().ItemSpacing.Y))) {
-            ImGui.AlignTextToFramePadding();
-            ImGui.TextColored(victimColor, mEvent.Victim.Name);
             ImGui.SameLine();
             ImGui.Text($" was slain by ");
             ImGui.SameLine();
@@ -812,31 +813,66 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                     ImGui.SameLine();
                     ImGui.Text(" (");
                     ImGui.SameLine();
-                    using(var style2 = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero)) {
-                        if(killerPlayer?.Job != null && TextureHelper.JobIcons.TryGetValue((Job)killerPlayer.Job, out var icon)) {
-                            ImGui.Image(Plugin.WindowManager.GetTextureHandle(icon), new Vector2(24 * ImGuiHelpers.GlobalScale));
-                            ImGui.SameLine();
-                        }
-                    }
-                    ImGui.TextColored(killerColor, mEvent.CreditedKiller.Name);
+                    DrawPlayer(mEvent.CreditedKiller);
                     ImGui.SameLine();
                     ImGui.Text(")");
                 }
             } else {
                 if(mEvent.CreditedKiller != null) {
-                    using(var style2 = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero)) {
-                        if(killerPlayer?.Job != null && TextureHelper.JobIcons.TryGetValue((Job)killerPlayer.Job, out var icon)) {
-                            ImGui.Image(Plugin.WindowManager.GetTextureHandle(icon), new Vector2(24 * ImGuiHelpers.GlobalScale));
-                            ImGui.SameLine();
-                        }
-                    }
-                    ImGui.TextColored(killerColor, mEvent.CreditedKiller.Name);
+                    DrawPlayer(mEvent.CreditedKiller);
                     ImGui.SameLine();
                     ImGui.Text(".");
                 } else {
                     ImGui.Text($" nobody it seems...");
                 }
             }
+        }
+    }
+
+    private void DrawEvent(CombinedActionEvent mEvent) {
+        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
+        DrawPlayer(mEvent.Actor);
+        ImGui.SameLine();
+        if(mEvent.EffectTime != null) {
+            ImGui.Text($" used  ");
+        } else {
+            ImGui.Text($" attempted to use  ");
+        }
+        ImGui.SameLine();
+        ImGui.Image(Plugin.WindowManager.GetTextureHandle(_actionIcons[mEvent.ActionId]), new Vector2(24 * ImGuiHelpers.GlobalScale));
+        ImGui.SameLine();
+        ImGui.Text($" {_actionNames[mEvent.ActionId]}");
+        ImGui.SameLine();
+        if(mEvent.PlayerCastTarget != null && !mEvent.PlayerCastTarget.Equals(mEvent.Actor)) {
+            ImGui.Text(" on ");
+            ImGui.SameLine();
+            DrawPlayer(mEvent.PlayerCastTarget);
+        }
+        ImGui.SameLine();
+        if(mEvent.EffectTime != null) {
+            ImGui.Text($".");
+        } else {
+            ImGui.Text($"...");
+        }
+    }
+
+    private void DrawPlayer(PlayerAlias name) {
+        var player = _players.FirstOrDefault(x => x.Alias.Equals(name));
+        Vector4 color = Plugin.Configuration.Colors.CCEnemyTeam;
+        if(_localPlayerTeam == null && player?.Team == CrystallineConflictTeamName.Astra
+            || player?.Team == _localPlayerTeam) {
+            color = Plugin.Configuration.Colors.CCPlayerTeam;
+        }
+
+        using(var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero)) {
+            if(player?.Job != null && TextureHelper.JobIcons.TryGetValue((Job)player.Job, out var icon)) {
+                ImGui.Image(Plugin.WindowManager.GetTextureHandle(icon), new Vector2(24 * ImGuiHelpers.GlobalScale));
+                ImGui.SameLine();
+            }
+        }
+        using(var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(0f, ImGui.GetStyle().ItemSpacing.Y))) {
+            ImGui.AlignTextToFramePadding();
+            ImGui.TextColored(color, $" {name.Name}");
         }
     }
 
@@ -869,7 +905,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         }
 
         ImPlot.SetupAxisScale(ImAxis.X1, ImPlotScale.Linear);
-        ImPlot.SetupAxesLimits(xInitialLimits[0], xInitialLimits[1], -100, 100, ImPlotCond.Once);
+        //ImPlot.SetupAxesLimits(xInitialLimits[0], xInitialLimits[1], -100, 100, ImPlotCond.Once);
         ImPlot.SetupAxisLimitsConstraints(ImAxis.X1, 0, 900);
         ImPlot.SetupAxisLimitsConstraints(ImAxis.Y1, -100, 100);
 
