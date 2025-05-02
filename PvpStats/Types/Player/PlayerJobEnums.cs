@@ -43,6 +43,8 @@ public enum LimitBreak : uint {
     PrimalScream = 29083,
     Eventide = 29097,
     RelentlessRush = 29130,
+    TerminalTrigger = 29131,
+    TerminalTrigger2 = 29469,
     AfflatusPurgation = 29230,
     Seraphism = 41502,
     CelestialRiver = 29255,

@@ -42,7 +42,8 @@ public enum ArenaTier {
 public enum CrystallineConflictMatchEvent {
     CrystalUnchained,
     OvertimeCommenced,
-    MatchEnded
+    MatchEnded,
+    SpecialEvent
 }
 
 public enum FrontlineMap {
