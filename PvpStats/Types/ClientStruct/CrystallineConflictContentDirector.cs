@@ -4,7 +4,7 @@ namespace PvpStats.Types.ClientStruct;
 
 [StructLayout(LayoutKind.Explicit)]
 internal struct CrystallineConflictContentDirector {
-    public const int Offset = 0x1F38;
+    private const int Offset = 0x1F38;
 
     [FieldOffset(Offset + 0x000)] public int Unknown4;
     [FieldOffset(Offset + 0x004)] public int Unknown5;
@@ -24,6 +24,9 @@ internal struct CrystallineConflictContentDirector {
     [FieldOffset(Offset + 0x070)] public byte UmbraOnPoint;
     [FieldOffset(Offset + 0x074)] public int AstraMidpointProgress;
     [FieldOffset(Offset + 0x078)] public int UmbraMidpointProgress;
+
+
+    [FieldOffset(Offset + 0x2CC)] public float EventTimer;                  //cloud 9, volcanic heart, red sands
 }
 
 [StructLayout(LayoutKind.Explicit)]

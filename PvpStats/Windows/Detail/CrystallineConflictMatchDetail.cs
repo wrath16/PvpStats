@@ -119,7 +119,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         _timeline = Plugin.CCCache.GetTimeline(Match);
         if(_timeline != null) {
             //setup timeline
-            _consolidatedEvents = [.. _timeline.Kills ?? []];
+            _consolidatedEvents = [.. _timeline.Kills, .. _timeline.MapEvents];
             if(Match.MatchDuration > TimeSpan.FromMinutes(5) && Match.MatchStartTime != null) {
                 _consolidatedEvents.Add(new GenericMatchEvent((DateTime)Match.MatchStartTime + TimeSpan.FromMinutes(5), CrystallineConflictMatchEvent.OvertimeCommenced));
             }
@@ -140,7 +140,8 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             List<CombinedActionEvent> limitBreakCasts = new();
             foreach(var mEvent in _timeline.LimitBreakCasts ?? []) {
                 if(mEvent.ActionId == (uint)LimitBreak.SkyShatter2
-                    || mEvent.ActionId == (uint)LimitBreak.TerminalTrigger2) {
+                    || mEvent.ActionId == (uint)LimitBreak.TerminalTrigger2
+                    || mEvent.ActionId == (uint)LimitBreak.Mesotes2) {
                     continue;
                 }
                 var action = Plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Action>(ClientLanguage.English).GetRow(mEvent.ActionId);
@@ -149,7 +150,9 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                     _actionIcons.Add(action.RowId, action.Icon);
                 }
                 var effectEvent = _timeline.LimitBreakEffects?.FirstOrDefault(x => x.ActionId == mEvent.ActionId 
-                && x.Actor.Equals(mEvent.Actor) && (x.Timestamp - mEvent.Timestamp) <= TimeSpan.FromSeconds(8));
+                && x.Actor.Equals(mEvent.Actor) 
+                && x.Timestamp >= mEvent.Timestamp 
+                && (x.Timestamp - mEvent.Timestamp) <= TimeSpan.FromSeconds(8));
                 limitBreakCasts.Add(new(mEvent, effectEvent));
             }
             _consolidatedEvents = [.. _consolidatedEvents, ..limitBreakCasts];
@@ -730,7 +733,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         }
         using(var table = ImRaii.Table("timelineTable", 5)) {
             if(table) {
-                ImGui.TableSetupColumn("time", ImGuiTableColumnFlags.WidthFixed, 50f * ImGuiHelpers.GlobalScale);
+                ImGui.TableSetupColumn("time", ImGuiTableColumnFlags.WidthFixed, 40f * ImGuiHelpers.GlobalScale);
                 ImGui.TableSetupColumn("team1", ImGuiTableColumnFlags.WidthFixed, 30f * ImGuiHelpers.GlobalScale);
                 ImGui.TableSetupColumn("crystal", ImGuiTableColumnFlags.WidthFixed, 30f * ImGuiHelpers.GlobalScale);
                 ImGui.TableSetupColumn("team2", ImGuiTableColumnFlags.WidthFixed, 30f * ImGuiHelpers.GlobalScale);
@@ -805,6 +808,26 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                     ImGui.Text("The match has ended...");
                 }
                 break;
+            case CrystallineConflictMatchEvent.SpecialEvent:
+                switch(Match.Arena) {
+                    case CrystallineConflictMap.VolcanicHeart:
+                        ImGui.Text("Igneous matter spews forth!");
+                        break;
+                    case CrystallineConflictMap.CloudNine:
+                        ImGui.Text("The winds whip and churn!");
+                        break;
+                    case CrystallineConflictMap.ClockworkCastleTown:
+                        ImGui.Text("The pneumatic parade is underway!");
+                        break;
+                    case CrystallineConflictMap.RedSands:
+                        ImGui.Text("The desert heat intensifies!");
+                        break;
+                    default:
+                        ImGui.Text("A special map event has occurred.");
+                        break;
+                }
+
+                break;
             default:
                 break;
         }
@@ -845,19 +868,6 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 ImGui.SameLine();
                 ImGui.Text(")");
             }
-        }
-
-
-        if(mEvent.KillerNameId != null) {
-            ImGui.Text($"{_bNPCNames[(uint)mEvent.KillerNameId]}");
-            if(mEvent.CreditedKiller != null) {
-                ImGui.SameLine();
-                ImGui.Text(" (");
-                ImGui.SameLine();
-                DrawPlayer(mEvent.CreditedKiller);
-                ImGui.SameLine();
-                ImGui.Text(")");
-            }
         } else {
             if(mEvent.CreditedKiller != null) {
                 DrawPlayer(mEvent.CreditedKiller);
@@ -879,9 +889,9 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         DrawPlayer(mEvent.Actor);
         ImGui.SameLine();
         if(mEvent.EffectTime != null) {
-            ImGui.Text($" used  ");
+            ImGui.Text($" used ");
         } else {
-            ImGui.Text($" attempted to use  ");
+            ImGui.Text($" ghosted ");
         }
         ImGui.SameLine();
         ImGui.Image(Plugin.WindowManager.GetTextureHandle(_actionIcons[mEvent.ActionId]), new Vector2(24 * ImGuiHelpers.GlobalScale));

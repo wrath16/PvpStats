@@ -563,10 +563,14 @@ internal unsafe class DebugWindow : Window {
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted(instanceDirector->CrystalUnbindTimeRemaining.ToString());
                 ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Event timer:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->EventTimer.ToString());
+
+                ImGui.TableNextColumn();
                 ImGui.TextUnformatted("Crystal position:");
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted(instanceDirector->CrystalPosition.ToString());
-
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted("Astra prog:");
                 ImGui.TableNextColumn();

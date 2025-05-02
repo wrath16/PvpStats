@@ -34,15 +34,11 @@ internal class CrystallineConflictMatchManager : IDisposable {
     private CrystallineConflictMatch? _currentMatch;
 
     private CrystallineConflictMatchTimeline? _currentMatchTimeline;
-    private List<(DateTime Timestamp, uint KillerId, uint VictimId, bool IsHandled)> _killQueue;
+    private float _lastEventTimer;
 
     private DateTime _lastUpdate;
     private DateTime _lastPrint = DateTime.MinValue;
-
-    private int _lastBattleLogAtk3 = 0;
-    private int _lastBattleLogAtk4 = 0;
-    private int _lastBattleLogAtk8 = 0;
-
+    
     //p1 = director
     //p2 = results packet
     //p3 = results packet + offset (ref to specific variable?)
@@ -80,38 +76,35 @@ internal class CrystallineConflictMatchManager : IDisposable {
         _plugin.Framework.Update += OnFrameworkUpdate;
         _plugin.ClientState.TerritoryChanged += OnTerritoryChanged;
         _plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "PvPMKSIntroduction", OnPvPIntro);
-        _plugin.AddonLifecycle.RegisterListener(AddonEvent.PreRequestedUpdate, "PvPMKSBattleLog", OnBattleLog);
+        //_plugin.AddonLifecycle.RegisterListener(AddonEvent.PreRequestedUpdate, "PvPMKSBattleLog", OnBattleLog);
         _plugin.InteropProvider.InitializeFromAttributes(this);
         _plugin.Log.Debug($"cc director .ctor address: 0x{_ccDirectorCtorHook!.Address.ToString("X2")}");
         _plugin.Log.Debug($"cc director .ctor 2 address: 0x{_ccDirectorCtor2Hook!.Address.ToString("X2")}");
         _plugin.Log.Debug($"cc match end 1 address: 0x{_ccMatchEndHook!.Address.ToString("X2")}");
+        _plugin.Log.Debug($"cc process kill address: 0x{_processKillHook!.Address.ToString("X2")}");
         _plugin.Log.Debug($"process actor control address: 0x{_processPacketActorControlHook!.Address.ToString("X2")}");
         _plugin.Log.Debug($"process action effect address: 0x{_processPacketActionEffectHook!.Address.ToString("X2")}");
-        _plugin.Log.Debug($"process kill address: 0x{_processKillHook!.Address.ToString("X2")}");
+
         //_plugin.Log.Debug($"kill x5 address: 0x{_killx5Hook!.Address.ToString("X2")}");
         _ccDirectorCtorHook.Enable();
         _ccDirectorCtor2Hook.Enable();
         _ccMatchEndHook.Enable();
+        _processKillHook.Enable();
         _processPacketActorControlHook.Enable();
         _processPacketActionEffectHook.Enable();
-        _processKillHook.Enable();
-        //_killFeedHook.Enable();
-        //_killx5Hook.Enable();
     }
 
     public void Dispose() {
         _plugin.Framework.Update -= OnFrameworkUpdate;
         _plugin.ClientState.TerritoryChanged -= OnTerritoryChanged;
         _plugin.AddonLifecycle.UnregisterListener(OnPvPIntro);
-        _plugin.AddonLifecycle.UnregisterListener(OnBattleLog);
+        //_plugin.AddonLifecycle.UnregisterListener(OnBattleLog);
         _ccMatchEndHook.Dispose();
         _ccDirectorCtorHook.Dispose();
         _ccDirectorCtor2Hook.Dispose();
+        _processKillHook.Dispose();
         _processPacketActorControlHook.Dispose();
         _processPacketActionEffectHook.Dispose();
-        _processKillHook.Dispose();
-        //_killFeedHook.Dispose();
-        //_killx5Hook.Dispose();
     }
 
     private IntPtr CCDirectorCtorDetour(IntPtr p1, IntPtr p2, IntPtr p3) {
@@ -140,10 +133,6 @@ internal class CrystallineConflictMatchManager : IDisposable {
         var dutyId = _plugin.GameState.GetCurrentDutyId();
         var territoryId = _plugin.ClientState.TerritoryType;
 
-        _lastBattleLogAtk3 = 0;
-        _lastBattleLogAtk4 = 0;
-        _lastBattleLogAtk8 = 0;
-
         _plugin.Log.Debug($"Current duty: {dutyId} Current territory: {territoryId}");
         _plugin.DataQueue.QueueDataOperation(() => {
             _currentMatch = new() {
@@ -171,14 +160,46 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 Kills = new(),
                 LimitBreakCasts = new(),
                 LimitBreakEffects = new(),
+                MapEvents = new(),
             };
-            _killQueue = new();
+            _lastEventTimer = -1f;
             _plugin.Log.Information($"starting new match on {_currentMatch.Arena}");
             _plugin.DataQueue.QueueDataOperation(async () => {
                 await _plugin.CCCache.AddMatch(_currentMatch);
                 await _plugin.Storage.AddCCTimeline(_currentMatchTimeline);
             });
         });
+    }
+
+    private unsafe void ProcessKillDetour(IntPtr agent, IntPtr killerPlayer, uint killStreak, IntPtr victimPlayer, uint localPlayerTeam) {
+        try {
+            Plugin.Log2.Debug($"kill feed detour occurred. killer: 0x{killerPlayer:X2} kills: {killStreak} victim: 0x{victimPlayer:X2} localPlayerTeam: {localPlayerTeam}");
+#if DEBUG
+            //if(killerPlayer != 0) {
+            //    _plugin.Functions.CreateByteDump(killerPlayer, 0x100, "kill_feed_killer");
+            //}
+            //if(victimPlayer != 0) {
+            //    _plugin.Functions.CreateByteDump(victimPlayer, 0x100, "kill_feed_victim");
+            //}
+#endif
+            var now = DateTime.Now;
+
+            if(_currentMatchTimeline != null && _currentMatchTimeline.Kills != null) {
+                var killerObj = _plugin.ObjectTable.SearchByEntityId(((CCPlayer*)killerPlayer)->EntityId);
+                var killerWorld = _plugin.DataManager.GetExcelSheet<World>().GetRow((killerObj as IPlayerCharacter).HomeWorld.RowId).Name.ToString();
+                var killerAlias = (PlayerAlias)$"{killerObj.Name} {killerWorld}";
+                var victimObj = _plugin.ObjectTable.SearchByEntityId(((CCPlayer*)victimPlayer)->EntityId);
+                var victimWorld = _plugin.DataManager.GetExcelSheet<World>().GetRow((victimObj as IPlayerCharacter).HomeWorld.RowId).Name.ToString();
+                var victimAlias = (PlayerAlias)$"{victimObj.Name} {victimWorld}";
+
+                _currentMatchTimeline.Kills.Add(new(now, victimAlias) {
+                    CreditedKiller = killerAlias,
+                });
+            }
+
+        } finally {
+            _processKillHook.Original(agent, killerPlayer, killStreak, victimPlayer, localPlayerTeam);
+        }
     }
 
     private void ProcessPacketActorControlDetour(uint sourceEntityId, uint type, uint statusId, uint amount, uint a5, uint source, uint a7, uint a8, ulong targetEntityId, byte flag) {
@@ -201,57 +222,35 @@ internal class CrystallineConflictMatchManager : IDisposable {
             if(type == 0x06) {
                 //death
                 Plugin.Log2.Debug($"{sourceEntityId} was owned by: StatusId: {statusId} Source: {source} Amount: {amount} a5: {a5} a7: {a7} a8: {a8} a9: {targetEntityId} flag: {flag}");
-                var victim = _plugin.ObjectTable.Where(x => x.EntityId == sourceEntityId).FirstOrDefault();
-                var killer = _plugin.ObjectTable.Where(x => x.EntityId == amount).FirstOrDefault();
+                var victim = _plugin.ObjectTable.SearchByEntityId(sourceEntityId);
+                var killer = _plugin.ObjectTable.SearchByEntityId(amount);
                 uint? nameId = null;
-                if(killer?.ObjectKind is ObjectKind.BattleNpc) {
+                //add BNpc NameId in case of NPC killer
+                if(killer?.ObjectKind is ObjectKind.BattleNpc
+                    && _currentMatch != null
+                    && _currentMatchTimeline != null
+                    && _currentMatchTimeline.Kills != null
+                    && victim?.ObjectKind is ObjectKind.Player) {
+                    var victimWorld = _plugin.DataManager.GetExcelSheet<World>().GetRow((victim as IPlayerCharacter).HomeWorld.RowId).Name.ToString();
+                    var victimAlias = (PlayerAlias)$"{victim.Name} {victimWorld}";
                     nameId = (killer as IBattleNpc)?.NameId;
+                    //add to cache
                     if(nameId != null && (!_currentMatchTimeline?.BNPCNameLookup?.ContainsKey((uint)nameId) ?? false)) {
                         var bnpcName = _plugin.DataManager.GetExcelSheet<BNpcName>(ClientLanguage.English).GetRow((uint)nameId);
                         _currentMatchTimeline!.BNPCNameLookup!.Add((uint)nameId, (bnpcName.Singular.ToString(), bnpcName.Article));
                     }
-                }
 
-                if(_currentMatch != null 
-                    //&& !_currentMatch.IsCompleted 
-                    && _currentMatchTimeline != null 
-                    && _currentMatchTimeline.Kills != null 
-                    && victim?.ObjectKind is ObjectKind.Player) {
-                    var killQueueEvent = _killQueue.LastOrDefault(x => x.VictimId == victim.EntityId && (now - x.Timestamp) <= TimeSpan.FromSeconds(8));
-                    IGameObject? creditedKiller = null;
-                    DateTime killTime = killQueueEvent.Timestamp;
-                    if(killQueueEvent.KillerId == 0) {
-                        Plugin.Log2.Warning($"No credited killer found for death for: {victim.Name}");
-                        killTime = now;
+                    //find matching event and set
+                    var matchingEvent = _currentMatchTimeline?.Kills.LastOrDefault(x => x.Victim.Equals(victimAlias));
+                    if(matchingEvent != null) {
+                        matchingEvent.KillerNameId = nameId;
                     } else {
-                        creditedKiller = _plugin.ObjectTable.Where(x => x.EntityId == killQueueEvent.KillerId).FirstOrDefault();
+                        Plugin.Log2.Warning($"No credited killer found for death for: {victimAlias}");
+                        _currentMatchTimeline?.Kills.Add(new(now, victimAlias) {
+                            KillerNameId = nameId,
+                        });
                     }
-
-                    string killerWorld = "";
-                    if(creditedKiller != null && creditedKiller.ObjectKind is ObjectKind.Player) {
-                        killerWorld = _plugin.DataManager.GetExcelSheet<World>().GetRow((creditedKiller as IPlayerCharacter).HomeWorld.RowId).Name.ToString();
-                    }
-                    var victimWorld = _plugin.DataManager.GetExcelSheet<World>().GetRow((victim as IPlayerCharacter).HomeWorld.RowId).Name.ToString();
-
-                    var creditedKillerAlias = creditedKiller != null ? (PlayerAlias)$"{creditedKiller.Name} {killerWorld}" : null;
-                    var victimAlias = (PlayerAlias)$"{victim.Name} {victimWorld}";
-
-                    _currentMatchTimeline.Kills.Add(new(killTime, victimAlias) {
-                        CreditedKiller = creditedKillerAlias,
-                        KillerNameId = nameId,
-                    });
                 }
-            } else if(type == 0x11) {
-                //cast
-                //string result = string.Format("{0,-25} {1,-12} {2,-18} {3,-15} {4,-12} {5,-12} {6,-8} {7,-8} {8,-20} {9,-5}",
-                //    $"Entity: {sourceEntityId}", $"type 0x{type:X2}", $"StatusId: {statusId}", $"Amount: {amount}", $"a5: {a5}", $"Source: {source}", $"a7: {a7}", $"a8: {a8}", $"target: {targetEntityId}", $"flag: {flag}");
-                //Plugin.Log2.Debug(result);
-                //self enum
-                //if(Enum.IsDefined(typeof(LimitBreak), amount)) {
-                //    var player = _plugin.ObjectTable.Where(x => x.EntityId == sourceEntityId).FirstOrDefault();
-                //    var spell = _plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Action>().GetRow(amount);
-                //    Plugin.Log2.Debug($"{player?.Name} cast {spell.Name}");
-                //}
             }
         } finally {
             _processPacketActorControlHook.Original(sourceEntityId, type, statusId, amount, a5, source, a7, a8, targetEntityId, flag);
@@ -341,23 +340,6 @@ internal class CrystallineConflictMatchManager : IDisposable {
        
     }
 
-    private unsafe void ProcessKillDetour(IntPtr agent, IntPtr killerPlayer, uint killStreak, IntPtr victimPlayer, uint localPlayerTeam) {
-        try {
-            Plugin.Log2.Debug($"kill feed detour occurred. killer: 0x{killerPlayer:X2} kills: {killStreak} victim: 0x{victimPlayer:X2} localPlayerTeam: {localPlayerTeam}");
-#if DEBUG
-            //if(killerPlayer != 0) {
-            //    _plugin.Functions.CreateByteDump(killerPlayer, 0x100, "kill_feed_killer");
-            //}
-            //if(victimPlayer != 0) {
-            //    _plugin.Functions.CreateByteDump(victimPlayer, 0x100, "kill_feed_victim");
-            //}
-#endif
-            _killQueue.Add((DateTime.Now, ((CCPlayer*)killerPlayer)->EntityId, ((CCPlayer*)victimPlayer)->EntityId, false));
-
-        } finally {
-            _processKillHook.Original(agent, killerPlayer, killStreak, victimPlayer, localPlayerTeam);
-        }
-    }
 
     private void CCMatchEnd101Detour(IntPtr p1, IntPtr p2, IntPtr p3, uint p4) {
         _plugin.Log.Debug("Match end detour occurred.");
@@ -388,12 +370,6 @@ internal class CrystallineConflictMatchManager : IDisposable {
             _plugin.DataQueue.QueueDataOperation(async () => {
                 _plugin.Functions._opcodeMatchCount++;
                 if(_currentMatchTimeline != null) {
-                    //retrieve kill log events that might not be recorded
-                    foreach(var mEvent in _killQueue) {
-                        //check for valid event in 
-                        //var deathMatch = _currentMatchTimeline.Kills.FirstOrDefault(x => x.Timestamp >= mEvent.Timestamp && mEvent.VictimId == x.Victim);
-                    }
-
                     await _plugin.Storage.UpdateCCTimeline(_currentMatchTimeline);
                 }
                 _currentMatch = null;
@@ -502,33 +478,6 @@ internal class CrystallineConflictMatchManager : IDisposable {
             await _plugin.CCCache.UpdateMatch(_currentMatch!);
             _plugin.Log.Debug("");
         });
-    }
-
-    private unsafe void OnBattleLog(AddonEvent type, AddonArgs args) {
-        //Plugin.Log2.Debug("le heckin updaterino!");
-        //_plugin.AtkNodeService.PrintAtkStringArray();
-        var addon = (AtkUnitBase*)args.Addon;
-
-        //0 = 1 is kill log
-        if(addon->AtkValues != null && addon->AtkValuesCount == 10 && addon->AtkValues[0].Int == 1) {
-            var cur3 = addon->AtkValues[3].Int;
-            var cur4 = addon->AtkValues[4].Int;
-            var cur8 = addon->AtkValues[8].Int;
-            if(cur3 != _lastBattleLogAtk3 || cur4 != _lastBattleLogAtk4 || cur8 != _lastBattleLogAtk8) {
-                //Plugin.Log2.Debug("kill feed update!");
-
-                var killerTeam = (CrystallineConflictTeamName)(addon->AtkValues[1].Int - 1);
-                var victimTeam = (CrystallineConflictTeamName)(addon->AtkValues[2].Int - 1);
-                var killerJobId = addon->AtkValues[3].Int;
-                var victimJobId = addon->AtkValues[4].Int;
-                var killerName = addon->AtkValues[7].String.ToString();
-                var killTotal = addon->AtkValues[8].Int;
-
-            }
-            _lastBattleLogAtk3 = cur3;
-            _lastBattleLogAtk4 = cur4;
-            _lastBattleLogAtk8 = cur8;
-        }
     }
 
     public bool IsMatchInProgress() {
@@ -738,60 +687,92 @@ internal class CrystallineConflictMatchManager : IDisposable {
             Plugin.Log2.Debug("creating cc content director dump");
         }
 #endif
+        //rematch detection
+        if(_currentMatch!.IsCompleted && director->CrystalUnbindTimeRemaining == -1f) {
+            Plugin.Log2.Information("Crystalline Conflict rematch detected.");
+            _currentMatch = null;
+            StartMatch();
+            return;
+        }
 
         if(_currentMatchTimeline != null) {
+
             //crystal position
-            if(_currentMatchTimeline.CrystalPosition != null) {
-                var lastEvent = _currentMatchTimeline.CrystalPosition?.LastOrDefault();
-                int? currentPosition = director->CrystalPosition;
-                if(currentPosition != null && 
-                    (lastEvent == null || 
-                    (lastEvent.Points != currentPosition && now - lastEvent.Timestamp >= TimeSpan.FromSeconds(1)))) {
-                    _currentMatchTimeline.CrystalPosition.Add(new(now, (int)currentPosition));
+            try {
+                if(_currentMatchTimeline.CrystalPosition != null) {
+                    var lastEvent = _currentMatchTimeline.CrystalPosition?.LastOrDefault();
+                    int? currentPosition = director->CrystalPosition;
+                    if(currentPosition != null &&
+                        (lastEvent == null ||
+                        (lastEvent.Points != currentPosition && now - lastEvent.Timestamp >= TimeSpan.FromSeconds(1)))) {
+                        _currentMatchTimeline.CrystalPosition.Add(new(now, (int)currentPosition));
+                    }
                 }
+            } catch(Exception e) {
+                Plugin.Log2.Error(e, $"Error in set crystal position");
             }
+
             //team progress
-            foreach(var team in _currentMatchTimeline.TeamProgress ?? []) {
-                var lastEvent = team.Value.LastOrDefault();
-                var x = now - lastEvent?.Timestamp;
-                //rate limit to once a second
-                if(now - lastEvent?.Timestamp < TimeSpan.FromSeconds(1)) {
-                    continue;
+            try {
+                foreach(var team in _currentMatchTimeline.TeamProgress ?? []) {
+                    var lastEvent = team.Value.LastOrDefault();
+                    var x = now - lastEvent?.Timestamp;
+                    //rate limit to once a second
+                    if(now - lastEvent?.Timestamp < TimeSpan.FromSeconds(1)) {
+                        continue;
+                    }
+                    int? currentValue = null;
+                    switch(team.Key) {
+                        case CrystallineConflictTeamName.Astra:
+                            currentValue = director->AstraProgress;
+                            break;
+                        case CrystallineConflictTeamName.Umbra:
+                            currentValue = director->UmbraProgress;
+                            break;
+                        default:
+                            break;
+                    }
+                    if(currentValue != null && (lastEvent == null || lastEvent.Points != currentValue)) {
+                        team.Value.Add(new(now, (int)currentValue));
+                    }
                 }
-                int? currentValue = null;
-                switch(team.Key) {
-                    case CrystallineConflictTeamName.Astra:
-                        currentValue = director->AstraProgress;
-                        break;
-                    case CrystallineConflictTeamName.Umbra:
-                        currentValue = director->UmbraProgress;
-                        break;
-                    default:
-                        break;
-                }
-                if(currentValue != null && (lastEvent == null || lastEvent.Points != currentValue)) {
-                    team.Value.Add(new(now, (int)currentValue));
-                }
+            } catch(Exception e) {
+                Plugin.Log2.Error(e, $"Error in set team progression");
             }
 
             //team mid progress
-            foreach(var team in _currentMatchTimeline.TeamMidProgress ?? []) {
-                var lastEvent = team.Value.LastOrDefault();
-                var x = now - lastEvent?.Timestamp;
-                int? currentValue = null;
-                switch(team.Key) {
-                    case CrystallineConflictTeamName.Astra:
-                        currentValue = director->AstraMidpointProgress;
-                        break;
-                    case CrystallineConflictTeamName.Umbra:
-                        currentValue = director->UmbraMidpointProgress;
-                        break;
-                    default:
-                        break;
+            try {
+                foreach(var team in _currentMatchTimeline.TeamMidProgress ?? []) {
+                    var lastEvent = team.Value.LastOrDefault();
+                    var x = now - lastEvent?.Timestamp;
+                    int? currentValue = null;
+                    switch(team.Key) {
+                        case CrystallineConflictTeamName.Astra:
+                            currentValue = director->AstraMidpointProgress;
+                            break;
+                        case CrystallineConflictTeamName.Umbra:
+                            currentValue = director->UmbraMidpointProgress;
+                            break;
+                        default:
+                            break;
+                    }
+                    if(currentValue != null && (lastEvent == null || lastEvent.Points != currentValue)) {
+                        team.Value.Add(new(now, (int)currentValue));
+                    }
                 }
-                if(currentValue != null && (lastEvent == null || lastEvent.Points != currentValue)) {
-                    team.Value.Add(new(now, (int)currentValue));
+            } catch(Exception e) {
+                Plugin.Log2.Error(e, $"Error in set team mid progression");
+            }
+
+            //check for map event
+            try {
+                if(director->EventTimer != -1f && director->EventTimer <= 0f && _lastEventTimer > 0f) {
+                    Plugin.Log2.Debug("Map event detected!");
+                    _currentMatchTimeline.MapEvents?.Add(new(now, CrystallineConflictMatchEvent.SpecialEvent));
                 }
+                _lastEventTimer = director->EventTimer;
+            } catch(Exception e) {
+                Plugin.Log2.Error(e, $"Error in set map event");
             }
         }
     }
