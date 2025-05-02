@@ -1,5 +1,6 @@
 ﻿using LiteDB;
 using PvpStats.Types.Match;
+using PvpStats.Types.Match.Timeline;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -26,6 +27,7 @@ internal abstract class MatchCacheService<T> where T : PvpMatch {
     protected abstract Task AddToStorage(T match);
     protected abstract Task UpdateToStorage(T match);
     protected abstract Task UpdateManyToStorage(IEnumerable<T> matches);
+    internal abstract PvpMatchTimeline? GetTimeline(T match);
 
     internal MatchCacheService(Plugin plugin) {
         Plugin = plugin;

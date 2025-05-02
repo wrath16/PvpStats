@@ -25,7 +25,7 @@ internal class CCMatchCacheService : MatchCacheService<CrystallineConflictMatch>
         await Plugin.Storage.UpdateCCMatches(matches);
     }
 
-    internal CrystallineConflictMatchTimeline? GetTimeline(CrystallineConflictMatch match) {
+    internal override CrystallineConflictMatchTimeline? GetTimeline(CrystallineConflictMatch match) {
         if(match.TimelineId == null) return null;
         return Plugin.Storage.GetCCTimelines().Query().Where(x => x.Id.Equals(match.TimelineId)).FirstOrDefault();
     }

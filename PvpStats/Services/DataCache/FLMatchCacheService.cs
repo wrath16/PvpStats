@@ -24,7 +24,7 @@ internal class FLMatchCacheService : MatchCacheService<FrontlineMatch> {
         await Plugin.Storage.UpdateFLMatches(matches);
     }
 
-    internal FrontlineMatchTimeline? GetTimeline(FrontlineMatch match) {
+    internal override FrontlineMatchTimeline? GetTimeline(FrontlineMatch match) {
         if(match.TimelineId == null) return null;
         return Plugin.Storage.GetFLTimelines().Query().Where(x => x.Id.Equals(match.TimelineId)).FirstOrDefault();
     }
