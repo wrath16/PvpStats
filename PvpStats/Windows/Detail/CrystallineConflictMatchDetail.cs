@@ -36,15 +36,21 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     private CrystallineConflictTeamName? _localPlayerTeam;
     private List<CrystallineConflictPlayer> _players;
 
-    private Vector2 _scoreboardSize;
+    private Vector2 _defaultScoreboardSize;
     private Vector2? _savedScoreboardSize;
-    private Vector2 _graphSize;
+    private Vector2 _defaultGraphSize;
+    private Vector2? _savedGraphSize;
+    private Vector2 _defaultTimelineSize;
+    private Vector2? _savedTimelineSize;
     private bool _firstDraw = true;
     private ulong _scoreboardTicks = 0;
     private bool _easterEgg = false;
 
     private CrystallineConflictMatchTimeline? _timeline;
     private List<MatchEvent> _consolidatedEvents = new();
+    private List<MatchEvent> _consolidatedEventsFiltered = new();
+    private Dictionary<Type, bool> _eventFilters = new();
+    private PlayerQuickSearchFilter _playerFilter = new();
     private List<(float Crystal, float Astra, float Umbra)> _consolidatedEventTeamPoints = new();
     private Dictionary<uint, string> _bNPCNames = new();
     private Dictionary<uint, string> _actionNames = new();
@@ -75,12 +81,14 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
 
         switch(match.MatchType) {
             default:
-                _scoreboardSize = new Vector2(700, 680);
-                _graphSize = new Vector2(975, 875);
+                _defaultScoreboardSize = new Vector2(700, 680);
+                _defaultGraphSize = new Vector2(975, 875);
+                _defaultTimelineSize = new Vector2(700, 680);
                 break;
             case CrystallineConflictMatchType.Ranked:
-                _scoreboardSize = new Vector2(700, 700);
-                _graphSize = new Vector2(975, 895);
+                _defaultScoreboardSize = new Vector2(700, 700);
+                _defaultGraphSize = new Vector2(975, 895);
+                _defaultTimelineSize = new Vector2(700, 700);
                 break;
         }
 
@@ -118,6 +126,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             if(Match.MatchEndTime != null) {
                 _consolidatedEvents.Add(new GenericMatchEvent((DateTime)Match.MatchEndTime, CrystallineConflictMatchEvent.MatchEnded));
             }
+            _consolidatedEvents.Add(new GenericMatchEvent((DateTime)Match.MatchStartTime + TimeSpan.FromSeconds(20), CrystallineConflictMatchEvent.CrystalUnchained));
             foreach(var team in _timeline.TeamMidProgress ?? []) {
                 var breachMid = team.Value.FirstOrDefault(x => x.Points >= 100);
                 if(breachMid != null) {
@@ -130,7 +139,10 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             //limit break events
             List<CombinedActionEvent> limitBreakCasts = new();
             foreach(var mEvent in _timeline.LimitBreakCasts ?? []) {
-                if(mEvent.ActionId == (uint)LimitBreak.SkyShatter2) continue;
+                if(mEvent.ActionId == (uint)LimitBreak.SkyShatter2
+                    || mEvent.ActionId == (uint)LimitBreak.TerminalTrigger2) {
+                    continue;
+                }
                 var action = Plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Action>(ClientLanguage.English).GetRow(mEvent.ActionId);
                 if(!_actionNames.ContainsKey(action.RowId)) {
                     _actionNames.Add(action.RowId, action.Name.ToString());
@@ -142,6 +154,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             }
             _consolidatedEvents = [.. _consolidatedEvents, ..limitBreakCasts];
             _consolidatedEvents.Sort();
+            ApplyTimelineFilters();
 
             //setup team point events
             if(_timeline.CrystalPosition != null && _timeline.TeamProgress != null) {
@@ -169,9 +182,9 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                     string fullName = row.Singular.ToString();
                     if(row.Article == 0) {
                         if(row.StartsWithVowel == 0) {
-                            fullName = "a " + fullName;
+                            fullName = "A " + fullName;
                         } else {
-                            fullName = "an " + fullName;
+                            fullName = "An " + fullName;
                         }
                     }
                     _bNPCNames[killerNameId] = fullName;
@@ -437,7 +450,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                                     Flags |= ImGuiWindowFlags.AlwaysAutoResize;
                                 } else {
                                     Flags &= ~ImGuiWindowFlags.AlwaysAutoResize;
-                                    SetWindowSize(_savedScoreboardSize ?? _scoreboardSize);
+                                    SetWindowSize(_savedScoreboardSize ?? _defaultScoreboardSize);
                                 }
                                 CurrentTab = "Scoreboard";
                             } else if(_scoreboardTicks >= 20) {
@@ -455,9 +468,10 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                             if(tab) {
                                 if(CurrentTab != "Timeline") {
                                     //SetWindowSize(new Vector2(SizeConstraints!.Value.MinimumSize.X, 600));
-                                    SetWindowSize(_savedScoreboardSize ?? _scoreboardSize);
+                                    SetWindowSize(_savedTimelineSize ?? _defaultTimelineSize);
                                     CurrentTab = "Timeline";
                                 }
+                                _savedTimelineSize = ImGui.GetWindowSize();
                                 DrawTimeline();
                             }
                         }
@@ -465,9 +479,10 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                     using(var tab = ImRaii.TabItem("Graphs")) {
                         if(tab) {
                             if(CurrentTab != "Graphs") {
-                                SetWindowSize(_graphSize);
+                                SetWindowSize(_savedGraphSize ?? _defaultGraphSize);
                                 CurrentTab = "Graphs";
                             }
+                            _savedGraphSize = ImGui.GetWindowSize();
                             DrawGraphs();
                         }
                     }
@@ -698,10 +713,21 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
 
     private void DrawTimeline() {
         //filters...
-        if(Match.DutyStartTime >= Match.MatchStartTime) {
-            ImGui.TextColored(ImGuiColors.DalamudRed, "Full timeline incomplete due to duty joined in progress.");
+        string quickSearch = _playerFilter.SearchText;
+        ImGuiHelper.SetDynamicWidth(150f, 250f, 3f);
+        if(ImGui.InputTextWithHint("###playerQuickSearch", "Search for players and actions...", ref quickSearch, 100)) {
+            _playerFilter.SearchText = quickSearch;
+            RefreshQueue.QueueDataOperation(() => {
+                ApplyTimelineFilters();
+            });
         }
-        using var child = ImRaii.Child("timelineChild");
+        ImGuiHelper.HelpMarker("Comma separate multiple phrases.");
+
+
+        using var child = ImRaii.Child("timelineChild", ImGui.GetContentRegionAvail(), true);
+        if(Match.DutyStartTime >= Match.MatchStartTime) {
+            ImGui.TextColored(ImGuiColors.DalamudRed, "Timeline incomplete due to duty joined in progress.");
+        }
         using(var table = ImRaii.Table("timelineTable", 5)) {
             if(table) {
                 ImGui.TableSetupColumn("time", ImGuiTableColumnFlags.WidthFixed, 50f * ImGuiHelpers.GlobalScale);
@@ -712,6 +738,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
 
                 for(var i = 0; i < _consolidatedEvents.Count; i++) {
                     var matchEvent = _consolidatedEvents[i];
+                    if(!_consolidatedEventsFiltered.Contains(matchEvent)) continue;
                     var astraColor = _localPlayerTeam == CrystallineConflictTeamName.Umbra ? Plugin.Configuration.Colors.CCEnemyTeam : Plugin.Configuration.Colors.CCPlayerTeam;
                     var umbraColor = _localPlayerTeam == CrystallineConflictTeamName.Umbra ? Plugin.Configuration.Colors.CCPlayerTeam : Plugin.Configuration.Colors.CCEnemyTeam;
                     var crystalColor = ImGuiColors.DalamudWhite;
@@ -756,6 +783,9 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
 
     private void DrawEvent(GenericMatchEvent mEvent) {
             switch(mEvent.Type) {
+            case CrystallineConflictMatchEvent.CrystalUnchained:
+                ImGui.Text("The crystal has been unchained.");
+                break;
             case CrystallineConflictMatchEvent.OvertimeCommenced:
                 ImGui.Text("Overtime has started.");
                 break;
@@ -789,7 +819,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         switch(mEvent.Type) {
             case 1:
                 using(var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(0f, ImGui.GetStyle().ItemSpacing.Y))) {
-                    ImGui.TextColored(color, $"Team {Match.MatchWinner}");
+                    ImGui.TextColored(color, $"Team {mEvent.Team}");
                     ImGui.SameLine();
                     ImGui.Text(" has breached the checkpoint.");
                 }
@@ -802,31 +832,46 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     private void DrawEvent(KnockoutEvent mEvent) {
         var victimPlayer = _players.FirstOrDefault(x => x.Alias.Equals(mEvent.Victim));
         var killerPlayer = _players.FirstOrDefault(x => x.Alias.Equals(mEvent.CreditedKiller));
-        DrawPlayer(mEvent.Victim);
-        using(var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(0f, ImGui.GetStyle().ItemSpacing.Y))) {
-            ImGui.SameLine();
-            ImGui.Text($" was slain by ");
-            ImGui.SameLine();
-            if(mEvent.KillerNameId != null) {
-                ImGui.Text($"{_bNPCNames[(uint)mEvent.KillerNameId]}.");
-                if(mEvent.CreditedKiller != null) {
-                    ImGui.SameLine();
-                    ImGui.Text(" (");
-                    ImGui.SameLine();
-                    DrawPlayer(mEvent.CreditedKiller);
-                    ImGui.SameLine();
-                    ImGui.Text(")");
-                }
-            } else {
-                if(mEvent.CreditedKiller != null) {
-                    DrawPlayer(mEvent.CreditedKiller);
-                    ImGui.SameLine();
-                    ImGui.Text(".");
-                } else {
-                    ImGui.Text($" nobody it seems...");
-                }
+
+        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(0f, ImGui.GetStyle().ItemSpacing.Y));
+
+        if(mEvent.KillerNameId != null) {
+            ImGui.Text($"{_bNPCNames[(uint)mEvent.KillerNameId]}");
+            if(mEvent.CreditedKiller != null) {
+                ImGui.SameLine();
+                ImGui.Text(" (");
+                ImGui.SameLine();
+                DrawPlayer(mEvent.CreditedKiller);
+                ImGui.SameLine();
+                ImGui.Text(")");
             }
         }
+
+
+        if(mEvent.KillerNameId != null) {
+            ImGui.Text($"{_bNPCNames[(uint)mEvent.KillerNameId]}");
+            if(mEvent.CreditedKiller != null) {
+                ImGui.SameLine();
+                ImGui.Text(" (");
+                ImGui.SameLine();
+                DrawPlayer(mEvent.CreditedKiller);
+                ImGui.SameLine();
+                ImGui.Text(")");
+            }
+        } else {
+            if(mEvent.CreditedKiller != null) {
+                DrawPlayer(mEvent.CreditedKiller);
+                ImGui.SameLine();
+            } else {
+                ImGui.Text($"A gentle breeze somehow ");
+            }
+        }
+        ImGui.SameLine();
+        ImGui.Text(" knocked out ");
+        ImGui.SameLine();
+        DrawPlayer(mEvent.Victim);
+        ImGui.SameLine();
+        ImGui.Text(".");
     }
 
     private void DrawEvent(CombinedActionEvent mEvent) {
@@ -1082,6 +1127,39 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             return _teamQuickFilter.FilterState[(CrystallineConflictTeamName)player.Team];
         }).ToDictionary();
         return Task.CompletedTask;
+    }
+
+    private void ApplyTimelineFilters() {
+        List<MatchEvent> filteredList = new();
+        var playerNames = _playerFilter.SearchText.Trim().Split(",").ToList();
+        foreach(var mEvent in _consolidatedEvents) {
+            if(mEvent is KnockoutEvent) {
+                var mEvent2 = mEvent as KnockoutEvent;
+                foreach(var fragment in playerNames) {
+                    bool match1 = mEvent2!.Victim.ToString().Contains(fragment, StringComparison.OrdinalIgnoreCase);
+                    bool match2 = mEvent2.CreditedKiller?.ToString().Contains(fragment, StringComparison.OrdinalIgnoreCase) ?? false;
+                    if(match1 || match2) {
+                        filteredList.Add(mEvent);
+                        break;
+                    }
+                }
+            } else if(mEvent is CombinedActionEvent) {
+                var mEvent2 = mEvent as CombinedActionEvent;
+                foreach(var fragment in playerNames) {
+                    bool match1 = mEvent2!.Actor.ToString().Contains(fragment, StringComparison.OrdinalIgnoreCase);
+                    bool match2 = mEvent2.PlayerCastTarget?.ToString().Contains(fragment, StringComparison.OrdinalIgnoreCase) ?? false;
+                    bool match3 = _actionNames[mEvent2.ActionId].Contains(fragment, StringComparison.OrdinalIgnoreCase);
+                    if(match1 || match2 || match3) {
+                        filteredList.Add(mEvent);
+                        break;
+                    }
+                }
+            } else {
+                filteredList.Add(mEvent);
+            }
+        }
+        filteredList.Sort();
+        _consolidatedEventsFiltered = filteredList;
     }
 
     protected override string BuildCSV() {
