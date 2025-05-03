@@ -134,7 +134,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
         var territoryId = _plugin.ClientState.TerritoryType;
 
         _plugin.Log.Debug($"Current duty: {dutyId} Current territory: {territoryId}");
-        _plugin.DataQueue.QueueDataOperation(() => {
+        _plugin.CCStatsEngine.RefreshQueue.QueueDataOperation(() => {
             _currentMatch = new() {
                 DutyId = dutyId,
                 TerritoryId = territoryId,
@@ -173,7 +173,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
 
     private unsafe void ProcessKillDetour(IntPtr agent, IntPtr killerPlayer, uint killStreak, IntPtr victimPlayer, uint localPlayerTeam) {
         try {
-            Plugin.Log2.Debug($"kill feed detour occurred. killer: 0x{killerPlayer:X2} kills: {killStreak} victim: 0x{victimPlayer:X2} localPlayerTeam: {localPlayerTeam}");
+            Plugin.Log2.Debug($"kill feed detour occurred. killer: 0x{((CCPlayer*)killerPlayer)->EntityId:X2} kills: {killStreak} victim: 0x{((CCPlayer*)victimPlayer)->EntityId:X2} localPlayerTeam: {localPlayerTeam}");
 #if DEBUG
             //if(killerPlayer != 0) {
             //    _plugin.Functions.CreateByteDump(killerPlayer, 0x100, "kill_feed_killer");
@@ -221,12 +221,15 @@ internal class CrystallineConflictMatchManager : IDisposable {
             var now = DateTime.Now;
             if(type == 0x06) {
                 //death
-                Plugin.Log2.Debug($"{sourceEntityId} was owned by: StatusId: {statusId} Source: {source} Amount: {amount} a5: {a5} a7: {a7} a8: {a8} a9: {targetEntityId} flag: {flag}");
+                //Plugin.Log2.Debug($"0x{sourceEntityId:X2} was owned by: StatusId: 0x{statusId:X2} Source: {source} Amount: 0x{amount:X2} a5: {a5} a7: {a7} a8: {a8} a9: {targetEntityId} flag: {flag}");
                 var victim = _plugin.ObjectTable.SearchByEntityId(sourceEntityId);
                 var killer = _plugin.ObjectTable.SearchByEntityId(amount);
+                var owner = _plugin.ObjectTable.SearchByEntityId((killer?.OwnerId ?? 0));
+                Plugin.Log2.Debug($"Death detected: 0x{sourceEntityId:X2} {victim?.Name ?? ""} was deleted by: 0x{amount:X2} {killer?.Name ?? ""}, owner: 0x{killer?.OwnerId:X2} {owner?.Name ?? ""}");
                 uint? nameId = null;
-                //add BNpc NameId in case of NPC killer
+                //add BNpc NameId in case of NPC killer (exclude pets)
                 if(killer?.ObjectKind is ObjectKind.BattleNpc
+                    && owner == null
                     && _currentMatch != null
                     && _currentMatchTimeline != null
                     && _currentMatchTimeline.Kills != null
@@ -241,7 +244,8 @@ internal class CrystallineConflictMatchManager : IDisposable {
                     }
 
                     //find matching event and set
-                    var matchingEvent = _currentMatchTimeline?.Kills.LastOrDefault(x => x.Victim.Equals(victimAlias));
+                    var matchingEvent = _currentMatchTimeline?.Kills.LastOrDefault(x => x.Victim.Equals(victimAlias)
+                        && (now - x.Timestamp) <= TimeSpan.FromSeconds(8));
                     if(matchingEvent != null) {
                         matchingEvent.KillerNameId = nameId;
                     } else {
@@ -259,21 +263,66 @@ internal class CrystallineConflictMatchManager : IDisposable {
 
     private unsafe void ProcessPacketActionEffectDetour(uint entityId, IntPtr sourceCharacter, IntPtr pos, ActionEffectHeader* effectHeader, ActionEffect* effectArray, ulong* effectTrail) {
         try {
+            //var player1 = _plugin.ObjectTable.SearchByEntityId(entityId);
+            //if(player1 is not IPlayerCharacter) {
+            //    //attempt to retrieve owner in case of pet (summoner)
+            //    var owner = _plugin.ObjectTable.SearchByEntityId(player1?.OwnerId ?? 0);
+            //    if(owner is not IPlayerCharacter) {
+            //        Plugin.Log2.Warning("Limit break cast by non-player character");
+            //        return;
+            //    } else {
+            //        player1 = owner;
+            //    }
+            //}
+            //var now1 = DateTime.Now;
+            //var actionId1 = effectHeader->ActionAnimationId;
+            //uint targets1 = effectHeader->EffectCount;
+            //var actorWorld1 = _plugin.DataManager.GetExcelSheet<World>().GetRow((player1 as IPlayerCharacter).HomeWorld.RowId).Name.ToString();
+            //var alias1 = (PlayerAlias)$"{(player1 as IPlayerCharacter).Name} {actorWorld1}";
+            //var spell1 = _plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Action>(ClientLanguage.English).GetRow(actionId1);
+            //Plugin.Log2.Debug($"{player1?.Name} cast {spell1.Name} {actionId1} targets: {targets1} display: {effectHeader->EffectDisplayType} " +
+            //$"hidden anim: {effectHeader->HiddenAnimation} counter: {effectHeader->GlobalEffectCounter} rotation: {effectHeader->Rotation} variation: {effectHeader->Variation}");
+            //for(var i = 0; i < targets1; i++) {
+            //    var actionTargetId = (uint)(effectTrail[i] & uint.MaxValue);
+            //    var target = _plugin.ObjectTable.Where(x => x.EntityId == actionTargetId).FirstOrDefault();
+            //    Plugin.Log2.Debug($"{target?.Name} targeted.");
+            //    for(var j = 0; j < 8; j++) {
+            //        ref var actionEffect = ref effectArray[i * 8 + j];
+            //        if(actionEffect.EffectType == 0)
+            //            continue;
+            //        Plugin.Log2.Debug($"{target?.Name} was hit by {actionEffect.EffectType}");
+            //    }
+            //}
+
             if(!IsMatchInProgress()) {
                 return;
             }
             var now = DateTime.Now;
             var actionId = effectHeader->ActionAnimationId;
             uint targets = effectHeader->EffectCount;
+            uint? nameIdActor = null;
             if(CombatHelper.IsLimitBreak(actionId)) {
-                var player = _plugin.ObjectTable.SearchByEntityId(entityId);
-                if(player is not IPlayerCharacter) {
-                    return;
+                var actor = _plugin.ObjectTable.SearchByEntityId(entityId);
+                if(actor is IBattleNpc) {
+                    //attempt to retrieve owner in case of pet (summoner)
+                    var owner  = _plugin.ObjectTable.SearchByEntityId(actor?.OwnerId ?? 0);
+                    if(owner is not IPlayerCharacter) {
+                        Plugin.Log2.Warning("Limit break cast by non-player character");
+                        return;
+                    } else {
+                        nameIdActor = (actor as IBattleNpc)!.NameId;
+                        //add lookup
+                        if(!_currentMatchTimeline?.BNPCNameLookup?.ContainsKey((uint)nameIdActor) ?? false) {
+                            var bnpcName = _plugin.DataManager.GetExcelSheet<BNpcName>(ClientLanguage.English).GetRow((uint)nameIdActor);
+                            _currentMatchTimeline!.BNPCNameLookup!.Add((uint)nameIdActor, (bnpcName.Singular.ToString(), bnpcName.Article));
+                        }
+                        actor = owner;
+                    }
                 }
-                var actorWorld = _plugin.DataManager.GetExcelSheet<World>().GetRow((player as IPlayerCharacter).HomeWorld.RowId).Name.ToString();
-                var alias = (PlayerAlias)$"{(player as IPlayerCharacter).Name} {actorWorld}";
+                var actorWorld = _plugin.DataManager.GetExcelSheet<World>().GetRow((actor as IPlayerCharacter).HomeWorld.RowId).Name.ToString();
+                var alias = (PlayerAlias)$"{(actor as IPlayerCharacter).Name} {actorWorld}";
                 var spell = _plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Action>(ClientLanguage.English).GetRow(actionId);
-                Plugin.Log2.Debug($"{player?.Name} cast {spell.Name} {actionId} targets: {targets} display: {effectHeader->EffectDisplayType} " +
+                Plugin.Log2.Debug($"{actor?.Name} cast {spell.Name} {actionId} targets: {targets} display: {effectHeader->EffectDisplayType} " +
                 $"hidden anim: {effectHeader->HiddenAnimation} counter: {effectHeader->GlobalEffectCounter} rotation: {effectHeader->Rotation} variation: {effectHeader->Variation}");
 
                 //add lookup
@@ -283,6 +332,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
 
                 ActionEvent actionEvent = new(now, actionId, alias) {
                     Variation = effectHeader->Variation,
+                    NameIdActor = nameIdActor
                 };
 
                 for(var i = 0; i < targets; i++) {
@@ -313,33 +363,11 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 } else {
                     Plugin.Log2.Warning($"{spell.Name} unknown variation: {effectHeader->Variation}");
                 }
-
-                //if(player is IPlayerCharacter) {
-                //    Plugin.Log2.Debug($"{player?.Name} cast {spell.Name} {actionId} targets: {targets} display: {effectHeader->EffectDisplayType} " +
-                //        $"hidden anim: {effectHeader->HiddenAnimation} counter: {effectHeader->GlobalEffectCounter} rotation: {effectHeader->Rotation} variation: {effectHeader->Variation}");
-                //}
-
-
-                //for(var i = 0; i < targets; i++) {
-                //    var actionTargetId = (uint)(effectTrail[i] & uint.MaxValue);
-                //    var target = _plugin.ObjectTable.Where(x => x.EntityId == actionTargetId).FirstOrDefault();
-                //    Plugin.Log2.Debug($"{target?.Name} targeted.");
-                //    for(var j = 0; j < 8; j++) {
-                //        ref var actionEffect = ref effectArray[i * 8 + j];
-                //        if(actionEffect.EffectType == 0)
-                //            continue;
-                //        Plugin.Log2.Debug($"{target?.Name} was hit by {actionEffect.EffectType}");
-                //    }
-                //}
             }
         } finally {
             _processPacketActionEffectHook.Original(entityId, sourceCharacter, pos, effectHeader, effectArray, effectTrail);
         }
-        
-        
-       
     }
-
 
     private void CCMatchEnd101Detour(IntPtr p1, IntPtr p2, IntPtr p3, uint p4) {
         _plugin.Log.Debug("Match end detour occurred.");
@@ -688,7 +716,8 @@ internal class CrystallineConflictMatchManager : IDisposable {
         }
 #endif
         //rematch detection
-        if(_currentMatch!.IsCompleted && director->CrystalUnbindTimeRemaining == -1f) {
+        //this won't work for matches where the crystal literally never moves
+        if(_currentMatch!.IsCompleted && director->AstraProgress == 0 && director->UmbraProgress == 0) {
             Plugin.Log2.Information("Crystalline Conflict rematch detected.");
             _currentMatch = null;
             StartMatch();

@@ -8,6 +8,7 @@ internal class ActionEvent : MatchEvent {
 
     public uint ActionId { get; set; }
     public PlayerAlias Actor { get; set; }
+    public uint? NameIdActor { get; set; }
     //public PlayerAlias? PrimaryTarget { get; set; }
     public List<PlayerAlias> PlayerTargets { get; set; } = new();
     public List<uint> NameIdTargets { get; set; } = new();

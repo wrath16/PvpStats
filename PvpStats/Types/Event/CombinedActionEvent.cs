@@ -7,6 +7,7 @@ internal class CombinedActionEvent : MatchEvent {
 
     public uint ActionId { get; set; }
     public PlayerAlias Actor { get; set; }
+    public uint? NameIdActor { get; set; }
     public PlayerAlias? PlayerCastTarget { get; set; }
     public uint? NameIdCastTarget { get; set; }
     public DateTime? EffectTime { get; set; }
@@ -15,6 +16,7 @@ internal class CombinedActionEvent : MatchEvent {
 
     public CombinedActionEvent(ActionEvent cast, ActionEvent? impact) : base(cast.Timestamp) {
         Actor = cast.Actor;
+        NameIdActor = cast.NameIdActor;
         ActionId = cast.ActionId;
         if(cast.PlayerTargets.Count > 0) {
             PlayerCastTarget = cast.PlayerTargets[0];

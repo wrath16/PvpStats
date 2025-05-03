@@ -3,6 +3,7 @@ using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using ImGuiNET;
 using ImPlotNET;
 using Lumina.Excel.Sheets;
@@ -119,7 +120,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         _timeline = Plugin.CCCache.GetTimeline(Match);
         if(_timeline != null) {
             //setup timeline
-            _consolidatedEvents = [.. _timeline.Kills, .. _timeline.MapEvents];
+            _consolidatedEvents = [.. _timeline.Kills ?? [], .. _timeline.MapEvents ?? []];
             if(Match.MatchDuration > TimeSpan.FromMinutes(5) && Match.MatchStartTime != null) {
                 _consolidatedEvents.Add(new GenericMatchEvent((DateTime)Match.MatchStartTime + TimeSpan.FromMinutes(5), CrystallineConflictMatchEvent.OvertimeCommenced));
             }
@@ -153,6 +154,38 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 && x.Actor.Equals(mEvent.Actor) 
                 && x.Timestamp >= mEvent.Timestamp 
                 && (x.Timestamp - mEvent.Timestamp) <= TimeSpan.FromSeconds(8));
+
+                //special cases
+                if(effectEvent != null) {
+                    //sky shatter
+                    if(mEvent.ActionId == (uint)LimitBreak.SkyShatter) {
+                        var skyShatter2 = _timeline.LimitBreakEffects?.FirstOrDefault(x => x.ActionId == (uint)LimitBreak.SkyShatter2
+                        && x.Actor.Equals(mEvent.Actor)
+                        && x.Timestamp >= mEvent.Timestamp
+                        && (x.Timestamp - mEvent.Timestamp) <= TimeSpan.FromSeconds(8));
+                        if(skyShatter2 != null) {
+                            effectEvent = new(effectEvent.Timestamp, mEvent.ActionId) {
+                                PlayerTargets = [.. effectEvent.PlayerTargets, .. skyShatter2.PlayerTargets],
+                                NameIdTargets = [.. effectEvent.NameIdTargets, .. skyShatter2.NameIdTargets],
+                            };
+                        }
+                    }
+
+                    //terminal trigger
+                    if(mEvent.ActionId == (uint)LimitBreak.TerminalTrigger) {
+                        var terminalTrigger2 = _timeline.LimitBreakEffects?.FirstOrDefault(x => x.ActionId == (uint)LimitBreak.SkyShatter2
+                        && x.Actor.Equals(mEvent.Actor)
+                        && x.Timestamp >= mEvent.Timestamp
+                        && (x.Timestamp - mEvent.Timestamp) <= TimeSpan.FromSeconds(8));
+                        if(terminalTrigger2 != null) {
+                            effectEvent = new(effectEvent.Timestamp, mEvent.ActionId) {
+                                PlayerTargets = [.. effectEvent.PlayerTargets, .. terminalTrigger2.PlayerTargets],
+                                NameIdTargets = [.. effectEvent.NameIdTargets, .. terminalTrigger2.NameIdTargets],
+                            };
+                        }
+                    }
+                }
+
                 limitBreakCasts.Add(new(mEvent, effectEvent));
             }
             _consolidatedEvents = [.. _consolidatedEvents, ..limitBreakCasts];
@@ -178,10 +211,14 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             }
 
             //setup battlenpc names
-            foreach(var killEvent in _timeline.Kills?.Where(x => x.KillerNameId != null) ?? []) {
-                var killerNameId = (uint)killEvent.KillerNameId!;
-                if(_bNPCNames.TryAdd(killerNameId, "")) {
-                    var row = Plugin.DataManager.GetExcelSheet<BNpcName>(ClientLanguage.English).GetRow(killerNameId);
+            var killNPCs = _timeline.Kills?.Where(x => x.KillerNameId != null).Select(x => (uint)(x.KillerNameId ?? 0));
+            var killLBs = _timeline.LimitBreakCasts?.Where(x => x.NameIdActor != null).Select(x => (uint)(x.NameIdActor ?? 0));
+            //todo add LB targets as well...
+            List<uint> nameIds = [.. killNPCs ?? [], .. killLBs ?? []];
+
+            foreach(var nameId in nameIds) {
+                if(_bNPCNames.TryAdd(nameId, "")) {
+                    var row = Plugin.DataManager.GetExcelSheet<BNpcName>(ClientLanguage.English).GetRow(nameId);
                     string fullName = row.Singular.ToString();
                     if(row.Article == 0) {
                         if(row.StartsWithVowel == 0) {
@@ -190,7 +227,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                             fullName = "An " + fullName;
                         }
                     }
-                    _bNPCNames[killerNameId] = fullName;
+                    _bNPCNames[nameId] = fullName;
                 }
             }
 
@@ -885,8 +922,34 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     }
 
     private void DrawEvent(CombinedActionEvent mEvent) {
+        List<PlayerAlias> affectedPlayers = [];
+        bool includeSelf = mEvent.ActionId == (uint)LimitBreak.SouthernCross
+            || mEvent.ActionId == (uint)LimitBreak.EverlastingFlight;
+        if(mEvent.PlayerCastTarget != null 
+            && (!mEvent.PlayerCastTarget.Equals(mEvent.Actor) || includeSelf)) {
+            affectedPlayers.Add(mEvent.PlayerCastTarget);
+        }
+        for(int i = 0; i < mEvent.AffectedPlayers?.Count; i++) {
+            var affectedPlayer = mEvent.AffectedPlayers[i];
+            if((!affectedPlayer.Equals(mEvent.Actor) || includeSelf) && 
+                !affectedPlayer.Equals(mEvent.PlayerCastTarget) && 
+                !affectedPlayers.Contains(affectedPlayer)) {
+                affectedPlayers.Add(affectedPlayer);
+            }
+        }
+
         using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
+
+        //if(mEvent.NameIdActor != null) {
+        //    ImGui.Text($"{_bNPCNames[(uint)mEvent.NameIdActor]} (");
+        //    ImGui.SameLine();
+        //}
         DrawPlayer(mEvent.Actor);
+        //if(mEvent.NameIdActor != null) {
+        //    ImGui.SameLine();
+        //    ImGui.Text($")");
+        //}
+
         ImGui.SameLine();
         if(mEvent.EffectTime != null) {
             ImGui.Text($" used ");
@@ -898,14 +961,26 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         ImGui.SameLine();
         ImGui.Text($" {_actionNames[mEvent.ActionId]}");
         ImGui.SameLine();
-        if(mEvent.PlayerCastTarget != null && !mEvent.PlayerCastTarget.Equals(mEvent.Actor)) {
+        if(affectedPlayers.Count > 0) {
             ImGui.Text(" on ");
             ImGui.SameLine();
-            DrawPlayer(mEvent.PlayerCastTarget);
+            DrawPlayer(affectedPlayers[0]);
         }
+
+        if(affectedPlayers.Count > 1) {
+            ImGui.SameLine();
+            ImGui.TextDisabled($" +{affectedPlayers.Count - 1}");
+            if(ImGui.IsItemHovered()) {
+                using var tooltip = ImRaii.Tooltip();
+                for(int i = 1; i < affectedPlayers.Count; i++) {
+                    DrawPlayer(affectedPlayers[i]);
+                }
+            }
+        }
+
         ImGui.SameLine();
         if(mEvent.EffectTime != null) {
-            ImGui.Text($".");
+            ImGui.Text($". ");
         } else {
             ImGui.Text($"...");
         }
@@ -1158,8 +1233,9 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 foreach(var fragment in playerNames) {
                     bool match1 = mEvent2!.Actor.ToString().Contains(fragment, StringComparison.OrdinalIgnoreCase);
                     bool match2 = mEvent2.PlayerCastTarget?.ToString().Contains(fragment, StringComparison.OrdinalIgnoreCase) ?? false;
-                    bool match3 = _actionNames[mEvent2.ActionId].Contains(fragment, StringComparison.OrdinalIgnoreCase);
-                    if(match1 || match2 || match3) {
+                    bool match3 = mEvent2.AffectedPlayers?.Any(x => x.FullName.Contains(fragment, StringComparison.OrdinalIgnoreCase)) ?? false;
+                    bool match4 = _actionNames[mEvent2.ActionId].Contains(fragment, StringComparison.OrdinalIgnoreCase);
+                    if(match1 || match2 || match3 || match4) {
                         filteredList.Add(mEvent);
                         break;
                     }

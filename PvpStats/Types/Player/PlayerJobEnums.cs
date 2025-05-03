@@ -64,7 +64,18 @@ public enum LimitBreak : uint {
     Contradance = 29432,
     SoulResonance = 29662,
     SummonBahamut = 29673,
+    Megaflare = 29675,
     SummonPhoenix = 29678,
+    EverlastingFlight = 29680,
     SouthernCross = 41498,
     AdventOfChocobastion = 39215,
+}
+
+public enum KeyAction : uint {
+    Guard = 29054,
+    Guard2 = 29735,
+    Purify = 29056,
+    Guardian = 29066,
+    PlentifulHarvest = 29546,
+
 }

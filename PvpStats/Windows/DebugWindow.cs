@@ -640,7 +640,7 @@ internal unsafe class DebugWindow : Window {
             ImGui.TableSetupColumn("objType");
             ImGui.TableSetupColumn("index");
             ImGui.TableSetupColumn("entityId");
-            ImGui.TableSetupColumn("address");
+            ImGui.TableSetupColumn("owner");
 
             ImGui.TableNextColumn();
             ImGui.TableHeader("Name");
@@ -651,7 +651,7 @@ internal unsafe class DebugWindow : Window {
             ImGui.TableNextColumn();
             ImGui.TableHeader("EntityId");
             ImGui.TableNextColumn();
-            ImGui.TableHeader("Address");
+            ImGui.TableHeader("OwnerId");
 
             foreach(IPlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player).Cast<IPlayerCharacter>()) {
                 try {
@@ -662,9 +662,9 @@ internal unsafe class DebugWindow : Window {
                     ImGui.TableNextColumn();
                     ImGui.Text($"{pc.ObjectIndex}");
                     ImGui.TableNextColumn();
-                    ImGui.Text($"{pc.EntityId}");
+                    ImGui.Text($"0x{pc.EntityId:X2}");
                     ImGui.TableNextColumn();
-                    ImGui.Text($"0x{pc.Address:X2}");
+                    ImGui.Text($"0x{pc.OwnerId:X2}");
                 } catch {
                     //suppress all exceptions
                 }
@@ -679,9 +679,9 @@ internal unsafe class DebugWindow : Window {
                     ImGui.TableNextColumn();
                     ImGui.Text($"{obj.ObjectIndex}");
                     ImGui.TableNextColumn();
-                    ImGui.Text($"{obj.EntityId}");
+                    ImGui.Text($"0x{obj.EntityId:X2}");
                     ImGui.TableNextColumn();
-                    ImGui.Text($"0x{obj.Address:X2}");
+                    ImGui.Text($"0x{obj.OwnerId:X2}");
                 } catch {
                     //suppress all exceptions
                 }

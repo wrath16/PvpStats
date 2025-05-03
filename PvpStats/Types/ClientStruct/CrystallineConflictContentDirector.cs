@@ -14,8 +14,8 @@ internal struct CrystallineConflictContentDirector {
     [FieldOffset(Offset + 0x04C)] public int Unknown0;
     [FieldOffset(Offset + 0x050)] public int Unknown1;
     [FieldOffset(Offset + 0x054)] public int Unknown2;
-    [FieldOffset(Offset + 0x058)] public float CrystalUnbindTimeRemaining;   // in seconds
-    [FieldOffset(Offset + 0x05C)] public float Unknown3;                     // a timer of some kind related to kill feed
+    [FieldOffset(Offset + 0x058)] public float CrystalUnbindTimeRemaining;   //in seconds
+    [FieldOffset(Offset + 0x05C)] public float Unknown3;                     //a timer of some kind related to kill feed
     [FieldOffset(Offset + 0x060)] public int CrystalPosition;                //positive is Astra side, negative is Umbra side
     [FieldOffset(Offset + 0x064)] public int AstraProgress;
     [FieldOffset(Offset + 0x068)] public int UmbraProgress;
@@ -26,7 +26,7 @@ internal struct CrystallineConflictContentDirector {
     [FieldOffset(Offset + 0x078)] public int UmbraMidpointProgress;
 
 
-    [FieldOffset(Offset + 0x2CC)] public float EventTimer;                  //cloud 9, volcanic heart, red sands
+    [FieldOffset(Offset + 0x2CC)] public float EventTimer;                  //used in all maps except palaistra
 }
 
 [StructLayout(LayoutKind.Explicit)]
