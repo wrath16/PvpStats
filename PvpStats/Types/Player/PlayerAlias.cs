@@ -8,7 +8,7 @@ namespace PvpStats.Types.Player;
 public class PlayerAlias : IEquatable<PlayerAlias>, IEquatable<PvpPlayer>, IEquatable<CrystallineConflictPlayer>, IEquatable<string>, IComparable<PlayerAlias> {
     public string Name { get; set; } = "";
     public string HomeWorld { get; set; } = "";
-    //[BsonId]
+    [BsonIgnore]
     public string FullName => $"{Name} {HomeWorld}";
 
     public static PlayerAlias Unknown => new("_UNKNOWN_", "_UNKNOWN_");
