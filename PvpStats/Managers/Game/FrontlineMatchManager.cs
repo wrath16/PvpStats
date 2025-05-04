@@ -294,9 +294,6 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
         if(director is null) {
             return;
         }
-        if(Plugin.Condition[ConditionFlag.BetweenAreas] || Plugin.Condition[ConditionFlag.BetweenAreas51]) {
-            return;
-        }
 
         var now = DateTime.Now;
 

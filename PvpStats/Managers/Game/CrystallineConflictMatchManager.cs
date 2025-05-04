@@ -708,9 +708,6 @@ internal class CrystallineConflictMatchManager : IDisposable {
         if(director == null) {
             return;
         }
-        if(_plugin.Condition[ConditionFlag.BetweenAreas] || _plugin.Condition[ConditionFlag.BetweenAreas51]) {
-            return;
-        }
 
         var now = DateTime.Now;
 
@@ -736,11 +733,10 @@ internal class CrystallineConflictMatchManager : IDisposable {
             try {
                 if(_currentMatchTimeline.CrystalPosition != null) {
                     var lastEvent = _currentMatchTimeline.CrystalPosition?.LastOrDefault();
-                    int? currentPosition = director->CrystalPosition;
-                    if(currentPosition != null &&
-                        (lastEvent == null ||
-                        (lastEvent.Points != currentPosition && now - lastEvent.Timestamp >= TimeSpan.FromSeconds(1)))) {
-                        _currentMatchTimeline.CrystalPosition.Add(new(now, (int)currentPosition));
+                    int currentPosition = director->CrystalPosition;
+                    if(lastEvent == null ||
+                        (lastEvent.Points != currentPosition && now - lastEvent.Timestamp >= TimeSpan.FromSeconds(1))) {
+                        _currentMatchTimeline.CrystalPosition?.Add(new(now, currentPosition));
                     }
                 }
             } catch(Exception e) {

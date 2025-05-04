@@ -70,7 +70,7 @@ internal unsafe class MemoryService : IDisposable {
     internal void CreateByteDump(nint ptr, int length, string name) {
         var bytes = new ReadOnlySpan<byte>((void*)ptr, length);
         var timeStamp = DateTime.Now;
-        using(FileStream fs = File.Create($"{_plugin.PluginInterface.GetPluginConfigDirectory()}\\{name}_{timeStamp:yyyy_MM_dd-hh_mm_ss_fff}_dump.bin")) {
+        using(FileStream fs = File.Create($"{_plugin.PluginInterface.GetPluginConfigDirectory()}\\{name}_{timeStamp:yyyy_MM_dd-HH_mm_ss_fff}_dump.bin")) {
             fs.Write(bytes);
         }
     }

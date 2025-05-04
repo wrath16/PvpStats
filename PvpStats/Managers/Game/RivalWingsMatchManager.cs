@@ -498,10 +498,6 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
             return;
         }
 
-        if(Plugin.Condition[ConditionFlag.BetweenAreas] || Plugin.Condition[ConditionFlag.BetweenAreas51]) {
-            return;
-        }
-
         var now = DateTime.Now;
 
 #if DEBUG
