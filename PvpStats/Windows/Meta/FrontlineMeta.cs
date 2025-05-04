@@ -1,15 +1,9 @@
 ﻿using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
-using FFXIVClientStructs.FFXIV.Common.Lua;
 using ImGuiNET;
-using Newtonsoft.Json.Linq;
 using PvpStats.Helpers;
-using PvpStats.Managers.Stats;
 using PvpStats.Types.Display;
 using PvpStats.Types.Match;
-using PvpStats.Types.Player;
-using PvpStats.Windows.Filter;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -101,7 +95,7 @@ internal class FrontlineMeta : Refreshable<FrontlineMatch> {
         }
 
         for(int i = 0; i < bucket.Length && i < MaxPlayers; i++) {
-            var contrib = (long)(((double)bucket[i] / total) * 10000L); //5-point precision
+            var contrib = (long)((bucket[i] / total) * 10000L); //5-point precision
             if(remove) {
                 Interlocked.Add(ref buckets[i], -contrib);
             } else {
@@ -254,7 +248,7 @@ internal class FrontlineMeta : Refreshable<FrontlineMatch> {
                 ImGui.TableNextColumn();
                 ImGuiHelper.DrawNumericCell((float)Top4Contribs.Deaths, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, minContrib * 4, maxContrib * 4, Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawNumericCell((float)Top4Contribs.Assists, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, minContrib * 4, maxContrib* 4, Plugin.Configuration.ColorScaleStats, "P1", offset);
+                ImGuiHelper.DrawNumericCell((float)Top4Contribs.Assists, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, minContrib * 4, maxContrib * 4, Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();
                 ImGuiHelper.DrawNumericCell((float)Top4Contribs.DamageToPCs, Plugin.Configuration.Colors.StatHigh, Plugin.Configuration.Colors.StatLow, minContrib * 4, maxContrib * 4, Plugin.Configuration.ColorScaleStats, "P1", offset);
                 ImGui.TableNextColumn();

@@ -48,7 +48,6 @@ public enum ActionEffectType : byte {
     Interrupt = 75,
 }
 
-
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct ActionEffectHeader {
     public uint AnimationTargetId;

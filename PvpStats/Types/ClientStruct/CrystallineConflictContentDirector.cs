@@ -10,7 +10,6 @@ internal struct CrystallineConflictContentDirector {
     [FieldOffset(Offset + 0x004)] public int Unknown5;
     [FieldOffset(Offset + 0x008)] public int Unknown6;
 
-
     [FieldOffset(Offset + 0x04C)] public int Unknown0;
     [FieldOffset(Offset + 0x050)] public int Unknown1;
     [FieldOffset(Offset + 0x054)] public int Unknown2;
@@ -24,7 +23,6 @@ internal struct CrystallineConflictContentDirector {
     [FieldOffset(Offset + 0x070)] public byte UmbraOnPoint;
     [FieldOffset(Offset + 0x074)] public int AstraMidpointProgress;
     [FieldOffset(Offset + 0x078)] public int UmbraMidpointProgress;
-
 
     [FieldOffset(Offset + 0x2CC)] public float EventTimer;                  //used in all maps except palaistra
 }
@@ -42,6 +40,4 @@ public enum CCTeam : byte {
     Astra = 0,
     Umbra = 1,
 }
-
-
 

@@ -38,7 +38,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
 
     private DateTime _lastUpdate;
     private DateTime _lastPrint = DateTime.MinValue;
-    
+
     //p1 = director
     //p2 = results packet
     //p3 = results packet + offset (ref to specific variable?)
@@ -217,7 +217,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 var killer = _plugin.ObjectTable.SearchByEntityId(amount);
                 var owner = _plugin.ObjectTable.SearchByEntityId((killer?.OwnerId ?? 0));
                 Plugin.Log2.Debug($"Death detected: 0x{sourceEntityId:X2} {victim?.Name ?? ""} was deleted by: 0x{amount:X2} {killer?.Name ?? ""}, owner: 0x{killer?.OwnerId:X2} {owner?.Name ?? ""}");
-                
+
                 if(victim?.ObjectKind is ObjectKind.Player) {
                     var victimWorld = _plugin.DataManager.GetExcelSheet<World>().GetRow((victim as IPlayerCharacter).HomeWorld.RowId).Name.ToString();
                     var victimAlias = (PlayerAlias)$"{victim.Name} {victimWorld}";
@@ -237,7 +237,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                                 KillerNameId = nameId,
                             });
                         }
-                    } else if(killer?.ObjectKind is ObjectKind.Player && killer.EntityId == victim.EntityId ) {
+                    } else if(killer?.ObjectKind is ObjectKind.Player && killer.EntityId == victim.EntityId) {
                         //add suicide death
                         if(matchingEvent == null) {
                             Plugin.Log2.Warning($"No credited killer found for suicide death for: {victimAlias}");
@@ -272,7 +272,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 if(actor is not IBattleChara) return;
                 if(actor is IBattleNpc) {
                     //attempt to retrieve owner in case of pet (summoner)
-                    var owner  = _plugin.ObjectTable.SearchByEntityId(actor?.OwnerId ?? 0);
+                    var owner = _plugin.ObjectTable.SearchByEntityId(actor?.OwnerId ?? 0);
                     if(owner is not IPlayerCharacter) {
                         Plugin.Log2.Warning("Limit break cast by non-player character");
                         return;

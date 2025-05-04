@@ -164,16 +164,16 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                     _actionNames.Add(action.RowId, action.Name.ToString());
                     _actionIcons.Add(action.RowId, action.Icon);
                 }
-                var effectEvent = _timeline.LimitBreakEffects?.FirstOrDefault(x => x.ActionId == mEvent.ActionId 
-                && x.Actor.Equals(mEvent.Actor) 
-                && x.Timestamp >= mEvent.Timestamp 
+                var effectEvent = _timeline.LimitBreakEffects?.FirstOrDefault(x => x.ActionId == mEvent.ActionId
+                && x.Actor.Equals(mEvent.Actor)
+                && x.Timestamp >= mEvent.Timestamp
                 && (x.Timestamp - mEvent.Timestamp) <= TimeSpan.FromSeconds(8));
 
                 if(effectEvent != null) {
                     //make new object so we don't overwrite data
                     effectEvent = new(effectEvent.Timestamp, mEvent.ActionId) {
-                        PlayerTargets = [.. effectEvent.PlayerTargets ],
-                        NameIdTargets = [.. effectEvent.NameIdTargets ],
+                        PlayerTargets = [.. effectEvent.PlayerTargets],
+                        NameIdTargets = [.. effectEvent.NameIdTargets],
                         Snapshots = effectEvent.Snapshots,
                     };
 
@@ -210,7 +210,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
 
                 limitBreakCasts.Add(new(mEvent, effectEvent));
             }
-            _consolidatedEvents = [.. _consolidatedEvents, ..limitBreakCasts];
+            _consolidatedEvents = [.. _consolidatedEvents, .. limitBreakCasts];
             _consolidatedEvents.Sort();
             ApplyTimelineFilters();
 
@@ -218,7 +218,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             if(_timeline.CrystalPosition != null && _timeline.TeamProgress != null) {
                 foreach(var mEvent in _consolidatedEvents) {
                     float? crystalPos, astraPoints, umbraPoints;
-                    if(mEvent is GenericMatchEvent 
+                    if(mEvent is GenericMatchEvent
                         && (mEvent as GenericMatchEvent)?.Type == CrystallineConflictMatchEvent.MatchEnded) {
                         astraPoints = Match.Teams[CrystallineConflictTeamName.Astra].Progress;
                         umbraPoints = Match.Teams[CrystallineConflictTeamName.Umbra].Progress;
@@ -233,8 +233,8 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             }
 
             //setup battlenpc names
-            var killNPCs = _timeline.Kills?.Where(x => x.KillerNameId != null).Select(x => (uint)(x.KillerNameId ?? 0));
-            var killLBs = _timeline.LimitBreakCasts?.Where(x => x.NameIdActor != null).Select(x => (uint)(x.NameIdActor ?? 0));
+            var killNPCs = _timeline.Kills?.Where(x => x.KillerNameId != null).Select(x => x.KillerNameId ?? 0);
+            var killLBs = _timeline.LimitBreakCasts?.Where(x => x.NameIdActor != null).Select(x => x.NameIdActor ?? 0);
             //todo add LB targets as well...
             List<uint> nameIds = [.. killNPCs ?? [], .. killLBs ?? []];
 
@@ -790,7 +790,6 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         }
         ImGuiHelper.HelpMarker("Comma separate multiple phrases.");
 
-
         using var child = ImRaii.Child("timelineChild", ImGui.GetContentRegionAvail(), true);
         if(Match.DutyStartTime >= Match.MatchStartTime) {
             ImGui.TextColored(ImGuiColors.DalamudRed, "Timeline incomplete due to duty joined in progress.");
@@ -928,7 +927,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     }
 
     private void DrawEvent(GenericMatchEvent mEvent) {
-            switch(mEvent.Type) {
+        switch(mEvent.Type) {
             case CrystallineConflictMatchEvent.CrystalUnchained:
                 ImGui.Text("The crystal has been unchained.");
                 break;
@@ -1031,14 +1030,14 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         List<PlayerAlias> affectedPlayers = [];
         bool includeSelf = mEvent.ActionId == (uint)LimitBreak.SouthernCross
             || mEvent.ActionId == (uint)LimitBreak.EverlastingFlight;
-        if(mEvent.PlayerCastTarget != null 
+        if(mEvent.PlayerCastTarget != null
             && (!mEvent.PlayerCastTarget.Equals(mEvent.Actor) || includeSelf)) {
             affectedPlayers.Add(mEvent.PlayerCastTarget);
         }
         for(int i = 0; i < mEvent.AffectedPlayers?.Count; i++) {
             var affectedPlayer = mEvent.AffectedPlayers[i];
-            if((!affectedPlayer.Equals(mEvent.Actor) || includeSelf) && 
-                !affectedPlayer.Equals(mEvent.PlayerCastTarget) && 
+            if((!affectedPlayer.Equals(mEvent.Actor) || includeSelf) &&
+                !affectedPlayer.Equals(mEvent.PlayerCastTarget) &&
                 !affectedPlayers.Contains(affectedPlayer)) {
                 affectedPlayers.Add(affectedPlayer);
             }
@@ -1243,7 +1242,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             return;
         }
         int direction = 1;
-        if(_localPlayerTeam == null && team == CrystallineConflictTeamName.Umbra 
+        if(_localPlayerTeam == null && team == CrystallineConflictTeamName.Umbra
             || _localPlayerTeam != null && team != _localPlayerTeam) {
             direction = -1;
         }

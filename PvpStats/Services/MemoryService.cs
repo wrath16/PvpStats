@@ -123,7 +123,7 @@ internal unsafe class MemoryService : IDisposable {
 
         int size = 0;
         List<long> locations = new();
-        
+
         switch(typeof(T)) {
             case Type _ when typeof(T) == typeof(short):
                 size = 2;

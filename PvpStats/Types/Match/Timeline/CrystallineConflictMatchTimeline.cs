@@ -9,7 +9,7 @@ internal class CrystallineConflictMatchTimeline : PvpMatchTimeline {
     public List<ProgressEvent>? CrystalPosition { get; set; }
     public Dictionary<CrystallineConflictTeamName, List<ProgressEvent>>? TeamProgress { get; set; }
     public Dictionary<CrystallineConflictTeamName, List<ProgressEvent>>? TeamMidProgress { get; set; }
-    public List<KnockoutEvent>? Kills {  get; set; }
+    public List<KnockoutEvent>? Kills { get; set; }
     public List<ActionEvent>? LimitBreakCasts { get; set; }
     public List<ActionEvent>? LimitBreakEffects { get; set; }
 

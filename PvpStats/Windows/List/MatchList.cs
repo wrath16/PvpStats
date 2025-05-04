@@ -6,7 +6,6 @@ using LiteDB;
 using PvpStats.Helpers;
 using PvpStats.Services.DataCache;
 using PvpStats.Types.Match;
-using PvpStats.Types.Match.Timeline;
 using System;
 using System.Collections.Generic;
 using System.Linq;

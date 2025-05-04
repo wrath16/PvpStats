@@ -4,7 +4,6 @@ using Dalamud.Interface.ManagedFontAtlas;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
-using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using ImGuiNET;
 using LiteDB;
 using PvpStats.Helpers;
@@ -381,7 +380,7 @@ internal class WindowManager : IDisposable {
                 //case 1: full HP
                 ImGui.SetCursorPos(startPosition);
                 ImGui.ProgressBar(1f, new Vector2(hpSize.X * shieldPercentage, hpSize.Y), "");
-            }else if(hpPercentage < 1f && combinedHPShieldsPercentage <= 1f) {
+            } else if(hpPercentage < 1f && combinedHPShieldsPercentage <= 1f) {
                 ImGui.SetCursorPos(endPosition);
                 ImGui.ProgressBar(1f, new Vector2(hpSize.X * shieldPercentage, hpSize.Y), "");
             } else if(hpPercentage < 1f && combinedHPShieldsPercentage > 1f) {

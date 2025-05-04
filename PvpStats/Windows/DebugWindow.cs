@@ -116,7 +116,7 @@ internal unsafe class DebugWindow : Window {
                     }
 
 
-                    var battleLog  = AtkStage.Instance()->RaptureAtkUnitManager->GetAddonByName("PvPMKSBattleLog");
+                    var battleLog = AtkStage.Instance()->RaptureAtkUnitManager->GetAddonByName("PvPMKSBattleLog");
                     //Plugin.Log2.Debug($"{new IntPtr(battleLog):X2}");
                     //Plugin.Log2.Debug($"{battleLog != null}");
                     if(battleLog != null) {
@@ -206,7 +206,7 @@ internal unsafe class DebugWindow : Window {
                     //var z = (IntPtr)x + RivalWingsMatchManager.RivalWingsContentDirectorOffset;
                     //ImGui.Text($"0x{((IntPtr)z).ToString("X2")}");
 
-                    
+
                 }
             }
 
