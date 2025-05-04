@@ -6,6 +6,7 @@ using LiteDB;
 using PvpStats.Helpers;
 using PvpStats.Services.DataCache;
 using PvpStats.Types.Match;
+using PvpStats.Types.Match.Timeline;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -119,7 +120,17 @@ internal abstract class MatchList<T> : FilteredList<T, T> where T : PvpMatch {
 
 #if DEBUG
         if(ImGui.MenuItem($"Edit document##{item!.GetHashCode()}--FullEditContext")) {
-            OpenFullEditDetail(item);
+            _plugin.DataQueue.QueueDataOperation(() => {
+                OpenFullEditDetail(item);
+            });
+        }
+        if(ImGui.MenuItem($"Edit timeline##{item!.GetHashCode()}--OutputTimeline")) {
+            _plugin.DataQueue.QueueDataOperation(() => {
+                var timeline = Cache.GetTimeline(item);
+                if(timeline != null) {
+                    _plugin.WindowManager.OpenTimelineFullEditWindow(timeline);
+                }
+            });
         }
 #endif
     }

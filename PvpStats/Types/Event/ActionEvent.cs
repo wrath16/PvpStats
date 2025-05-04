@@ -13,6 +13,7 @@ internal class ActionEvent : MatchEvent {
     public List<PlayerAlias> PlayerTargets { get; set; } = new();
     public List<uint> NameIdTargets { get; set; } = new();
     public int? Variation { get; set; }
+    public Dictionary<string, BattleCharaSnapshot>? Snapshots { get; set; }
 
     [BsonCtor]
     public ActionEvent(DateTime timestamp, uint actionId) : base(timestamp) {

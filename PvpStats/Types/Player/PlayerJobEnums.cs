@@ -77,5 +77,64 @@ public enum KeyAction : uint {
     Purify = 29056,
     Guardian = 29066,
     PlentifulHarvest = 29546,
+}
 
+public enum MajorStatus : uint {
+    //Status
+    Invincible = 895,
+    Stun = 1343,
+    Heavy = 1344,
+    Bind = 1345,
+    Silence = 1347,
+    Sleep = 1348,
+    //Common
+    Guard = 3054,
+    GuardBroken = 3673,
+    Purify = 3248,
+    //PLD
+    Covered = 2413,
+    Covered2 = 4352,
+    //need to find covering pld
+    HallowedGround = 1302,
+    Phalanx = 3210,
+    //WAR
+    InnerRelease = 1303,
+    ThrillOfBattle = 3185,
+    Unguarded = 3021,
+    //DRK
+    SoleSurvivor = 1306,
+    UndeadRedemption = 3039,
+    //GNB
+    Nebula = 3051,
+    RelentlessRush = 3052,
+    Shrapnel = 3053,
+    //WHM
+    MiracleOfNature = 3085,
+
+    CelestialRiver = 3105,
+    CelestialTide = 3106,
+    Mesotes = 3119,
+    Meteodrive = 3174,
+    Lype = 3120,
+    Blackfeather = 2995,
+    Mini = 3518
+}
+
+public enum MinorStatus : uint {
+    //PLD
+    HolySheltron = 3026,
+    ShieldOath = 3188,
+    SacredClaim = 3025,
+    ShieldSmite = 4283,
+    //WAR
+    Onslaught = 3029,
+    Bloodwhetting = 3030,
+    Orogeny = 3256,
+    //DRK
+    SaltedEarthHeal = 3037,
+    SaltedEarthDamage = 3038,
+    //GNB
+    NoMercy = 3042,
+    HeartOfCorundum = 4295,
+    CatharsisOfCorundum = 4296,
 }

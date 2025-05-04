@@ -155,33 +155,41 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 && x.Timestamp >= mEvent.Timestamp 
                 && (x.Timestamp - mEvent.Timestamp) <= TimeSpan.FromSeconds(8));
 
-                //special cases
                 if(effectEvent != null) {
-                    //sky shatter
+                    //make new object so we don't overwrite data
+                    effectEvent = new(effectEvent.Timestamp, mEvent.ActionId) {
+                        PlayerTargets = [.. effectEvent.PlayerTargets ],
+                        NameIdTargets = [.. effectEvent.NameIdTargets ],
+                        Snapshots = effectEvent.Snapshots,
+                    };
+
+                    //special cases: sky shatter
                     if(mEvent.ActionId == (uint)LimitBreak.SkyShatter) {
                         var skyShatter2 = _timeline.LimitBreakEffects?.FirstOrDefault(x => x.ActionId == (uint)LimitBreak.SkyShatter2
                         && x.Actor.Equals(mEvent.Actor)
                         && x.Timestamp >= mEvent.Timestamp
                         && (x.Timestamp - mEvent.Timestamp) <= TimeSpan.FromSeconds(8));
                         if(skyShatter2 != null) {
-                            effectEvent = new(effectEvent.Timestamp, mEvent.ActionId) {
-                                PlayerTargets = [.. effectEvent.PlayerTargets, .. skyShatter2.PlayerTargets],
-                                NameIdTargets = [.. effectEvent.NameIdTargets, .. skyShatter2.NameIdTargets],
-                            };
+                            effectEvent.PlayerTargets = [.. effectEvent.PlayerTargets, .. skyShatter2.PlayerTargets];
+                            effectEvent.NameIdTargets = [.. effectEvent.NameIdTargets, .. skyShatter2.NameIdTargets];
+                            foreach(var snapshot in skyShatter2.Snapshots ?? []) {
+                                effectEvent.Snapshots?.TryAdd(snapshot.Key, snapshot.Value);
+                            }
                         }
                     }
 
-                    //terminal trigger
+                    //special cases: terminal trigger
                     if(mEvent.ActionId == (uint)LimitBreak.TerminalTrigger) {
                         var terminalTrigger2 = _timeline.LimitBreakEffects?.FirstOrDefault(x => x.ActionId == (uint)LimitBreak.SkyShatter2
                         && x.Actor.Equals(mEvent.Actor)
                         && x.Timestamp >= mEvent.Timestamp
                         && (x.Timestamp - mEvent.Timestamp) <= TimeSpan.FromSeconds(8));
                         if(terminalTrigger2 != null) {
-                            effectEvent = new(effectEvent.Timestamp, mEvent.ActionId) {
-                                PlayerTargets = [.. effectEvent.PlayerTargets, .. terminalTrigger2.PlayerTargets],
-                                NameIdTargets = [.. effectEvent.NameIdTargets, .. terminalTrigger2.NameIdTargets],
-                            };
+                            effectEvent.PlayerTargets = [.. effectEvent.PlayerTargets, .. terminalTrigger2.PlayerTargets];
+                            effectEvent.NameIdTargets = [.. effectEvent.NameIdTargets, .. terminalTrigger2.NameIdTargets];
+                            foreach(var snapshot in terminalTrigger2.Snapshots ?? []) {
+                                effectEvent.Snapshots?.TryAdd(snapshot.Key, snapshot.Value);
+                            }
                         }
                     }
                 }
@@ -907,7 +915,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             }
         } else {
             if(mEvent.CreditedKiller != null) {
-                DrawPlayer(mEvent.CreditedKiller);
+                DrawPlayer(mEvent.CreditedKiller, mEvent.CreditedKillerSnapshot);
                 ImGui.SameLine();
             } else {
                 ImGui.Text($"A gentle breeze somehow ");
@@ -916,7 +924,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         ImGui.SameLine();
         ImGui.Text(" knocked out ");
         ImGui.SameLine();
-        DrawPlayer(mEvent.Victim);
+        DrawPlayer(mEvent.Victim, mEvent.VictimSnapshot);
         ImGui.SameLine();
         ImGui.Text(".");
     }
@@ -940,15 +948,8 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
 
         using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
 
-        //if(mEvent.NameIdActor != null) {
-        //    ImGui.Text($"{_bNPCNames[(uint)mEvent.NameIdActor]} (");
-        //    ImGui.SameLine();
-        //}
-        DrawPlayer(mEvent.Actor);
-        //if(mEvent.NameIdActor != null) {
-        //    ImGui.SameLine();
-        //    ImGui.Text($")");
-        //}
+        var actorSnapshot = mEvent.EffectTime != null ? mEvent.EffectSnapshots?[mEvent.Actor] : mEvent.CastSnapshots?[mEvent.Actor];
+        DrawPlayer(mEvent.Actor, actorSnapshot);
 
         ImGui.SameLine();
         if(mEvent.EffectTime != null) {
@@ -964,7 +965,15 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         if(affectedPlayers.Count > 0) {
             ImGui.Text(" on ");
             ImGui.SameLine();
-            DrawPlayer(affectedPlayers[0]);
+            BattleCharaSnapshot? effectSnapshot = null;
+            BattleCharaSnapshot? castSnapshot = null;
+            if(mEvent.CastSnapshots?.ContainsKey(affectedPlayers[0]) ?? false) {
+                castSnapshot = mEvent.CastSnapshots?[affectedPlayers[0]];
+            }
+            if(mEvent.EffectSnapshots?.ContainsKey(affectedPlayers[0]) ?? false) {
+                effectSnapshot = mEvent.EffectSnapshots?[affectedPlayers[0]];
+            }
+            DrawPlayer(affectedPlayers[0], effectSnapshot ?? castSnapshot);
         }
 
         if(affectedPlayers.Count > 1) {
@@ -973,7 +982,19 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             if(ImGui.IsItemHovered()) {
                 using var tooltip = ImRaii.Tooltip();
                 for(int i = 1; i < affectedPlayers.Count; i++) {
-                    DrawPlayer(affectedPlayers[i]);
+                    BattleCharaSnapshot? effectSnapshot = null;
+                    BattleCharaSnapshot? castSnapshot = null;
+                    if(mEvent.CastSnapshots?.ContainsKey(affectedPlayers[i]) ?? false) {
+                        castSnapshot = mEvent.CastSnapshots?[affectedPlayers[i]];
+                    }
+                    if(mEvent.EffectSnapshots?.ContainsKey(affectedPlayers[i]) ?? false) {
+                        effectSnapshot = mEvent.EffectSnapshots?[affectedPlayers[i]];
+                    }
+                    DrawPlayer(affectedPlayers[i], effectSnapshot ?? castSnapshot, false);
+                    if(i < affectedPlayers.Count - 1 && mEvent.EffectSnapshots != null) {
+                        ImGui.NewLine();
+                        ImGui.Separator();
+                    }
                 }
             }
         }
@@ -986,7 +1007,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         }
     }
 
-    private void DrawPlayer(PlayerAlias name) {
+    private void DrawPlayer(PlayerAlias name, BattleCharaSnapshot? snapshot = null, bool tooltipSnapshot = true) {
         var player = _players.FirstOrDefault(x => x.Alias.Equals(name));
         Vector4 color = Plugin.Configuration.Colors.CCEnemyTeam;
         if(_localPlayerTeam == null && player?.Team == CrystallineConflictTeamName.Astra
@@ -1003,6 +1024,17 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         using(var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(0f, ImGui.GetStyle().ItemSpacing.Y))) {
             ImGui.AlignTextToFramePadding();
             ImGui.TextColored(color, $" {name.Name}");
+        }
+
+        if(snapshot != null) {
+            if(tooltipSnapshot && ImGui.IsItemHovered()) {
+                using var tooltip = ImRaii.Tooltip();
+                if(tooltip) {
+                    Plugin.WindowManager.DrawPlayerSnapshot(snapshot);
+                }
+            } else if(!tooltipSnapshot) {
+                Plugin.WindowManager.DrawPlayerSnapshot(snapshot);
+            }
         }
     }
 

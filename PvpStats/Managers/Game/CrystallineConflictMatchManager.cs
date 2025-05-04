@@ -5,6 +5,7 @@ using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.ClientState.Objects.Types;
+using Dalamud.Game.ClientState.Statuses;
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
@@ -173,16 +174,8 @@ internal class CrystallineConflictMatchManager : IDisposable {
 
     private unsafe void ProcessKillDetour(IntPtr agent, IntPtr killerPlayer, uint killStreak, IntPtr victimPlayer, uint localPlayerTeam) {
         try {
-            Plugin.Log2.Debug($"kill feed detour occurred. killer: 0x{((CCPlayer*)killerPlayer)->EntityId:X2} kills: {killStreak} victim: 0x{((CCPlayer*)victimPlayer)->EntityId:X2} localPlayerTeam: {localPlayerTeam}");
-#if DEBUG
-            //if(killerPlayer != 0) {
-            //    _plugin.Functions.CreateByteDump(killerPlayer, 0x100, "kill_feed_killer");
-            //}
-            //if(victimPlayer != 0) {
-            //    _plugin.Functions.CreateByteDump(victimPlayer, 0x100, "kill_feed_victim");
-            //}
-#endif
             var now = DateTime.Now;
+            Plugin.Log2.Debug($"kill feed detour occurred. killer: 0x{((CCPlayer*)killerPlayer)->EntityId:X2} kills: {killStreak} victim: 0x{((CCPlayer*)victimPlayer)->EntityId:X2} localPlayerTeam: {localPlayerTeam}");
 
             if(_currentMatchTimeline != null && _currentMatchTimeline.Kills != null) {
                 var killerObj = _plugin.ObjectTable.SearchByEntityId(((CCPlayer*)killerPlayer)->EntityId);
@@ -194,9 +187,10 @@ internal class CrystallineConflictMatchManager : IDisposable {
 
                 _currentMatchTimeline.Kills.Add(new(now, victimAlias) {
                     CreditedKiller = killerAlias,
+                    CreditedKillerSnapshot = new(killerObj as IBattleChara),
+                    VictimSnapshot = new(killerObj as IBattleChara),
                 });
             }
-
         } finally {
             _processKillHook.Original(agent, killerPlayer, killStreak, victimPlayer, localPlayerTeam);
         }
@@ -215,45 +209,50 @@ internal class CrystallineConflictMatchManager : IDisposable {
             //    //Plugin.Log2.Debug($"{player?.Name} cast {spell.Name}");
             //}
 
-            if(!IsMatchInProgress()) {
+            if(!IsMatchInProgress() || _currentMatchTimeline == null) {
                 return;
             }
             var now = DateTime.Now;
-            if(type == 0x06) {
-                //death
+            if(type == (uint)ActorControlCategory.Death && _currentMatchTimeline.Kills != null) {
                 //Plugin.Log2.Debug($"0x{sourceEntityId:X2} was owned by: StatusId: 0x{statusId:X2} Source: {source} Amount: 0x{amount:X2} a5: {a5} a7: {a7} a8: {a8} a9: {targetEntityId} flag: {flag}");
                 var victim = _plugin.ObjectTable.SearchByEntityId(sourceEntityId);
                 var killer = _plugin.ObjectTable.SearchByEntityId(amount);
                 var owner = _plugin.ObjectTable.SearchByEntityId((killer?.OwnerId ?? 0));
                 Plugin.Log2.Debug($"Death detected: 0x{sourceEntityId:X2} {victim?.Name ?? ""} was deleted by: 0x{amount:X2} {killer?.Name ?? ""}, owner: 0x{killer?.OwnerId:X2} {owner?.Name ?? ""}");
-                uint? nameId = null;
-                //add BNpc NameId in case of NPC killer (exclude pets)
-                if(killer?.ObjectKind is ObjectKind.BattleNpc
-                    && owner == null
-                    && _currentMatch != null
-                    && _currentMatchTimeline != null
-                    && _currentMatchTimeline.Kills != null
-                    && victim?.ObjectKind is ObjectKind.Player) {
+                
+                if(victim?.ObjectKind is ObjectKind.Player) {
                     var victimWorld = _plugin.DataManager.GetExcelSheet<World>().GetRow((victim as IPlayerCharacter).HomeWorld.RowId).Name.ToString();
                     var victimAlias = (PlayerAlias)$"{victim.Name} {victimWorld}";
-                    nameId = (killer as IBattleNpc)?.NameId;
-                    //add to cache
-                    if(nameId != null && (!_currentMatchTimeline?.BNPCNameLookup?.ContainsKey((uint)nameId) ?? false)) {
-                        var bnpcName = _plugin.DataManager.GetExcelSheet<BNpcName>(ClientLanguage.English).GetRow((uint)nameId);
-                        _currentMatchTimeline!.BNPCNameLookup!.Add((uint)nameId, (bnpcName.Singular.ToString(), bnpcName.Article));
-                    }
 
                     //find matching event and set
                     var matchingEvent = _currentMatchTimeline?.Kills.LastOrDefault(x => x.Victim.Equals(victimAlias)
                         && (now - x.Timestamp) <= TimeSpan.FromSeconds(8));
-                    if(matchingEvent != null) {
-                        matchingEvent.KillerNameId = nameId;
-                    } else {
-                        Plugin.Log2.Warning($"No credited killer found for death for: {victimAlias}");
-                        _currentMatchTimeline?.Kills.Add(new(now, victimAlias) {
-                            KillerNameId = nameId,
-                        });
+
+                    if(killer?.ObjectKind is ObjectKind.BattleNpc && owner == null) {
+                        //add BNpc NameId in case of NPC killer (exclude pets)
+                        uint? nameId = (killer as IBattleNpc)?.NameId;
+                        if(matchingEvent != null) {
+                            matchingEvent.KillerNameId = nameId;
+                        } else {
+                            Plugin.Log2.Warning($"No credited killer found for npc death for: {victimAlias}");
+                            _currentMatchTimeline?.Kills.Add(new(now, victimAlias) {
+                                KillerNameId = nameId,
+                            });
+                        }
+                    } else if(killer?.ObjectKind is ObjectKind.Player && killer.EntityId == victim.EntityId ) {
+                        //add suicide death
+                        if(matchingEvent == null) {
+                            Plugin.Log2.Warning($"No credited killer found for suicide death for: {victimAlias}");
+                            _currentMatchTimeline?.Kills.Add(new(now, victimAlias) {
+                            });
+                        }
                     }
+
+                    ////add to cache
+                    //if(nameId != null && (!_currentMatchTimeline?.BNPCNameLookup?.ContainsKey((uint)nameId) ?? false)) {
+                    //    var bnpcName = _plugin.DataManager.GetExcelSheet<BNpcName>(ClientLanguage.English).GetRow((uint)nameId);
+                    //    _currentMatchTimeline!.BNPCNameLookup!.Add((uint)nameId, (bnpcName.Singular.ToString(), bnpcName.Article));
+                    //}
                 }
             }
         } finally {
@@ -303,6 +302,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
             uint? nameIdActor = null;
             if(CombatHelper.IsLimitBreak(actionId)) {
                 var actor = _plugin.ObjectTable.SearchByEntityId(entityId);
+                if(actor is not IBattleChara) return;
                 if(actor is IBattleNpc) {
                     //attempt to retrieve owner in case of pet (summoner)
                     var owner  = _plugin.ObjectTable.SearchByEntityId(actor?.OwnerId ?? 0);
@@ -311,11 +311,11 @@ internal class CrystallineConflictMatchManager : IDisposable {
                         return;
                     } else {
                         nameIdActor = (actor as IBattleNpc)!.NameId;
-                        //add lookup
-                        if(!_currentMatchTimeline?.BNPCNameLookup?.ContainsKey((uint)nameIdActor) ?? false) {
-                            var bnpcName = _plugin.DataManager.GetExcelSheet<BNpcName>(ClientLanguage.English).GetRow((uint)nameIdActor);
-                            _currentMatchTimeline!.BNPCNameLookup!.Add((uint)nameIdActor, (bnpcName.Singular.ToString(), bnpcName.Article));
-                        }
+                        ////add lookup
+                        //if(!_currentMatchTimeline?.BNPCNameLookup?.ContainsKey((uint)nameIdActor) ?? false) {
+                        //    var bnpcName = _plugin.DataManager.GetExcelSheet<BNpcName>(ClientLanguage.English).GetRow((uint)nameIdActor);
+                        //    _currentMatchTimeline!.BNPCNameLookup!.Add((uint)nameIdActor, (bnpcName.Singular.ToString(), bnpcName.Article));
+                        //}
                         actor = owner;
                     }
                 }
@@ -325,36 +325,51 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 Plugin.Log2.Debug($"{actor?.Name} cast {spell.Name} {actionId} targets: {targets} display: {effectHeader->EffectDisplayType} " +
                 $"hidden anim: {effectHeader->HiddenAnimation} counter: {effectHeader->GlobalEffectCounter} rotation: {effectHeader->Rotation} variation: {effectHeader->Variation}");
 
-                //add lookup
-                if(!_currentMatchTimeline?.ActionIdLookup?.ContainsKey(spell.RowId) ?? false) {
-                    _currentMatchTimeline!.ActionIdLookup!.Add(spell.RowId, spell.Name.ToString());
-                }
+                ////add lookup
+                //if(!_currentMatchTimeline?.ActionIdLookup?.ContainsKey(spell.RowId) ?? false) {
+                //    _currentMatchTimeline!.ActionIdLookup!.Add(spell.RowId, spell.Name.ToString());
+                //}
 
                 ActionEvent actionEvent = new(now, actionId, alias) {
                     Variation = effectHeader->Variation,
-                    NameIdActor = nameIdActor
+                    NameIdActor = nameIdActor,
+                    Snapshots = new() {
+                        {alias, new(actor as IBattleChara) }
+                    }
                 };
 
                 for(var i = 0; i < targets; i++) {
                     var actionTargetId = (uint)(effectTrail[i] & uint.MaxValue);
                     var target = _plugin.ObjectTable.SearchByEntityId(actionTargetId);
+                    if(target is not IBattleChara || (target as IBattleChara) is null) continue;
+
+                    var playerSnapshot = new BattleCharaSnapshot((target as IBattleChara));
+                    //logging purposes!
+                    Plugin.Log2.Debug($"{target.Name} HP: {playerSnapshot.CurrentHP}/{playerSnapshot.MaxHP} MP: {playerSnapshot.CurrentMP}/{playerSnapshot.MaxMP} shields: {playerSnapshot.ShieldPercents}");
+                    string statuses = "";
+                    foreach(var status in playerSnapshot.Statuses) {
+                        var data = _plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Status>().GetRow(status.StatusId);
+                        statuses += $"{data.Name}:{status.StatusId}:{status.Param}:{status.RemainingTime} ";
+                    }
+                    Plugin.Log2.Debug(statuses);
+
                     if(target is IPlayerCharacter) {
                         var targetWorld = _plugin.DataManager.GetExcelSheet<World>().GetRow((target as IPlayerCharacter).HomeWorld.RowId).Name.ToString();
                         var targetAlias = (PlayerAlias)$"{(target as IPlayerCharacter).Name} {targetWorld}";
+                        actionEvent.Snapshots.TryAdd(targetAlias, playerSnapshot);
                         actionEvent.PlayerTargets.Add(targetAlias);
                     } else if(target is IBattleNpc) {
                         var npcTarget = target as IBattleNpc;
                         var bnpcName = _plugin.DataManager.GetExcelSheet<BNpcName>(ClientLanguage.English).GetRow(npcTarget.NameId);
                         actionEvent.NameIdTargets.Add(npcTarget.NameId);
-                        //add lookup
-                        if(!_currentMatchTimeline?.BNPCNameLookup?.ContainsKey(npcTarget.NameId) ?? false) {
-                            _currentMatchTimeline!.BNPCNameLookup!.Add(npcTarget.NameId, (bnpcName.Singular.ToString(), bnpcName.Article));
-                        }
+                        ////add lookup
+                        //if(!_currentMatchTimeline?.BNPCNameLookup?.ContainsKey(npcTarget.NameId) ?? false) {
+                        //    _currentMatchTimeline!.BNPCNameLookup!.Add(npcTarget.NameId, (bnpcName.Singular.ToString(), bnpcName.Article));
+                        //}
                     } else {
                         Plugin.Log2.Warning($"{spell.Name} cast on unknown entity {target?.Name}");
                         continue;
                     }
-
                 }
                 if(effectHeader->Variation == 0) {
                     _currentMatchTimeline?.LimitBreakCasts?.Add(actionEvent);
@@ -394,7 +409,10 @@ internal class CrystallineConflictMatchManager : IDisposable {
     private void OnTerritoryChanged(ushort territoryId) {
         var dutyId = _plugin.GameState.GetCurrentDutyId();
         _plugin.Log.Debug($"Territory changed: {territoryId}, Current duty: {dutyId}");
-        if(IsMatchInProgress()) {
+        if(MatchHelper.CrystallineConflictMapLookup.ContainsKey(dutyId) && MatchHelper.GetMatchType(dutyId) != CrystallineConflictMatchType.Unknown) {
+            //actual match
+            //StartMatch();
+        } else if(IsMatchInProgress()) {
             _plugin.DataQueue.QueueDataOperation(async () => {
                 _plugin.Functions._opcodeMatchCount++;
                 if(_currentMatchTimeline != null) {

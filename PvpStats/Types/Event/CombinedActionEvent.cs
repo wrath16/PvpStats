@@ -13,11 +13,14 @@ internal class CombinedActionEvent : MatchEvent {
     public DateTime? EffectTime { get; set; }
     public List<PlayerAlias>? AffectedPlayers { get; set; }
     public List<uint>? AffectedNameIds { get; set; }
+    public Dictionary<string, BattleCharaSnapshot>? CastSnapshots { get; set; }
+    public Dictionary<string, BattleCharaSnapshot>? EffectSnapshots { get; set; }
 
     public CombinedActionEvent(ActionEvent cast, ActionEvent? impact) : base(cast.Timestamp) {
         Actor = cast.Actor;
         NameIdActor = cast.NameIdActor;
         ActionId = cast.ActionId;
+        CastSnapshots = cast.Snapshots;
         if(cast.PlayerTargets.Count > 0) {
             PlayerCastTarget = cast.PlayerTargets[0];
         } else if(cast.NameIdTargets.Count > 0) {
@@ -28,5 +31,6 @@ internal class CombinedActionEvent : MatchEvent {
         EffectTime = impact?.Timestamp;
         AffectedPlayers = impact?.PlayerTargets;
         AffectedNameIds = impact?.NameIdTargets;
+        EffectSnapshots = impact?.Snapshots;
     }
 }

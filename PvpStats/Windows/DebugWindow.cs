@@ -353,7 +353,17 @@ internal unsafe class DebugWindow : Window {
 
                     ImGuiHelper.DrawRainbowTextByChar("Sarah Montcroix");
                     ImGui.NewLine();
+                    if(_plugin.ClientState.LocalPlayer != null) {
+                        using var child = ImRaii.Child("snapShotChild", new Vector2(200f, 125f) * ImGuiHelpers.GlobalScale, true, ImGuiWindowFlags.NoScrollbar);
+                        _plugin.WindowManager.DrawPlayerSnapshot(_plugin.ClientState.LocalPlayer.EntityId);
+                        //_plugin.WindowManager.DrawPlayerBars(_plugin.ClientState.LocalPlayer.MaxHp,
+                        //    _plugin.ClientState.LocalPlayer.CurrentHp, _plugin.ClientState.LocalPlayer.ShieldPercentage,
+                        //    _plugin.ClientState.LocalPlayer.MaxMp, _plugin.ClientState.LocalPlayer.CurrentMp);
+                    }
 
+                    //_plugin.WindowManager.DrawPlayerBars(60000, 60000, 200, 10000, 5000);
+                    //_plugin.WindowManager.DrawPlayerBars(60000, 4000, 200, 10000, 6000);
+                    //_plugin.WindowManager.DrawPlayerBars(60000, 50000, 200, 10000, 10000);
                 }
             }
         }
@@ -635,12 +645,13 @@ internal unsafe class DebugWindow : Window {
         //var playerAddress = _plugin.ClientState.LocalPlayer.Address;
         //ImGui.Text($"Local Player Address: 0x{new IntPtr(playerAddress).ToString("X2")}");
 
-        using(var table = ImRaii.Table("object_table", 5)) {
+        using(var table = ImRaii.Table("object_table", 6)) {
             ImGui.TableSetupColumn("name");
-            ImGui.TableSetupColumn("objType");
-            ImGui.TableSetupColumn("index");
-            ImGui.TableSetupColumn("entityId");
-            ImGui.TableSetupColumn("owner");
+            ImGui.TableSetupColumn("objType", ImGuiTableColumnFlags.WidthFixed, 80f);
+            ImGui.TableSetupColumn("index", ImGuiTableColumnFlags.WidthFixed, 30f);
+            ImGui.TableSetupColumn("entityId", ImGuiTableColumnFlags.WidthFixed, 100f);
+            ImGui.TableSetupColumn("owner", ImGuiTableColumnFlags.WidthFixed, 100f);
+            ImGui.TableSetupColumn("statuses");
 
             ImGui.TableNextColumn();
             ImGui.TableHeader("Name");
@@ -652,6 +663,8 @@ internal unsafe class DebugWindow : Window {
             ImGui.TableHeader("EntityId");
             ImGui.TableNextColumn();
             ImGui.TableHeader("OwnerId");
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("Statuses");
 
             foreach(IPlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player).Cast<IPlayerCharacter>()) {
                 try {
@@ -665,6 +678,12 @@ internal unsafe class DebugWindow : Window {
                     ImGui.Text($"0x{pc.EntityId:X2}");
                     ImGui.TableNextColumn();
                     ImGui.Text($"0x{pc.OwnerId:X2}");
+                    ImGui.TableNextColumn();
+                    //ImGui.Text($"{pc.ShieldPercentage}");
+                    foreach(var status in pc.StatusList) {
+                        ImGui.Text($"{status.StatusId}:{status.Param},");
+                        ImGui.SameLine();
+                    }
                 } catch {
                     //suppress all exceptions
                 }
@@ -682,6 +701,11 @@ internal unsafe class DebugWindow : Window {
                     ImGui.Text($"0x{obj.EntityId:X2}");
                     ImGui.TableNextColumn();
                     ImGui.Text($"0x{obj.OwnerId:X2}");
+                    ImGui.TableNextColumn();
+                    foreach(var status in obj.StatusList) {
+                        ImGui.Text($"{status.StatusId}:{status.Param},");
+                        ImGui.SameLine();
+                    }
                 } catch {
                     //suppress all exceptions
                 }
