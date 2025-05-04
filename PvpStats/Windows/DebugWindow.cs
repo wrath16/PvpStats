@@ -270,6 +270,11 @@ internal unsafe class DebugWindow : Window {
             }
             using(var tab = ImRaii.TabItem("Misc.")) {
                 if(tab) {
+                    var debugMode = _plugin.DebugMode;
+                    if(ImGui.Checkbox("Debug Mode", ref debugMode)) {
+                        _plugin.DebugMode = debugMode;
+                    }
+
                     if(ImGui.Button("Enable Duty Leave Button")) {
                         _plugin.RWMatchManager.EnableLeaveDutyButton();
                     }

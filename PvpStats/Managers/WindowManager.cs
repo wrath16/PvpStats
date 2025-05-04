@@ -305,14 +305,6 @@ internal class WindowManager : IDisposable {
         if(gameObj is null || gameObj is not IBattleChara) return;
 
         DrawPlayerSnapshot(new BattleCharaSnapshot(gameObj as IBattleChara));
-        //DrawPlayerBars(battleChar.MaxHp, battleChar.CurrentHp, battleChar.ShieldPercentage, battleChar.MaxMp, battleChar.CurrentMp);
-
-        //using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(ImGui.GetStyle().ItemSpacing.X, 0) * ImGuiHelpers.GlobalScale);
-        //var beneficialEffects = battleChar!.StatusList.Where(x => x.GameData.Value.StatusCategory == 1).ToList();
-        //DrawStatuses(beneficialEffects);
-        //var detrimentalEffects = battleChar!.StatusList.Where(x => x.GameData.Value.StatusCategory == 2).ToList();
-        //ImGui.NewLine();
-        //DrawStatuses(detrimentalEffects);
     }
 
     public unsafe void DrawPlayerSnapshot(BattleCharaSnapshot snapshot) {
@@ -320,28 +312,15 @@ internal class WindowManager : IDisposable {
         DrawStatuses(snapshot.Statuses);
     }
 
-    //private void DrawStatuses(List<Dalamud.Game.ClientState.Statuses.Status> statusList) {
-    //    //using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(1f, ImGui.GetStyle().ItemSpacing.Y) * ImGuiHelpers.GlobalScale);
-    //    var sizeHeight = 30f * ImGuiHelpers.GlobalScale;
-    //    foreach(var status in statusList) {
-    //        var statusRow = status.GameData.Value;
-    //        uint stackCount = status.Param;
-    //        var iconId = statusRow.Icon;
-    //        if(statusRow.MaxStacks > 0 && stackCount <= statusRow.MaxStacks) {
-    //            iconId += stackCount - 1;
-    //        }
-    //        var texture = _plugin.TextureProvider.GetFromGameIcon(iconId).GetWrapOrEmpty();
-    //        ImGui.Image(texture.ImGuiHandle, new Vector2(sizeHeight * texture.Width / texture.Height, sizeHeight));
-    //        ImGui.SameLine();
-    //    }
-    //}
-
     private void DrawStatuses(List<StatusSnapshot> statusList, bool majorOnly = false) {
         //using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(1f, ImGui.GetStyle().ItemSpacing.Y) * ImGuiHelpers.GlobalScale);
         var sizeHeight = 30f * ImGuiHelpers.GlobalScale;
-        List<(uint, StatusSnapshot)> beneficialEffects = new();
-        List<(uint, StatusSnapshot)> detrimentalEffects = new();
+        List<(uint, uint, StatusSnapshot)> beneficialEffects = new();
+        List<(uint, uint, StatusSnapshot)> detrimentalEffects = new();
         foreach(var status in statusList) {
+            if(!_plugin.DebugMode && CombatHelper.IsUselessStatus(status.StatusId)) {
+                continue;
+            }
             var statusRow = _plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Status>().GetRow(status.StatusId);
             uint stackCount = status.Param;
             var iconId = statusRow.Icon;
@@ -349,20 +328,28 @@ internal class WindowManager : IDisposable {
                 iconId += stackCount - 1;
             }
             if(statusRow.StatusCategory == 1) {
-                beneficialEffects.Add((iconId, status));
+                beneficialEffects.Add((status.StatusId, iconId, status));
             } else if(statusRow.StatusCategory == 2) {
-                detrimentalEffects.Add((iconId, status));
+                detrimentalEffects.Add((status.StatusId, iconId, status));
             }
         }
 
         foreach(var effect in beneficialEffects) {
-            var texture = _plugin.TextureProvider.GetFromGameIcon(effect.Item1).GetWrapOrEmpty();
+            var texture = _plugin.TextureProvider.GetFromGameIcon(effect.Item2).GetWrapOrEmpty();
+            if(_plugin.DebugMode) {
+                ImGui.Text($"{effect.Item1}");
+                ImGui.SameLine();
+            }
             ImGui.Image(texture.ImGuiHandle, new Vector2(sizeHeight * texture.Width / texture.Height, sizeHeight));
             ImGui.SameLine();
         }
         ImGui.NewLine();
         foreach(var effect in detrimentalEffects) {
-            var texture = _plugin.TextureProvider.GetFromGameIcon(effect.Item1).GetWrapOrEmpty();
+            var texture = _plugin.TextureProvider.GetFromGameIcon(effect.Item2).GetWrapOrEmpty();
+            if(_plugin.DebugMode) {
+                ImGui.Text($"{effect.Item1}");
+                ImGui.SameLine();
+            }
             ImGui.Image(texture.ImGuiHandle, new Vector2(sizeHeight * texture.Width / texture.Height, sizeHeight));
             ImGui.SameLine();
         }

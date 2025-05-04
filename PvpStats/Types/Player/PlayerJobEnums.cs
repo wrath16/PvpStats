@@ -138,3 +138,10 @@ public enum MinorStatus : uint {
     HeartOfCorundum = 4295,
     CatharsisOfCorundum = 4296,
 }
+
+public enum UselessStatus : uint {
+    PreferredWorld = 1411,
+    Nin1 = 3190,
+    Vpr = 4086
+
+}

@@ -180,7 +180,6 @@ public sealed class Plugin : IDalamudPlugin {
             CommandManager.AddHandler(DebugCommandName, new CommandInfo(OnDebugCommand) {
                 HelpMessage = "Opens debug window."
             });
-            DebugMode = true;
 #endif
             DataQueue.QueueDataOperation(Initialize);
         } catch(Exception e) {

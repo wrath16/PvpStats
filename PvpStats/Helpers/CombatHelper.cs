@@ -1,6 +1,5 @@
 ﻿using PvpStats.Types.Player;
 using System;
-using System.Collections.Generic;
 
 namespace PvpStats.Helpers;
 internal static class CombatHelper {
@@ -13,9 +12,13 @@ internal static class CombatHelper {
         return false;
     }
 
-    public static bool IsImportantStatus(uint statusId) {
-        //List<>
-        foreach(var value in Enum.GetValues(typeof(MajorStatus))) {
+    public static bool IsUselessStatus(uint statusId) {
+        //non-combat crap
+        if(statusId >= 360 && statusId <= 368) {
+            return true;
+        }
+
+        foreach(var value in Enum.GetValues(typeof(UselessStatus))) {
             if(statusId == (uint)value) {
                 return true;
             }

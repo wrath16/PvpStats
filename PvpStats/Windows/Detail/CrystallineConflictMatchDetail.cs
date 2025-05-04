@@ -3,7 +3,6 @@ using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
-using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using ImGuiNET;
 using ImPlotNET;
 using Lumina.Excel.Sheets;
@@ -51,6 +50,10 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     private List<MatchEvent> _consolidatedEvents = new();
     private List<MatchEvent> _consolidatedEventsFiltered = new();
     private Dictionary<Type, bool> _eventFilters = new();
+    private bool _killFilter = true;
+    private bool _deathFilter = true;
+    private bool _lbCastFilter = true;
+    private bool _lbImpactFilter = true;
     private PlayerQuickSearchFilter _playerFilter = new();
     private List<(float Crystal, float Astra, float Umbra)> _consolidatedEventTeamPoints = new();
     private Dictionary<uint, string> _bNPCNames = new();
@@ -118,7 +121,18 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         SortByColumn(0, ImGuiSortDirection.Ascending);
 
         _timeline = Plugin.CCCache.GetTimeline(Match);
+
+        //doesn't work with spectated matches for now
+        if(Match.IsSpectated) {
+            _timeline = null;
+        }
         if(_timeline != null) {
+            _eventFilters = new() {
+                {typeof(GenericMatchEvent), true },
+                {typeof(KnockoutEvent), true },
+                {typeof(CombinedActionEvent), true },
+            };
+
             //setup timeline
             _consolidatedEvents = [.. _timeline.Kills ?? [], .. _timeline.MapEvents ?? []];
             if(Match.MatchDuration > TimeSpan.FromMinutes(5) && Match.MatchStartTime != null) {
@@ -761,6 +775,11 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
 
     private void DrawTimeline() {
         //filters...
+        if(ImGui.Button("Filters")) {
+            ImGui.OpenPopup($"{Match.Id}--TimelineFilterPopup");
+        }
+        FilterPopup();
+        ImGui.SameLine();
         string quickSearch = _playerFilter.SearchText;
         ImGuiHelper.SetDynamicWidth(150f, 250f, 3f);
         if(ImGui.InputTextWithHint("###playerQuickSearch", "Search for players and actions...", ref quickSearch, 100)) {
@@ -823,6 +842,85 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                             break;
                         default:
                             break;
+                    }
+                }
+            }
+        }
+    }
+
+    internal void FilterPopup() {
+        using(var popup = ImRaii.Popup($"{Match.Id}--TimelineFilterPopup")) {
+            if(popup) {
+                using(var table = ImRaii.Table("timelineTable", 3)) {
+                    if(table) {
+                        ImGui.TableSetupColumn("c1", ImGuiTableColumnFlags.WidthStretch);
+                        ImGui.TableSetupColumn("c2", ImGuiTableColumnFlags.WidthStretch);
+                        ImGui.TableSetupColumn("c3", ImGuiTableColumnFlags.WidthStretch);
+
+                        ImGui.TableNextColumn();
+                        var f1 = _eventFilters[typeof(GenericMatchEvent)];
+                        if(ImGui.Checkbox("Map Events", ref f1)) {
+                            _eventFilters[typeof(GenericMatchEvent)] = f1;
+                            RefreshQueue.QueueDataOperation(() => {
+                                ApplyTimelineFilters();
+                            });
+                        }
+                        ImGui.TableNextColumn();
+                        var f2 = _eventFilters[typeof(KnockoutEvent)];
+                        if(ImGui.Checkbox("Knockouts", ref f2)) {
+                            _eventFilters[typeof(KnockoutEvent)] = f2;
+                            RefreshQueue.QueueDataOperation(() => {
+                                ApplyTimelineFilters();
+                            });
+                        }
+                        ImGui.TableNextColumn();
+                        var f3 = _eventFilters[typeof(CombinedActionEvent)];
+                        if(ImGui.Checkbox("Limit Breaks", ref f3)) {
+                            _eventFilters[typeof(CombinedActionEvent)] = f3;
+                            RefreshQueue.QueueDataOperation(() => {
+                                ApplyTimelineFilters();
+                            });
+                        }
+
+                        ImGui.TableNextColumn();
+                        ImGui.TableNextColumn();
+                        ImGui.TableNextColumn();
+
+                        ImGui.TableNextColumn();
+                        var f4 = _killFilter;
+                        if(ImGui.Checkbox("Kills", ref f4)) {
+                            _killFilter = f4;
+                            RefreshQueue.QueueDataOperation(() => {
+                                ApplyTimelineFilters();
+                            });
+                        }
+                        ImGui.TableNextColumn();
+                        var f5 = _deathFilter;
+                        if(ImGui.Checkbox("Deaths", ref f5)) {
+                            _deathFilter = f5;
+                            RefreshQueue.QueueDataOperation(() => {
+                                ApplyTimelineFilters();
+                            });
+                        }
+                        ImGui.TableNextColumn();
+
+                        ImGui.TableNextColumn();
+                        var f6 = _lbCastFilter;
+                        if(ImGui.Checkbox("Limit Break Uses", ref f6)) {
+                            _lbCastFilter = f6;
+                            RefreshQueue.QueueDataOperation(() => {
+                                ApplyTimelineFilters();
+                            });
+                        }
+                        ImGui.TableNextColumn();
+                        var f7 = _lbImpactFilter;
+                        if(ImGui.Checkbox("Limit Break Affected", ref f7)) {
+                            _lbImpactFilter = f7;
+                            RefreshQueue.QueueDataOperation(() => {
+                                ApplyTimelineFilters();
+                            });
+                        }
+                        ImGui.TableNextColumn();
                     }
                 }
             }
@@ -1124,7 +1222,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     }
 
     private void SetupCrystalPositionGraph() {
-        if(_timeline?.CrystalPosition == null) {
+        if(_timeline?.CrystalPosition == null || _timeline.CrystalPosition.Count <= 0) {
             return;
         }
 
@@ -1141,7 +1239,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     }
 
     private void SetupProgressGraph(CrystallineConflictTeamName team) {
-        if(_timeline?.TeamProgress == null) {
+        if(_timeline?.TeamProgress == null || _timeline.TeamProgress[team].Count <= 0) {
             return;
         }
         int direction = 1;
@@ -1157,7 +1255,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     }
 
     private void SetupMidProgressGraph(CrystallineConflictTeamName team) {
-        if(_timeline?.TeamMidProgress == null) {
+        if(_timeline?.TeamMidProgress == null || _timeline.TeamMidProgress[team].Count <= 0) {
             return;
         }
         int direction = 1;
@@ -1250,11 +1348,15 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         List<MatchEvent> filteredList = new();
         var playerNames = _playerFilter.SearchText.Trim().Split(",").ToList();
         foreach(var mEvent in _consolidatedEvents) {
+            var type = mEvent.GetType();
+            if(_eventFilters.ContainsKey(type) && !_eventFilters[type]) {
+                continue;
+            }
             if(mEvent is KnockoutEvent) {
                 var mEvent2 = mEvent as KnockoutEvent;
                 foreach(var fragment in playerNames) {
-                    bool match1 = mEvent2!.Victim.ToString().Contains(fragment, StringComparison.OrdinalIgnoreCase);
-                    bool match2 = mEvent2.CreditedKiller?.ToString().Contains(fragment, StringComparison.OrdinalIgnoreCase) ?? false;
+                    bool match1 = mEvent2!.Victim.ToString().Contains(fragment, StringComparison.OrdinalIgnoreCase) && _deathFilter;
+                    bool match2 = (mEvent2.CreditedKiller?.ToString().Contains(fragment, StringComparison.OrdinalIgnoreCase) ?? false) && _killFilter;
                     if(match1 || match2) {
                         filteredList.Add(mEvent);
                         break;
@@ -1263,14 +1365,19 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             } else if(mEvent is CombinedActionEvent) {
                 var mEvent2 = mEvent as CombinedActionEvent;
                 foreach(var fragment in playerNames) {
-                    bool match1 = mEvent2!.Actor.ToString().Contains(fragment, StringComparison.OrdinalIgnoreCase);
-                    bool match2 = mEvent2.PlayerCastTarget?.ToString().Contains(fragment, StringComparison.OrdinalIgnoreCase) ?? false;
-                    bool match3 = mEvent2.AffectedPlayers?.Any(x => x.FullName.Contains(fragment, StringComparison.OrdinalIgnoreCase)) ?? false;
+                    bool match1 = mEvent2!.Actor.ToString().Contains(fragment, StringComparison.OrdinalIgnoreCase) && _lbCastFilter;
+                    bool match2 = (mEvent2.PlayerCastTarget?.ToString().Contains(fragment, StringComparison.OrdinalIgnoreCase) ?? false) && _lbImpactFilter;
+                    bool match3 = (mEvent2.AffectedPlayers?.Any(x => x.FullName.Contains(fragment, StringComparison.OrdinalIgnoreCase)) ?? false) && _lbImpactFilter;
                     bool match4 = _actionNames[mEvent2.ActionId].Contains(fragment, StringComparison.OrdinalIgnoreCase);
                     if(match1 || match2 || match3 || match4) {
                         filteredList.Add(mEvent);
                         break;
                     }
+                }
+            } else if(mEvent is ProgressEvent) {
+                //use same filter as generic map event
+                if(_eventFilters[typeof(GenericMatchEvent)]) {
+                    filteredList.Add(mEvent);
                 }
             } else {
                 filteredList.Add(mEvent);
