@@ -19,6 +19,7 @@ Final Fantasy XIV Dalamud plugin for recording PvP match history.
 * Enter `/pvpstatsconfig` or press the gear on the plugin description to access various settings.
 
 ## Known Issues
+* Spectated Crystalline Conflict matches are not recorded.
 * Rematches in Crystalline Conflict custom matches are not recorded.
 * Rival Wings matches that end between 14:51 and 14:59 have skewed match timeline timestamps by a few seconds.
 * Rival Wings matches recorded before v2.3.0.0 may have incorrect merc counts.
