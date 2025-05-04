@@ -140,6 +140,8 @@ public enum MinorStatus : uint {
 }
 
 public enum UselessStatus : uint {
+    WellFed = 48,
+    Jackpot = 902,
     PrioritySeals = 1078,
     PreferredWorld = 1411,
     Nin1 = 3190,

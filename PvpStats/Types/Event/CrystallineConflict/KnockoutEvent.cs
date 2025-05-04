@@ -5,6 +5,8 @@ using System;
 namespace PvpStats.Types.Event.CrystallineConflict;
 public class KnockoutEvent : MatchEvent {
 
+    public override int SortPriority => 1;
+
     public PlayerAlias Victim { get; set; }
     public PlayerAlias? CreditedKiller { get; set; }
     public uint? KillerNameId { get; set; }
