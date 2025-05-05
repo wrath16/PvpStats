@@ -404,7 +404,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                                 ImGui.Text(rank0);
                             }
                             ImGui.TableNextColumn();
-                            var playerColor0 = Match.LocalPlayerTeam is not null && firstTeam.TeamName == Match.LocalPlayerTeam.TeamName ? Plugin.Configuration.Colors.CCPlayerTeam : Plugin.Configuration.Colors.CCEnemyTeam;
+                            var playerColor0 = GetTeamColor(firstTeam.TeamName);
                             playerColor0 = Match.LocalPlayer is not null && Match.LocalPlayer.Equals(player0) ? Plugin.Configuration.Colors.CCLocalPlayer : playerColor0;
                             if(Match.IsSpectated) {
                                 playerColor0 = firstTeam.TeamName == CrystallineConflictTeamName.Astra ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
@@ -450,7 +450,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                             }
 
                             ImGui.TableNextColumn();
-                            var playerColor1 = Match.LocalPlayerTeam is not null && secondTeam.TeamName == Match.LocalPlayerTeam.TeamName ? Plugin.Configuration.Colors.CCPlayerTeam : Plugin.Configuration.Colors.CCEnemyTeam;
+                            var playerColor1 = GetTeamColor(secondTeam.TeamName);
                             playerColor1 = Match.LocalPlayer is not null && Match.LocalPlayer.Equals(player1) ? Plugin.Configuration.Colors.CCLocalPlayer : playerColor1;
                             if(Match.IsSpectated) {
                                 playerColor1 = secondTeam.TeamName == CrystallineConflictTeamName.Astra ? ImGuiColors.TankBlue : ImGuiColors.DPSRed;
@@ -654,12 +654,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             using var textColor = ImRaii.PushColor(ImGuiCol.Text, Plugin.Configuration.Colors.TeamRowText);
             foreach(var row in _teamScoreboard.Where(x => _teamQuickFilter.FilterState[x.Key])) {
                 ImGui.TableNextColumn();
-                Vector4 rowColor = ImGuiColors.DalamudWhite;
-                if(row.Key == Match.LocalPlayerTeam?.TeamName || (Match.IsSpectated && row.Key == CrystallineConflictTeamName.Astra)) {
-                    rowColor = Plugin.Configuration.Colors.CCPlayerTeam;
-                } else {
-                    rowColor = Plugin.Configuration.Colors.CCEnemyTeam;
-                }
+                Vector4 rowColor = GetTeamColor(row.Key);
                 rowColor.W = Plugin.Configuration.TeamRowAlpha;
 
                 ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(rowColor));
@@ -1121,11 +1116,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
 
     private void DrawPlayer(PlayerAlias name, BattleCharaSnapshot? snapshot = null, bool tooltipSnapshot = true) {
         var player = _players.FirstOrDefault(x => x.Alias.Equals(name));
-        Vector4 color = Plugin.Configuration.Colors.CCEnemyTeam;
-        if(_localPlayerTeam == null && player?.Team == CrystallineConflictTeamName.Astra
-            || player?.Team == _localPlayerTeam) {
-            color = Plugin.Configuration.Colors.CCPlayerTeam;
-        }
+        Vector4 color = GetTeamColor(player?.Team);
 
         using(var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero)) {
             if(player?.Job != null && TextureHelper.JobIcons.TryGetValue((Job)player.Job, out var icon)) {
@@ -1189,8 +1180,8 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         ImPlot.SetupAxisTicks(ImAxis.X1, ref _xAxisTicks[0], _xAxisTicks.Length, _xAxisLabels);
         ImPlot.SetupAxisTicks(ImAxis.Y1, ref yTicks[0], yTicks.Length);
 
-        var astraColor = _localPlayerTeam == CrystallineConflictTeamName.Umbra ? Plugin.Configuration.Colors.CCEnemyTeam : Plugin.Configuration.Colors.CCPlayerTeam;
-        var umbraColor = _localPlayerTeam == CrystallineConflictTeamName.Umbra ? Plugin.Configuration.Colors.CCPlayerTeam : Plugin.Configuration.Colors.CCEnemyTeam;
+        var astraColor = GetTeamColor(CrystallineConflictTeamName.Astra);
+        var umbraColor = GetTeamColor(CrystallineConflictTeamName.Umbra);
 
         using(var style = ImRaii.PushColor(ImPlotCol.Line, ImGuiColors.DalamudOrange)) {
             using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 1f * ImGuiHelpers.GlobalScale);
@@ -1417,6 +1408,21 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         }
         filteredList.Sort();
         _consolidatedEventsFiltered = filteredList;
+    }
+
+    private Vector4 GetTeamColor(CrystallineConflictTeamName? team) {
+        switch(_localPlayerTeam, team) {
+            case (null, CrystallineConflictTeamName.Astra):
+            case (CrystallineConflictTeamName.Astra, CrystallineConflictTeamName.Astra):
+            case (CrystallineConflictTeamName.Umbra, CrystallineConflictTeamName.Umbra):
+                return Plugin.Configuration.Colors.CCPlayerTeam;
+            case (null, CrystallineConflictTeamName.Umbra):
+            case (CrystallineConflictTeamName.Astra, CrystallineConflictTeamName.Umbra):
+            case (CrystallineConflictTeamName.Umbra, CrystallineConflictTeamName.Astra):
+                return Plugin.Configuration.Colors.CCEnemyTeam;
+            default:
+                return ImGuiColors.DalamudGrey;
+        }
     }
 
     protected override string BuildCSV() {
