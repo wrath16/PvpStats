@@ -145,6 +145,6 @@ public enum UselessStatus : uint {
     PrioritySeals = 1078,
     PreferredWorld = 1411,
     Nin1 = 3190,
-    Vpr = 4086
-
+    Vpr1 = 4086,
+    Vpr2 = 4087,
 }

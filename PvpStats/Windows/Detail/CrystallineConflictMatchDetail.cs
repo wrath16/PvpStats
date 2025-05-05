@@ -26,6 +26,14 @@ namespace PvpStats.Windows.Detail;
 
 internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictMatch> {
 
+    private enum SnapshotStyle : int {
+        Cast = 0,
+        Impact = 1
+    }
+
+
+    private static string[] SnapshotStyleOptions = ["On Cast", "On Impact"];
+
     //private Plugin _plugin;
     private CCTeamQuickFilter _teamQuickFilter;
     //private CrystallineConflictMatch _dataModel;
@@ -45,7 +53,6 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     private bool _firstDraw = true;
     private ulong _scoreboardTicks = 0;
     private bool _easterEgg = false;
-
     private CrystallineConflictMatchTimeline? _timeline;
     private List<MatchEvent> _consolidatedEvents = new();
     private List<MatchEvent> _consolidatedEventsFiltered = new();
@@ -55,6 +62,8 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     private bool _lbCastFilter = true;
     private bool _lbImpactFilter = true;
     private PlayerQuickSearchFilter _playerFilter = new();
+    private SnapshotStyle _snapshotStyle = SnapshotStyle.Impact;
+
     private List<(float Crystal, float Astra, float Umbra)> _consolidatedEventTeamPoints = new();
     private Dictionary<uint, string> _bNPCNames = new();
     private Dictionary<uint, string> _actionNames = new();
@@ -208,7 +217,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                     }
                 }
 
-                limitBreakCasts.Add(new(mEvent, effectEvent));
+                limitBreakCasts.Add(new(mEvent, effectEvent, _snapshotStyle == SnapshotStyle.Impact));
             }
             _consolidatedEvents = [.. _consolidatedEvents, .. limitBreakCasts];
             _consolidatedEvents.Sort();
@@ -216,20 +225,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
 
             //setup team point events
             if(_timeline.CrystalPosition != null && _timeline.TeamProgress != null) {
-                foreach(var mEvent in _consolidatedEvents) {
-                    float? crystalPos, astraPoints, umbraPoints;
-                    if(mEvent is GenericMatchEvent
-                        && (mEvent as GenericMatchEvent)?.Type == CrystallineConflictMatchEvent.MatchEnded) {
-                        astraPoints = Match.Teams[CrystallineConflictTeamName.Astra].Progress;
-                        umbraPoints = Match.Teams[CrystallineConflictTeamName.Umbra].Progress;
-                        crystalPos = _timeline.CrystalPosition.LastOrDefault()?.Points / 10f;
-                    } else {
-                        crystalPos = _timeline.CrystalPosition.LastOrDefault(x => x.Timestamp <= mEvent.Timestamp)?.Points / 10f;
-                        astraPoints = _timeline.TeamProgress[CrystallineConflictTeamName.Astra].LastOrDefault(x => x.Timestamp <= mEvent.Timestamp)?.Points / 10f;
-                        umbraPoints = _timeline.TeamProgress[CrystallineConflictTeamName.Umbra].LastOrDefault(x => x.Timestamp <= mEvent.Timestamp)?.Points / 10f;
-                    }
-                    _consolidatedEventTeamPoints.Add((crystalPos ?? 0, astraPoints ?? 0, umbraPoints ?? 0));
-                }
+                SetupTimelineTeamPoints();
             }
 
             //setup battlenpc names
@@ -774,14 +770,13 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     }
 
     private void DrawTimeline() {
-        //filters...
         if(ImGui.Button("Filters")) {
             ImGui.OpenPopup($"{Match.Id}--TimelineFilterPopup");
         }
         FilterPopup();
         ImGui.SameLine();
         string quickSearch = _playerFilter.SearchText;
-        ImGuiHelper.SetDynamicWidth(150f, 250f, 3f);
+        ImGuiHelper.SetDynamicWidth(150f, 500f, 3f);
         if(ImGui.InputTextWithHint("###playerQuickSearch", "Search for players and actions...", ref quickSearch, 100)) {
             _playerFilter.SearchText = quickSearch;
             RefreshQueue.QueueDataOperation(() => {
@@ -789,6 +784,24 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             });
         }
         ImGuiHelper.HelpMarker("Comma separate multiple phrases.");
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(120f * ImGuiHelpers.GlobalScale);
+        var snapshotStyle = (int)_snapshotStyle;
+        if(ImGui.Combo("Action timing", ref snapshotStyle, SnapshotStyleOptions, SnapshotStyleOptions.Length)) {
+            _snapshotStyle = (SnapshotStyle)snapshotStyle;
+            if(_snapshotStyle == SnapshotStyle.Impact) {
+                foreach(var mEvent in _consolidatedEvents.Where(x => x is CombinedActionEvent)) {
+                    mEvent.Timestamp = (mEvent as CombinedActionEvent)!.EffectTime ?? mEvent.Timestamp;
+                }
+            } else {
+                foreach(var mEvent in _consolidatedEvents.Where(x => x is CombinedActionEvent)) {
+                    mEvent.Timestamp = (mEvent as CombinedActionEvent)!.CastTime ?? mEvent.Timestamp;
+                }
+            }
+            _consolidatedEvents.Sort();
+            SetupTimelineTeamPoints();
+        }
+        ImGuiHelper.HelpMarker("Affects the ordering of action events and which character snapshots are shown on hover.");
 
         using var child = ImRaii.Child("timelineChild", ImGui.GetContentRegionAvail(), true);
         if(Match.DutyStartTime >= Match.MatchStartTime) {
@@ -1006,7 +1019,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 ImGui.SameLine();
                 ImGui.Text(" (");
                 ImGui.SameLine();
-                DrawPlayer(mEvent.CreditedKiller);
+                DrawPlayer(mEvent.CreditedKiller, mEvent.CreditedKillerSnapshot);
                 ImGui.SameLine();
                 ImGui.Text(")");
             }
@@ -1045,7 +1058,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
 
         using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
 
-        var actorSnapshot = mEvent.EffectTime != null ? mEvent.EffectSnapshots?[mEvent.Actor] : mEvent.CastSnapshots?[mEvent.Actor];
+        var actorSnapshot = _snapshotStyle == 0 ? mEvent.CastSnapshots?[mEvent.Actor] : mEvent.EffectSnapshots?[mEvent.Actor];
         DrawPlayer(mEvent.Actor, actorSnapshot);
 
         ImGui.SameLine();
@@ -1070,7 +1083,8 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             if(mEvent.EffectSnapshots?.ContainsKey(affectedPlayers[0]) ?? false) {
                 effectSnapshot = mEvent.EffectSnapshots?[affectedPlayers[0]];
             }
-            DrawPlayer(affectedPlayers[0], effectSnapshot ?? castSnapshot);
+            var snapshot = _snapshotStyle == 0 ? castSnapshot : effectSnapshot;
+            DrawPlayer(affectedPlayers[0], snapshot);
         }
 
         if(affectedPlayers.Count > 1) {
@@ -1087,8 +1101,9 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                     if(mEvent.EffectSnapshots?.ContainsKey(affectedPlayers[i]) ?? false) {
                         effectSnapshot = mEvent.EffectSnapshots?[affectedPlayers[i]];
                     }
-                    DrawPlayer(affectedPlayers[i], effectSnapshot ?? castSnapshot, false);
-                    if(i < affectedPlayers.Count - 1 && mEvent.EffectSnapshots != null) {
+                    var snapshot = _snapshotStyle == 0 ? castSnapshot : effectSnapshot;
+                    DrawPlayer(affectedPlayers[i], snapshot, false);
+                    if(i < affectedPlayers.Count - 1) {
                         ImGui.NewLine();
                         ImGui.Separator();
                     }
@@ -1217,6 +1232,24 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             ImPlot.PlotStairs("Umbra Mid Progress", ref _teamMidPoints[CrystallineConflictTeamName.Umbra].Xs[0],
                 ref _teamMidPoints[CrystallineConflictTeamName.Umbra].Ys[0],
                 _teamMidPoints[CrystallineConflictTeamName.Umbra].Xs.Length, ImPlotStairsFlags.None);
+        }
+    }
+
+    private void SetupTimelineTeamPoints() {
+        _consolidatedEventTeamPoints = new();
+        foreach(var mEvent in _consolidatedEvents) {
+            float? crystalPos, astraPoints, umbraPoints;
+            if(mEvent is GenericMatchEvent
+                && (mEvent as GenericMatchEvent)?.Type == CrystallineConflictMatchEvent.MatchEnded) {
+                astraPoints = Match.Teams[CrystallineConflictTeamName.Astra].Progress;
+                umbraPoints = Match.Teams[CrystallineConflictTeamName.Umbra].Progress;
+                crystalPos = _timeline.CrystalPosition.LastOrDefault()?.Points / 10f;
+            } else {
+                crystalPos = _timeline.CrystalPosition.LastOrDefault(x => x.Timestamp <= mEvent.Timestamp)?.Points / 10f;
+                astraPoints = _timeline.TeamProgress[CrystallineConflictTeamName.Astra].LastOrDefault(x => x.Timestamp <= mEvent.Timestamp)?.Points / 10f;
+                umbraPoints = _timeline.TeamProgress[CrystallineConflictTeamName.Umbra].LastOrDefault(x => x.Timestamp <= mEvent.Timestamp)?.Points / 10f;
+            }
+            _consolidatedEventTeamPoints.Add((crystalPos ?? 0, astraPoints ?? 0, umbraPoints ?? 0));
         }
     }
 

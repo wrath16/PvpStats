@@ -17,7 +17,7 @@ internal class CombinedActionEvent : MatchEvent {
     public Dictionary<string, BattleCharaSnapshot>? CastSnapshots { get; set; }
     public Dictionary<string, BattleCharaSnapshot>? EffectSnapshots { get; set; }
 
-    public CombinedActionEvent(ActionEvent cast, ActionEvent? impact) : base(impact?.Timestamp ?? cast.Timestamp) {
+    public CombinedActionEvent(ActionEvent cast, ActionEvent? impact, bool impactTime) : base(impactTime ? (impact?.Timestamp ?? cast.Timestamp) : cast.Timestamp) {
         Actor = cast.Actor;
         NameIdActor = cast.NameIdActor;
         ActionId = cast.ActionId;
