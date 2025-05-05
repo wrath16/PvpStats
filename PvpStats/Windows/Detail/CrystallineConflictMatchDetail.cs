@@ -63,6 +63,8 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     private bool _lbImpactFilter = true;
     private PlayerQuickSearchFilter _playerFilter = new();
     private SnapshotStyle _snapshotStyle = SnapshotStyle.Impact;
+    private bool _knockoutIcons = true;
+    private bool _limitBreakIcons = true;
 
     private List<(float Crystal, float Astra, float Umbra)> _consolidatedEventTeamPoints = new();
     private Dictionary<uint, string> _bNPCNames = new();
@@ -95,12 +97,12 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         switch(match.MatchType) {
             default:
                 _defaultScoreboardSize = new Vector2(700, 680);
-                _defaultGraphSize = new Vector2(975, 875);
+                _defaultGraphSize = new Vector2(975, 900);
                 _defaultTimelineSize = new Vector2(700, 680);
                 break;
             case CrystallineConflictMatchType.Ranked:
                 _defaultScoreboardSize = new Vector2(700, 700);
-                _defaultGraphSize = new Vector2(975, 895);
+                _defaultGraphSize = new Vector2(975, 920);
                 _defaultTimelineSize = new Vector2(700, 700);
                 break;
         }
@@ -1058,7 +1060,11 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
 
         ImGui.SameLine();
         if(mEvent.EffectTime != null) {
-            ImGui.Text($" used ");
+            if(_snapshotStyle == SnapshotStyle.Impact) {
+                ImGui.Text($" used ");
+            } else {
+                ImGui.Text($" cast ");
+            }
         } else {
             ImGui.Text($" ghosted ");
         }
@@ -1144,6 +1150,10 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     private void DrawGraphs() {
         //filters
 
+        ImGui.Checkbox("Knockouts", ref _knockoutIcons);
+        ImGui.SameLine();
+        ImGui.Checkbox("Limit Breaks", ref _limitBreakIcons);
+
         using var child = ImRaii.Child("graphChild", ImGui.GetContentRegionAvail(), true);
         if(child) {
             if(_timeline?.CrystalPosition != null) {
@@ -1223,6 +1233,72 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             ImPlot.PlotStairs("Umbra Mid Progress", ref _teamMidPoints[CrystallineConflictTeamName.Umbra].Xs[0],
                 ref _teamMidPoints[CrystallineConflictTeamName.Umbra].Ys[0],
                 _teamMidPoints[CrystallineConflictTeamName.Umbra].Xs.Length, ImPlotStairsFlags.None);
+        }
+
+        if(_knockoutIcons) {
+            DrawKnockoutIcons();
+        }
+        if(_limitBreakIcons) {
+            DrawLimitBreakIcons();
+        }
+    }
+
+    private void DrawKnockoutIcons() {
+        foreach(var mEvent in _timeline?.Kills ?? []) {
+            var player = _players.FirstOrDefault(x => x.Alias.Equals(mEvent.Victim));
+            var eventTime = (mEvent.Timestamp - (Match.MatchStartTime ?? DateTime.MinValue)).TotalSeconds;
+            var size = 25f * ImGuiHelpers.GlobalScale;
+            var adjustment = size / 2f;
+
+            double posY = 25;
+            if(player.Team == _localPlayerTeam || _localPlayerTeam == null && player.Team == CrystallineConflictTeamName.Astra) {
+                posY = -25;
+            }
+            var startPosPixels = ImPlot.PlotToPixels(eventTime, posY) - new Vector2(adjustment, 0f);
+            var startPosPlot = ImPlot.PixelsToPlot(startPosPixels);
+            var endPosPlot = ImPlot.PixelsToPlot(startPosPixels.X + size, startPosPixels.Y - size);
+            var endPosPixels = ImPlot.PlotToPixels(endPosPlot);
+
+            TextureHelper.JobIcons.TryGetValue((Job)player.Job, out var icon);
+            ImPlot.PlotImage($"##knockoutEvent-{mEvent.GetHashCode()}", Plugin.WindowManager.GetTextureHandle(icon), startPosPlot, endPosPlot);
+            Vector2 mousePos = ImGui.GetMousePos();
+            //Plugin.Log2.Debug($"{mEvent.Victim} mouse position: {mousePos} startPosition: {startPosPixels} endPosition: {endPosPixels}");
+            if(mousePos.X >= startPosPixels.X && mousePos.X <= endPosPixels.X &&
+                mousePos.Y >= endPosPixels.Y && mousePos.Y <= startPosPixels.Y) {
+                using var tooltip = ImRaii.Tooltip();
+                if(tooltip) {
+                    DrawEvent(mEvent);
+                }
+            }
+        }
+    }
+
+    private void DrawLimitBreakIcons() {
+        foreach(var mEvent in _consolidatedEvents.Where(x => x is CombinedActionEvent) ?? []) {
+            var actionEvent = mEvent as CombinedActionEvent;
+            var player = _players.FirstOrDefault(x => x.Alias.Equals(actionEvent.Actor));
+            var eventTime = (mEvent.Timestamp - (Match.MatchStartTime ?? DateTime.MinValue)).TotalSeconds;
+            var size = 25f * ImGuiHelpers.GlobalScale;
+            var adjustment = size / 2f;
+
+            double posY = -75;
+            if(player.Team == _localPlayerTeam || _localPlayerTeam == null && player.Team == CrystallineConflictTeamName.Astra) {
+                posY = 75;
+            }
+            var startPosPixels = ImPlot.PlotToPixels(eventTime, posY) - new Vector2(adjustment, 0f); ;
+            var startPosPlot = ImPlot.PixelsToPlot(startPosPixels);
+            var endPosPlot = ImPlot.PixelsToPlot(startPosPixels.X + size, startPosPixels.Y - size);
+            var endPosPixels = ImPlot.PlotToPixels(endPosPlot);
+
+            ImPlot.PlotImage($"##knockoutEvent-{mEvent.GetHashCode()}", Plugin.WindowManager.GetTextureHandle(_actionIcons[actionEvent.ActionId]), startPosPlot, endPosPlot);
+            Vector2 mousePos = ImGui.GetMousePos();
+            if(mousePos.X >= startPosPixels.X && mousePos.X <= endPosPixels.X &&
+                mousePos.Y >= endPosPixels.Y && mousePos.Y <= startPosPixels.Y) {
+                using var tooltip = ImRaii.Tooltip();
+                if(tooltip) {
+                    DrawEvent(actionEvent);
+                }
+            }
         }
     }
 
