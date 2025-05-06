@@ -110,8 +110,8 @@ internal class CrystallineConflictMatchManager : IDisposable {
 #if DEBUG
         _ccMatchEndSpectatorHook.Dispose();
 #endif
-        //_ccDirectorCtorHook.Dispose();
-        //_ccDirectorCtor2Hook.Dispose();
+        _ccDirectorCtorHook.Dispose();
+        _ccDirectorCtor2Hook.Dispose();
         _processKillHook.Dispose();
         _processPacketActorControlHook.Dispose();
         _processPacketActionEffectHook.Dispose();
