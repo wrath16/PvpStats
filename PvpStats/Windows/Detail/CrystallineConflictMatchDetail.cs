@@ -1248,13 +1248,13 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             var player = _players.FirstOrDefault(x => x.Alias.Equals(mEvent.Victim));
             var eventTime = (mEvent.Timestamp - (Match.MatchStartTime ?? DateTime.MinValue)).TotalSeconds;
             var size = 25f * ImGuiHelpers.GlobalScale;
-            var adjustment = size / 2f;
+            var adj = new Vector2(-1, 1) * size / 2f;
 
             double posY = 25;
             if(player.Team == _localPlayerTeam || _localPlayerTeam == null && player.Team == CrystallineConflictTeamName.Astra) {
                 posY = -25;
             }
-            var startPosPixels = ImPlot.PlotToPixels(eventTime, posY) - new Vector2(adjustment, 0f);
+            var startPosPixels = ImPlot.PlotToPixels(eventTime, posY) + adj;
             var startPosPlot = ImPlot.PixelsToPlot(startPosPixels);
             var endPosPlot = ImPlot.PixelsToPlot(startPosPixels.X + size, startPosPixels.Y - size);
             var endPosPixels = ImPlot.PlotToPixels(endPosPlot);
@@ -1279,13 +1279,13 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             var player = _players.FirstOrDefault(x => x.Alias.Equals(actionEvent.Actor));
             var eventTime = (mEvent.Timestamp - (Match.MatchStartTime ?? DateTime.MinValue)).TotalSeconds;
             var size = 25f * ImGuiHelpers.GlobalScale;
-            var adjustment = size / 2f;
+            var adj = new Vector2(-1, 1) * size / 2f;
 
             double posY = -75;
             if(player.Team == _localPlayerTeam || _localPlayerTeam == null && player.Team == CrystallineConflictTeamName.Astra) {
                 posY = 75;
             }
-            var startPosPixels = ImPlot.PlotToPixels(eventTime, posY) - new Vector2(adjustment, 0f); ;
+            var startPosPixels = ImPlot.PlotToPixels(eventTime, posY) + adj;
             var startPosPlot = ImPlot.PixelsToPlot(startPosPixels);
             var endPosPlot = ImPlot.PixelsToPlot(startPosPixels.X + size, startPosPixels.Y - size);
             var endPosPixels = ImPlot.PlotToPixels(endPosPlot);
