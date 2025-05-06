@@ -107,9 +107,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
         _plugin.AddonLifecycle.UnregisterListener(OnPvPIntro);
         //_plugin.AddonLifecycle.UnregisterListener(OnBattleLog);
         _ccMatchEndHook.Dispose();
-#if DEBUG
         _ccMatchEndSpectatorHook.Dispose();
-#endif
         _ccDirectorCtorHook.Dispose();
         _ccDirectorCtor2Hook.Dispose();
         _processKillHook.Dispose();
