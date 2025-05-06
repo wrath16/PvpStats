@@ -78,9 +78,12 @@ internal class WindowManager : IDisposable {
     private void OnLogin() {
         Task.Delay(3000).ContinueWith(async (t) => {
             if(_plugin.Configuration.EnableAutoPlayerLinking) {
+                //don't need to put this here anymore but the delay is annoying so we want to do it after first refresh
                 await _plugin.PlayerLinksService.BuildAutoLinksCache();
+                _ = _plugin.WindowManager.RefreshAll(true);
+            } else {
+                _ = _plugin.WindowManager.RefreshAll();
             }
-            _ = _plugin.WindowManager.RefreshAll(true);
         });
     }
 

@@ -131,62 +131,61 @@ internal class PlayerLinkService {
         }
     }
 
-    internal Task BuildAutoLinksCache() {
+    //returns true if updates were made
+    internal async Task BuildAutoLinksCache() {
         //if(!IsInitialized() && !Initialize()) return;
         _plugin.Log.Information("Building player alias links cache from PlayerTrack IPC data...");
-        return Task.Run(async () => {
-            //get players
-            var ccMatches = _plugin.CCCache.Matches.ToList();
-            var flMatches = _plugin.FLCache.Matches.ToList();
-            var rwMatches = _plugin.RWCache.Matches.ToList();
-            HashSet<PlayerAlias> allPlayers = new();
-            foreach(var match in ccMatches) {
-                foreach(var player in match.Players) {
-                    allPlayers.Add(player.Alias);
-                }
+        //get players
+        var ccMatches = _plugin.CCCache.Matches.ToList();
+        var flMatches = _plugin.FLCache.Matches.ToList();
+        var rwMatches = _plugin.RWCache.Matches.ToList();
+        HashSet<PlayerAlias> allPlayers = new();
+        foreach(var match in ccMatches) {
+            foreach(var player in match.Players) {
+                allPlayers.Add(player.Alias);
             }
-            foreach(var match in flMatches) {
-                foreach(var player in match.Players) {
-                    allPlayers.Add(player.Name);
-                }
+        }
+        foreach(var match in flMatches) {
+            foreach(var player in match.Players) {
+                allPlayers.Add(player.Name);
             }
-            foreach(var match in rwMatches) {
-                if(match.Players is null) continue;
-                foreach(var player in match.Players) {
-                    allPlayers.Add(player.Name);
-                }
+        }
+        foreach(var match in rwMatches) {
+            if(match.Players is null) continue;
+            foreach(var player in match.Players) {
+                allPlayers.Add(player.Name);
             }
+        }
 
-            if(!allPlayers.Any()) {
-                return;
-            }
+        if(!allPlayers.Any()) {
+            return;
+        }
 
-            //get auto links
-            List<PlayerAliasLink> autoLinks = [];
-            try {
-                autoLinks = GetPlayerNameHistory(allPlayers.ToList());
-                _plugin.Log.Information($"players with previous aliases: {autoLinks.Count}");
-            } catch(Exception e) {
-                if(e is IpcNotReadyError) {
-                    if(_plugin.Configuration.EnableAutoPlayerLinking) {
-                        _plugin.Log.Error("Unable to query PlayerTrack IPC: check whether plugin is installed and up to date.");
-                    } else {
-                        _plugin.Log.Information("PlayerTrack IPC unavailable.");
-                    }
+        //get auto links
+        List<PlayerAliasLink> autoLinks = [];
+        try {
+            autoLinks = GetPlayerNameHistory([.. allPlayers]);
+            _plugin.Log.Information($"players with previous aliases: {autoLinks.Count}");
+        } catch(Exception e) {
+            if(e is IpcNotReadyError) {
+                if(_plugin.Configuration.EnableAutoPlayerLinking) {
+                    _plugin.Log.Error("Unable to query PlayerTrack IPC: check whether plugin is installed and up to date.");
                 } else {
-                    _plugin.Log.Error(e, "PlayerTrack IPC error");
+                    _plugin.Log.Information("PlayerTrack IPC unavailable.");
                 }
+            } else {
+                _plugin.Log.Error(e, "PlayerTrack IPC error");
             }
-            if(autoLinks is null || autoLinks.Count <= 0) {
-                return;
-            }
+        }
+        if(autoLinks is null || autoLinks.Count <= 0) {
+            return;
+        }
 
-            //save
-            await _plugin.DataQueue.QueueDataOperation(async () => {
-                AutoPlayerLinksCache = autoLinks;
-                BuildLinkedAliases();
-                await _plugin.Storage.SetAutoLinks(AutoPlayerLinksCache);
-            });
+        //save
+        await _plugin.DataQueue.QueueDataOperation(async () => {
+            AutoPlayerLinksCache = autoLinks;
+            BuildLinkedAliases();
+            await _plugin.Storage.SetAutoLinks(AutoPlayerLinksCache);
         });
     }
 
