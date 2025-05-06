@@ -31,7 +31,6 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         Impact = 1
     }
 
-
     private static string[] SnapshotStyleOptions = ["On Cast", "On Impact"];
 
     //private Plugin _plugin;
