@@ -98,6 +98,20 @@ public class PlayerAlias : IEquatable<PlayerAlias>, IEquatable<PvpPlayer>, IEqua
         return FullName.Equals(other, StringComparison.OrdinalIgnoreCase);
     }
 
+    public static bool operator ==(PlayerAlias? a, PlayerAlias? b) {
+        if(a is null) {
+            return b is null;
+        }
+        return a.Equals(b);
+    }
+
+    public static bool operator !=(PlayerAlias? a, PlayerAlias? b) {
+        if(a is null) {
+            return b is not null;
+        }
+        return !a.Equals(b);
+    }
+
     public override string ToString() {
         return FullName;
     }

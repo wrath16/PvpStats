@@ -268,6 +268,22 @@ internal unsafe class DebugWindow : Window {
                     }
                 }
             }
+            using(var tab = ImRaii.TabItem("Links")) {
+                if(tab) {
+                    using(var table = ImRaii.Table("main", 2)) {
+                        if(table) {
+                            ImGui.TableSetupColumn("c1");
+                            ImGui.TableSetupColumn("c2");
+                            foreach(var link in _plugin.PlayerLinksService.LinkedAliases) {
+                                ImGui.TableNextColumn();
+                                ImGui.Text($"{link.Key}");
+                                ImGui.TableNextColumn();
+                                ImGui.Text($"{link.Value}");
+                            }
+                        }
+                    }
+                }
+            }
             using(var tab = ImRaii.TabItem("Misc.")) {
                 if(tab) {
                     var debugMode = _plugin.DebugMode;
@@ -279,40 +295,40 @@ internal unsafe class DebugWindow : Window {
                         _plugin.RWMatchManager.EnableLeaveDutyButton();
                     }
 
-                    if(ImGui.Button("Get competent players")) {
-                        _plugin.DataQueue.QueueDataOperation(() => {
-                            CompetentPlayers = [];
-                            foreach(var match in _plugin.FLCache.Matches.Where(x => x.IsCompleted && !x.IsDeleted)) {
-                                foreach(var scoreboard in match.PlayerScoreboards) {
-                                    if(scoreboard.Value.KDA >= 20) {
-                                        CompetentPlayers.Add((PlayerAlias)scoreboard.Key);
-                                    }
-                                }
-                            }
-                        });
-                    }
+                    //if(ImGui.Button("Get competent players")) {
+                    //    _plugin.DataQueue.QueueDataOperation(() => {
+                    //        CompetentPlayers = [];
+                    //        foreach(var match in _plugin.FLCache.Matches.Where(x => x.IsCompleted && !x.IsDeleted)) {
+                    //            foreach(var scoreboard in match.PlayerScoreboards) {
+                    //                if(scoreboard.Value.KDA >= 20) {
+                    //                    CompetentPlayers.Add((PlayerAlias)scoreboard.Key);
+                    //                }
+                    //            }
+                    //        }
+                    //    });
+                    //}
 
-                    if(ImGui.Button("Find shared accounts")) {
-                        Dictionary<ulong, PlayerAlias> accounts = new();
-                        Dictionary<ulong, HashSet<PlayerAlias>> linkedAliases = new();
-                        System.Threading.Tasks.Task.Run(() => {
-                            foreach(var match in _plugin.CCCache.Matches.Where(x => x.IsCompleted && !x.IsDeleted && x.PostMatch != null)) {
-                                foreach(var team in match.Teams) {
-                                    foreach(var player in team.Value.Players.Where(x => x.AccountId != null)) {
-                                        var accountId = (ulong)player.AccountId;
-                                        linkedAliases.TryAdd(accountId, new());
-                                        if(!accounts.TryAdd(accountId, player.Alias)) {
-                                            if(!player.Alias.Equals(accounts[accountId])) {
-                                                if(linkedAliases[accountId].Add(player.Alias)) {
-                                                    Plugin.Log2.Debug($"{accounts[accountId]} is {player.Alias}!");
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        });
-                    }
+                    //if(ImGui.Button("Find shared accounts")) {
+                    //    Dictionary<ulong, PlayerAlias> accounts = new();
+                    //    Dictionary<ulong, HashSet<PlayerAlias>> linkedAliases = new();
+                    //    System.Threading.Tasks.Task.Run(() => {
+                    //        foreach(var match in _plugin.CCCache.Matches.Where(x => x.IsCompleted && !x.IsDeleted && x.PostMatch != null)) {
+                    //            foreach(var team in match.Teams) {
+                    //                foreach(var player in team.Value.Players.Where(x => x.AccountId != null)) {
+                    //                    var accountId = (ulong)player.AccountId;
+                    //                    linkedAliases.TryAdd(accountId, new());
+                    //                    if(!accounts.TryAdd(accountId, player.Alias)) {
+                    //                        if(!player.Alias.Equals(accounts[accountId])) {
+                    //                            if(linkedAliases[accountId].Add(player.Alias)) {
+                    //                                Plugin.Log2.Debug($"{accounts[accountId]} is {player.Alias}!");
+                    //                            }
+                    //                        }
+                    //                    }
+                    //                }
+                    //            }
+                    //        }
+                    //    });
+                    //}
 
                     if(ImGui.Button("Show all Duties")) {
                         foreach(var duty in _plugin.DataManager.GetExcelSheet<ContentFinderCondition>()) {
@@ -351,6 +367,11 @@ internal unsafe class DebugWindow : Window {
                             Plugin.Log2.Debug($"Matches: {matchCount}\nFirst Mid Winner Wins Match (no Gobbiejuice): {firstMidWins}\n{((float)firstMidWins / matchCount):P2}");
                         });
 
+                    }
+
+                    if(ImGui.Button("Test FUnction")) {
+                        _plugin.PlayerLinksService.GetMainAlias((PlayerAlias)"Uki Okawa Adamantoise");
+                        _plugin.PlayerLinksService.GetMainAlias((PlayerAlias)"Uki Yo Adamantoise");
                     }
 
                     ImGui.Text(Framework.Instance()->GameVersionString);
@@ -708,7 +729,7 @@ internal unsafe class DebugWindow : Window {
                     ImGui.Text($"0x{obj.OwnerId:X2}");
                     ImGui.TableNextColumn();
                     foreach(var status in obj.StatusList) {
-                        ImGui.Text($"{status.StatusId}:{status.Param},");
+                        ImGui.Text($"{status.StatusId}:{status.Param}");
                         ImGui.SameLine();
                     }
                 } catch {

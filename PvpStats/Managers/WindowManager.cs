@@ -77,8 +77,10 @@ internal class WindowManager : IDisposable {
 
     private void OnLogin() {
         Task.Delay(3000).ContinueWith(async (t) => {
-            _ = RefreshAll();
-            await _plugin.PlayerLinksService.BuildAutoLinksCache();
+            if(_plugin.Configuration.EnableAutoPlayerLinking) {
+                await _plugin.PlayerLinksService.BuildAutoLinksCache();
+            }
+            _ = _plugin.WindowManager.RefreshAll(true);
         });
     }
 
