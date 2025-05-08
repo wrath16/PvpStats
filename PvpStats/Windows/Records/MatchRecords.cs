@@ -53,6 +53,8 @@ internal abstract class MatchRecords<T> : Refreshable<T> where T : PvpMatch {
     }
 
     public void Draw() {
+        ImGuiHelper.HelpMarker("Records marked with an asterisk (*) not all matches are eligible for.");
+        ImGui.Separator();
         foreach(var match in Superlatives) {
             var x = match.Value;
             DrawStat(match.Key, match.Value.Select(x => x.Item1).ToArray(), match.Value.Select(x => x.Item2).ToArray());
@@ -65,7 +67,7 @@ internal abstract class MatchRecords<T> : Refreshable<T> where T : PvpMatch {
             if(table) {
                 var widthStyle = Plugin.Configuration.StretchScoreboardColumns ?? false ? ImGuiTableColumnFlags.WidthStretch : ImGuiTableColumnFlags.WidthFixed;
                 ImGui.TableSetupColumn("title", widthStyle, ImGuiHelpers.GlobalScale * 185f);
-                ImGui.TableSetupColumn($"value", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 60f);
+                ImGui.TableSetupColumn($"value", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 80f);
                 ImGui.TableSetupColumn($"examine", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 40f);
 
                 for(int i = 0; i < superlatives.Length; i++) {

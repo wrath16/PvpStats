@@ -133,17 +133,22 @@ internal class RivalWingsSummary : RefreshableSync<RivalWingsMatch> {
 
         if(match.Mercs != null) {
             foreach(var team in match.Mercs) {
+                var mercWins = team.Value;
+                if(match.Flags.HasFlag(RWValidationFlag.DoubleMerc)) {
+                    mercWins = (int)Math.Ceiling((double)mercWins / 2);
+                }
+
                 if(team.Key == match.LocalPlayerTeam) {
                     if(remove) {
-                        _mercWins -= team.Value;
+                        _mercWins -= mercWins;
                     } else {
-                        _mercWins += team.Value;
+                        _mercWins += mercWins;
                     }
                 } else {
                     if(remove) {
-                        _mercLosses -= team.Value;
+                        _mercLosses -= mercWins;
                     } else {
-                        _mercLosses += team.Value;
+                        _mercLosses += mercWins;
                     }
                 }
             }

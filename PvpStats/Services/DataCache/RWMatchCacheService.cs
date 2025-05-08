@@ -24,7 +24,7 @@ internal class RWMatchCacheService : MatchCacheService<RivalWingsMatch> {
         await Plugin.Storage.UpdateRWMatches(matches);
     }
 
-    internal RivalWingsMatchTimeline? GetTimeline(RivalWingsMatch match) {
+    internal override RivalWingsMatchTimeline? GetTimeline(RivalWingsMatch match) {
         if(match.TimelineId == null) return null;
         return Plugin.Storage.GetRWTimelines().Query().Where(x => x.Id.Equals(match.TimelineId)).FirstOrDefault();
     }

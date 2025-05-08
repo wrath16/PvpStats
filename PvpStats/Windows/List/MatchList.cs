@@ -119,7 +119,17 @@ internal abstract class MatchList<T> : FilteredList<T, T> where T : PvpMatch {
 
 #if DEBUG
         if(ImGui.MenuItem($"Edit document##{item!.GetHashCode()}--FullEditContext")) {
-            OpenFullEditDetail(item);
+            _plugin.DataQueue.QueueDataOperation(() => {
+                OpenFullEditDetail(item);
+            });
+        }
+        if(ImGui.MenuItem($"Edit timeline##{item!.GetHashCode()}--OutputTimeline")) {
+            _plugin.DataQueue.QueueDataOperation(() => {
+                var timeline = Cache.GetTimeline(item);
+                if(timeline != null) {
+                    _plugin.WindowManager.OpenTimelineFullEditWindow(timeline);
+                }
+            });
         }
 #endif
     }

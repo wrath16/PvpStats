@@ -18,7 +18,7 @@ internal abstract class StatsManager<T> where T : PvpMatch {
     protected readonly Plugin Plugin;
     protected readonly MatchCacheService<T> MatchCache;
     internal SemaphoreSlim RefreshLock { get; private set; } = new SemaphoreSlim(1);
-    private DataQueue RefreshQueue { get; set; } = new();
+    internal DataQueue RefreshQueue { get; set; } = new();
 
     public bool RefreshActive { get; protected set; }
     public float RefreshProgress { get; protected set; }
@@ -34,17 +34,22 @@ internal abstract class StatsManager<T> where T : PvpMatch {
 
     public async Task<(List<T> Matches, List<T> Additions, List<T> Removals)> Refresh(List<DataFilter> matchFilters) {
         var task = RefreshQueue.QueueDataOperation(() => {
-            RefreshActive = true;
-            Stopwatch matchesTimer = Stopwatch.StartNew();
-            var matches = MatchCache.Matches.Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
-            matches = FilterMatches(matchFilters, matches);
-            var toAdd = matches.Except(Matches, new PvpMatchComparer<T>()).ToList();
-            var toSubtract = Matches.Except(matches, new PvpMatchComparer<T>()).ToList();
-            Matches = matches;
-            matchesTimer.Stop();
-            Plugin.Log.Debug(string.Format("{0,-50}: {1,4} ms", $"Matches Retrieval", matchesTimer.ElapsedMilliseconds.ToString()));
-            Plugin.Log.Debug($"total: {matches.Count} additions: {toAdd.Count} removals: {toSubtract.Count}");
-            return (matches, toAdd, toSubtract);
+            try {
+                RefreshActive = true;
+                Stopwatch matchesTimer = Stopwatch.StartNew();
+                var matches = MatchCache.Matches.Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
+                matches = FilterMatches(matchFilters, matches);
+                var toAdd = matches.Except(Matches, new PvpMatchComparer<T>()).ToList();
+                var toSubtract = Matches.Except(matches, new PvpMatchComparer<T>()).ToList();
+                Matches = matches;
+                matchesTimer.Stop();
+                Plugin.Log.Debug(string.Format("{0,-50}: {1,4} ms", $"Matches Retrieval", matchesTimer.ElapsedMilliseconds.ToString()));
+                Plugin.Log.Debug($"total: {matches.Count} additions: {toAdd.Count} removals: {toSubtract.Count}");
+                return (matches, toAdd, toSubtract);
+            } catch {
+                RefreshActive = false;
+                throw;
+            }
         });
         await task;
         return task.Result;

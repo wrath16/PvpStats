@@ -15,6 +15,7 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
     private readonly FrontlineRecords _records;
     private readonly FrontlineJobList _jobs;
     private readonly FrontlinePlayerList _players;
+    private readonly FrontlineMeta _meta;
     private readonly FrontlinePvPProfile _profile;
 
     public FLTrackerWindow(Plugin plugin) : base(plugin, plugin.FLStatsEngine, plugin.Configuration.FLWindowConfig, "Frontline Tracker") {
@@ -51,6 +52,8 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
         Tabs.Add(_jobs);
         _players = new(plugin, WindowConfig.PlayerStatFilters.StatSourceFilter, WindowConfig.PlayerStatFilters.MinMatchFilter, null, playerFilter);
         Tabs.Add(_players);
+        _meta = new(plugin);
+        Tabs.Add(_meta);
         _profile = new(plugin);
 
         JobStatFilters.Add(_jobs.StatSourceFilter);
@@ -81,6 +84,11 @@ internal class FLTrackerWindow : TrackerWindow<FrontlineMatch> {
                     _jobs.Draw();
                 }, _jobs.RefreshActive, _jobs.RefreshProgress);
                 Tab("Players", _players.Draw, _players.RefreshActive, _players.RefreshProgress);
+                Tab("Meta", () => {
+                    using(ImRaii.Child("MetaChild")) {
+                        _meta.Draw();
+                    }
+                }, _meta.RefreshActive, _meta.RefreshProgress);
                 Tab("Profile", () => {
                     using(ImRaii.Child("ProfileChild")) {
                         _profile.Draw();

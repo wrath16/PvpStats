@@ -156,12 +156,18 @@ internal class RivalWingsJobList : JobStatsList<RWPlayerJobStats, RivalWingsMatc
                 RivalWingsStatsManager.AddPlayerJobStat(_jobStats[job], _jobTeamContributions[job], match, player, teamScoreboard, remove);
 
                 if(match.Mercs != null) {
+                    var playerMercWins = match.Mercs[player.Team];
+                    var enemyMercWins = match.Mercs[enemyTeam];
+                    if(match.Flags.HasFlag(RWValidationFlag.DoubleMerc)) {
+                        playerMercWins = (int)Math.Ceiling((double)playerMercWins / 2);
+                        enemyMercWins = (int)Math.Ceiling((double)enemyMercWins / 2);
+                    }
                     if(remove) {
-                        Interlocked.Add(ref _jobStats[job].MercStats.Wins, -match.Mercs[player.Team]);
-                        Interlocked.Add(ref _jobStats[job].MercStats.Losses, -match.Mercs[enemyTeam]);
+                        Interlocked.Add(ref _jobStats[job].MercStats.Wins, -playerMercWins);
+                        Interlocked.Add(ref _jobStats[job].MercStats.Losses, -enemyMercWins);
                     } else {
-                        Interlocked.Add(ref _jobStats[job].MercStats.Wins, match.Mercs[player.Team]);
-                        Interlocked.Add(ref _jobStats[job].MercStats.Losses, match.Mercs[enemyTeam]);
+                        Interlocked.Add(ref _jobStats[job].MercStats.Wins, playerMercWins);
+                        Interlocked.Add(ref _jobStats[job].MercStats.Losses, enemyMercWins);
                     }
                 }
                 if(match.Supplies != null) {

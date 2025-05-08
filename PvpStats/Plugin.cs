@@ -14,6 +14,7 @@ using PvpStats.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace PvpStats;
@@ -57,7 +58,7 @@ public sealed class Plugin : IDalamudPlugin {
     internal FrontlineMatchManager? FLMatchManager { get; init; }
     internal RivalWingsMatchManager? RWMatchManager { get; init; }
     internal WindowManager WindowManager { get; init; }
-    internal MigrationManager MigrationManager { get; init; }
+    internal ValidationManager Validation { get; init; }
     internal CrystallineConflictStatsManager CCStatsEngine { get; init; }
     internal FrontlineStatsManager FLStatsEngine { get; init; }
     internal RivalWingsStatsManager RWStatsEngine { get; init; }
@@ -139,7 +140,7 @@ public sealed class Plugin : IDalamudPlugin {
             FLStatsEngine = new(this);
             RWStatsEngine = new(this);
             WindowManager = new(this);
-            MigrationManager = new(this);
+            Validation = new(this);
             try {
                 CCMatchManager = new(this);
             } catch(SignatureException e) {
@@ -179,7 +180,6 @@ public sealed class Plugin : IDalamudPlugin {
             CommandManager.AddHandler(DebugCommandName, new CommandInfo(OnDebugCommand) {
                 HelpMessage = "Opens debug window."
             });
-            DebugMode = true;
 #endif
             DataQueue.QueueDataOperation(Initialize);
         } catch(Exception e) {
@@ -218,23 +218,25 @@ public sealed class Plugin : IDalamudPlugin {
     }
 
     private void OnLastMatchCommand(string command, string args) {
-        var lastMatchCC = CCStatsEngine.Matches.FirstOrDefault();
-        var lastMatchFL = FLStatsEngine.Matches.FirstOrDefault();
-        var lastMatchRW = RWStatsEngine.Matches.FirstOrDefault();
-        List<PvpMatch> matches = [];
-        if(lastMatchCC != null) {
-            matches.Add(lastMatchCC);
-        }
-        if(lastMatchFL != null) {
-            matches.Add(lastMatchFL);
-        }
-        if(lastMatchRW != null) {
-            matches.Add(lastMatchRW);
-        }
-        var lastMatch = matches.OrderByDescending(x => x.DutyStartTime).FirstOrDefault();
-        if(lastMatch != null) {
-            WindowManager.OpenMatchDetailsWindow(lastMatch);
-        }
+        Task.Run(() => {
+            var lastMatchCC = CCCache.Matches.OrderByDescending(x => x.DutyStartTime).FirstOrDefault(x => x.IsCompleted && !x.IsQuarantined && !x.IsDeleted);
+            var lastMatchFL = FLCache.Matches.OrderByDescending(x => x.DutyStartTime).FirstOrDefault(x => x.IsCompleted && !x.IsQuarantined && !x.IsDeleted);
+            var lastMatchRW = RWCache.Matches.OrderByDescending(x => x.DutyStartTime).FirstOrDefault(x => x.IsCompleted && !x.IsQuarantined && !x.IsDeleted);
+            List<PvpMatch> matches = [];
+            if(lastMatchCC != null) {
+                matches.Add(lastMatchCC);
+            }
+            if(lastMatchFL != null) {
+                matches.Add(lastMatchFL);
+            }
+            if(lastMatchRW != null) {
+                matches.Add(lastMatchRW);
+            }
+            var lastMatch = matches.OrderByDescending(x => x.DutyStartTime).FirstOrDefault();
+            if(lastMatch != null) {
+                WindowManager.OpenMatchDetailsWindow(lastMatch);
+            }
+        });
     }
 
     private void OnCCCommand(string command, string args) {
@@ -269,9 +271,31 @@ public sealed class Plugin : IDalamudPlugin {
         if(Configuration.EnableDBCachingRW ?? true) {
             RWCache.EnableCaching();
         }
-        await MigrationManager.BulkUpdateCCMatchTypes();
-        await MigrationManager.BulkCCUpdateValidatePlayerCount();
-        _ = WindowManager.RefreshAll();
+
+        var lastVersion = new Version(Configuration.LastPluginVersion);
+        var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
+
+        //validate everytime plugin initiates
+        await Validation.BulkCCUpdateValidatePlayerCount();
+
+        //current version validations
+        if(lastVersion < new Version(2, 4, 0, 0)) {
+            var ccValidationTask = new Task<Task>(async () => {
+                await Validation.BulkUpdateCCMatchTypes();
+            });
+            ccValidationTask.Start();
+
+            var rwValidationTask = new Task<Task>(async () => {
+                await Validation.SetRivalWingsMatchFlags();
+            });
+            rwValidationTask.Start();
+
+            Task.WaitAll([ccValidationTask.Result, rwValidationTask.Result]);
+        }
+
+        await WindowManager.RefreshAll();
+        Configuration.LastPluginVersion = currentVersion?.ToString() ?? "0.0.0.0";
+        Configuration.Save();
         Log.Information("PvP Tracker initialized.");
     }
 }

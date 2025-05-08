@@ -8,7 +8,7 @@ namespace PvpStats.Types.Player;
 public class PlayerAlias : IEquatable<PlayerAlias>, IEquatable<PvpPlayer>, IEquatable<CrystallineConflictPlayer>, IEquatable<string>, IComparable<PlayerAlias> {
     public string Name { get; set; } = "";
     public string HomeWorld { get; set; } = "";
-    //[BsonId]
+    [BsonIgnore]
     public string FullName => $"{Name} {HomeWorld}";
 
     public static PlayerAlias Unknown => new("_UNKNOWN_", "_UNKNOWN_");
@@ -96,6 +96,20 @@ public class PlayerAlias : IEquatable<PlayerAlias>, IEquatable<PvpPlayer>, IEqua
             return false;
         }
         return FullName.Equals(other, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static bool operator ==(PlayerAlias? a, PlayerAlias? b) {
+        if(a is null) {
+            return b is null;
+        }
+        return a.Equals(b);
+    }
+
+    public static bool operator !=(PlayerAlias? a, PlayerAlias? b) {
+        if(a is null) {
+            return b is not null;
+        }
+        return !a.Equals(b);
     }
 
     public override string ToString() {

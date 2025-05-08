@@ -1,7 +1,6 @@
 ﻿using Dalamud.Game.Addon.Events;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
-using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Hooking;
@@ -495,10 +494,6 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         }
         var director = (RivalWingsContentDirector*)((IntPtr)EventFramework.Instance()->GetInstanceContentDirector() + RivalWingsContentDirectorOffset);
         if(director is null) {
-            return;
-        }
-
-        if(Plugin.Condition[ConditionFlag.BetweenAreas] || Plugin.Condition[ConditionFlag.BetweenAreas51]) {
             return;
         }
 

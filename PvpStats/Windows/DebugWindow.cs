@@ -2,11 +2,13 @@
 #if DEBUG
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
+using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Game.InstanceContent;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
@@ -20,6 +22,7 @@ using PvpStats.Types.Match.Timeline;
 using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -100,7 +103,6 @@ internal unsafe class DebugWindow : Window {
 
                     }
 
-
                     if(ImGui.Button("GetNodeByIDChain")) {
                         unsafe {
                             var x = AtkNodeService.GetNodeByIDChain(_addon, _idParams);
@@ -111,6 +113,18 @@ internal unsafe class DebugWindow : Window {
 
                     if(ImGui.Button("Print ATKStage String data")) {
                         _plugin.AtkNodeService.PrintAtkStringArray();
+                    }
+
+
+                    var battleLog = AtkStage.Instance()->RaptureAtkUnitManager->GetAddonByName("PvPMKSBattleLog");
+                    //Plugin.Log2.Debug($"{new IntPtr(battleLog):X2}");
+                    //Plugin.Log2.Debug($"{battleLog != null}");
+                    if(battleLog != null) {
+                        var valueAddress = new IntPtr(battleLog->AtkValues);
+                        ImGui.Text($"Battle Log Values Address: 0x{valueAddress:X2}");
+                        if(ImGui.Button("Copy")) {
+                            ImGui.SetClipboardText($"{valueAddress:X2}");
+                        }
                     }
                 }
             }
@@ -141,7 +155,6 @@ internal unsafe class DebugWindow : Window {
                         ImGui.SetClipboardText(new IntPtr(instanceDirector).ToString("X2"));
                     }
 
-
                     if(ImGui.Button("Print ICD Bytes")) {
                         _plugin.Functions.FindValue<byte>(0, (nint)instanceDirector, 0x2000, 0, true);
                         //var x = _plugin.Functions.GetRawInstanceContentDirector();
@@ -166,10 +179,21 @@ internal unsafe class DebugWindow : Window {
                     }
 
                     ImGui.Separator();
+                    var directorToDo = UIState.Instance()->DirectorTodo;
+                    ImGui.Text($"ToDo Director: 0x{new IntPtr(directorToDo.Director):X2}");
+                    ImGui.Text($"Title: {directorToDo.Title}");
+                    ImGui.Text($"Description: {directorToDo.Description}");
+                    ImGui.Text($"Relief Text: {directorToDo.ReliefText}");
+                    ImGui.Text($"Update pending?: {directorToDo.IsFullUpdatePending}");
+                    ImGui.Text($"Shown?: {directorToDo.IsShown}");
+
+                    ImGui.Separator();
                     if(instanceDirector != null && instanceDirector->InstanceContentType == FFXIVClientStructs.FFXIV.Client.Game.InstanceContent.InstanceContentType.RivalWing) {
                         DrawRivalWingsDirector();
                     } else if(instanceDirector != null && instanceDirector->InstanceContentType == FFXIVClientStructs.FFXIV.Client.Game.InstanceContent.InstanceContentType.Frontlines) {
                         DrawFrontlineDirector();
+                    } else if(instanceDirector != null && instanceDirector->InstanceContentType == FFXIVClientStructs.FFXIV.Client.Game.InstanceContent.InstanceContentType.CrystallineConflict) {
+                        DrawCrystallineConflictDirector();
                     }
                     //ImGui.Text($"0x{new IntPtr(instanceDirector + RivalWingsMatchManager.RivalWingsContentDirectorOffset).ToString("X2")}");
                     //ImGui.Text($"0x{new IntPtr(instanceDirector + 0x1E58).ToString("X2")}");
@@ -182,9 +206,16 @@ internal unsafe class DebugWindow : Window {
                     //var z = (IntPtr)x + RivalWingsMatchManager.RivalWingsContentDirectorOffset;
                     //ImGui.Text($"0x{((IntPtr)z).ToString("X2")}");
 
-                    ImGui.Separator();
+
                 }
             }
+
+            using(var tab = ImRaii.TabItem("Object Table")) {
+                if(tab) {
+                    DrawObjectTable();
+                }
+            }
+
 
             using(var tab = ImRaii.TabItem("Network Messages")) {
                 if(tab) {
@@ -237,46 +268,67 @@ internal unsafe class DebugWindow : Window {
                     }
                 }
             }
+            using(var tab = ImRaii.TabItem("Links")) {
+                if(tab) {
+                    using(var table = ImRaii.Table("main", 2)) {
+                        if(table) {
+                            ImGui.TableSetupColumn("c1");
+                            ImGui.TableSetupColumn("c2");
+                            foreach(var link in _plugin.PlayerLinksService.LinkedAliases) {
+                                ImGui.TableNextColumn();
+                                ImGui.Text($"{link.Key}");
+                                ImGui.TableNextColumn();
+                                ImGui.Text($"{link.Value}");
+                            }
+                        }
+                    }
+                }
+            }
             using(var tab = ImRaii.TabItem("Misc.")) {
                 if(tab) {
+                    var debugMode = _plugin.DebugMode;
+                    if(ImGui.Checkbox("Debug Mode", ref debugMode)) {
+                        _plugin.DebugMode = debugMode;
+                    }
+
                     if(ImGui.Button("Enable Duty Leave Button")) {
                         _plugin.RWMatchManager.EnableLeaveDutyButton();
                     }
 
-                    if(ImGui.Button("Get competent players")) {
-                        _plugin.DataQueue.QueueDataOperation(() => {
-                            CompetentPlayers = [];
-                            foreach(var match in _plugin.FLCache.Matches.Where(x => x.IsCompleted && !x.IsDeleted)) {
-                                foreach(var scoreboard in match.PlayerScoreboards) {
-                                    if(scoreboard.Value.KDA >= 20) {
-                                        CompetentPlayers.Add((PlayerAlias)scoreboard.Key);
-                                    }
-                                }
-                            }
-                        });
-                    }
+                    //if(ImGui.Button("Get competent players")) {
+                    //    _plugin.DataQueue.QueueDataOperation(() => {
+                    //        CompetentPlayers = [];
+                    //        foreach(var match in _plugin.FLCache.Matches.Where(x => x.IsCompleted && !x.IsDeleted)) {
+                    //            foreach(var scoreboard in match.PlayerScoreboards) {
+                    //                if(scoreboard.Value.KDA >= 20) {
+                    //                    CompetentPlayers.Add((PlayerAlias)scoreboard.Key);
+                    //                }
+                    //            }
+                    //        }
+                    //    });
+                    //}
 
-                    if(ImGui.Button("Find shared accounts")) {
-                        Dictionary<ulong, PlayerAlias> accounts = new();
-                        Dictionary<ulong, HashSet<PlayerAlias>> linkedAliases = new();
-                        System.Threading.Tasks.Task.Run(() => {
-                            foreach(var match in _plugin.CCCache.Matches.Where(x => x.IsCompleted && !x.IsDeleted && x.PostMatch != null)) {
-                                foreach(var team in match.Teams) {
-                                    foreach(var player in team.Value.Players.Where(x => x.AccountId != null)) {
-                                        var accountId = (ulong)player.AccountId;
-                                        linkedAliases.TryAdd(accountId, new());
-                                        if(!accounts.TryAdd(accountId, player.Alias)) {
-                                            if(!player.Alias.Equals(accounts[accountId])) {
-                                                if(linkedAliases[accountId].Add(player.Alias)) {
-                                                    Plugin.Log2.Debug($"{accounts[accountId]} is {player.Alias}!");
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        });
-                    }
+                    //if(ImGui.Button("Find shared accounts")) {
+                    //    Dictionary<ulong, PlayerAlias> accounts = new();
+                    //    Dictionary<ulong, HashSet<PlayerAlias>> linkedAliases = new();
+                    //    System.Threading.Tasks.Task.Run(() => {
+                    //        foreach(var match in _plugin.CCCache.Matches.Where(x => x.IsCompleted && !x.IsDeleted && x.PostMatch != null)) {
+                    //            foreach(var team in match.Teams) {
+                    //                foreach(var player in team.Value.Players.Where(x => x.AccountId != null)) {
+                    //                    var accountId = (ulong)player.AccountId;
+                    //                    linkedAliases.TryAdd(accountId, new());
+                    //                    if(!accounts.TryAdd(accountId, player.Alias)) {
+                    //                        if(!player.Alias.Equals(accounts[accountId])) {
+                    //                            if(linkedAliases[accountId].Add(player.Alias)) {
+                    //                                Plugin.Log2.Debug($"{accounts[accountId]} is {player.Alias}!");
+                    //                            }
+                    //                        }
+                    //                    }
+                    //                }
+                    //            }
+                    //        }
+                    //    });
+                    //}
 
                     if(ImGui.Button("Show all Duties")) {
                         foreach(var duty in _plugin.DataManager.GetExcelSheet<ContentFinderCondition>()) {
@@ -317,17 +369,27 @@ internal unsafe class DebugWindow : Window {
 
                     }
 
-                    if(ImGui.Button("Test Timeline doohicky")) {
-
+                    if(ImGui.Button("Test FUnction")) {
+                        _plugin.PlayerLinksService.GetMainAlias((PlayerAlias)"Uki Okawa Adamantoise");
+                        _plugin.PlayerLinksService.GetMainAlias((PlayerAlias)"Uki Yo Adamantoise");
                     }
-
 
                     ImGui.Text(Framework.Instance()->GameVersionString);
                     ImGui.Text(Assembly.GetExecutingAssembly().GetName().Version.ToString());
 
                     ImGuiHelper.DrawRainbowTextByChar("Sarah Montcroix");
                     ImGui.NewLine();
+                    if(_plugin.ClientState.LocalPlayer != null) {
+                        using var child = ImRaii.Child("snapShotChild", new Vector2(200f, 125f) * ImGuiHelpers.GlobalScale, true, ImGuiWindowFlags.NoScrollbar);
+                        _plugin.WindowManager.DrawPlayerSnapshot(_plugin.ClientState.LocalPlayer.EntityId);
+                        //_plugin.WindowManager.DrawPlayerBars(_plugin.ClientState.LocalPlayer.MaxHp,
+                        //    _plugin.ClientState.LocalPlayer.CurrentHp, _plugin.ClientState.LocalPlayer.ShieldPercentage,
+                        //    _plugin.ClientState.LocalPlayer.MaxMp, _plugin.ClientState.LocalPlayer.CurrentMp);
+                    }
 
+                    //_plugin.WindowManager.DrawPlayerBars(60000, 60000, 200, 10000, 5000);
+                    //_plugin.WindowManager.DrawPlayerBars(60000, 4000, 200, 10000, 6000);
+                    //_plugin.WindowManager.DrawPlayerBars(60000, 50000, 200, 10000, 10000);
                 }
             }
         }
@@ -495,7 +557,7 @@ internal unsafe class DebugWindow : Window {
     }
 
     private void DrawFrontlineDirector() {
-        var instanceDirector = (FrontlineContentDirector*)((IntPtr)EventFramework.Instance()->GetInstanceContentDirector());
+        var instanceDirector = (FrontlineContentDirector*)((IntPtr)EventFramework.Instance()->GetInstanceContentDirector() + FrontlineContentDirector.Offset);
         using(var table = ImRaii.Table("main", 2)) {
             if(table) {
                 ImGui.TableSetupColumn("c1");
@@ -521,6 +583,158 @@ internal unsafe class DebugWindow : Window {
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted(instanceDirector->FlamesScore.ToString());
 
+            }
+        }
+    }
+
+    private void DrawCrystallineConflictDirector() {
+        var instanceDirector = (CrystallineConflictContentDirector*)((IntPtr)EventFramework.Instance()->GetInstanceContentDirector());
+        using(var table = ImRaii.Table("main", 2)) {
+            if(table) {
+                ImGui.TableSetupColumn("c1");
+                ImGui.TableSetupColumn("c2");
+
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Crystal unbinding in:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->CrystalUnbindTimeRemaining.ToString());
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Event timer:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->EventTimer.ToString());
+
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Crystal position:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->CrystalPosition.ToString());
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Astra prog:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->AstraProgress.ToString());
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Astra midpoint prog:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->AstraMidpointProgress.ToString());
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Astra dudes on point:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->AstraOnPoint.ToString());
+
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Umbra prog:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->UmbraProgress.ToString());
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Umbra midpoint prog:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->UmbraMidpointProgress.ToString());
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Umbra dudes on point:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->UmbraOnPoint.ToString());
+
+
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Unknown0:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->Unknown0.ToString());
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Unknown1:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->Unknown1.ToString());
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Unknown2:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->Unknown2.ToString());
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Unknown3:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->Unknown3.ToString());
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Unknown4:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->Unknown4.ToString());
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Unknown5:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->Unknown5.ToString());
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted("Unknown6:");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(instanceDirector->Unknown6.ToString());
+
+            }
+        }
+    }
+
+    private void DrawObjectTable() {
+        //var playerAddress = _plugin.ClientState.LocalPlayer.Address;
+        //ImGui.Text($"Local Player Address: 0x{new IntPtr(playerAddress).ToString("X2")}");
+
+        using(var table = ImRaii.Table("object_table", 6)) {
+            ImGui.TableSetupColumn("name");
+            ImGui.TableSetupColumn("objType", ImGuiTableColumnFlags.WidthFixed, 80f);
+            ImGui.TableSetupColumn("index", ImGuiTableColumnFlags.WidthFixed, 30f);
+            ImGui.TableSetupColumn("entityId", ImGuiTableColumnFlags.WidthFixed, 100f);
+            ImGui.TableSetupColumn("owner", ImGuiTableColumnFlags.WidthFixed, 100f);
+            ImGui.TableSetupColumn("statuses");
+
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("Name");
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("ObjType");
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("Index");
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("EntityId");
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("OwnerId");
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("Statuses");
+
+            foreach(IPlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player).Cast<IPlayerCharacter>()) {
+                try {
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{pc.Name}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{pc.ObjectKind}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{pc.ObjectIndex}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"0x{pc.EntityId:X2}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"0x{pc.OwnerId:X2}");
+                    ImGui.TableNextColumn();
+                    //ImGui.Text($"{pc.ShieldPercentage}");
+                    foreach(var status in pc.StatusList) {
+                        ImGui.Text($"{status.StatusId}:{status.Param},");
+                        ImGui.SameLine();
+                    }
+                } catch {
+                    //suppress all exceptions
+                }
+            }
+
+            foreach(var obj in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.BattleNpc).Cast<IBattleNpc>()) {
+                try {
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{obj.Name} {obj.NameId}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{obj.ObjectKind}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{obj.ObjectIndex}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"0x{obj.EntityId:X2}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"0x{obj.OwnerId:X2}");
+                    ImGui.TableNextColumn();
+                    foreach(var status in obj.StatusList) {
+                        ImGui.Text($"{status.StatusId}:{status.Param}");
+                        ImGui.SameLine();
+                    }
+                } catch {
+                    //suppress all exceptions
+                }
             }
         }
     }

@@ -42,12 +42,7 @@ public unsafe struct CrystallineConflictResultsPacket {
         [FieldOffset(0x21)] public byte Assists;
         [FieldOffset(0x22)] public short TimeOnCrystal;                     //in seconds
         [FieldOffset(0x24)] public byte ColosseumMatchRankId;
-        [FieldOffset(0x25)] public Team Team;
+        [FieldOffset(0x25)] public CCTeam Team;
         [FieldOffset(0x26)] public fixed byte PlayerName[42];
-    }
-
-    public enum Team : byte {
-        Astra = 0,
-        Umbra = 1,
     }
 }

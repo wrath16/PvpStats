@@ -15,11 +15,7 @@ internal class PlayerLinkService {
 
     internal List<PlayerAliasLink> AutoPlayerLinksCache { get; private set; } = [];
     internal List<PlayerAliasLink> ManualPlayerLinksCache { get; private set; } = [];
-
-    private List<PlayerAliasLink> Unlinks { get; set; } = [];
-    private List<PlayerAliasLink> FullLinks { get; set; } = [];
-    private List<PlayerAliasLink> ManualNoUnlink { get; set; } = [];
-    private Dictionary<PlayerAlias, PlayerAlias> LinkedAliases { get; set; } = [];
+    internal Dictionary<PlayerAlias, PlayerAlias> LinkedAliases { get; private set; } = [];
 
     internal bool RefreshInProgress { get; private set; }
 
@@ -35,62 +31,80 @@ internal class PlayerLinkService {
     }
 
     internal void BuildLinkedAliases() {
-        Unlinks = ManualPlayerLinksCache.Where(x => x.IsUnlink).ToList();
-        ManualNoUnlink = ManualPlayerLinksCache.Where(x => !x.IsUnlink && x.CurrentAlias != null).ToList();
-        FullLinks = [.. ManualNoUnlink, .. AutoPlayerLinksCache];
+        var unlinks = ManualPlayerLinksCache.Where(x => x.IsUnlink).ToList();
+        var manualNoUnlink = ManualPlayerLinksCache.Where(x => !x.IsUnlink && x.CurrentAlias != null).ToList();
 
-        Dictionary<PlayerAlias, PlayerAlias> linkedAliases = [];
-        foreach(var link in FullLinks) {
-            foreach(var linkedAlias in link.LinkedAliases) {
-                if(linkedAlias != null) {
-                    linkedAliases.Add(linkedAlias, GetMainAlias(linkedAlias, new()));
-                }
-            }
-        }
-        LinkedAliases = linkedAliases;
-    }
+        Dictionary<PlayerAlias, PlayerAlias> linkedAliasMap = [];
+        Dictionary<PlayerAlias, PlayerAlias> flattenedAliasMap = [];
 
-    private PlayerAlias GetMainAlias(PlayerAlias alias, List<PlayerAlias> prevAliases) {
-        if(!_plugin.Configuration.EnablePlayerLinking) {
-            return alias;
-        }
-
-        List<PlayerAliasLink> allLinks = [];
-        if(_plugin.Configuration.EnableAutoPlayerLinking && _plugin.Configuration.EnableManualPlayerLinking) {
-            allLinks = FullLinks;
-        } else if(_plugin.Configuration.EnableAutoPlayerLinking && !_plugin.Configuration.EnableManualPlayerLinking) {
-            allLinks = AutoPlayerLinksCache;
-        } else if(!_plugin.Configuration.EnableAutoPlayerLinking && _plugin.Configuration.EnableManualPlayerLinking) {
-            allLinks = ManualNoUnlink;
-        }
-
-        foreach(var link in allLinks) {
-            if(_plugin.Configuration.EnableManualPlayerLinking) {
-                bool unlinkFound = false;
-                foreach(var unlink in Unlinks) {
-                    var unlinkActive1 = unlink.LinkedAliases.Contains(alias) && unlink.CurrentAlias.Equals(link.CurrentAlias);
-                    var unlinkActive2 = unlink.LinkedAliases.Contains(link.CurrentAlias) && unlink.CurrentAlias.Equals(alias);
-                    if(unlinkActive1 || unlinkActive2) {
-                        unlinkFound = true;
-                        break;
+        //add auto links
+        if(_plugin.Configuration.EnableAutoPlayerLinking) {
+            foreach(var link in AutoPlayerLinksCache) {
+                foreach(var linkedAlias in link.LinkedAliases) {
+                    if(linkedAlias != null) {
+                        linkedAliasMap.Add(linkedAlias, link.CurrentAlias);
                     }
                 }
-                if(unlinkFound) continue;
-            }
-
-            if(link.LinkedAliases.Contains(alias)) {
-                //detect loop
-                if(prevAliases.Contains(link.CurrentAlias!)) {
-                    //_plugin.Log.Warning($"Player alias link loop detected! {alias} to {link.CurrentAlias}");
-                    return alias;
-                }
-                //search recursively
-                return GetMainAlias(link.CurrentAlias!, [.. prevAliases, alias]);
             }
         }
 
-        //not found
-        return alias;
+        //add manual links
+        if(_plugin.Configuration.EnableManualPlayerLinking) {
+            foreach(var link in manualNoUnlink) {
+                linkedAliasMap.TryGetValue(link.CurrentAlias, out var nextAlias);
+                foreach(var linkedAlias in link.LinkedAliases) {
+                    if(linkedAliasMap.TryGetValue(linkedAlias, out var existingLink)) {
+                        //override auto link
+                        existingLink = link.CurrentAlias;
+                    } else {
+                        linkedAliasMap.Add(linkedAlias, link.CurrentAlias);
+                    }
+                    //delete existing pointer if it loops back on old value
+                    if(nextAlias == linkedAlias) {
+                        linkedAliasMap.Remove(link.CurrentAlias);
+                    }
+                }
+            }
+
+            //remove unlinks
+            foreach(var link in unlinks) {
+                foreach(var linkedAlias in link.LinkedAliases) {
+                    if(linkedAliasMap.TryGetValue(linkedAlias, out var existingLink)) {
+                        if(existingLink == link.CurrentAlias) {
+                            linkedAliasMap.Remove(linkedAlias);
+                        }
+                    }
+                    //bidirectional
+                    if(linkedAliasMap.TryGetValue(link.CurrentAlias, out var existingLink2)) {
+                        if(existingLink2 == linkedAlias) {
+                            linkedAliasMap.Remove(link.CurrentAlias);
+                        }
+                    }
+                }
+            }
+        }
+
+        foreach(var link in linkedAliasMap) {
+            flattenedAliasMap.Add(link.Key, FlattenAliasLink(link.Key, linkedAliasMap, new()));
+        }
+        LinkedAliases = flattenedAliasMap;
+    }
+
+    private PlayerAlias FlattenAliasLink(PlayerAlias alias, Dictionary<PlayerAlias, PlayerAlias> map, HashSet<PlayerAlias> prevAliases) {
+        //get current value
+        //var alias2 = map[alias];
+        if(map.TryGetValue(alias, out var alias2)) {
+            if(prevAliases.Contains(alias2)) {
+                Plugin.Log2.Warning($"Player alias link loop detected! {alias} to {alias2}");
+                return alias;
+            } else {
+                prevAliases.Add(alias);
+                return FlattenAliasLink(alias2, map, prevAliases);
+            }
+        } else {
+            //no more links found, this is the one!
+            return alias;
+        }
     }
 
     internal async Task SaveManualLinksCache(List<PlayerAliasLink> playerLinks) {
@@ -117,62 +131,61 @@ internal class PlayerLinkService {
         }
     }
 
-    internal Task BuildAutoLinksCache() {
+    //returns true if updates were made
+    internal async Task BuildAutoLinksCache() {
         //if(!IsInitialized() && !Initialize()) return;
         _plugin.Log.Information("Building player alias links cache from PlayerTrack IPC data...");
-        return Task.Run(async () => {
-            //get players
-            var ccMatches = _plugin.Storage.GetCCMatches().Query().ToList();
-            var flMatches = _plugin.Storage.GetFLMatches().Query().ToList();
-            var rwMatches = _plugin.Storage.GetRWMatches().Query().ToList();
-            HashSet<PlayerAlias> allPlayers = new();
-            foreach(var match in ccMatches) {
-                foreach(var player in match.Players) {
-                    allPlayers.Add(player.Alias);
-                }
+        //get players
+        var ccMatches = _plugin.CCCache.Matches.ToList();
+        var flMatches = _plugin.FLCache.Matches.ToList();
+        var rwMatches = _plugin.RWCache.Matches.ToList();
+        HashSet<PlayerAlias> allPlayers = new();
+        foreach(var match in ccMatches) {
+            foreach(var player in match.Players) {
+                allPlayers.Add(player.Alias);
             }
-            foreach(var match in flMatches) {
-                foreach(var player in match.Players) {
-                    allPlayers.Add(player.Name);
-                }
+        }
+        foreach(var match in flMatches) {
+            foreach(var player in match.Players) {
+                allPlayers.Add(player.Name);
             }
-            foreach(var match in rwMatches) {
-                if(match.Players is null) continue;
-                foreach(var player in match.Players) {
-                    allPlayers.Add(player.Name);
-                }
+        }
+        foreach(var match in rwMatches) {
+            if(match.Players is null) continue;
+            foreach(var player in match.Players) {
+                allPlayers.Add(player.Name);
             }
+        }
 
-            if(!allPlayers.Any()) {
-                return;
-            }
+        if(!allPlayers.Any()) {
+            return;
+        }
 
-            //get auto links
-            List<PlayerAliasLink> autoLinks = [];
-            try {
-                autoLinks = GetPlayerNameHistory(allPlayers.ToList());
-                _plugin.Log.Information($"players with previous aliases: {autoLinks.Count}");
-            } catch(Exception e) {
-                if(e is IpcNotReadyError) {
-                    if(_plugin.Configuration.EnableAutoPlayerLinking) {
-                        _plugin.Log.Error("Unable to query PlayerTrack IPC: check whether plugin is installed and up to date.");
-                    } else {
-                        _plugin.Log.Information("PlayerTrack IPC unavailable.");
-                    }
+        //get auto links
+        List<PlayerAliasLink> autoLinks = [];
+        try {
+            autoLinks = GetPlayerNameHistory([.. allPlayers]);
+            _plugin.Log.Information($"players with previous aliases: {autoLinks.Count}");
+        } catch(Exception e) {
+            if(e is IpcNotReadyError) {
+                if(_plugin.Configuration.EnableAutoPlayerLinking) {
+                    _plugin.Log.Error("Unable to query PlayerTrack IPC: check whether plugin is installed and up to date.");
                 } else {
-                    _plugin.Log.Error(e, "PlayerTrack IPC error");
+                    _plugin.Log.Information("PlayerTrack IPC unavailable.");
                 }
+            } else {
+                _plugin.Log.Error(e, "PlayerTrack IPC error");
             }
-            if(autoLinks is null || autoLinks.Count <= 0) {
-                return;
-            }
+        }
+        if(autoLinks is null || autoLinks.Count <= 0) {
+            return;
+        }
 
-            //save
-            await _plugin.DataQueue.QueueDataOperation(async () => {
-                AutoPlayerLinksCache = autoLinks;
-                BuildLinkedAliases();
-                await _plugin.Storage.SetAutoLinks(AutoPlayerLinksCache);
-            });
+        //save
+        await _plugin.DataQueue.QueueDataOperation(async () => {
+            AutoPlayerLinksCache = autoLinks;
+            BuildLinkedAliases();
+            await _plugin.Storage.SetAutoLinks(AutoPlayerLinksCache);
         });
     }
 

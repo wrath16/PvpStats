@@ -7,6 +7,7 @@ using ImGuiNET;
 using PvpStats.Helpers;
 using PvpStats.Services.DataCache;
 using PvpStats.Types.Match;
+using PvpStats.Utility;
 using System.Numerics;
 
 namespace PvpStats.Windows.Detail;
@@ -15,6 +16,8 @@ internal abstract class MatchDetail<T> : Window where T : PvpMatch {
     protected readonly Plugin Plugin;
     protected readonly MatchCacheService<T> Cache;
     protected readonly T Match;
+
+    protected DataQueue RefreshQueue { get; private set; } = new();
 
     protected string CSV = "";
     protected bool ShowPercentages;
