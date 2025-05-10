@@ -1,4 +1,5 @@
-﻿using Dalamud.Game.ClientState.Objects.Enums;
+﻿using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
@@ -290,7 +291,10 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
             return;
         }
         var director = (FrontlineContentDirector*)((IntPtr)EventFramework.Instance()->GetInstanceContentDirector() + FrontlineContentDirector.Offset);
-        if(director is null) {
+        if(director == null) {
+            return;
+        }
+        if(CurrentMatch?.IsCompleted ?? true && (Plugin.Condition[ConditionFlag.BetweenAreas] || Plugin.Condition[ConditionFlag.BetweenAreas51])) {
             return;
         }
 
@@ -319,45 +323,52 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
                 if(_maxObservedBattleHigh[alias] < battleHigh) {
                     _maxObservedBattleHigh[alias] = battleHigh;
                 }
-            } catch {
-                //suppress all exceptions
+            } catch (NullReferenceException) {
+                //suppress
             }
         }
 
         if(_currentMatchTimeline != null) {
 
             //team points
-            foreach(var team in _currentMatchTimeline.TeamPoints ?? []) {
-                var lastEvent = team.Value.LastOrDefault();
-                int? currentValue = null;
-                switch(team.Key) {
-                    case FrontlineTeamName.Maelstrom:
-                        currentValue = director->MaelstromScore;
-                        break;
-                    case FrontlineTeamName.Adders:
-                        currentValue = director->AddersScore;
-                        break;
-                    case FrontlineTeamName.Flames:
-                        currentValue = director->FlamesScore;
-                        break;
-                    default:
-                        break;
+            try {
+                foreach(var team in _currentMatchTimeline.TeamPoints ?? []) {
+                    var lastEvent = team.Value.LastOrDefault();
+                    int? currentValue = null;
+                    switch(team.Key) {
+                        case FrontlineTeamName.Maelstrom:
+                            currentValue = director->MaelstromScore;
+                            break;
+                        case FrontlineTeamName.Adders:
+                            currentValue = director->AddersScore;
+                            break;
+                        case FrontlineTeamName.Flames:
+                            currentValue = director->FlamesScore;
+                            break;
+                        default:
+                            break;
+                    }
+                    if(currentValue != null && (lastEvent == null || lastEvent.Points != currentValue)) {
+                        team.Value.Add(new(now, (int)currentValue));
+                    }
                 }
-                if(currentValue != null && (lastEvent == null || lastEvent.Points != currentValue)) {
-                    team.Value.Add(new(now, (int)currentValue));
-                }
+            } catch (NullReferenceException) {
+                //suppress
             }
 
             //self battle high
-            if(_currentMatchTimeline.SelfBattleHigh != null) {
-                var lastBattleHighEvent = _currentMatchTimeline.SelfBattleHigh.LastOrDefault();
-                int? currentBattleHigh = director->PlayerBattleHigh;
-                if(currentBattleHigh != null && (lastBattleHighEvent == null || lastBattleHighEvent.Count != currentBattleHigh)) {
-                    _currentMatchTimeline.SelfBattleHigh.Add(new(now, (int)currentBattleHigh));
+            try {
+                if(_currentMatchTimeline.SelfBattleHigh != null) {
+                    var lastBattleHighEvent = _currentMatchTimeline.SelfBattleHigh.LastOrDefault();
+                    int? currentBattleHigh = director->PlayerBattleHigh;
+                    if(currentBattleHigh != null && (lastBattleHighEvent == null || lastBattleHighEvent.Count != currentBattleHigh)) {
+                        _currentMatchTimeline.SelfBattleHigh.Add(new(now, (int)currentBattleHigh));
+                    }
                 }
+            } catch (NullReferenceException) {
+                //suppress
             }
         }
-
         _lastUpdate = now;
     }
 
