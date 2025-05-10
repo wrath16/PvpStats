@@ -323,7 +323,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
                 if(_maxObservedBattleHigh[alias] < battleHigh) {
                     _maxObservedBattleHigh[alias] = battleHigh;
                 }
-            } catch (NullReferenceException) {
+            } catch {
                 //suppress
             }
         }
@@ -352,7 +352,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
                         team.Value.Add(new(now, (int)currentValue));
                     }
                 }
-            } catch (NullReferenceException) {
+            } catch {
                 //suppress
             }
 
@@ -365,7 +365,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
                         _currentMatchTimeline.SelfBattleHigh.Add(new(now, (int)currentBattleHigh));
                     }
                 }
-            } catch (NullReferenceException) {
+            } catch {
                 //suppress
             }
         }
