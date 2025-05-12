@@ -123,7 +123,7 @@ internal class FrontlineRecords : MatchRecords<FrontlineMatch> {
                             var lastEvent = timeline.SelfBattleHigh[i - 1];
 
                             //5 second max between events
-                            if(bhEvent.Timestamp - lastEvent.Timestamp <= TimeSpan.FromSeconds(5)) {
+                            if(bhEvent.Timestamp - lastEvent.Timestamp <= TimeSpan.FromSeconds(5) && bhEvent.Count > lastEvent.Count) {
                                 currentSpike += bhEvent.Count - lastEvent.Count;
                                 currentSpikeTime += bhEvent.Timestamp - lastEvent.Timestamp;
                             } else {

@@ -18,7 +18,7 @@ internal class ValidationManager {
         if(!matches.Any()) {
             return;
         }
-        _plugin.Log.Information("Attempting to update unknown match types...");
+        Plugin.Log2.Information("Attempting to update unknown match types...");
         foreach(var match in matches) {
             match.MatchType = MatchHelper.GetMatchType(match.DutyId);
         }
@@ -31,7 +31,7 @@ internal class ValidationManager {
         if(matches.Count == 0) {
             return;
         }
-        _plugin.Log.Information("Removing erroneously added players...");
+        Plugin.Log2.Information("Removing erroneously added players...");
         foreach(var match in matches) {
             foreach(var team in match.Teams) {
                 if(team.Value.Players.Count > 5) {
@@ -105,6 +105,36 @@ internal class ValidationManager {
             if(pluginVersion < new Version(2, 3, 4, 1) && gameVersionDate >= new DateTime(2025, 03, 27)) {
                 match.Flags |= RWValidationFlag.InvalidSoaring;
             }
+        }
+        await _plugin.RWCache.UpdateMatches(matches);
+    }
+
+    internal async Task ClearFrontlinePreProcessedData() {
+        var matches = _plugin.FLCache.Matches.Where(x => x.IsCompleted && x.TimelineId != null).ToList();
+        if(matches.Count == 0) {
+            return;
+        }
+
+        Plugin.Log2.Information("Resetting FL pre-processed data...");
+        foreach(var match in matches) {
+            match.BattleHighSpike = null;
+            match.BattleHighSpikeTime = null;
+            match.BattleHighVTime = null;
+            match.MomentaryPointAdvantage = null;
+            match.MomentaryPointDeficit = null;
+        }
+        await _plugin.FLCache.UpdateMatches(matches);
+    }
+
+    internal async Task ClearRivalWingsPreProcessedData() {
+        var matches = _plugin.RWCache.Matches.Where(x => x.IsCompleted && x.TimelineId != null).ToList();
+        if(matches.Count == 0) {
+            return;
+        }
+
+        Plugin.Log2.Information("Resetting RW pre-processed data...");
+        foreach(var match in matches) {
+            match.FlyingHighTime = null;
         }
         await _plugin.RWCache.UpdateMatches(matches);
     }
