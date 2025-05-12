@@ -1,9 +1,11 @@
-﻿using PvpStats.Utility.Interface;
+﻿using LiteDB;
+using PvpStats.Utility.Interface;
 using System;
 
 namespace PvpStats.Types.Event;
 public class MatchEvent : IComparable<MatchEvent>, ISortPrioritizable {
 
+    [BsonIgnore]
     public virtual int SortPriority => 0;
 
     public DateTime Timestamp { get; set; }
