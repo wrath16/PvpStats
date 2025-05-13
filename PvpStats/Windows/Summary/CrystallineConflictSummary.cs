@@ -12,7 +12,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using static PvpStats.Types.ClientStruct.RivalWingsContentDirector;
 
 namespace PvpStats.Windows.Summary;
 internal class CrystallineConflictSummary : Refreshable<CrystallineConflictMatch> {
@@ -30,7 +29,6 @@ internal class CrystallineConflictSummary : Refreshable<CrystallineConflictMatch
     internal Dictionary<Job, CCAggregateStats> TeammateJobStats { get; private set; } = [];
     internal Dictionary<Job, CCAggregateStats> OpponentJobStats { get; private set; } = [];
     internal TimeSpan AverageMatchDuration { get; private set; } = new();
-    internal float KillParticipationRate { get; private set; }
 
     //internal state
     TimeTally _totalMatchTime = new();
@@ -45,8 +43,6 @@ internal class CrystallineConflictSummary : Refreshable<CrystallineConflictMatch
     ConcurrentDictionary<Job, CCAggregateStats> _opponentJobStats = [];
     ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<Job, CCAggregateStats>> _teammateJobStatsLookup = [];
     ConcurrentDictionary<PlayerAlias, ConcurrentDictionary<Job, CCAggregateStats>> _opponentJobStatsLookup = [];
-    InterlockedTally _teamKills = new();
-    InterlockedTally _playerKillsAndAssists = new();
 
     public CrystallineConflictSummary(Plugin plugin) {
         Plugin = plugin;
@@ -66,8 +62,6 @@ internal class CrystallineConflictSummary : Refreshable<CrystallineConflictMatch
         _opponentJobStats = [];
         _teammateJobStatsLookup = [];
         _opponentJobStatsLookup = [];
-        _teamKills = new();
-        _playerKillsAndAssists = new();
     }
 
     protected override void PostRefresh(List<CrystallineConflictMatch> matches, List<CrystallineConflictMatch> additions, List<CrystallineConflictMatch> removals) {
@@ -87,7 +81,6 @@ internal class CrystallineConflictSummary : Refreshable<CrystallineConflictMatch
         OpponentStats = _opponentStats.Where(x => x.Value.Matches > 0).OrderBy(x => x.Value.Matches).OrderBy(x => x.Value.WinDiff).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         OpponentJobStats = _opponentJobStats.Where(x => x.Value.Matches > 0).OrderByDescending(x => x.Value.Matches).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         AverageMatchDuration = matches.Count > 0 ? _totalMatchTime.ToTimeSpan() / matches.Count : TimeSpan.Zero;
-        KillParticipationRate = (float)_playerKillsAndAssists.Tally / _teamKills.Tally;
     }
 
     protected override void ProcessMatch(CrystallineConflictMatch match, bool remove = false) {
@@ -110,17 +103,6 @@ internal class CrystallineConflictSummary : Refreshable<CrystallineConflictMatch
                 var job = (Job)match.LocalPlayerTeamMember!.Job;
                 _localPlayerJobStats.TryAdd(job, new());
                 CrystallineConflictStatsManager.IncrementAggregateStats(_localPlayerJobStats[job], match, remove);
-            }
-
-            //kill participation
-            var teamPostMatch = match.PostMatch.Teams.FirstOrDefault(x => x.Key == match.LocalPlayerTeam?.TeamName).Value;
-            var playerPostMatch = teamPostMatch.PlayerStats.FirstOrDefault(x => x.Player?.Equals(match.LocalPlayer) ?? false);
-            if(remove) {
-                _teamKills.Subtract(teamPostMatch.TeamStats.Kills);
-                _playerKillsAndAssists.Subtract(playerPostMatch.Kills + playerPostMatch.Assists);
-            } else {
-                _teamKills.Add(teamPostMatch.TeamStats.Kills);
-                _playerKillsAndAssists.Add(playerPostMatch.Kills + playerPostMatch.Assists);
             }
         }
 
@@ -194,8 +176,8 @@ internal class CrystallineConflictSummary : Refreshable<CrystallineConflictMatch
                 ImGui.SameLine();
                 ImGui.Text("Kill Participation Rate: ");
                 ImGui.SameLine();
-                ImGuiHelper.DrawColorScale(KillParticipationRate, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 
-                    CrystallineConflictStatsManager.KillParticipationRange[0], CrystallineConflictStatsManager.KillParticipationRange[1], Plugin.Configuration.ColorScaleStats, KillParticipationRate.ToString("P1"));
+                ImGuiHelper.DrawColorScale((float)LocalPlayerStats.ScoreboardTotal.KillParticipationRate, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 
+                    CrystallineConflictStatsManager.KillParticipationRange[0], CrystallineConflictStatsManager.KillParticipationRange[1], Plugin.Configuration.ColorScaleStats, LocalPlayerStats.ScoreboardTotal.KillParticipationRate.ToString("P1"));
                 DrawMatchStatsTable();
             }
 

@@ -76,7 +76,7 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
     }
 
     public static void AddPlayerJobStat(CCPlayerJobStats statsModel, ConcurrentDictionary<int, CCScoreboardDouble> teamContributions,
-    CrystallineConflictMatch match, CrystallineConflictTeam team, CrystallineConflictPlayer player, bool remove = false) {
+        CrystallineConflictMatch match, CrystallineConflictTeam team, CrystallineConflictPlayer player, bool remove = false) {
         bool isLocalPlayer = player.Alias.Equals(match.LocalPlayer);
         bool isTeammate = !match.IsSpectated && !isLocalPlayer && team.TeamName == match.LocalPlayerTeam!.TeamName;
         bool isOpponent = !match.IsSpectated && !isLocalPlayer && !isTeammate;
@@ -91,11 +91,12 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
         }
 
         if(match.PostMatch != null) {
-            var teamPostMatch = match.PostMatch.Teams.Where(x => x.Key == team.TeamName).FirstOrDefault().Value;
-            var playerPostMatch = teamPostMatch.PlayerStats.Where(x => x.Player?.Equals(player.Alias) ?? false).FirstOrDefault();
+            var teamPostMatch = match.PostMatch.Teams.FirstOrDefault(x => x.Key == team.TeamName).Value;
+            var playerPostMatch = teamPostMatch.PlayerStats.FirstOrDefault(x => x.Player?.Equals(player.Alias) ?? false);
             if(playerPostMatch != null) {
                 var playerScoreboard = playerPostMatch.ToScoreboard();
                 var teamScoreboard = teamPostMatch.TeamStats.ToScoreboard();
+                playerScoreboard.TeamKills = teamScoreboard.Kills;
                 var hashCode = HashCode.Combine(match.GetHashCode(), player.Alias);
                 if(remove) {
                     statsModel.ScoreboardTotal.RemoveScoreboard(playerScoreboard);

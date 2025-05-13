@@ -10,6 +10,7 @@ public class ScoreboardTally {
     public long DamageDealt;
     public long DamageTaken;
     public long HPRestored;
+    public long TeamKills;
     public long KillsAndAssists => Kills + Assists;
     public virtual long DamageDealtPerKA => KillsAndAssists > 0 ? DamageDealt / KillsAndAssists : DamageDealt;
     public long DamageDealtPerLife => DamageDealt / Math.Max(Deaths + Size, 1);
@@ -25,6 +26,7 @@ public class ScoreboardTally {
         Interlocked.Add(ref DamageDealt, scoreboard.DamageDealt);
         Interlocked.Add(ref DamageTaken, scoreboard.DamageTaken);
         Interlocked.Add(ref HPRestored, scoreboard.HPRestored);
+        Interlocked.Add(ref TeamKills, scoreboard.TeamKills);
     }
 
     public void RemoveScoreboard(ScoreboardTally scoreboard) {
@@ -35,5 +37,6 @@ public class ScoreboardTally {
         Interlocked.Add(ref DamageDealt, -scoreboard.DamageDealt);
         Interlocked.Add(ref DamageTaken, -scoreboard.DamageTaken);
         Interlocked.Add(ref HPRestored, -scoreboard.HPRestored);
+        Interlocked.Add(ref TeamKills, -scoreboard.TeamKills);
     }
 }
