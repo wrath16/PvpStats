@@ -158,7 +158,14 @@ internal abstract class FilteredList<T, U> : Refreshable<U> where T : notnull wh
         }
         //setup columns
         foreach(var column in Columns) {
-            ImGui.TableSetupColumn(column.Name, column.Flags, column.Width * ImGuiHelpers.GlobalScale, column.Id);
+            var columnWidth = column.Width * ImGuiHelpers.GlobalScale;
+            var tableHeader = column.Header ?? ImGuiHelper.WrappedString(column.Name, 2);
+            var headerSize = ImGui.CalcTextSize(tableHeader);
+            var sizeDiff = headerSize.X - columnWidth;
+            if(sizeDiff >= -5f * ImGuiHelpers.GlobalScale) {
+                columnWidth = headerSize.X + 5f * ImGuiHelpers.GlobalScale;
+            }
+            ImGui.TableSetupColumn(column.Name, column.Flags, columnWidth, column.Id);
         }
         var clipper = new ListClipper(CurrentPage.Count, Columns.Count, true);
         PostColumnSetup();
