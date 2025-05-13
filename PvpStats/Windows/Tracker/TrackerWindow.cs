@@ -116,8 +116,10 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
     }
 
     public override void Draw() {
+#if DEBUG
         Stopwatch s1 = new();
         s1.Start();
+#endif
         if(!ImGui.IsWindowCollapsed()) {
             _firstDraw = true;
         }
@@ -137,17 +139,19 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
         _lastWindowPosition = ImGui.GetWindowPos();
         DrawInternal();
 
+#if DEBUG
         s1.Stop();
         if(_drawCycles % 5000 == 0) {
             _drawCycles = 0;
             if(s1.ElapsedMilliseconds > _longestDraw) {
                 _longestDraw = s1.ElapsedMilliseconds;
             }
-#if DEBUG
-            Plugin.Log.Debug($"longest draw: {_longestDraw}");
-#endif
+            if(Plugin.DebugMode) {
+                Plugin.Log.Debug($"{WindowName} longest draw: {_longestDraw}");
+            }
         }
         _drawCycles++;
+#endif
     }
 
     public abstract void DrawInternal();
@@ -233,7 +237,9 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
     protected void ChangeTab(string tab) {
         if(CurrentTab != tab) {
 #if DEBUG
-            Plugin.Log.Debug("changing tab to " + tab);
+            if(Plugin.DebugMode) {
+                Plugin.Log.Debug("changing tab to " + tab);
+            }
 #endif
             SaveTabSize(CurrentTab);
             CurrentTab = tab;
@@ -272,7 +278,9 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
         SizeCondition = ImGuiCond.Always;
         Size = size;
 #if DEBUG
-        Plugin.Log.Debug($"Setting size to: ({Size.Value.X},{Size.Value.Y})");
+        if(Plugin.DebugMode) {
+            Plugin.Log.Debug($"Setting size to: ({Size.Value.X},{Size.Value.Y})");
+        }
 #endif
         //_sizeChangeReset = true;
     }
@@ -281,7 +289,9 @@ internal abstract class TrackerWindow<T> : Window where T : PvpMatch {
         PositionCondition = ImGuiCond.Always;
         Position = pos;
 #if DEBUG
-        Plugin.Log.Debug($"Setting position to: ({Position.Value.X},{Position.Value.Y})");
+        if(Plugin.DebugMode) {
+            Plugin.Log.Debug($"Setting position to: ({Position.Value.X},{Position.Value.Y})");
+        }
 #endif
         //_positionChangeReset = true;
     }
