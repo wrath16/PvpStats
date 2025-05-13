@@ -201,6 +201,15 @@ internal class RivalWingsSummary : RefreshableSync<RivalWingsMatch> {
             ImGui.Separator();
             ImGui.TextColored(Plugin.Configuration.Colors.Header, "Average Performance:");
             ImGuiHelper.HelpMarker("1st row: average per match.\n2nd row: average per minute.\n3rd row: median team contribution per match.");
+            ImGui.Text("KDA: ");
+            ImGui.SameLine();
+            ImGuiHelper.DrawColorScale((float)LocalPlayerStats.ScoreboardTotal.KDA, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh,
+                RivalWingsStatsManager.KDARange[0], RivalWingsStatsManager.KDARange[1], Plugin.Configuration.ColorScaleStats, LocalPlayerStats.ScoreboardTotal.KDA.ToString("0.00"));
+            ImGui.SameLine();
+            ImGui.Text("Kill Participation Rate: ");
+            ImGui.SameLine();
+            ImGuiHelper.DrawColorScale((float)LocalPlayerStats.ScoreboardTotal.KillParticipationRate, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh,
+                RivalWingsStatsManager.KillParticipationRange[0], RivalWingsStatsManager.KillParticipationRange[1], Plugin.Configuration.ColorScaleStats, LocalPlayerStats.ScoreboardTotal.KillParticipationRate.ToString("P1"));
             DrawMatchStatsTable();
         } else {
             ImGui.TextDisabled("No matches for given filters.");

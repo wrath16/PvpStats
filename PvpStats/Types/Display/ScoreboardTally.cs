@@ -17,6 +17,7 @@ public class ScoreboardTally {
     public long DamageTakenPerLife => DamageTaken / Math.Max(Deaths + Size, 1);
     public long HPRestoredPerLife => HPRestored / Math.Max(Deaths + Size, 1);
     public double KDA => (double)KillsAndAssists / long.Max(Deaths, 1);
+    public double KillParticipationRate => (double)KillsAndAssists / TeamKills;
 
     public void AddScoreboard(ScoreboardTally scoreboard) {
         Interlocked.Add(ref Size, scoreboard.Size);

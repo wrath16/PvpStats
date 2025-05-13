@@ -39,6 +39,7 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
     public static float[] DamageTakenPerLifeRange = [120000f, 500000f];
     public static float[] HPRestoredPerLifeRange = [80000f, 600000f];
     public static float[] KDARange = [2.0f, 15.0f];
+    public static float[] KillParticipationRange = [0.1f, 0.35f];
 
     public RivalWingsStatsManager(Plugin plugin) : base(plugin, plugin.RWCache) {
     }
@@ -86,6 +87,7 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
         if(match.PlayerScoreboards != null) {
             var playerScoreboard = new RWScoreboardTally(match.PlayerScoreboards[player.Name]);
             if(playerScoreboard != null && teamScoreboard != null) {
+                playerScoreboard.TeamKills = teamScoreboard.Kills;
                 //statsModel.ScoreboardTotal.MatchTime += match.PostMatch.MatchDuration;
                 if(remove) {
                     statsModel.ScoreboardTotal.RemoveScoreboard(playerScoreboard);
@@ -105,6 +107,7 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
         if(match.PlayerScoreboards != null) {
             var playerScoreboard = new RWScoreboardTally(match.PlayerScoreboards[player.Name]);
             if(playerScoreboard != null && teamScoreboard != null) {
+                playerScoreboard.TeamKills = teamScoreboard.Kills;
                 var hashCode = HashCode.Combine(match.GetHashCode(), player.Name);
                 if(remove) {
                     statsModel.ScoreboardTotal.RemoveScoreboard(playerScoreboard);

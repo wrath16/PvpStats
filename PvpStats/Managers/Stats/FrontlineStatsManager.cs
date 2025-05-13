@@ -37,6 +37,7 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
     public static float[] HPRestoredPerLifeRange = [120000f, 300000f];
     public static float[] KDARange = [4.0f, 20.0f];
     public static float[] BattleHighPerLifeRange = [20.0f, 100.0f];
+    public static float[] KillParticipationRange = [0.1f, 0.5f];
 
     internal FrontlineStatsManager(Plugin plugin) : base(plugin, plugin.FLCache) {
     }
@@ -105,6 +106,7 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
         if(match.PlayerScoreboards != null) {
             var playerScoreboard = new FLScoreboardTally(match.PlayerScoreboards[player.Name]);
             if(playerScoreboard != null && teamScoreboard != null) {
+                playerScoreboard.TeamKills = teamScoreboard.Kills;
                 //statsModel.ScoreboardTotal.MatchTime += match.PostMatch.MatchDuration;
                 if(remove) {
                     statsModel.ScoreboardTotal.RemoveScoreboard(playerScoreboard);
@@ -123,6 +125,7 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
         if(match.PlayerScoreboards != null) {
             var playerScoreboard = new FLScoreboardTally(match.PlayerScoreboards[player.Name]);
             if(playerScoreboard != null && teamScoreboard != null) {
+                playerScoreboard.TeamKills = teamScoreboard.Kills;
                 var hashCode = HashCode.Combine(match.GetHashCode(), player.Name);
                 if(remove) {
                     statsModel.ScoreboardTotal.RemoveScoreboard(playerScoreboard);

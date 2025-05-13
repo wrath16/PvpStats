@@ -84,6 +84,7 @@ internal class RivalWingsPlayerList : PlayerStatsList<RWPlayerJobStats, RivalWin
         new NumericColumnParams{    Name = "Damage Taken Per Life",                                                     Id = (uint)"ScoreboardTotal.DamageTakenPerLife".GetHashCode(),      Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "HP Restored Per Life",                                                      Id = (uint)"ScoreboardTotal.HPRestoredPerLife".GetHashCode(),       Width = 95f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
         new NumericColumnParams{    Name = "KDA Ratio",                                                                 Id = (uint)"ScoreboardTotal.KDA".GetHashCode(),                     Width = 50f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
+        new NumericColumnParams{    Name = "Kill Participation",                                                        Id = (uint)"ScoreboardTotal.KillParticipationRate".GetHashCode(),   Width = 90f + Offset,                           Flags = ImGuiTableColumnFlags.DefaultHide | ImGuiTableColumnFlags.WidthFixed },
     };
 
     public RivalWingsPlayerList(Plugin plugin, StatSourceFilter? statSourceFilter, MinMatchFilter? minMatchFilter, PlayerQuickSearchFilter? quickSearchFilter, OtherPlayerFilter playerFilter) : base(plugin, statSourceFilter, minMatchFilter, quickSearchFilter, playerFilter) {
@@ -402,6 +403,8 @@ internal class RivalWingsPlayerList : PlayerStatsList<RWPlayerJobStats, RivalWin
         if(ImGui.TableNextColumn()) {
             ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardTotal.KDA, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, RivalWingsStatsManager.KDARange[0], RivalWingsStatsManager.KDARange[1], _plugin.Configuration.ColorScaleStats, "0.00", Offset);
         }
+        if(ImGui.TableNextColumn()) {
+            ImGuiHelper.DrawNumericCell((float)StatsModel[item].ScoreboardTotal.KillParticipationRate, _plugin.Configuration.Colors.StatLow, _plugin.Configuration.Colors.StatHigh, RivalWingsStatsManager.KillParticipationRange[0], RivalWingsStatsManager.KillParticipationRange[1], _plugin.Configuration.ColorScaleStats, "P1", Offset);
+        }
     }
-
 }

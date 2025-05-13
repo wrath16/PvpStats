@@ -6,8 +6,6 @@ public class CCScoreboardTally : ScoreboardTally {
     public TimeSpan TimeOnCrystal;
     public long TimeOnCrystalTicks;
 
-    public double KillParticipationRate => (double)KillsAndAssists / TeamKills;
-
     public void AddScoreboard(CCScoreboardTally scoreboard) {
         AddScoreboard(scoreboard as ScoreboardTally);
         Interlocked.Add(ref TimeOnCrystalTicks, scoreboard.TimeOnCrystalTicks);
