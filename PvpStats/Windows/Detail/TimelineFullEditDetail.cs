@@ -25,8 +25,10 @@ internal class TimelineFullEditDetail<T> : Window where T : PvpMatchTimeline {
         _plugin = plugin;
         _dataModel = dataRow;
 
-        var serializedObject = BsonMapper.Global.Serialize(typeof(T), _dataModel).ToString();
-        var stringReader = new StringReader(serializedObject);
+        var serializedObject = BsonMapper.Global.Serialize(typeof(T), _dataModel);
+        var bytes = BsonSerializer.Serialize(BsonMapper.Global.ToDocument(typeof(T), _dataModel));
+        Plugin.Log2.Debug($"Document size: {bytes.Length} bytes");
+        var stringReader = new StringReader(serializedObject.ToString());
         var stringWriter = new StringWriter();
         var jsonReader = new JsonTextReader(stringReader);
         var jsonWriter = new JsonTextWriter(stringWriter) {
