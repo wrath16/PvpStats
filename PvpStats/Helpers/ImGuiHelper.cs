@@ -136,24 +136,13 @@ internal static class ImGuiHelper {
         return color.Lighten(1f);
     }
 
-    internal static void DrawPercentage(double val, Vector4 color) {
-        if(val is not double.NaN) {
-            ImGui.TextColored(color, string.Format("{0:P1}%", val));
-        }
-    }
-
-    internal static void DrawPercentage(double val) {
-        if(val is not double.NaN) {
-            ImGui.TextUnformatted(string.Format("{0:P1}", val));
-        }
-    }
-
-    internal static void DrawColorScale(float value, Vector4 colorMin, Vector4 colorMax, float minValue, float maxValue, bool colorEnabled, string format = "0.00", bool isPercent = false) {
-        var outputString = isPercent ? string.Format(format, value) : value.ToString(format);
+    internal static void DrawColorScale(float value, Vector4 colorMin, Vector4 colorMax, float minValue, float maxValue, bool colorEnabled, string? customString = null) {
+        var outputString = customString ?? value.ToString();
         if(colorEnabled) {
-            ImGui.TextColored(ColorScale(colorMin, colorMax, minValue, maxValue, value), outputString);
+            using var textColor = ImRaii.PushColor(ImGuiCol.Text, ColorScale(colorMin, colorMax, minValue, maxValue, value));
+            ImGui.TextUnformatted(outputString);
         } else {
-            ImGui.Text(outputString);
+            ImGui.TextUnformatted(outputString);
         }
     }
 

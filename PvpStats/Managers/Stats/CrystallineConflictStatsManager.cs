@@ -34,6 +34,7 @@ internal class CrystallineConflictStatsManager : StatsManager<CrystallineConflic
     public static float[] DamageTakenPerLifeRange = [150000f, 320000f];
     public static float[] HPRestoredPerLifeRange = [120000f, 600000f];
     public static float[] KDARange = [1f, 8f];
+    public static float[] KillParticipationRange = [0.6f, 0.9f];
 
     internal CrystallineConflictStatsManager(Plugin plugin) : base(plugin, plugin.CCCache) {
     }

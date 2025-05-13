@@ -75,7 +75,7 @@ internal class FrontlinePvPProfile {
                 ImGui.TableNextColumn();
                 ImGui.Text("Average place: ");
                 ImGui.TableNextColumn();
-                ImGuiHelper.DrawColorScale((float)averagePlace, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 1.5f, 2.5f, _plugin.Configuration.ColorScaleStats, "0.00");
+                ImGuiHelper.DrawColorScale((float)averagePlace, _plugin.Configuration.Colors.StatHigh, _plugin.Configuration.Colors.StatLow, 1.5f, 2.5f, _plugin.Configuration.ColorScaleStats, averagePlace.ToString("0.00"));
             }
         }
     }
