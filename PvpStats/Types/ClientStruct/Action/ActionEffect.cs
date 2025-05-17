@@ -74,18 +74,25 @@ public enum ActionEffectDisplayType : byte {
 }
 
 public enum ActorControlCategory : ushort {
+    SheathWeapon = 0x0,
+    ResetEnmity = 0x4,      //triggers when resetting enmity on striking dummy
+    ChangeJob = 0x5,        //statusId is job id
     Death = 0x6,
     CancelAbility = 0xF,
-    Cast = 0x11,
+    Cast = 0x11,            //
     GainEffect = 0x14,
     LoseEffect = 0x15,
     UpdateEffect = 0x16,
+    Unknown1 = 0x18,        //ticks every 10 seconds
     TargetIcon = 0x22,
     Tether = 0x23,
+    FallDamage = 0x2D,
     Targetable = 0x36,
     DirectorUpdate = 0x6D,
+    Emote = 0x122,
     SetTargetSign = 0x1F6,
     LimitBreak = 0x1F9,
+    CCPot = 0x5DC,
     HoT = 0x604,
     DoT = 0x605
 }

@@ -35,6 +35,10 @@ internal static class TextureHelper {
     internal static string CCTeamIconTexture => "ui/uld/PVPMKSResult_hr1.tex";
     internal static string RWTeamIconTexture => "ui/uld/PVPSimulationResult_hr1.tex";
     internal static string RWSuppliesTexture => "ui/uld/PVPSimulationHeader2_hr1.tex";
+
+    internal static string MedicineKitTexture => "bgcommon/world/common/vfx_for_bg/texture/mark028_o.atex";
+    internal static string MedicineKitTexture2 => "bgcommon/world/common/vfx_for_bg/texture/mark027_o.atex";
+    internal static string MedicineKitTexture3 => "bgcommon/world/common/vfx_for_bg/texture/mark027wo.atex";
     internal static uint TrainIcon => 60980;
 
     internal static Dictionary<RivalWingsTeamName, uint> GoblinMercIcons => new() {
@@ -117,5 +121,9 @@ internal static class TextureHelper {
                 break;
         };
         return (uv0, uv1);
+    }
+
+    internal static (Vector2 UV0, Vector2 UV1) GetMedicineKitUVs() {
+        return (new Vector2(0, 0.5f), new Vector2(0.5f, 1f));
     }
 }

@@ -345,6 +345,41 @@ internal static class ImGuiHelper {
         }
     }
 
+    public static void DrawRotatedImage(nint image, Vector2 size, Vector2 pos, Vector2 pivot, float angleDeg) {
+        var drawList = ImGui.GetWindowDrawList();
+        var angle = angleDeg * (float)Math.PI / 180;
+        Vector2 halfSize = size / 2;
+        Vector2[] corners = new Vector2[4];
+        corners[0] = pos;                               // Top-left
+        corners[1] = pos + new Vector2(size.X, 0);     // Top-right
+        corners[2] = pivot;                            // Bottom-right
+        corners[3] = pos + new Vector2(0, size.Y);     // Bottom-left
+
+        // Rotate each corner around the pivot
+        Vector2[] rotated = new Vector2[4];
+        for(int i = 0; i < 4; i++) {
+            Vector2 offset = corners[i] - pivot;
+
+            float rotatedX = offset.X * MathF.Cos(angle) - offset.Y * MathF.Sin(angle);
+            float rotatedY = offset.X * MathF.Sin(angle) + offset.Y * MathF.Cos(angle);
+
+            rotated[i] = pivot + new Vector2(rotatedX, rotatedY);
+        }
+
+        drawList.AddImageQuad(
+            image,
+            rotated[0], // top-left
+            rotated[1], // top-right
+            rotated[2], // bottom-right
+            rotated[3], // bottom-left
+            new Vector2(0, 0),
+            new Vector2(1, 0),
+            new Vector2(1, 1),
+            new Vector2(0, 1),
+            ImGui.GetColorU32(Vector4.One) // Tint color (white = no tint)
+        );
+    }
+
     public static string AddOrdinal(int num) {
         if(num <= 0) return num.ToString();
 

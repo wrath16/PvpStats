@@ -34,6 +34,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
     private CrystallineConflictMatch? _currentMatch;
 
     private CrystallineConflictMatchTimeline? _currentMatchTimeline;
+    private List<ActionEvent>? _casts;
     private float _lastEventTimer;
 
     private DateTime _lastUpdate;
@@ -51,14 +52,6 @@ internal class CrystallineConflictMatchManager : IDisposable {
     [Signature("40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ?? ?? ?? ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 45 ?? 4C 8B E1", DetourName = nameof(CCMatchEndSpectatorDetour))]
     private readonly Hook<CCMatchEnd101Delegate> _ccMatchEndSpectatorHook;
 
-    private delegate IntPtr CCDirectorCtorDelegate(IntPtr p1, IntPtr p2, IntPtr p3);
-    //48 89 5C 24 ?? 56 57 41 57 48 83 EC ?? 4C 89 74 24 
-    //48 89 5C 24 ?? 48 89 6C 24 ?? 56 57 41 56 48 83 EC ?? 4C 8B F1 E8
-    [Signature("48 89 5C 24 ?? 48 89 6C 24 ?? 56 57 41 56 48 83 EC ?? 4C 8B F1 E8", DetourName = nameof(CCDirectorCtorDetour))]
-    private readonly Hook<CCDirectorCtorDelegate> _ccDirectorCtorHook;
-    [Signature("48 89 5C 24 ?? 56 57 41 57 48 83 EC ?? 4C 89 74 24 ", DetourName = nameof(CCDirectorCtor2Detour))]
-    private readonly Hook<CCDirectorCtorDelegate> _ccDirectorCtor2Hook;
-
     private delegate void ProcessPacketActorControlDelegate(uint entityId, uint type, uint statusId, uint amount, uint a5, uint source, uint a7, uint a8, ulong a9, byte flag);
     [Signature("E8 ?? ?? ?? ?? 0F B7 0B 83 E9 64", DetourName = nameof(ProcessPacketActorControlDetour))]
     private readonly Hook<ProcessPacketActorControlDelegate> _processPacketActorControlHook = null!;
@@ -71,6 +64,17 @@ internal class CrystallineConflictMatchManager : IDisposable {
     [Signature("40 55 41 54 41 55 41 56 41 57 48 8D 6C 24 ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 45 ?? 48 8B 01", DetourName = nameof(ProcessKillDetour))]
     private readonly Hook<ProcessKillDelegate> _processKillHook;
 
+    private delegate void ProcessHoTDoTDelegate(IntPtr p1, IntPtr p2, uint p3, uint p4, int p5, int p6, int p7);
+    [Signature("48 8B C4 48 89 58 ?? 48 89 68 ?? 48 89 70 ?? 57 41 54 41 56 48 83 EC ?? 4C 89 78", DetourName = nameof(ProcessHoTDoTDetour))]
+    private readonly Hook<ProcessHoTDoTDelegate> _processHoTDoTHook;
+
+    //48 85 C9 0F 84 ?? ?? ?? ?? 56 41 56 
+    private delegate void AddToScreenLogWithScreenLogKindDelegate(IntPtr p1, IntPtr p2, int p3, int p4, byte p5, int p6, int p7, int p8, int p9);
+    [Signature("48 85 C9 0F 84 ?? ?? ?? ?? 56 41 56 ", DetourName = nameof(AddToScreenLogWithScreenLogKindDetour))]
+    private readonly Hook<AddToScreenLogWithScreenLogKindDelegate> _addToScreenLogWithScreenLogKindHook;
+
+
+
     private static readonly Regex TierRegex = new(@"\D+", RegexOptions.IgnoreCase);
     private static readonly Regex RiserRegex = new(@"\d+", RegexOptions.IgnoreCase);
 
@@ -82,16 +86,12 @@ internal class CrystallineConflictMatchManager : IDisposable {
         _plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "PvPMKSIntroduction", OnPvPIntro);
         //_plugin.AddonLifecycle.RegisterListener(AddonEvent.PreRequestedUpdate, "PvPMKSBattleLog", OnBattleLog);
         _plugin.InteropProvider.InitializeFromAttributes(this);
-        _plugin.Log.Debug($"cc director .ctor address: 0x{_ccDirectorCtorHook!.Address.ToString("X2")}");
-        _plugin.Log.Debug($"cc director .ctor 2 address: 0x{_ccDirectorCtor2Hook!.Address.ToString("X2")}");
         _plugin.Log.Debug($"cc match end 1 address: 0x{_ccMatchEndHook!.Address.ToString("X2")}");
         _plugin.Log.Debug($"cc match end 2 address: 0x{_ccMatchEndSpectatorHook!.Address.ToString("X2")}");
         _plugin.Log.Debug($"cc process kill address: 0x{_processKillHook!.Address.ToString("X2")}");
         _plugin.Log.Debug($"process actor control address: 0x{_processPacketActorControlHook!.Address.ToString("X2")}");
         _plugin.Log.Debug($"process action effect address: 0x{_processPacketActionEffectHook!.Address.ToString("X2")}");
 
-        //_ccDirectorCtorHook.Enable();
-        //_ccDirectorCtor2Hook.Enable();
         _ccMatchEndHook.Enable();
 #if DEBUG
         _ccMatchEndSpectatorHook.Enable();
@@ -99,6 +99,8 @@ internal class CrystallineConflictMatchManager : IDisposable {
         _processKillHook.Enable();
         _processPacketActorControlHook.Enable();
         _processPacketActionEffectHook.Enable();
+        _processHoTDoTHook.Enable();
+        _addToScreenLogWithScreenLogKindHook.Enable();
     }
 
     public void Dispose() {
@@ -108,33 +110,14 @@ internal class CrystallineConflictMatchManager : IDisposable {
         //_plugin.AddonLifecycle.UnregisterListener(OnBattleLog);
         _ccMatchEndHook.Dispose();
         _ccMatchEndSpectatorHook.Dispose();
-        _ccDirectorCtorHook.Dispose();
-        _ccDirectorCtor2Hook.Dispose();
+        //_ccDirectorCtorHook.Dispose();
+        //_ccDirectorCtor2Hook.Dispose();
         _processKillHook.Dispose();
         _processPacketActorControlHook.Dispose();
         _processPacketActionEffectHook.Dispose();
-    }
 
-    private IntPtr CCDirectorCtorDetour(IntPtr p1, IntPtr p2, IntPtr p3) {
-        _plugin.Log.Debug("CC Director .ctor occurred!");
-        try {
-            StartMatch();
-        } catch(Exception e) {
-            //suppress all exceptions so game doesn't crash if something fails here
-            _plugin.Log.Error(e, $"Error in CC director ctor");
-        }
-        return _ccDirectorCtorHook.Original(p1, p2, p3);
-    }
-
-    private IntPtr CCDirectorCtor2Detour(IntPtr p1, IntPtr p2, IntPtr p3) {
-        _plugin.Log.Debug("CC Director .ctor 2 occurred!");
-        try {
-            StartMatch();
-        } catch(Exception e) {
-            //suppress all exceptions so game doesn't crash if something fails here
-            _plugin.Log.Error(e, $"Error in CC director ctor 2");
-        }
-        return _ccDirectorCtor2Hook.Original(p1, p2, p3);
+        _processHoTDoTHook.Dispose();
+        _addToScreenLogWithScreenLogKindHook.Dispose();
     }
 
     private void StartMatch() {
@@ -170,6 +153,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 LimitBreakEffects = new(),
                 MapEvents = new(),
             };
+            _casts = new();
             _lastEventTimer = -1f;
             _plugin.Log.Information($"starting new match on {_currentMatch.Arena}");
             _plugin.DataQueue.QueueDataOperation(async () => {
@@ -205,11 +189,13 @@ internal class CrystallineConflictMatchManager : IDisposable {
 
     private void ProcessPacketActorControlDetour(uint sourceEntityId, uint type, uint statusId, uint amount, uint a5, uint source, uint a7, uint a8, ulong targetEntityId, byte flag) {
         try {
-            if(!IsMatchInProgress() || _currentMatchTimeline == null) {
+            if(!_plugin.DebugMode && (!IsMatchInProgress() || _currentMatchTimeline == null)) {
                 return;
             }
+            //Plugin.Log2.Debug($"actor control: 0x{type:X2} {(ActorControlCategory)type} 0x{sourceEntityId:X2} StatusId: 0x{statusId:X2} Source: {source} Amount: {amount} a5: {a5} a7: {a7} a8: {a8} a9: {targetEntityId} flag: {flag}");
+
             var now = DateTime.Now;
-            if(type == (uint)ActorControlCategory.Death && _currentMatchTimeline.Kills != null) {
+            if(type == (uint)ActorControlCategory.Death && _currentMatchTimeline?.Kills != null) {
                 //Plugin.Log2.Debug($"0x{sourceEntityId:X2} was owned by: StatusId: 0x{statusId:X2} Source: {source} Amount: 0x{amount:X2} a5: {a5} a7: {a7} a8: {a8} a9: {targetEntityId} flag: {flag}");
                 var victim = _plugin.ObjectTable.SearchByEntityId(sourceEntityId);
                 var killer = _plugin.ObjectTable.SearchByEntityId(amount);
@@ -250,6 +236,17 @@ internal class CrystallineConflictMatchManager : IDisposable {
                     //    _currentMatchTimeline!.BNPCNameLookup!.Add((uint)nameId, (bnpcName.Singular.ToString(), bnpcName.Article));
                     //}
                 }
+            } else if(sourceEntityId == _plugin.ClientState.LocalPlayer?.EntityId) {
+                if(_plugin.DebugMode) {
+                    //Plugin.Log2.Debug($"actor control: 0x{type:X2} {(ActorControlCategory)type} 0x{sourceEntityId:X2} StatusId: 0x{statusId:X2} Source: {source} Amount: {amount} a5: {a5} a7: {a7} a8: {a8} a9: {targetEntityId} flag: {flag}");
+                }
+            } else if(type == (uint)ActorControlCategory.CCPot) {
+                var player = _plugin.ObjectTable.SearchByEntityId(sourceEntityId);
+                Plugin.Log2.Debug($"Potion detected: 0x{sourceEntityId:X2} {player?.Name ?? ""} 0x{type:X2} {(ActorControlCategory)type} StatusId: 0x{statusId:X2} Source: {source} Amount: {amount} a5: {a5} a7: {a7} a8: {a8} a9: {targetEntityId} flag: {flag}");
+                if(amount != 30000) {
+                    Plugin.Log2.Warning("Non-standard potion amount!");
+                }
+
             }
         } finally {
             _processPacketActorControlHook.Original(sourceEntityId, type, statusId, amount, a5, source, a7, a8, targetEntityId, flag);
@@ -258,83 +255,93 @@ internal class CrystallineConflictMatchManager : IDisposable {
 
     private unsafe void ProcessPacketActionEffectDetour(uint entityId, IntPtr sourceCharacter, IntPtr pos, ActionEffectHeader* effectHeader, ActionEffect* effectArray, ulong* effectTrail) {
         try {
-            if(!IsMatchInProgress()) {
+            if(!_plugin.DebugMode && !IsMatchInProgress()) {
                 return;
             }
             var now = DateTime.Now;
             var actionId = effectHeader->ActionAnimationId;
             uint targets = effectHeader->EffectCount;
             uint? nameIdActor = null;
-            if(CombatHelper.IsLimitBreak(actionId)) {
-                var actor = _plugin.ObjectTable.SearchByEntityId(entityId);
-                if(actor is not IBattleChara) return;
-                if(actor is IBattleNpc) {
-                    //attempt to retrieve owner in case of pet (summoner)
-                    var owner = _plugin.ObjectTable.SearchByEntityId(actor?.OwnerId ?? 0);
-                    if(owner is not IPlayerCharacter) {
-                        Plugin.Log2.Warning("Limit break cast by non-player character");
-                        return;
-                    } else {
-                        nameIdActor = (actor as IBattleNpc)!.NameId;
-                        ////add lookup
-                        //if(!_currentMatchTimeline?.BNPCNameLookup?.ContainsKey((uint)nameIdActor) ?? false) {
-                        //    var bnpcName = _plugin.DataManager.GetExcelSheet<BNpcName>(ClientLanguage.English).GetRow((uint)nameIdActor);
-                        //    _currentMatchTimeline!.BNPCNameLookup!.Add((uint)nameIdActor, (bnpcName.Singular.ToString(), bnpcName.Article));
-                        //}
-                        actor = owner;
-                    }
-                }
-                var actorWorld = _plugin.DataManager.GetExcelSheet<World>().GetRow((actor as IPlayerCharacter).HomeWorld.RowId).Name.ToString();
-                var alias = (PlayerAlias)$"{(actor as IPlayerCharacter).Name} {actorWorld}";
-                var spell = _plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Action>(ClientLanguage.English).GetRow(actionId);
+            bool isPet = false;
+
+            var actor = _plugin.ObjectTable.SearchByEntityId(entityId);
+            var spell = _plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Action>(ClientLanguage.English).GetRow(actionId);
+            if(_plugin.DebugMode) {
                 Plugin.Log2.Debug($"{actor?.Name} cast {spell.Name} {actionId} targets: {targets} display: {effectHeader->EffectDisplayType} " +
-                $"hidden anim: {effectHeader->HiddenAnimation} counter: {effectHeader->GlobalEffectCounter} rotation: {effectHeader->Rotation} variation: {effectHeader->Variation}");
+            $"hidden anim: {effectHeader->HiddenAnimation} counter: {effectHeader->GlobalEffectCounter} rotation: {effectHeader->Rotation} variation: {effectHeader->Variation}");
+            }
 
-                ////add lookup
-                //if(!_currentMatchTimeline?.ActionIdLookup?.ContainsKey(spell.RowId) ?? false) {
-                //    _currentMatchTimeline!.ActionIdLookup!.Add(spell.RowId, spell.Name.ToString());
-                //}
+            if(actor is not IBattleChara) return;
+            if(actor is IBattleNpc) {
+                //attempt to retrieve owner in case of pet (summoner)
+                var owner = _plugin.ObjectTable.SearchByEntityId(actor?.OwnerId ?? 0);
+                if(owner is not IPlayerCharacter) {
+                    //Plugin.Log2.Warning("Limit break cast by non-player character");
+                    return;
+                } else {
+                    nameIdActor = (actor as IBattleNpc)!.NameId;
+                    actor = owner;
+                    isPet = true;
+                }
+            }
+            var actorWorld = _plugin.DataManager.GetExcelSheet<World>().GetRow((actor as IPlayerCharacter).HomeWorld.RowId).Name.ToString();
+            var alias = (PlayerAlias)$"{(actor as IPlayerCharacter).Name} {actorWorld}";
 
-                ActionEvent actionEvent = new(now, actionId, alias) {
-                    Variation = effectHeader->Variation,
-                    NameIdActor = nameIdActor,
-                    Snapshots = new() {
+            ActionEvent actionEvent = new(now, actionId, alias) {
+                Variation = effectHeader->Variation,
+                NameIdActor = nameIdActor,
+                Snapshots = new() {
                         {alias, new(actor as IBattleChara) }
                     }
-                };
+            };
 
-                for(var i = 0; i < targets; i++) {
-                    var actionTargetId = (uint)(effectTrail[i] & uint.MaxValue);
-                    var target = _plugin.ObjectTable.SearchByEntityId(actionTargetId);
-                    if(target is not IBattleChara || (target as IBattleChara) is null) continue;
+            for(var i = 0; i < targets; i++) {
+                var actionTargetId = (uint)(effectTrail[i] & uint.MaxValue);
+                var target = _plugin.ObjectTable.SearchByEntityId(actionTargetId);
+                if(target is not IBattleChara || (target as IBattleChara) is null) continue;
 
-                    var playerSnapshot = new BattleCharaSnapshot((target as IBattleChara));
-                    //logging purposes!
-                    Plugin.Log2.Debug($"{target.Name} HP: {playerSnapshot.CurrentHP}/{playerSnapshot.MaxHP} MP: {playerSnapshot.CurrentMP}/{playerSnapshot.MaxMP} shields: {playerSnapshot.ShieldPercents}");
-                    string statuses = "";
-                    foreach(var status in playerSnapshot.Statuses) {
-                        var data = _plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Status>().GetRow(status.StatusId);
-                        statuses += $"{data.Name}:{status.StatusId}:{status.Param}:{status.RemainingTime} ";
-                    }
-                    Plugin.Log2.Debug(statuses);
+                var playerSnapshot = new BattleCharaSnapshot((target as IBattleChara));
+                //Plugin.Log2.Debug($"{target.Name} HP: {playerSnapshot.CurrentHP}/{playerSnapshot.MaxHP} MP: {playerSnapshot.CurrentMP}/{playerSnapshot.MaxMP} shields: {playerSnapshot.ShieldPercents}");
+                //string statuses = "";
+                //foreach(var status in playerSnapshot.Statuses) {
+                //    var data = _plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Status>().GetRow(status.StatusId);
+                //    statuses += $"{data.Name}:{status.StatusId}:{status.Param}:{status.RemainingTime} ";
+                //}
+                //Plugin.Log2.Debug(statuses);
 
-                    if(target is IPlayerCharacter) {
-                        var targetWorld = _plugin.DataManager.GetExcelSheet<World>().GetRow((target as IPlayerCharacter).HomeWorld.RowId).Name.ToString();
-                        var targetAlias = (PlayerAlias)$"{(target as IPlayerCharacter).Name} {targetWorld}";
-                        actionEvent.Snapshots.TryAdd(targetAlias, playerSnapshot);
-                        actionEvent.PlayerTargets.Add(targetAlias);
-                    } else if(target is IBattleNpc) {
-                        var npcTarget = target as IBattleNpc;
-                        var bnpcName = _plugin.DataManager.GetExcelSheet<BNpcName>(ClientLanguage.English).GetRow(npcTarget.NameId);
-                        actionEvent.NameIdTargets.Add(npcTarget.NameId);
-                        ////add lookup
-                        //if(!_currentMatchTimeline?.BNPCNameLookup?.ContainsKey(npcTarget.NameId) ?? false) {
-                        //    _currentMatchTimeline!.BNPCNameLookup!.Add(npcTarget.NameId, (bnpcName.Singular.ToString(), bnpcName.Article));
-                        //}
-                    } else {
-                        Plugin.Log2.Warning($"{spell.Name} cast on unknown entity {target?.Name}");
+                for(var j = 0; j < 8; j++) {
+                    ref var actionEffect = ref effectArray[i * 8 + j];
+                    if(actionEffect.EffectType == 0)
                         continue;
+                    if(_plugin.DebugMode) {
+                        Plugin.Log2.Debug($"{target?.Name} was hit by {actionEffect.EffectType} p0: {actionEffect.Param0} p1: {actionEffect.Param1} p2: {actionEffect.Param2} " +
+                        $"f1: {actionEffect.Flags1} f2: {actionEffect.Flags2} value: {actionEffect.Value}");
                     }
+                }
+
+                if(target is IPlayerCharacter) {
+                    var targetWorld = _plugin.DataManager.GetExcelSheet<World>().GetRow((target as IPlayerCharacter).HomeWorld.RowId).Name.ToString();
+                    var targetAlias = (PlayerAlias)$"{(target as IPlayerCharacter).Name} {targetWorld}";
+                    actionEvent.Snapshots.TryAdd(targetAlias, playerSnapshot);
+                    actionEvent.PlayerTargets.Add(targetAlias);
+                } else if(target is IBattleNpc) {
+                    var npcTarget = target as IBattleNpc;
+                    var bnpcName = _plugin.DataManager.GetExcelSheet<BNpcName>(ClientLanguage.English).GetRow(npcTarget.NameId);
+                    actionEvent.NameIdTargets.Add(npcTarget.NameId);
+                } else {
+                    Plugin.Log2.Warning($"{spell.Name} cast on unknown entity {target?.Name}");
+                    continue;
+                }
+            }
+
+            if(effectHeader->Variation == 0 && !isPet) {
+                _casts?.Add(actionEvent);
+            }
+
+            if(CombatHelper.IsLimitBreak(actionId)) {
+                if(!_plugin.DebugMode) {
+                    Plugin.Log2.Debug($"{actor?.Name} cast {spell.Name} {actionId} targets: {targets} display: {effectHeader->EffectDisplayType} " +
+                    $"hidden anim: {effectHeader->HiddenAnimation} counter: {effectHeader->GlobalEffectCounter} rotation: {effectHeader->Rotation} variation: {effectHeader->Variation}");
                 }
                 if(effectHeader->Variation == 0) {
                     _currentMatchTimeline?.LimitBreakCasts?.Add(actionEvent);
@@ -346,6 +353,37 @@ internal class CrystallineConflictMatchManager : IDisposable {
             }
         } finally {
             _processPacketActionEffectHook.Original(entityId, sourceCharacter, pos, effectHeader, effectArray, effectTrail);
+        }
+    }
+
+    private void ProcessHoTDoTDetour(IntPtr targetStatusManager, IntPtr targetObj, uint p3, uint enum1, int amount, int sourceEntityId, int enum2) {
+        try {
+            //p3 has something to do with where to route the message
+            //p3 = 1306 for sole survivor hp+mp, 3111 for haimatinon
+            //enum1: 4 = heal, 3 = damage, 11 = mp gain
+            //enum2: 0 = beneficial, -1 = detrimental
+            //Plugin.Log2.Debug($"hot/dot detected! p1: 0x{targetStatusManager:X2} p2: 0x{targetObj:X2}, p3: {p3}, p4: {enum1}, p5: {amount}, p6: 0x{sourceEntityId:X2}, p7: {enum2}");
+        } finally {
+            _processHoTDoTHook.Original(targetStatusManager, targetObj, p3, enum1, amount, sourceEntityId, enum2);
+        }
+    }
+
+    private unsafe void AddToScreenLogWithScreenLogKindDetour(IntPtr p1, IntPtr p2, int p3, int p4, byte p5, int p6, int p7, int p8, int p9) {
+        try {
+            if(!_plugin.DebugMode && !IsMatchInProgress()) {
+                return;
+            }
+            //potion: p7 = 30000, p3 = 21, p4 = 5
+            //p1 = p2 = player obj address
+            //4, 5, 6, 8, 9 = 0
+            //Plugin.Log2.Debug($"screen log message added! p1: 0x{p1:X2} p2: 0x{p2:X2}, p3: {p3}, p4: {p4}, p5: {p5}, p6: {p6}, p7: {p7}, p8: {p8}, p9: {p9}");
+            if(p1 == p2 && p3 == 21 && p4 == 5 && p5 == 0 && p6 == 0 && p7 == 30000 && p8 == 0 && p9 == 0) {
+                var player = (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)p1;
+                var player2 = _plugin.ObjectTable.SearchByEntityId(player->EntityId);
+                Plugin.Log2.Debug($"potion detected! {player2?.Name}");
+            }
+        } finally {
+            _addToScreenLogWithScreenLogKindHook.Original(p1, p2, p3, p4, p5, p6, p7, p8, p9);
         }
     }
 
@@ -522,6 +560,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
             _plugin.Log.Error("trying to process match results on no match!");
             return false;
             //fallback for case where you load into a game after the match has completed creating a new match
+            //this will trigger if you load in after a disconnect as the match as ending...
         } else if((DateTime.Now - _currentMatch!.DutyStartTime).TotalSeconds < 10) {
             _plugin.Log.Error("double match detected.");
             return false;
@@ -691,8 +730,31 @@ internal class CrystallineConflictMatchManager : IDisposable {
             }
         }
         _currentMatch.MatchWinner = postMatch.MatchWinner;
-
         _currentMatch.PostMatch = postMatch;
+
+        //totalized casts
+        try {
+            Dictionary<string, Dictionary<uint, uint>> casts = new();
+            foreach(var cast in _casts ?? []) {
+                casts.TryAdd(cast.Actor, new());
+                if(!casts[cast.Actor].TryAdd(cast.ActionId, 1)) {
+                    casts[cast.Actor][cast.ActionId]++;
+                }
+            }
+            if(_currentMatchTimeline != null) {
+                _currentMatchTimeline.TotalizedCasts = casts;
+            }
+            //foreach(var playerCasts in casts) {
+            //    Plugin.Log2.Debug($"{playerCasts.Key}:");
+            //    foreach(var actionCasts in playerCasts.Value) {
+            //        var action = _plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Action>(ClientLanguage.English).GetRow(actionCasts.Key);
+            //        Plugin.Log2.Debug($"{action.Name}:{actionCasts.Value}");
+            //    }
+            //}
+        } catch(Exception e) {
+            Plugin.Log2.Error(e, "Error in totalizing casts");
+        }
+
         _currentMatch.IsCompleted = true;
         _currentMatch.TimelineId = _currentMatchTimeline?.Id;
         return true;
@@ -704,6 +766,9 @@ internal class CrystallineConflictMatchManager : IDisposable {
         }
         var director = (CrystallineConflictContentDirector*)(IntPtr)EventFramework.Instance()->GetInstanceContentDirector();
         if(director == null) {
+            return;
+        }
+        if(_currentMatch?.IsCompleted ?? true && (_plugin.Condition[ConditionFlag.BetweenAreas] || _plugin.Condition[ConditionFlag.BetweenAreas51])) {
             return;
         }
 

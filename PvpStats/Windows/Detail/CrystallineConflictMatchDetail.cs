@@ -7,6 +7,7 @@ using ImGuiNET;
 using ImPlotNET;
 using Lumina.Excel.Sheets;
 using PvpStats.Helpers;
+using PvpStats.Types.Action;
 using PvpStats.Types.Display;
 using PvpStats.Types.Event;
 using PvpStats.Types.Event.CrystallineConflict;
@@ -49,13 +50,15 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     private Vector2? _savedGraphSize;
     private Vector2 _defaultTimelineSize;
     private Vector2? _savedTimelineSize;
+    private Vector2 _defaultCastsSize;
+    private Vector2? _savedCastsSize;
     private bool _firstDraw = true;
     private ulong _scoreboardTicks = 0;
-    private bool _easterEgg = false;
-    private CrystallineConflictMatchTimeline? _timeline;
-    private List<MatchEvent> _consolidatedEvents = new();
-    private List<MatchEvent> _consolidatedEventsFiltered = new();
-    private Dictionary<Type, bool> _eventFilters = new();
+    private readonly bool _easterEgg = false;
+    private readonly CrystallineConflictMatchTimeline? _timeline;
+    private List<MatchEvent> _consolidatedEvents = [];
+    private List<MatchEvent> _consolidatedEventsFiltered = [];
+    private Dictionary<Type, bool> _eventFilters = [];
     private bool _killFilter = true;
     private bool _deathFilter = true;
     private bool _lbCastFilter = true;
@@ -66,11 +69,11 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     private bool _limitBreakIcons = true;
 
     private List<(float Crystal, float Astra, float Umbra)> _consolidatedEventTeamPoints = new();
-    private Dictionary<uint, string> _bNPCNames = new();
-    private Dictionary<uint, string> _actionNames = new();
-    private Dictionary<uint, uint> _actionIcons = new();
-    private double[] _xAxisTicks = [];
-    private string[] _xAxisLabels = [];
+    private readonly Dictionary<uint, string> _bNPCNames = [];
+    private readonly Dictionary<uint, string> _actionNames = [];
+    private readonly Dictionary<uint, uint> _actionIcons = [];
+    private readonly double[] _xAxisTicks = [];
+    private readonly string[] _xAxisLabels = [];
     private Dictionary<CrystallineConflictTeamName, (float[] Xs, float[] Ys)> _teamPoints = new() {
         {CrystallineConflictTeamName.Astra, new() },
         {CrystallineConflictTeamName.Umbra, new() },
@@ -98,11 +101,13 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 _defaultScoreboardSize = new Vector2(700, 680);
                 _defaultGraphSize = new Vector2(975, 900);
                 _defaultTimelineSize = new Vector2(700, 680);
+                _defaultCastsSize = new Vector2(700, 680);
                 break;
             case CrystallineConflictMatchType.Ranked:
                 _defaultScoreboardSize = new Vector2(700, 700);
                 _defaultGraphSize = new Vector2(975, 920);
                 _defaultTimelineSize = new Vector2(700, 700);
+                _defaultCastsSize = new Vector2(700, 700);
                 break;
         }
 
@@ -224,6 +229,23 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             _consolidatedEvents.Sort();
             ApplyTimelineFilters();
 
+            //add totalized actions to caches
+            foreach(var playerCasts in _timeline.TotalizedCasts ?? []) {
+                foreach(var actionCasts in playerCasts.Value) {
+                    var action = Plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Action>(ClientLanguage.English).GetRow(actionCasts.Key);
+                    if(!_actionNames.ContainsKey(action.RowId)) {
+                        _actionNames.Add(action.RowId, action.Name.ToString());
+                        _actionIcons.Add(action.RowId, action.Icon);
+                    }
+                }
+            }
+            foreach(var value in Enum.GetValues(typeof(KeyAction))) {
+                var action = Plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Action>(ClientLanguage.English).GetRow((uint)value);
+                _actionNames.TryAdd(action.RowId, action.Name.ToString());
+                _actionIcons.TryAdd(action.RowId, action.Icon);
+            }
+
+
             //setup team point events
             if(_timeline.CrystalPosition != null && _timeline.TeamProgress != null) {
                 SetupTimelineTeamPoints();
@@ -272,10 +294,6 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
 
         var ms = DateTime.Now.Millisecond;
         _easterEgg = ms % 100 == 0;
-    }
-
-    public override void OnClose() {
-        Plugin.WindowManager.RemoveWindow(this);
     }
 
     public override void PreDraw() {
@@ -543,6 +561,18 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                             }
                             _savedGraphSize = ImGui.GetWindowSize();
                             DrawGraphs();
+                        }
+                    }
+                    if(_timeline.TotalizedCasts != null) {
+                        using(var tab = ImRaii.TabItem("Casts")) {
+                            if(tab) {
+                                if(CurrentTab != "Casts") {
+                                    SetWindowSize(_savedCastsSize ?? _defaultCastsSize);
+                                    CurrentTab = "Casts";
+                                }
+                                _savedCastsSize = ImGui.GetWindowSize();
+                                DrawCasts();
+                            }
                         }
                     }
                 }
@@ -1015,13 +1045,13 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 ImGui.SameLine();
                 ImGui.Text(" (");
                 ImGui.SameLine();
-                DrawPlayer(mEvent.CreditedKiller, mEvent.CreditedKillerSnapshot);
+                DrawPlayer(mEvent.CreditedKiller, false, mEvent.CreditedKillerSnapshot);
                 ImGui.SameLine();
                 ImGui.Text(")");
             }
         } else {
             if(mEvent.CreditedKiller != null) {
-                DrawPlayer(mEvent.CreditedKiller, mEvent.CreditedKillerSnapshot);
+                DrawPlayer(mEvent.CreditedKiller, false, mEvent.CreditedKillerSnapshot);
                 ImGui.SameLine();
             } else {
                 ImGui.Text($"A gentle breeze somehow ");
@@ -1030,7 +1060,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         ImGui.SameLine();
         ImGui.Text(" knocked out ");
         ImGui.SameLine();
-        DrawPlayer(mEvent.Victim, mEvent.VictimSnapshot);
+        DrawPlayer(mEvent.Victim, false, mEvent.VictimSnapshot);
         ImGui.SameLine();
         ImGui.Text(".");
     }
@@ -1055,7 +1085,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
 
         var actorSnapshot = _snapshotStyle == 0 ? mEvent.CastSnapshots?[mEvent.Actor] : mEvent.EffectSnapshots?[mEvent.Actor];
-        DrawPlayer(mEvent.Actor, actorSnapshot);
+        DrawPlayer(mEvent.Actor, false, actorSnapshot);
 
         ImGui.SameLine();
         if(mEvent.EffectTime != null) {
@@ -1084,7 +1114,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 effectSnapshot = mEvent.EffectSnapshots?[affectedPlayers[0]];
             }
             var snapshot = _snapshotStyle == 0 ? castSnapshot : effectSnapshot;
-            DrawPlayer(affectedPlayers[0], snapshot);
+            DrawPlayer(affectedPlayers[0], false, snapshot);
         }
 
         if(affectedPlayers.Count > 1) {
@@ -1102,7 +1132,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                         effectSnapshot = mEvent.EffectSnapshots?[affectedPlayers[i]];
                     }
                     var snapshot = _snapshotStyle == 0 ? castSnapshot : effectSnapshot;
-                    DrawPlayer(affectedPlayers[i], snapshot, false);
+                    DrawPlayer(affectedPlayers[i], false, snapshot, false);
                     if(i < affectedPlayers.Count - 1) {
                         ImGui.NewLine();
                         ImGui.Separator();
@@ -1119,9 +1149,12 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         }
     }
 
-    private void DrawPlayer(PlayerAlias name, BattleCharaSnapshot? snapshot = null, bool tooltipSnapshot = true) {
+    private void DrawPlayer(PlayerAlias name, bool highlightLocalPlayer = false, BattleCharaSnapshot? snapshot = null, bool tooltipSnapshot = true) {
         var player = _players.FirstOrDefault(x => x.Alias.Equals(name));
         Vector4 color = GetTeamColor(player?.Team);
+        if(highlightLocalPlayer && name == Match.LocalPlayer) {
+            color = Plugin.Configuration.Colors.CCLocalPlayer;
+        }
 
         using(var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero)) {
             if(player?.Job != null && TextureHelper.JobIcons.TryGetValue((Job)player.Job, out var icon)) {
@@ -1222,14 +1255,14 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
 
         using(var style = ImRaii.PushColor(ImPlotCol.Line, astraColor - new Vector4(0f, 0f, 0f, 0.6f))) {
             using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 2f * ImGuiHelpers.GlobalScale);
-            ImPlot.PlotStairs("Astra Mid Progress", ref _teamMidPoints[CrystallineConflictTeamName.Astra].Xs[0],
+            ImPlot.PlotStairs("Astra Checkpoint", ref _teamMidPoints[CrystallineConflictTeamName.Astra].Xs[0],
                 ref _teamMidPoints[CrystallineConflictTeamName.Astra].Ys[0],
                 _teamMidPoints[CrystallineConflictTeamName.Astra].Xs.Length, ImPlotStairsFlags.None);
         }
 
         using(var style = ImRaii.PushColor(ImPlotCol.Line, umbraColor - new Vector4(0f, 0f, 0f, 0.6f))) {
             using var _ = ImRaii.PushStyle(ImPlotStyleVar.LineWeight, 2f * ImGuiHelpers.GlobalScale);
-            ImPlot.PlotStairs("Umbra Mid Progress", ref _teamMidPoints[CrystallineConflictTeamName.Umbra].Xs[0],
+            ImPlot.PlotStairs("Umbra Checkpoint", ref _teamMidPoints[CrystallineConflictTeamName.Umbra].Xs[0],
                 ref _teamMidPoints[CrystallineConflictTeamName.Umbra].Ys[0],
                 _teamMidPoints[CrystallineConflictTeamName.Umbra].Xs.Length, ImPlotStairsFlags.None);
         }
@@ -1296,6 +1329,73 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 using var tooltip = ImRaii.Tooltip();
                 if(tooltip) {
                     DrawEvent(actionEvent);
+                }
+            }
+        }
+    }
+
+    private void DrawCasts() {
+        using var child = ImRaii.Child("castsChild", ImGui.GetContentRegionAvail(), false);
+        if(child) {
+            DrawKeyCastsTable();
+        }
+    }
+
+    private void DrawKeyCastsTable() {
+        var keyActions = new[] { (uint)KeyAction.Recuperate, (uint)KeyAction.Guard, (uint)KeyAction.Purify, (uint)KeyAction.Elixir, (uint)KeyAction.Sprint, (uint)KeyAction.Guardian };
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X * 0.65f);
+        using var child = ImRaii.Child("keyCastsChild", new Vector2(ImGui.GetContentRegionAvail().X * 0.65f, 0), false, ImGuiWindowFlags.NoScrollbar);
+        using(var table = ImRaii.Table("castsTable", keyActions.Length + 2, ImGuiTableFlags.Borders)) {
+            if(table) {
+                ImGui.TableSetupColumn("player", ImGuiTableColumnFlags.WidthStretch);
+                foreach(var action in keyActions) {
+                    ImGui.TableSetupColumn(action.ToString(), ImGuiTableColumnFlags.WidthFixed, 25f * ImGuiHelpers.GlobalScale);
+                }
+                ImGui.TableSetupColumn("medkit", ImGuiTableColumnFlags.WidthFixed, 25f * ImGuiHelpers.GlobalScale);
+
+                if(ImGui.TableNextColumn()) {
+                    ImGui.Text("");
+                }
+
+                foreach(var action in keyActions) {
+                    if(ImGui.TableNextColumn()) {
+                        ImGui.Image(Plugin.WindowManager.GetTextureHandle(_actionIcons[action]), new Vector2(24 * ImGuiHelpers.GlobalScale));
+                        if(ImGui.IsItemHovered()) {
+                            ImGuiHelper.WrappedTooltip($"{_actionNames[action]}");
+                        }
+                    }
+                }
+
+                if(ImGui.TableNextColumn()) {
+                    var uvs = TextureHelper.GetMedicineKitUVs();
+                    Plugin.WindowManager.DrawMedicineKit(new Vector2(24f * ImGuiHelpers.GlobalScale));
+                    //ImGui.Image(Plugin.WindowManager.GetTextureHandle(TextureHelper.MedicineKitTexture), new Vector2(24 * ImGuiHelpers.GlobalScale), uvs.UV0, uvs.UV1);
+                    if(ImGui.IsItemHovered()) {
+                        ImGuiHelper.WrappedTooltip($"Medicine Kits");
+                    }
+                }
+
+                foreach(var team in Match.Teams) {
+                    foreach(var player in team.Value.Players) {
+                        if(ImGui.TableNextColumn()) {
+                            DrawPlayer(player.Alias, true);
+                        }
+                        if(_timeline?.TotalizedCasts?.TryGetValue(player.Alias.ToString(), out var playerCasts) ?? false) {
+                            foreach(var action in keyActions) {
+                                if(ImGui.TableNextColumn()) {
+                                    if(playerCasts.TryGetValue(action, out var castCount)) {
+                                        ImGuiHelper.DrawNumericCell($"{castCount:#}");
+                                    } else {
+                                        ImGuiHelper.DrawNumericCell($"{0}");
+                                    }
+                                }
+                            }
+                            ImGui.TableNextColumn();
+                            //add medkits
+                        } else {
+                            ImGui.TableNextRow();
+                        }
+                    }
                 }
             }
         }

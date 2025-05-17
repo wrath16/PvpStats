@@ -13,6 +13,8 @@ internal class CrystallineConflictMatchTimeline : PvpMatchTimeline {
     public List<ActionEvent>? LimitBreakCasts { get; set; }
     public List<ActionEvent>? LimitBreakEffects { get; set; }
 
+    public Dictionary<string, Dictionary<uint, uint>>? TotalizedCasts { get; set; }
+
     public CrystallineConflictMatchTimeline() : base() {
 
     }

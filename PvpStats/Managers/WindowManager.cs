@@ -400,4 +400,22 @@ internal class WindowManager : IDisposable {
         color.Push(ImGuiCol.PlotHistogram, new Vector4(0.74f, 0.25f, 0.47f, 1f));
         ImGui.ProgressBar(mpPercentage, mpSize, "");
     }
+
+    internal void DrawMedicineKit(Vector2 size) {
+        var uvs = TextureHelper.GetMedicineKitUVs();
+        var initialCursor = ImGui.GetCursorScreenPos();
+        var size2 = size * 0.9f;
+        var pivot = initialCursor + size / 2f;
+        var initialCursor2 = pivot - size2;
+
+        ImGuiHelper.DrawRotatedImage(GetTextureHandle(TextureHelper.MedicineKitTexture2), size2, initialCursor2, pivot, 45f);
+        ImGuiHelper.DrawRotatedImage(GetTextureHandle(TextureHelper.MedicineKitTexture2), size2, initialCursor2, pivot, 135f);
+        ImGuiHelper.DrawRotatedImage(GetTextureHandle(TextureHelper.MedicineKitTexture2), size2, initialCursor2, pivot, 225f);
+        ImGuiHelper.DrawRotatedImage(GetTextureHandle(TextureHelper.MedicineKitTexture2), size2, initialCursor2, pivot, 315f);
+        ImGuiHelper.DrawRotatedImage(GetTextureHandle(TextureHelper.MedicineKitTexture3), size2, initialCursor2, pivot, 45f);
+        ImGuiHelper.DrawRotatedImage(GetTextureHandle(TextureHelper.MedicineKitTexture3), size2, initialCursor2, pivot, 135f);
+        ImGuiHelper.DrawRotatedImage(GetTextureHandle(TextureHelper.MedicineKitTexture3), size2, initialCursor2, pivot, 225f);
+        ImGuiHelper.DrawRotatedImage(GetTextureHandle(TextureHelper.MedicineKitTexture3), size2, initialCursor2, pivot, 315f);
+        ImGui.Image(GetTextureHandle(TextureHelper.MedicineKitTexture), size, uvs.UV0, uvs.UV1);
+    }
 }

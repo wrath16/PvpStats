@@ -6,10 +6,12 @@ using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Game.InstanceContent;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 using Lumina.Excel.Sheets;
@@ -23,12 +25,14 @@ using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using static FFXIVClientStructs.FFXIV.Client.UI.Misc.GroupPoseModule;
 using static Lumina.Data.Parsing.Uld.UldRoot;
 using static PvpStats.Types.ClientStruct.RivalWingsContentDirector;
 
@@ -386,6 +390,33 @@ internal unsafe class DebugWindow : Window {
                         //    _plugin.ClientState.LocalPlayer.CurrentHp, _plugin.ClientState.LocalPlayer.ShieldPercentage,
                         //    _plugin.ClientState.LocalPlayer.MaxMp, _plugin.ClientState.LocalPlayer.CurrentMp);
                     }
+                    using(var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero)) {
+                        var size = new Vector2(24f * ImGuiHelpers.GlobalScale);
+                        var uvs = TextureHelper.GetMedicineKitUVs();
+                        var initialCursor = ImGui.GetCursorScreenPos();
+                        
+                        //size = size - new Vector2(size.X * 0.2f, size.Y * 0.2f);
+                        var size2 = size * 0.9f;
+                        //var initialCursor2 = initialCursor - size / 2f;
+
+                        ////ImGui.SetCursorScreenPos(initialCursor);
+                        //var pivot = initialCursor2 + size;
+                        var pivot = initialCursor + size / 2f;
+                        var initialCursor2 = pivot - size2;
+
+
+                        //bgcommon/world/common/vfx_for_bg/texture/mark027_o.atex
+                        DrawRotatedImage(_plugin.WindowManager.GetTextureHandle("bgcommon/world/common/vfx_for_bg/texture/mark027_o.atex"), size2, initialCursor2, pivot, 45f);
+                        DrawRotatedImage(_plugin.WindowManager.GetTextureHandle("bgcommon/world/common/vfx_for_bg/texture/mark027_o.atex"), size2, initialCursor2, pivot, 135f);
+                        DrawRotatedImage(_plugin.WindowManager.GetTextureHandle("bgcommon/world/common/vfx_for_bg/texture/mark027_o.atex"), size2, initialCursor2, pivot, 225f);
+                        DrawRotatedImage(_plugin.WindowManager.GetTextureHandle("bgcommon/world/common/vfx_for_bg/texture/mark027_o.atex"), size2, initialCursor2, pivot, 315f);
+                        DrawRotatedImage(_plugin.WindowManager.GetTextureHandle("bgcommon/world/common/vfx_for_bg/texture/mark027wo.atex"), size2, initialCursor2, pivot, 45f);
+                        DrawRotatedImage(_plugin.WindowManager.GetTextureHandle("bgcommon/world/common/vfx_for_bg/texture/mark027wo.atex"), size2, initialCursor2, pivot, 135f);
+                        DrawRotatedImage(_plugin.WindowManager.GetTextureHandle("bgcommon/world/common/vfx_for_bg/texture/mark027wo.atex"), size2, initialCursor2, pivot, 225f);
+                        DrawRotatedImage(_plugin.WindowManager.GetTextureHandle("bgcommon/world/common/vfx_for_bg/texture/mark027wo.atex"), size2, initialCursor2, pivot, 315f);
+                        ImGui.Image(_plugin.WindowManager.GetTextureHandle(TextureHelper.MedicineKitTexture), size, uvs.UV0, uvs.UV1);
+                    }
+
 
                     //_plugin.WindowManager.DrawPlayerBars(60000, 60000, 200, 10000, 5000);
                     //_plugin.WindowManager.DrawPlayerBars(60000, 4000, 200, 10000, 6000);
@@ -405,6 +436,53 @@ internal unsafe class DebugWindow : Window {
 
         //}
 
+    }
+
+    private void DrawRotatedImage(nint image, Vector2 size, Vector2 pos, Vector2 pivot, float angleDeg) {
+        var drawList = ImGui.GetWindowDrawList();
+        //Vector2 pivot = ImGui.GetCursorScreenPos() + size.X / 2f;
+        var angle = angleDeg * (float)Math.PI / 180;
+        Vector2 halfSize = size / 2;
+        Vector2[] corners = new Vector2[4];
+        corners[0] = pos;                               // Top-left
+        corners[1] = pos + new Vector2(size.X, 0);     // Top-right
+        corners[2] = pivot;                            // Bottom-right
+        corners[3] = pos + new Vector2(0, size.Y);     // Bottom-left
+
+        //for(int i = 0; i < 4; i++) {
+        //    float dx = (i == 0 || i == 3) ? -halfSize.X : halfSize.X;
+        //    float dy = (i < 2) ? -halfSize.Y : halfSize.Y;
+
+        //    float rotatedX = dx * MathF.Cos(angle) - dy * MathF.Sin(angle);
+        //    float rotatedY = dx * MathF.Sin(angle) + dy * MathF.Cos(angle);
+
+        //    corners[i] = pivot + new Vector2(rotatedX, rotatedY);
+        //}
+        // Rotate each corner around the pivot
+        Vector2[] rotated = new Vector2[4];
+        for(int i = 0; i < 4; i++) {
+            Vector2 offset = corners[i] - pivot;
+
+            float rotatedX = offset.X * MathF.Cos(angle) - offset.Y * MathF.Sin(angle);
+            float rotatedY = offset.X * MathF.Sin(angle) + offset.Y * MathF.Cos(angle);
+
+            rotated[i] = pivot + new Vector2(rotatedX, rotatedY);
+        }
+
+        //Plugin.Log2.Debug($"{pivot}");
+        //Plugin.Log2.Debug($"{corners[0]} {corners[1]} {corners[2]} {corners[3]}");
+        drawList.AddImageQuad(
+            image,
+            rotated[0], // top-left
+            rotated[1], // top-right
+            rotated[2], // bottom-right
+            rotated[3], // bottom-left
+            new Vector2(0, 0),
+            new Vector2(1, 0),
+            new Vector2(1, 1),
+            new Vector2(0, 1),
+            ImGui.GetColorU32(Vector4.One) // Tint color (white = no tint)
+        );
     }
 
     private void DrawRivalWingsDirector() {
@@ -671,74 +749,83 @@ internal unsafe class DebugWindow : Window {
         //var playerAddress = _plugin.ClientState.LocalPlayer.Address;
         //ImGui.Text($"Local Player Address: 0x{new IntPtr(playerAddress).ToString("X2")}");
 
-        using(var table = ImRaii.Table("object_table", 6)) {
+        using(var table = ImRaii.Table("object_table", 10)) {
             ImGui.TableSetupColumn("name");
+            ImGui.TableSetupColumn("nameId", ImGuiTableColumnFlags.WidthFixed, 80f);
             ImGui.TableSetupColumn("objType", ImGuiTableColumnFlags.WidthFixed, 80f);
             ImGui.TableSetupColumn("index", ImGuiTableColumnFlags.WidthFixed, 30f);
+            ImGui.TableSetupColumn("dataId", ImGuiTableColumnFlags.WidthFixed, 80f);
+            ImGui.TableSetupColumn("gameObjId", ImGuiTableColumnFlags.WidthFixed, 100f);
             ImGui.TableSetupColumn("entityId", ImGuiTableColumnFlags.WidthFixed, 100f);
             ImGui.TableSetupColumn("owner", ImGuiTableColumnFlags.WidthFixed, 100f);
+            ImGui.TableSetupColumn("address", ImGuiTableColumnFlags.WidthFixed, 100f);
             ImGui.TableSetupColumn("statuses");
 
             ImGui.TableNextColumn();
             ImGui.TableHeader("Name");
             ImGui.TableNextColumn();
+            ImGui.TableHeader("NameId");
+            ImGui.TableNextColumn();
             ImGui.TableHeader("ObjType");
             ImGui.TableNextColumn();
             ImGui.TableHeader("Index");
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("DataId");
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("GameObjId");
             ImGui.TableNextColumn();
             ImGui.TableHeader("EntityId");
             ImGui.TableNextColumn();
             ImGui.TableHeader("OwnerId");
             ImGui.TableNextColumn();
+            ImGui.TableHeader("Address");
+            ImGui.TableNextColumn();
             ImGui.TableHeader("Statuses");
 
-            foreach(IPlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player).Cast<IPlayerCharacter>()) {
-                try {
-                    ImGui.TableNextColumn();
-                    ImGui.Text($"{pc.Name}");
-                    ImGui.TableNextColumn();
-                    ImGui.Text($"{pc.ObjectKind}");
-                    ImGui.TableNextColumn();
-                    ImGui.Text($"{pc.ObjectIndex}");
-                    ImGui.TableNextColumn();
-                    ImGui.Text($"0x{pc.EntityId:X2}");
-                    ImGui.TableNextColumn();
-                    ImGui.Text($"0x{pc.OwnerId:X2}");
-                    ImGui.TableNextColumn();
-                    //ImGui.Text($"{pc.ShieldPercentage}");
-                    foreach(var status in pc.StatusList) {
-                        ImGui.Text($"{status.StatusId}:{status.Param},");
-                        ImGui.SameLine();
-                    }
-                } catch {
-                    //suppress all exceptions
-                }
-            }
+            var players = _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player).Cast<IPlayerCharacter>();
+            var bnpcs = _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.BattleNpc).Cast<IBattleNpc>();
+            var other = _plugin.ObjectTable.Where(o => o.ObjectKind is not ObjectKind.BattleNpc && o.ObjectKind is not ObjectKind.Player);
 
-            foreach(var obj in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.BattleNpc).Cast<IBattleNpc>()) {
+            List<IGameObject> objs = [.. players, .. bnpcs, .. other];
+
+            foreach(var obj in objs) {
                 try {
                     ImGui.TableNextColumn();
-                    ImGui.Text($"{obj.Name} {obj.NameId}");
+                    ImGui.Text($"{obj.Name}");
+                    ImGui.TableNextColumn();
+                    if(obj is IBattleNpc) {
+                        ImGui.Text($"{(obj as ICharacter).NameId}");
+                    }
                     ImGui.TableNextColumn();
                     ImGui.Text($"{obj.ObjectKind}");
                     ImGui.TableNextColumn();
                     ImGui.Text($"{obj.ObjectIndex}");
                     ImGui.TableNextColumn();
+                    ImGui.Text($"{obj.DataId}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"0x{obj.GameObjectId:X2}");
+                    ImGui.TableNextColumn();
                     ImGui.Text($"0x{obj.EntityId:X2}");
                     ImGui.TableNextColumn();
                     ImGui.Text($"0x{obj.OwnerId:X2}");
                     ImGui.TableNextColumn();
-                    foreach(var status in obj.StatusList) {
-                        ImGui.Text($"{status.StatusId}:{status.Param}");
-                        ImGui.SameLine();
+                    ImGui.Text($"0x{obj.Address:X2}");
+                    ImGui.TableNextColumn();
+                    //ImGui.Text($"{pc.ShieldPercentage}");
+                    if(obj is IBattleChara) {
+                        foreach(var status in (obj as IBattleChara).StatusList) {
+                            ImGui.Text($"{status.StatusId}:{status.Param},");
+                            ImGui.SameLine();
+                        }
                     }
                 } catch {
                     //suppress all exceptions
                 }
             }
         }
-    }
 
+        AgentModule.Instance()->GetAgentAchievement();
+    }
 
     private void TestParse() {
         string matchTimer = "1:35";
