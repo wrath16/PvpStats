@@ -86,7 +86,13 @@ internal class GamePeriod {
         { 14, new GamePeriod() {
             Name = "14",
             StartDate = new DateTime(2025,3,25,10,0,0,DateTimeKind.Utc),
+            EndDate = new DateTime(2025,5,27,10,0,0,DateTimeKind.Utc),
         } },
+        { 15, new GamePeriod() {
+            Name = "15",
+            StartDate = new DateTime(2025,5,27,10,0,0,DateTimeKind.Utc),
+        } },
+
     };
 
     public static readonly Dictionary<int, GamePeriod> Patch = new() {
@@ -125,8 +131,13 @@ internal class GamePeriod {
             StartDate = new DateTime(2025,3,25,10,0,0,DateTimeKind.Utc),
         } },
         { 7, new GamePeriod() {
-            Name = "7.2",
+            Name = "7.2-7.25",
             StartDate = new DateTime(2025,3,25,10,0,0,DateTimeKind.Utc),
+            EndDate = new DateTime(2025,5,27,10,0,0,DateTimeKind.Utc),
+        } },
+        { 8, new GamePeriod() {
+            Name = "7.28",
+            StartDate = new DateTime(2025,5,27,10,0,0,DateTimeKind.Utc),
         } },
     };
 
