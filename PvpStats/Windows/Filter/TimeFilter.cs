@@ -40,9 +40,9 @@ public class TimeFilter : DataFilter {
     public DateTime EndTime { get; set; }
     public int Season { get; set; } = GamePeriod.Season.Count - 1;
     public TimeRelation SeasonRelation { get; set; } = TimeRelation.During;
-    public int Expansion { get; set; } = GamePeriod.Expansion.Last().Key;
+    public int Expansion { get; set; } = GamePeriod.Expansion.Count - 1;
     public TimeRelation ExpansionRelation { get; set; } = TimeRelation.During;
-    public int Patch { get; set; } = GamePeriod.Patch.Last().Key;
+    public int Patch { get; set; } = GamePeriod.Patch.Count - 1;
     public TimeRelation PatchRelation { get; set; } = TimeRelation.Since;
 
     private string _lastStartTime = "";
@@ -55,20 +55,20 @@ public class TimeFilter : DataFilter {
             StatRange = filter.StatRange;
             StartTime = filter.StartTime;
             EndTime = filter.EndTime;
-            Season = filter.Season;
+            Season = Math.Min(filter.Season, GamePeriod.Season.Count);
             SeasonRelation = filter.SeasonRelation;
-            Expansion = filter.Expansion;
+            Expansion = Math.Min(filter.Expansion, GamePeriod.Expansion.Count);
             ExpansionRelation = filter.ExpansionRelation;
-            Patch = filter.Patch;
+            Patch = Math.Min(filter.Patch, GamePeriod.Patch.Count);
             PatchRelation = filter.PatchRelation;
         }
     }
 
     internal override void Draw() {
         int statRangeToInt = (int)StatRange;
-        int seasonIndex = Season - 1;
+        int seasonIndex = Season;
         int seasonRelationIndex = (int)SeasonRelation;
-        int expansionIndex = Expansion - 6;
+        int expansionIndex = Expansion;
         int expansionRelationIndex = (int)ExpansionRelation;
         int patchIndex = Patch;
         int patchRelationIndex = (int)PatchRelation;
@@ -130,9 +130,9 @@ public class TimeFilter : DataFilter {
             }
             ImGui.SameLine();
             ImGui.SetNextItemWidth(ImGuiHelpers.GlobalScale * 50f);
-            if(ImGui.Combo($"##seasonCombo", ref seasonIndex, GamePeriod.Season.Keys.Select(x => x.ToString()).ToArray(), GamePeriod.Season.Count)) {
+            if(ImGui.Combo($"##seasonCombo", ref seasonIndex, GamePeriod.Season.Select(x => x.Name).ToArray(), GamePeriod.Season.Count)) {
                 Task.Run(async () => {
-                    Season = seasonIndex + 1;
+                    Season = seasonIndex;
                     await Refresh();
                 });
             }
@@ -146,9 +146,9 @@ public class TimeFilter : DataFilter {
             }
             ImGui.SameLine();
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
-            if(ImGui.Combo($"##expansionCombo", ref expansionIndex, GamePeriod.Expansion.Select(x => x.Value.Name).ToArray(), GamePeriod.Expansion.Count)) {
+            if(ImGui.Combo($"##expansionCombo", ref expansionIndex, GamePeriod.Expansion.Select(x => x.Name).ToArray(), GamePeriod.Expansion.Count)) {
                 Task.Run(async () => {
-                    Expansion = expansionIndex + 6;
+                    Expansion = expansionIndex;
                     await Refresh();
                 });
             }
@@ -162,7 +162,7 @@ public class TimeFilter : DataFilter {
             }
             ImGui.SameLine();
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
-            if(ImGui.Combo($"##milestoneCombo", ref patchIndex, GamePeriod.Patch.Select(x => x.Value.Name).ToArray(), GamePeriod.Patch.Count)) {
+            if(ImGui.Combo($"##milestoneCombo", ref patchIndex, GamePeriod.Patch.Select(x => x.Name).ToArray(), GamePeriod.Patch.Count)) {
                 Task.Run(async () => {
                     Patch = patchIndex;
                     await Refresh();
