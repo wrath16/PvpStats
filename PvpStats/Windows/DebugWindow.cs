@@ -313,6 +313,13 @@ internal unsafe class DebugWindow : Window {
                         _plugin.RWMatchManager.EnableLeaveDutyButton();
                     }
 
+                    if(ImGui.Button("Clear FL pre-processed Data")) {
+                        _plugin.DataQueue.QueueDataOperation(async () => {
+                            System.Threading.Tasks.Task.WhenAll(_plugin.Validation.ClearFrontlinePreProcessedData());
+                            _plugin.WindowManager.RefreshAll();
+                        });
+                    }
+
                     //if(ImGui.Button("Get competent players")) {
                     //    _plugin.DataQueue.QueueDataOperation(() => {
                     //        CompetentPlayers = [];
@@ -603,7 +610,6 @@ internal unsafe class DebugWindow : Window {
                 ImGui.TextUnformatted("Flames");
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted(instanceDirector->FlamesScore.ToString());
-
             }
         }
     }

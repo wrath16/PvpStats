@@ -127,7 +127,7 @@ internal class FrontlineRecords : MatchRecords<FrontlineMatch> {
                                 currentSpike += bhEvent.Count - lastEvent.Count;
                                 currentSpikeTime += bhEvent.Timestamp - lastEvent.Timestamp;
                             } else {
-                                currentSpike = bhEvent.Count - lastEvent.Count;
+                                currentSpike = Math.Max(bhEvent.Count - lastEvent.Count, 0);
                                 currentSpikeTime = TimeSpan.Zero;
                             }
                             if(currentSpike > biggestSpike || (currentSpike == biggestSpike && currentSpikeTime < biggestSpikeTime)) {
