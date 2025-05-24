@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace PvpStats.Types;
 internal class GamePeriod {
 
-    public static readonly List <GamePeriod> Expansion = new() {
+    public static readonly List<GamePeriod> Expansion = new() {
         { new GamePeriod() {
             Name = "Endwalker",
             StartDate = new DateTime(2021,12,11,11,0,0,DateTimeKind.Utc),

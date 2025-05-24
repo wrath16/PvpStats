@@ -126,7 +126,7 @@ internal class FrontlineSummary : RefreshableSync<FrontlineMatch> {
             ImGuiHelper.HelpMarker("1st row: average per match.\n2nd row: average per minute.\n3rd row: median team contribution per match.\n\n'Damage to Other' only counts Shatter matches.");
             ImGui.Text("KDA: ");
             ImGui.SameLine();
-            ImGuiHelper.DrawColorScale((float)LocalPlayerStats.ScoreboardTotal.KDA, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh, 
+            ImGuiHelper.DrawColorScale((float)LocalPlayerStats.ScoreboardTotal.KDA, Plugin.Configuration.Colors.StatLow, Plugin.Configuration.Colors.StatHigh,
                 FrontlineStatsManager.KDARange[0], FrontlineStatsManager.KDARange[1], Plugin.Configuration.ColorScaleStats, LocalPlayerStats.ScoreboardTotal.KDA.ToString("0.00"));
             ImGui.SameLine();
             ImGui.Text("Kill Participation Rate: ");

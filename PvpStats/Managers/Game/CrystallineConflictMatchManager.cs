@@ -434,13 +434,12 @@ internal class CrystallineConflictMatchManager : IDisposable {
         _plugin.Functions._qPopped = false;
         _plugin.Log.Debug("Pvp intro post setup");
 
-
-//        unsafe {
-//            var agent = AgentModule.Instance()->GetAgentByInternalId(AgentId.PvPMKSIntroduction);
-//#if DEBUG
-//            _plugin.Functions.CreateByteDump(new IntPtr(agent), 0x2000, "PvPMKSIntroduction");
-//#endif
-//        }
+        //        unsafe {
+        //            var agent = AgentModule.Instance()->GetAgentByInternalId(AgentId.PvPMKSIntroduction);
+        //#if DEBUG
+        //            _plugin.Functions.CreateByteDump(new IntPtr(agent), 0x2000, "PvPMKSIntroduction");
+        //#endif
+        //        }
 
         CrystallineConflictTeam team = new();
         unsafe {
@@ -450,7 +449,6 @@ internal class CrystallineConflictMatchManager : IDisposable {
 #if DEBUG
             _plugin.Functions.CreateByteDump(new IntPtr(agent), 0x4000, "PvPMKSIntroduction_Agent");
 #endif
-
 
             //team name
             string teamName = AtkNodeService.ConvertAtkValueToString(addon->AtkValues[4]);
@@ -614,7 +612,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
     //        }
 
     //    } catch {
-            
+
     //    }
     //    return _openAddonHook.Original(p1, p2, p3, p4, p5, p6, p7, p8);
     //}

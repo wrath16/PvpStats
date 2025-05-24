@@ -245,7 +245,6 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 _actionIcons.TryAdd(action.RowId, action.Icon);
             }
 
-
             //setup team point events
             if(_timeline.CrystalPosition != null && _timeline.TeamProgress != null) {
                 SetupTimelineTeamPoints();

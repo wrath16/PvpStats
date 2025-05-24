@@ -319,7 +319,6 @@ internal class CrystallineConflictSummary : Refreshable<CrystallineConflictMatch
             ImGui.TableNextColumn();
             ImGuiHelper.DrawTableHeader(ImGuiHelper.WrappedString("Win Rate", ImGuiHelpers.GlobalScale * 55f), 2, true, true, offset);
 
-
             foreach(var job in jobStats) {
                 if(ImGui.TableNextColumn()) {
                     ImGui.Text($"{PlayerJobHelper.GetNameFromJob(job.Key)}");
