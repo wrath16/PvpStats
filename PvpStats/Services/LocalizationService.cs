@@ -64,7 +64,7 @@ internal class LocalizationService {
         }
 
         foreach(var row in _plugin.DataManager.GetExcelSheet<T>((ClientLanguage)language)) {
-            var rowData = columnProperty!.GetValue(row)?.ToString();
+            var rowData = columnProperty!.GetValue(row)?.ToString()?.Trim();
             if(data.Equals(rowData, StringComparison.OrdinalIgnoreCase)) {
                 rowIds.Add(row.RowId);
             }
