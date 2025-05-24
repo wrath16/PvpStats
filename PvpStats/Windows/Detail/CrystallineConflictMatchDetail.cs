@@ -1369,7 +1369,6 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 if(ImGui.TableNextColumn()) {
                     var uvs = TextureHelper.GetMedicineKitUVs();
                     Plugin.WindowManager.DrawMedicineKit(new Vector2(24f * ImGuiHelpers.GlobalScale));
-                    //ImGui.Image(Plugin.WindowManager.GetTextureHandle(TextureHelper.MedicineKitTexture), new Vector2(24 * ImGuiHelpers.GlobalScale), uvs.UV0, uvs.UV1);
                     if(ImGui.IsItemHovered()) {
                         ImGuiHelper.WrappedTooltip($"Medicine Kits");
                     }
@@ -1390,10 +1389,22 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                                     }
                                 }
                             }
-                            ImGui.TableNextColumn();
-                            //add medkits
                         } else {
-                            ImGui.TableNextRow();
+                            foreach(var action in keyActions) {
+                                ImGui.TableNextColumn();
+                            }
+                        }
+
+                        if(_timeline?.TotalizedMedkits != null) {
+                            if(ImGui.TableNextColumn()) {
+                                if(_timeline.TotalizedMedkits.TryGetValue(player.Alias.ToString(), out var playerMedKits)) {
+                                    ImGuiHelper.DrawNumericCell($"{playerMedKits:#}");
+                                } else {
+                                    ImGuiHelper.DrawNumericCell($"0");
+                                }
+                            }
+                        } else {
+                            ImGui.TableNextColumn();
                         }
                     }
                 }
