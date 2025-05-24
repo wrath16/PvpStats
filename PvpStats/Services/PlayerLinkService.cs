@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace PvpStats.Services;
 internal class PlayerLinkService {
     private Plugin _plugin;
-    private ICallGateSubscriber<((string, uint), (string, uint)[])[]> GetPreviousAliasesFunction;
+    private ICallGateSubscriber<((string Name, uint WorldId) CurrentAlias, (string Name, uint WorldId)[] PrevAliases)[]> GetPreviousAliasesFunction;
 
     internal List<PlayerAliasLink> AutoPlayerLinksCache { get; private set; } = [];
     internal List<PlayerAliasLink> ManualPlayerLinksCache { get; private set; } = [];
@@ -190,41 +190,49 @@ internal class PlayerLinkService {
     }
 
     private List<PlayerAliasLink> GetPlayerNameHistory(List<PlayerAlias> players) {
+        var aliasLinkMap = new Dictionary<PlayerAlias, PlayerAliasLink>();
+        var playerSet = new HashSet<PlayerAlias>(players);
         var worlds = _plugin.DataManager.GetExcelSheet<World>();
-        var playersWithWorldId = players.Select(x => (x.Name, worlds.Where(y => y.Name.ToString().Equals(x.HomeWorld, StringComparison.OrdinalIgnoreCase)).Select(y => y.RowId).First()));
+        var worldNameToId = worlds.GroupBy(w => w.Name.ToString(), StringComparer.OrdinalIgnoreCase).ToDictionary(g => g.Key, g => g.First().RowId, StringComparer.OrdinalIgnoreCase);
+        var worldIdToName = worlds.ToDictionary(w => w.RowId, w => w.Name.ToString());
+
         var results = GetPreviousAliasesFunction.InvokeFunc();
-        List<PlayerAliasLink> playersLinks = new();
         foreach(var result in results) {
-            PlayerAlias sourceAlias = (PlayerAlias)$"{result.Item1.Item1} {worlds.GetRow(result.Item1.Item2).Name}";
-            List<PlayerAlias> prevAliases = new();
-            foreach(var prevResult in result.Item2) {
-                //ignore partial results, self results and duplicates
-                if(!prevResult.Item1.IsNullOrEmpty() && prevResult.Item2 != 0
-                     && !(prevResult.Item1 == result.Item1.Item1 && prevResult.Item2 == result.Item1.Item2)) {
-                    //string aliasString = $"{prevResult.Item1} {worlds.GetRow(prevResult.Item2).Name}";
-                    try {
-                        var alias = (PlayerAlias)$"{prevResult.Item1} {worlds.GetRow(prevResult.Item2).Name}";
-                        if(!prevAliases.Contains(alias) && players.Contains(alias)) {
-                            prevAliases.Add(alias);
-                        }
-                    } catch(ArgumentException) {
-                        continue;
-                    }
-                }
+            var currentName = result.CurrentAlias.Name;
+            var currentWorldId = result.CurrentAlias.WorldId;
+
+            if(!worldIdToName.TryGetValue(currentWorldId, out var currentWorldName))
+                continue;
+
+            var sourceAlias = new PlayerAlias(currentName, currentWorldName);
+
+            if(!aliasLinkMap.TryGetValue(sourceAlias, out var link)) {
+                link = new PlayerAliasLink {
+                    CurrentAlias = sourceAlias,
+                    LinkedAliases = new List<PlayerAlias>()
+                };
+                aliasLinkMap[sourceAlias] = link;
             }
-            if(prevAliases.Count > 0) {
-                var existingLink = playersLinks.FirstOrDefault(x => x.CurrentAlias?.Equals(sourceAlias) ?? false);
-                if(existingLink != null) {
-                    existingLink.LinkedAliases = existingLink.LinkedAliases.Concat(prevAliases).ToList();
-                } else {
-                    playersLinks.Add(new() {
-                        CurrentAlias = sourceAlias,
-                        LinkedAliases = prevAliases,
-                    });
+
+            foreach(var prev in result.PrevAliases) {
+                if(string.IsNullOrEmpty(prev.Name) || prev.WorldId == 0)
+                    continue;
+
+                if(prev.Name == currentName && prev.WorldId == currentWorldId)
+                    continue;
+
+                if(!worldIdToName.TryGetValue(prev.WorldId, out var prevWorldName))
+                    continue;
+
+                var alias = new PlayerAlias(prev.Name, prevWorldName);
+
+                if(playerSet.Contains(alias) && !link.LinkedAliases.Contains(alias)) {
+                    link.LinkedAliases.Add(alias);
                 }
             }
         }
-        return playersLinks;
+
+        return aliasLinkMap.Values.Where(x => x.LinkedAliases.Count > 0).ToList();
     }
 
     internal List<PlayerAlias> GetAllLinkedAliases(PlayerAlias player) {
