@@ -275,27 +275,31 @@ public sealed class Plugin : IDalamudPlugin {
         var lastVersion = new Version(Configuration.LastPluginVersion);
         var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
 
-        //validate everytime plugin initiates
-        await Validation.BulkCCUpdateValidatePlayerCount();
-
-        //current version validations
-        if(lastVersion < new Version(2, 4, 0, 0)) {
-            var ccValidationTask = new Task<Task>(async () => {
+        //version update validations
+        var ccValidationTask = Task.Run(async () => {
+            await Validation.BulkCCUpdateValidatePlayerCount();
+            if(lastVersion < new Version(2, 4, 0, 0)) {
                 await Validation.BulkUpdateCCMatchTypes();
-            });
-            ccValidationTask.Start();
+            }
+        });
 
-            var rwValidationTask = new Task<Task>(async () => {
+        var flValidationTask = Task.Run(async () => {
+            if(lastVersion < new Version(2, 5, 2, 0)) {
+                await Validation.ClearFrontlinePreProcessedData();
+            }
+        });
+
+        var rwValidationTask = Task.Run(async () => {
+            if(lastVersion < new Version(2, 4, 0, 0)) {
                 await Validation.SetRivalWingsMatchFlags();
-            });
-            rwValidationTask.Start();
+            }
+        });
 
-            Task.WaitAll([ccValidationTask.Result, rwValidationTask.Result]);
-        }
+        await Task.WhenAll(ccValidationTask, flValidationTask, rwValidationTask);
 
         await WindowManager.RefreshAll();
         Configuration.LastPluginVersion = currentVersion?.ToString() ?? "0.0.0.0";
         Configuration.Save();
-        Log.Information("PvP Tracker initialized.");
+        Log2.Information("PvP Tracker initialized.");
     }
 }

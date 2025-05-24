@@ -101,7 +101,7 @@ internal class ValidationManager {
 
             //Match flag 2: invalid soaring stacks
             //start: game version 2025-03-27
-            //fixed: v2.3.4.1, 2025-02-08
+            //fixed: v2.3.4.1, 2025-04-05
             if(pluginVersion < new Version(2, 3, 4, 1) && gameVersionDate >= new DateTime(2025, 03, 27)) {
                 match.Flags |= RWValidationFlag.InvalidSoaring;
             }
