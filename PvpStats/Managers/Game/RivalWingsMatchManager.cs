@@ -248,7 +248,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                 }
             }
         } catch(Exception e) {
-            Plugin.Log.Error(e, $"Error in rw match end .ctor.");
+            Plugin.Log.Error(e, $"Error in rw match end detour.");
         } finally {
             _resultPayloadReceived = true;
             EnableLeaveDutyButton();

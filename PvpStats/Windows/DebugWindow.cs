@@ -134,11 +134,16 @@ internal unsafe class DebugWindow : Window {
 
                     ImGui.Separator();
                     var agent = AgentModule.Instance()->GetAgentByInternalId(AgentId.PvPMKSIntroduction);
-                    ImGui.Text($"ID: {agent->AddonId}");
+                    ImGui.Text($"Address: 0x{new IntPtr(agent):X2}");
                     ImGui.Text($"Active? {agent->IsAgentActive()}");
                     if(ImGui.Button("dump intro agent")) {
                         _plugin.Functions.CreateByteDump(new IntPtr(agent), 0x2000, "PvPMKSIntroduction");
                     }
+                    ImGui.Separator();
+                    var agent2 = AgentModule.Instance()->GetAgentByInternalId(AgentId.PvpProfile);
+                    ImGui.Text($"Address: 0x{new IntPtr(agent2):X2}");
+                    ImGui.Text($"ID: {agent2->AddonId}");
+                    ImGui.Text($"Active? {agent2->IsAgentActive()}");
                 }
             }
 
@@ -382,9 +387,12 @@ internal unsafe class DebugWindow : Window {
 
                     }
 
-                    if(ImGui.Button("Test FUnction")) {
-                        _plugin.PlayerLinksService.GetMainAlias((PlayerAlias)"Uki Okawa Adamantoise");
-                        _plugin.PlayerLinksService.GetMainAlias((PlayerAlias)"Uki Yo Adamantoise");
+                    if(ImGui.Button("Test Function")) {
+                        var addonIds = _plugin.Localization.GetRowId<Addon>("Crystal", "Text");
+                        foreach(var addonId in addonIds) {
+                            Plugin.Log2.Debug($"addonId: {addonId}");
+                        }
+
                     }
 
                     ImGui.Text(Framework.Instance()->GameVersionString);
