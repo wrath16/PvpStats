@@ -6,6 +6,7 @@ using PvpStats.Types.Display;
 using PvpStats.Types.Match;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PvpStats.Windows.Records;
@@ -18,10 +19,10 @@ internal class CrystallineConflictRecords : MatchRecords<CrystallineConflictMatc
 
     protected override Task RefreshInner(List<CrystallineConflictMatch> matches, List<CrystallineConflictMatch> additions, List<CrystallineConflictMatch> removals) {
         Dictionary<CrystallineConflictMatch, List<(string, string)>> superlatives = new();
-        CrystallineConflictMatch? longestMatch = null, shortestMatch = null, highestLoserProgMatch = null, lowestWinnerProgMatch = null, longestWinStreakMatch = null, longestLossStreakMatch = null,
+        CrystallineConflictMatch? longestMatch = null, shortestMatch = null, highestLoserProgMatch = null, lowestWinnerProgMatch = null, highestTeamKillAdvMatch = null, lowestTeamKillAdvMatch = null, longestWinStreakMatch = null, longestLossStreakMatch = null,
             mostKillsMatch = null, mostDeathsMatch = null, mostAssistsMatch = null, mostDamageDealtMatch = null, mostDamageTakenMatch = null, mostHPRestoredMatch = null, mostTimeOnCrystalMatch = null,
             highestKillsPerMinMatch = null, highestDeathsPerMinMatch = null, highestAssistsPerMinMatch = null, highestDamageDealtPerMinMatch = null, highestDamageTakenPerMinMatch = null, highestHPRestoredPerMinMatch = null, highestTimeOnCrystalPerMinMatch = null;
-        int longestWinStreak = 0, longestLossStreak = 0, currentWinStreak = 0, currentLossStreak = 0;
+        int longestWinStreak = 0, longestLossStreak = 0, currentWinStreak = 0, currentLossStreak = 0, highestTeamKillAdv = int.MinValue, lowestTeamKillAdv = int.MaxValue;
         long mostKills = 0, mostDeaths = 0, mostAssists = 0, mostDamageDealt = 0, mostDamageTaken = 0, mostHPRestored = 0;
         TimeSpan mostTimeOnCrystal = TimeSpan.Zero;
         double mostKillsPerMin = 0, mostDeathsPerMin = 0, mostAssistsPerMin = 0, mostDamageDealtPerMin = 0, mostDamageTakenPerMin = 0, mostHPRestoredPerMin = 0, mostTimeOnCrystalPerMin = 0;
@@ -76,7 +77,13 @@ internal class CrystallineConflictRecords : MatchRecords<CrystallineConflictMatc
                 }
 
                 CCScoreboardTally playerScoreboard = match.LocalPlayerStats.ToScoreboard();
+                var teamPostMatch = match.PostMatch.Teams.FirstOrDefault(x => x.Key == match.LocalPlayerTeam?.TeamName).Value;
+                var enemyTeamPostMatch = match.PostMatch.Teams.FirstOrDefault(x => x.Key != match.LocalPlayerTeam?.TeamName).Value;
+                var teamKillAdvantage = teamPostMatch.TeamStats.Kills - enemyTeamPostMatch.TeamStats.Kills;
                 CCScoreboardDouble playerScoreboardPerMin = (CCScoreboardDouble)playerScoreboard / match.MatchDuration.Value.TotalMinutes;
+
+                CompareValue(match, ref highestTeamKillAdvMatch, teamKillAdvantage, ref highestTeamKillAdv);
+                CompareValue(match, ref lowestTeamKillAdvMatch, teamKillAdvantage, ref lowestTeamKillAdv, true);
 
                 CompareValue(match, ref mostKillsMatch, playerScoreboard.Kills, ref mostKills);
                 CompareValue(match, ref mostDeathsMatch, playerScoreboard.Deaths, ref mostDeaths);
@@ -104,6 +111,8 @@ internal class CrystallineConflictRecords : MatchRecords<CrystallineConflictMatc
         AddSuperlative(shortestMatch, "Shortest match", ImGuiHelper.GetTimeSpanString(shortestMatch?.MatchDuration ?? TimeSpan.Zero));
         AddSuperlative(highestLoserProgMatch, "Highest loser progress", highestLoserProgMatch?.LoserProgress.ToString() ?? "");
         AddSuperlative(lowestWinnerProgMatch, "Lowest winner progress", lowestWinnerProgMatch?.WinnerProgress.ToString() ?? "");
+        AddSuperlative(highestTeamKillAdvMatch, "Highest team kill advantage", highestTeamKillAdv.ToString());
+        AddSuperlative(lowestTeamKillAdvMatch, "Lowest team kill advantage", lowestTeamKillAdv.ToString());
         AddSuperlative(mostKillsMatch, "Most kills", mostKills.ToString());
         AddSuperlative(mostDeathsMatch, "Most deaths", mostDeaths.ToString());
         AddSuperlative(mostAssistsMatch, "Most assists", mostAssists.ToString());
