@@ -183,14 +183,14 @@ internal class FrontlineRecords : MatchRecords<FrontlineMatch> {
                     }
                 }
                 if(match.MomentaryPointAdvantage != null && match.MomentaryPointAdvantage != int.MinValue) {
-                    var spannedAdvantage = (double)match.MomentaryPointAdvantage / MatchHelper.GetFrontlineMaxPoints(match.Arena);
+                    var spannedAdvantage = (double)match.MomentaryPointAdvantage / MatchHelper.GetFrontlineMaxPoints(match);
                     if(spannedAdvantage > momentaryAdvantageSpan) {
                         momentaryPointAdvantageMatch = match;
                         momentaryAdvantageSpan = spannedAdvantage;
                     }
                 }
                 if(match.MomentaryPointDeficit != null && match.MomentaryPointDeficit != int.MaxValue) {
-                    var spannedDeficit = (double)match.MomentaryPointDeficit / MatchHelper.GetFrontlineMaxPoints(match.Arena);
+                    var spannedDeficit = (double)match.MomentaryPointDeficit / MatchHelper.GetFrontlineMaxPoints(match);
                     if(spannedDeficit < momentaryDeficitSpan) {
                         momentaryPointDeficitMatch = match;
                         momentaryDeficitSpan = spannedDeficit;

@@ -43,4 +43,16 @@ public abstract class PvpMatch : IEquatable<PvpMatch> {
     public bool Equals(PvpMatch? other) {
         return Id.Equals(other?.Id);
     }
+
+    public DateTime? GameVersionToDateTime() {
+        DateTime gameVersionDate = DateTime.MinValue;
+        if(GameVersion != null) {
+            var splitString = GameVersion.Split(".");
+            if(splitString.Length >= 3) {
+                var year = int.Parse(splitString[0]);
+                return gameVersionDate = new DateTime(int.Parse(splitString[0]), int.Parse(splitString[1]), int.Parse(splitString[2]));
+            }
+        }
+        return null;
+    }
 }

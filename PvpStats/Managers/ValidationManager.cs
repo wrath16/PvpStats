@@ -75,14 +75,7 @@ internal class ValidationManager {
                 pluginVersion = new Version(match.PluginVersion);
             }
 
-            DateTime gameVersionDate = DateTime.MinValue;
-            if(match.GameVersion != null) {
-                var splitString = match.GameVersion.Split(".");
-                if(splitString.Length >= 3) {
-                    var year = int.Parse(splitString[0]);
-                    gameVersionDate = new DateTime(int.Parse(splitString[0]), int.Parse(splitString[1]), int.Parse(splitString[2]));
-                }
-            }
+            DateTime gameVersionDate = match.GameVersionToDateTime() ?? DateTime.MinValue;
 
             //Match flag 0: Possibly invalid ceruleum due to overflow
             //start: beginning

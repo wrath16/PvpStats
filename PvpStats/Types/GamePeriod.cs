@@ -130,12 +130,12 @@ internal class GamePeriod {
             StartDate = new DateTime(2025,3,25,10,0,0,DateTimeKind.Utc),
         } },
         { new GamePeriod() {
-            Name = "7.2-7.25",
+            Name = "7.2-7.21",
             StartDate = new DateTime(2025,3,25,10,0,0,DateTimeKind.Utc),
             EndDate = new DateTime(2025,5,27,10,0,0,DateTimeKind.Utc),
         } },
         { new GamePeriod() {
-            Name = "7.28",
+            Name = "7.25",
             StartDate = new DateTime(2025,5,27,10,0,0,DateTimeKind.Utc),
         } },
     };

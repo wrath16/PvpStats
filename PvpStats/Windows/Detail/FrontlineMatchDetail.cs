@@ -677,7 +677,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
             return;
         }
 
-        var maxScore = MatchHelper.GetFrontlineMaxPoints(Match.Arena);
+        var maxScore = MatchHelper.GetFrontlineMaxPoints(Match);
 
         ImPlot.SetupAxisScale(ImAxis.X1, ImPlotScale.Linear);
         ImPlot.SetupAxesLimits(0, 1200, 0, maxScore, ImPlotCond.Once);

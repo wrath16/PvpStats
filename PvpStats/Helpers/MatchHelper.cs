@@ -1,4 +1,5 @@
-﻿using PvpStats.Types.Match;
+﻿using PvpStats.Types;
+using PvpStats.Types.Match;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -184,13 +185,26 @@ public static class MatchHelper {
     }
 
     public static int GetFrontlineMaxPoints(FrontlineMap? map, DateTime? time = null) {
-        return map switch {
-            FrontlineMap.BorderlandRuins => 3000,
-            FrontlineMap.SealRock => 700,
-            FrontlineMap.FieldsOfGlory => 1600,
-            FrontlineMap.OnsalHakair => 1400,
-            _ => 2000,
-        };
+        switch(map) {
+            case FrontlineMap.BorderlandRuins:
+                //patch 7.25
+                if(time != null && time <= GamePeriod.Patch[8].StartDate) {
+                    return 3000;
+                }
+                return 2400;
+            case FrontlineMap.SealRock:
+                return 700;
+            case FrontlineMap.FieldsOfGlory:
+                return 1600;
+            case FrontlineMap.OnsalHakair:
+                return 1400;
+            default:
+                return 2000;
+        }
+    }
+
+    public static int GetFrontlineMaxPoints(FrontlineMatch? match) {
+        return GetFrontlineMaxPoints(match.Arena, match.DutyStartTime);
     }
 
     public static string GetTeamName(FrontlineTeamName? team) {

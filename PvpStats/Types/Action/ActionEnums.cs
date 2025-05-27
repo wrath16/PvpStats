@@ -110,4 +110,5 @@ public enum UselessStatus : uint {
     Nin1 = 3190,
     Vpr1 = 4086,
     Vpr2 = 4087,
+    Vpr4 = 4089,
 }
