@@ -281,16 +281,22 @@ public sealed class Plugin : IDalamudPlugin {
             if(lastVersion < new Version(2, 4, 0, 0)) {
                 await Validation.BulkUpdateCCMatchTypes();
             }
+            if(lastVersion < new Version(2, 5, 3, 0)) {
+                await Validation.SetCrystallineConflictMatchFlags();
+            }
         });
 
         var flValidationTask = Task.Run(async () => {
             if(lastVersion < new Version(2, 5, 2, 0)) {
                 await Validation.ClearFrontlinePreProcessedData();
             }
+            if(lastVersion < new Version(2, 5, 3, 0)) {
+                await Validation.SetFrontlineMatchFlags();
+            }
         });
 
         var rwValidationTask = Task.Run(async () => {
-            if(lastVersion < new Version(2, 4, 0, 0)) {
+            if(lastVersion < new Version(2, 5, 3, 0)) {
                 await Validation.SetRivalWingsMatchFlags();
             }
         });

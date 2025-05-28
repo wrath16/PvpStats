@@ -4,7 +4,7 @@ namespace PvpStats.Types.ClientStruct;
 
 [StructLayout(LayoutKind.Explicit)]
 internal struct CrystallineConflictContentDirector {
-    private const int Offset = 0x1F38;
+    private const int Offset = 0x2138;
 
     [FieldOffset(Offset + 0x000)] public int Unknown4;
     [FieldOffset(Offset + 0x004)] public int Unknown5;

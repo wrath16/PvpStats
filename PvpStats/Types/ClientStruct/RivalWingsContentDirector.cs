@@ -6,7 +6,7 @@ namespace PvpStats.Types.ClientStruct;
 
 [StructLayout(LayoutKind.Explicit)]
 public unsafe struct RivalWingsContentDirector {
-    private const int Offset = 0x1E58;
+    private const int Offset = 0x2058;
 
     [FieldOffset(Offset + 0x008)] public fixed byte PlayerAlliances[0x08 * 6];
     public unsafe Span<AllianceStatus> AllianceSpan => new(Unsafe.AsPointer(ref PlayerAlliances[0]), 6);

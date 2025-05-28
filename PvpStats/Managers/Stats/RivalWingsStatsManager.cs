@@ -151,6 +151,10 @@ internal class RivalWingsStatsManager : StatsManager<RivalWingsMatch> {
         }
     }
 
+    protected override List<RivalWingsMatch> GetMatches() {
+        return MatchCache.Matches.Where(x => !x.IsDeleted && x.IsCompleted && !x.Flags.HasFlag(RWValidationFlag.InvalidDirector)).OrderByDescending(x => x.DutyStartTime).ToList();
+    }
+
     protected List<RivalWingsMatch> ApplyFilter(LocalPlayerJobFilter filter, List<RivalWingsMatch> matches) {
         List<RivalWingsMatch> filteredMatches = new(matches);
         if(!filter.AnyJob) {

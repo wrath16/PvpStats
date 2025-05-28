@@ -63,6 +63,9 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         Size = new Vector2(_scoreboardSize.X, _scoreboardSize.Y);
 
         _timeline = Plugin.FLCache.GetTimeline(Match);
+        if(Match.Flags.HasFlag(FLValidationFlag.InvalidDirector)) {
+            _timeline = null;
+        }
         if(_timeline != null) {
             //setup graphs
             List<double> axisTicks = new();

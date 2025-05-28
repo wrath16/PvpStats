@@ -32,12 +32,16 @@ internal abstract class StatsManager<T> where T : PvpMatch {
         MatchCache = cache;
     }
 
+    protected virtual List<T> GetMatches() {
+        return MatchCache.Matches.Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
+    }
+
     public async Task<(List<T> Matches, List<T> Additions, List<T> Removals)> Refresh(List<DataFilter> matchFilters) {
         var task = RefreshQueue.QueueDataOperation(() => {
             try {
                 RefreshActive = true;
                 Stopwatch matchesTimer = Stopwatch.StartNew();
-                var matches = MatchCache.Matches.Where(x => !x.IsDeleted && x.IsCompleted).OrderByDescending(x => x.DutyStartTime).ToList();
+                var matches = GetMatches();
                 matches = FilterMatches(matchFilters, matches);
                 var toAdd = matches.Except(Matches, new PvpMatchComparer<T>()).ToList();
                 var toSubtract = Matches.Except(matches, new PvpMatchComparer<T>()).ToList();

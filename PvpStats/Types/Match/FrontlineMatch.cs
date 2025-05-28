@@ -6,8 +6,16 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace PvpStats.Types.Match;
+
+[Flags]
+public enum FLValidationFlag : ulong {
+    None = 0,
+    InvalidDirector = 1 << 0,       //no director data trustable
+}
+
 public class FrontlineMatch : PvpMatch {
 
+    public FLValidationFlag Flags { get; set; }
     public FrontlineMap? Arena { get; set; }
     public int PlayerCount { get; set; }
 

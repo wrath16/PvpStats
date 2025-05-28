@@ -57,6 +57,66 @@ internal class ValidationManager {
         await _plugin.CCCache.UpdateMatches(matches);
     }
 
+    internal async Task SetCrystallineConflictMatchFlags() {
+        var matches = _plugin.CCCache.Matches.Where(x => x.IsCompleted).ToList();
+        if(matches.Count == 0) {
+            return;
+        }
+
+        Plugin.Log2.Information("Setting Crystalline Conflict match flags...");
+
+        foreach(var match in matches) {
+            match.Flags = CCValidationFlag.None;
+
+            //plugin and game version added v2.1.11.0, 2024-10-16
+
+            Version? pluginVersion = null;
+            if(match.PluginVersion != null) {
+                pluginVersion = new Version(match.PluginVersion);
+            }
+
+            DateTime gameVersionDate = match.GameVersionToDateTime() ?? DateTime.MinValue;
+
+            //Match flag 0: Invalid director
+            //start: game version 2025-05-17
+            //fixed: v2.5.3.0
+            if(pluginVersion < new Version(2, 5, 3, 0) && gameVersionDate >= new DateTime(2025, 05, 17)) {
+                match.Flags |= CCValidationFlag.InvalidDirector;
+            }
+        }
+        await _plugin.CCCache.UpdateMatches(matches);
+    }
+
+    internal async Task SetFrontlineMatchFlags() {
+        var matches = _plugin.FLCache.Matches.Where(x => x.IsCompleted).ToList();
+        if(matches.Count == 0) {
+            return;
+        }
+
+        Plugin.Log2.Information("Setting Frontline match flags...");
+
+        foreach(var match in matches) {
+            match.Flags = FLValidationFlag.None;
+
+            //plugin and game version added v2.1.11.0, 2024-10-16
+
+            Version? pluginVersion = null;
+            if(match.PluginVersion != null) {
+                pluginVersion = new Version(match.PluginVersion);
+            }
+
+            DateTime gameVersionDate = match.GameVersionToDateTime() ?? DateTime.MinValue;
+
+            //Match flag 0: Invalid director
+            //start: game version 2025-05-17
+            //fixed: v2.5.3.0
+            if(pluginVersion < new Version(2, 5, 3, 0) && gameVersionDate >= new DateTime(2025, 05, 17)) {
+                match.Flags |= FLValidationFlag.InvalidDirector;
+            }
+        }
+        await _plugin.FLCache.UpdateMatches(matches);
+    }
+
     internal async Task SetRivalWingsMatchFlags() {
         var matches = _plugin.RWCache.Matches.Where(x => x.IsCompleted).ToList();
         if(matches.Count == 0) {
@@ -97,6 +157,13 @@ internal class ValidationManager {
             //fixed: v2.3.4.1, 2025-04-05
             if(pluginVersion < new Version(2, 3, 4, 1) && gameVersionDate >= new DateTime(2025, 03, 27)) {
                 match.Flags |= RWValidationFlag.InvalidSoaring;
+            }
+
+            //Match flag 3: Invalid director
+            //start: game version 2025-05-17
+            //fixed: v2.5.3.0
+            if(pluginVersion < new Version(2, 5, 3, 0) && gameVersionDate >= new DateTime(2025, 05, 17)) {
+                match.Flags |= RWValidationFlag.InvalidDirector;
             }
         }
         await _plugin.RWCache.UpdateMatches(matches);

@@ -7,7 +7,14 @@ using System.Linq;
 
 namespace PvpStats.Types.Match;
 
+[Flags]
+public enum CCValidationFlag : ulong {
+    None = 0,
+    InvalidDirector = 1 << 0,       //no director data trustable
+}
+
 public class CrystallineConflictMatch : PvpMatch {
+    public CCValidationFlag Flags { get; set; }
 
     public CrystallineConflictTeamName? MatchWinner { get; set; }
     public CrystallineConflictTeamName? OvertimeAdvantage { get; set; }

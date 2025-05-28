@@ -138,7 +138,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         _timeline = Plugin.CCCache.GetTimeline(Match);
 
         //doesn't work with spectated matches for now
-        if(Match.IsSpectated) {
+        if(Match.IsSpectated || Match.Flags.HasFlag(CCValidationFlag.InvalidDirector)) {
             _timeline = null;
         }
         if(_timeline != null) {
