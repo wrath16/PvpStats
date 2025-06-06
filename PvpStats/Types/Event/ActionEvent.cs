@@ -15,6 +15,8 @@ internal class ActionEvent : MatchEvent {
     public int? Variation { get; set; }
     public Dictionary<string, BattleCharaSnapshot>? Snapshots { get; set; }
 
+    //[BsonIgnore]
+
     [BsonCtor]
     public ActionEvent(DateTime timestamp, uint actionId) : base(timestamp) {
         Timestamp = timestamp;

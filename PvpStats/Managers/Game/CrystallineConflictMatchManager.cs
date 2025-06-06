@@ -36,6 +36,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
 
     private CrystallineConflictMatchTimeline? _currentMatchTimeline;
     private List<ActionEvent>? _casts;
+    private List<ActionEvent>? _petCasts;
     private float _lastEventTimer;
 
     private DateTime _lastUpdate;
@@ -65,6 +66,16 @@ internal class CrystallineConflictMatchManager : IDisposable {
     [Signature("40 55 41 54 41 55 41 56 41 57 48 8D 6C 24 ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 45 ?? 48 8B 01", DetourName = nameof(ProcessKillDetour))]
     private readonly Hook<ProcessKillDelegate> _processKillHook;
 
+    //E9 ?? ?? ?? ?? 48 89 5C 24 ?? 49 BB
+    private delegate void VF371Delegate(IntPtr p1, uint p2, uint p3, uint p4, int p5, int p6);
+    [Signature("E9 ?? ?? ?? ?? 48 89 5C 24 ?? 49 BB", DetourName = nameof(VF371Detour))]
+    private readonly Hook<VF371Delegate> _vf371Hook;
+
+    //40 56 48 83 EC ?? 41 FF C9
+    private delegate void F510Delegate(IntPtr p1, IntPtr p2, uint p3, uint p4, int p5, int p6, int p7);
+    [Signature("40 56 48 83 EC ?? 41 FF C9", DetourName = nameof(F510Detour))]
+    private readonly Hook<F510Delegate> _F510Hook;
+
     //private delegate void SetAtkValuesDelegate(IntPtr addon, uint count, IntPtr data);
     //[Signature("E8 ?? ?? ?? ?? 48 8B 03 8B D7 4C 8B 83 ", DetourName = nameof(SetAtkValuesDetour))]
     //private readonly Hook<SetAtkValuesDelegate> _setAtkValuesHook;
@@ -81,7 +92,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
 
         _plugin.Framework.Update += OnFrameworkUpdate;
         _plugin.ClientState.TerritoryChanged += OnTerritoryChanged;
-        _plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "PvPMKSIntroduction", OnPvPIntro);
+        //_plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "PvPMKSIntroduction", OnPvPIntro);
         //_plugin.AddonLifecycle.RegisterListener(AddonEvent.PreRequestedUpdate, "PvPMKSBattleLog", OnBattleLog);
         _plugin.InteropProvider.InitializeFromAttributes(this);
         _plugin.Log.Debug($"cc match end 1 address: 0x{_ccMatchEndHook!.Address.ToString("X2")}");
@@ -98,6 +109,8 @@ internal class CrystallineConflictMatchManager : IDisposable {
         _processPacketActorControlHook.Enable();
         _processPacketActionEffectHook.Enable();
 
+        //_vf371Hook.Enable();
+        //_F510Hook.Enable();
         //_setAtkValuesHook.Enable();
         //_openAddonHook.Enable();
     }
@@ -105,13 +118,16 @@ internal class CrystallineConflictMatchManager : IDisposable {
     public void Dispose() {
         _plugin.Framework.Update -= OnFrameworkUpdate;
         _plugin.ClientState.TerritoryChanged -= OnTerritoryChanged;
-        _plugin.AddonLifecycle.UnregisterListener(OnPvPIntro);
+        //_plugin.AddonLifecycle.UnregisterListener(OnPvPIntro);
         //_plugin.AddonLifecycle.UnregisterListener(OnBattleLog);
         _ccMatchEndHook.Dispose();
         _ccMatchEndSpectatorHook.Dispose();
         _processKillHook.Dispose();
         _processPacketActorControlHook.Dispose();
         _processPacketActionEffectHook.Dispose();
+
+        _vf371Hook.Dispose();
+        _F510Hook.Dispose();
         //_setAtkValuesHook.Dispose();
         //_openAddonHook.Dispose();
     }
@@ -158,6 +174,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
             };
 #if DEBUG
             _casts = new();
+            _petCasts = new();
 #endif
             _lastEventTimer = -1f;
             _plugin.Log.Information($"starting new match on {_currentMatch.Arena}");
@@ -172,6 +189,9 @@ internal class CrystallineConflictMatchManager : IDisposable {
         try {
             var now = DateTime.Now;
             Plugin.Log2.Debug($"kill feed detour occurred. killer: 0x{((CCPlayer*)killerPlayer)->EntityId:X2} kills: {killStreak} victim: 0x{((CCPlayer*)victimPlayer)->EntityId:X2} localPlayerTeam: {localPlayerTeam}");
+            var x = (nint)killerPlayer;
+            var y = &x;
+            Plugin.Log2.Debug($"Killer: 0x{killerPlayer:X2} Addr: 0x{new IntPtr(&killerPlayer):X2} Victim: 0x{victimPlayer:X2} Addr: 0x{new IntPtr(&victimPlayer):X2}");
 
             if(_currentMatchTimeline != null && _currentMatchTimeline.Kills != null) {
                 var killerObj = _plugin.ObjectTable.SearchByEntityId(((CCPlayer*)killerPlayer)->EntityId);
@@ -189,6 +209,27 @@ internal class CrystallineConflictMatchManager : IDisposable {
             }
         } finally {
             _processKillHook.Original(agent, killerPlayer, killStreak, victimPlayer, localPlayerTeam);
+        }
+    }
+
+    private unsafe void VF371Detour(IntPtr p1, uint p2, uint p3, uint p4, int p5, int p6) {
+        try {
+            if(p2 == 0xC) {
+                Plugin.Log2.Debug($"VF371 triggered 0x{p1:X2} {p2} {p3} {p4} {p5} {p6}");
+            }
+        } finally {
+            _vf371Hook.Original(p1, p2, p3, p4, p5, p6);
+        }
+    }
+
+    private unsafe void F510Detour(IntPtr p1, IntPtr p2, uint p3, uint p4, int p5, int p6, int p7) {
+        try {
+            if(p4 == 1) {
+                Plugin.Log2.Debug($"F510 triggered 0x{p1:X2} 0x{p2:X2} {p3} {p4} {p5} {p6} {p7}");
+            }
+
+        } finally {
+            _F510Hook.Original(p1, p2, p3, p4, p5, p6, p7);
         }
     }
 
@@ -341,8 +382,12 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 }
             }
 
-            if(effectHeader->Variation == 0 && !isPet) {
-                _casts?.Add(actionEvent);
+            if(effectHeader->Variation == 2) {
+                if(isPet) {
+                    _petCasts?.Add(actionEvent);
+                } else {
+                    _casts?.Add(actionEvent);
+                }
             }
 
             if(CombatHelper.IsLimitBreak(actionId)) {
@@ -447,7 +492,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
             //var agent = _plugin.GameGui.FindAgentInterface(args.AddonName);
             var agent = AgentModule.Instance()->GetAgentByInternalId(AgentId.PvPMKSIntroduction);
 #if DEBUG
-            _plugin.Functions.CreateByteDump(new IntPtr(agent), 0x4000, "PvPMKSIntroduction_Agent");
+            //_plugin.Functions.CreateByteDump(new IntPtr(agent), 0x4000, "PvPMKSIntroduction_Agent");
 #endif
 
             //team name
@@ -537,85 +582,6 @@ internal class CrystallineConflictMatchManager : IDisposable {
             _plugin.Log.Debug("");
         });
     }
-
-    //private unsafe void SetAtkValuesDetour(IntPtr addon, uint count, IntPtr data) {
-    //    try {
-    //        var addonBase = (AtkUnitBase*)addon;
-    //        var dataValue = (AtkValue*)data;
-
-    //        //Plugin.Log2.Debug($"Set atk values! Count: {addonBase->NameString} {count}");
-
-    //        //count == 85...
-    //        if(count == 85 || addonBase->NameString == "PvPMKSIntroduction") {
-    //            Plugin.Log2.Debug($"intro set atk values! Count: {count}");
-    //            for(int i = 0; i < count; i++) {
-    //                var atkValue = dataValue[i];
-    //                string stringVal = "";
-    //                switch(atkValue.Type) {
-    //                    case 0:
-    //                        break;
-    //                    case FFXIVClientStructs.FFXIV.Component.GUI.ValueType.Int:
-    //                    case FFXIVClientStructs.FFXIV.Component.GUI.ValueType.UInt: {
-    //                            stringVal = $"{atkValue.Int}";
-    //                            break;
-    //                        }
-
-    //                    case FFXIVClientStructs.FFXIV.Component.GUI.ValueType.ManagedString:
-    //                    case FFXIVClientStructs.FFXIV.Component.GUI.ValueType.String8:
-    //                    case FFXIVClientStructs.FFXIV.Component.GUI.ValueType.String: {
-    //                            if(atkValue.String.Value == null) {
-    //                                stringVal = $"null";
-    //                            } else {
-    //                                stringVal = AtkNodeService.ConvertAtkValueToString(atkValue);
-    //                            }
-
-    //                            break;
-    //                        }
-
-    //                    case FFXIVClientStructs.FFXIV.Component.GUI.ValueType.Bool: {
-    //                            stringVal = $"{atkValue.Byte != 0}";
-    //                            break;
-    //                        }
-
-    //                    case FFXIVClientStructs.FFXIV.Component.GUI.ValueType.Pointer:
-    //                        stringVal = $"{(nint)atkValue.Pointer}";
-    //                        break;
-
-    //                    default: {
-    //                            stringVal = "Unhandled Type";
-    //                            //Util.ShowStruct(atkValue);
-    //                            break;
-    //                        }
-    //                }
-
-    //                Plugin.Log2.Debug($" Type: {atkValue.Type} Value: {stringVal}");
-    //            }
-    //        }
-
-    //    } finally {
-    //        _setAtkValuesHook.Original(addon, count, data);
-    //    }
-    //}
-
-    //private unsafe short OpenAddonDetour(IntPtr p1, uint p2, uint p3, IntPtr p4, IntPtr p5, IntPtr p6, short p7, int p8) {
-    //    try {
-    //        var agent = (AgentInterface*)p5;
-    //        var atkVals = p4;
-    //        var introAgent = AgentModule.Instance()->GetAgentByInternalId(AgentId.PvPMKSIntroduction);
-    //        Plugin.Log2.Debug($"Opening addon! Agent: 0x{p5:X2} ID: {agent->AddonId}");
-    //        if(agent == introAgent) {
-    //            var data = new IntPtr(agent + 0x28);
-    //            Plugin.Log2.Debug($"Intro opened! Data ptr: 0x{data:X2}");
-    //            _plugin.Functions.CreateByteDump(new IntPtr(agent), 0x4000, "PvPMKSIntroduction_OpenAddon");
-
-    //            _plugin.Functions.CreateByteDump(data, 0x4000, "PvPMKSIntroduction_OpenAddon_Data");
-    //        }
-
-    //    } catch {
-
-    //    }
-    //    return _openAddonHook.Original(p1, p2, p3, p4, p5, p6, p7, p8);
-    //}
 
     //returns true if successfully processed
     private bool ProcessMatchResults(CrystallineConflictResultsPacket resultsPacket) {
@@ -716,7 +682,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 //ContentId = player.ContentId,
             };
             //set player riser from intro
-            if(_currentMatch.IntroPlayerInfo.ContainsKey(newPlayer.Alias)) {
+            if(_currentMatch.IntroPlayerInfo?.ContainsKey(newPlayer.Alias) ?? false) {
                 newPlayer.Rank.Riser = _currentMatch.IntroPlayerInfo[newPlayer.Alias].Rank?.Riser;
             }
             playerTeam.Players.Add(newPlayer);
@@ -840,8 +806,16 @@ internal class CrystallineConflictMatchManager : IDisposable {
 #if DEBUG
         if(now - _lastPrint > TimeSpan.FromSeconds(30)) {
             _lastPrint = now;
+            var x = new IntPtr((nint*)director + 0x408);
+            var y = new IntPtr(*(nint*)x);
+            Plugin.Log2.Debug($"creating cc content director dump director: 0x{new IntPtr(director):X2} 0x{x:X2} 0x{y:X2}");
             _plugin.Functions.CreateByteDump((nint)director, 0x10000, "CCICD");
-            Plugin.Log2.Debug("creating cc content director dump");
+            //var x = (nint*)((nint)director + 0x408);
+            //var y = (nint*)*x;
+            //var z = *y;
+            ////var a = *(nint*)*(nint*)((nint)director + 0x408);
+            //_plugin.Functions.CreateByteDump(y, 0x10000, "CCICD_PLAYERS");
+
         }
 #endif
         //rematch detection
@@ -851,6 +825,29 @@ internal class CrystallineConflictMatchManager : IDisposable {
             _currentMatch = null;
             StartMatch();
             return;
+        }
+
+        //get player intro info
+        //wait for data to be initialized, with small failsafe period
+        if(_currentMatch.IntroPlayerInfo == null && director->Players[0].EntityId != 0 && (now - _currentMatch.DutyStartTime) > TimeSpan.FromSeconds(5)) {
+            _currentMatch.IntroPlayerInfo = new();
+            for(int i = 0; i < 10; i++) {
+                var player = director->Players[i];
+                var name = MemoryService.ReadString(player.Name, 64) ?? "";
+                var world = _plugin.DataManager.GetExcelSheet<World>()?.GetRow(player.WorldId).Name.ToString() ?? "";
+                var alias = new PlayerAlias(name, world);
+                var team = (CrystallineConflictTeamName)(player.Team + 1);
+                var job = PlayerJobHelper.GetJobFromName(_plugin.DataManager.GetExcelSheet<ClassJob>()?.GetRow(player.ClassJobId).NameEnglish.ToString() ?? "");
+                var rank = new PlayerRank((ArenaTier)player.ColosseumMatchRankId, player.Riser);
+
+                _currentMatch.IntroPlayerInfo.TryAdd(alias, new() {
+                    Alias = alias,
+                    Job = job,
+                    ClassJobId = player.ClassJobId,
+                    Team = team,
+                    Rank = rank,
+                });
+            }
         }
 
         if(_currentMatchTimeline != null) {

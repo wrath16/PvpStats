@@ -35,12 +35,12 @@ public unsafe struct CrystallineConflictResultsPacket {
         [FieldOffset(0x10)] public int DamageDealt;
         [FieldOffset(0x14)] public int DamageTaken;
         [FieldOffset(0x18)] public int HPRestored;
-        [FieldOffset(0x1C)] public short WorldId;
+        [FieldOffset(0x1C)] public ushort WorldId;
         [FieldOffset(0x1E)] public byte ClassJobId;
         [FieldOffset(0x1F)] public byte Kills;
         [FieldOffset(0x20)] public byte Deaths;
         [FieldOffset(0x21)] public byte Assists;
-        [FieldOffset(0x22)] public short TimeOnCrystal;                     //in seconds
+        [FieldOffset(0x22)] public ushort TimeOnCrystal;                     //in seconds
         [FieldOffset(0x24)] public byte ColosseumMatchRankId;
         [FieldOffset(0x25)] public CCTeam Team;
         [FieldOffset(0x26)] public fixed byte PlayerName[42];

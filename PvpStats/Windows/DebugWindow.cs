@@ -689,7 +689,34 @@ internal unsafe class DebugWindow : Window {
                 ImGui.TextUnformatted("Unknown6:");
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted(instanceDirector->Unknown6.ToString());
+            }
+        }
+        using(var table = ImRaii.Table("players", 6)) {
+            if(table) {
+                ImGui.TableSetupColumn("Name");
+                ImGui.TableSetupColumn("World");
+                ImGui.TableSetupColumn("Job");
+                ImGui.TableSetupColumn("Team");
+                ImGui.TableSetupColumn("Tier");
+                ImGui.TableSetupColumn("Riser");
 
+                ImGui.TableHeadersRow();
+
+                for(int i = 0; i < 10; i++) {
+                    var player = instanceDirector->Players[i];
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted(MemoryService.ReadString(player.Name, 64));
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted(player.WorldId.ToString());
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted(player.ClassJobId.ToString());
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted(((CrystallineConflictTeamName)(player.Team + 1)).ToString());
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted(((ArenaTier)player.ColosseumMatchRankId).ToString());
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted(player.Riser.ToString());
+                }
             }
         }
     }

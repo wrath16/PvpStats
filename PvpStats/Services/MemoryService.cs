@@ -17,7 +17,7 @@ internal unsafe class MemoryService : IDisposable {
     private DateTime _lastSortTime;
     internal bool _qPopped = false;
 
-    private ushort[] _blacklistedOpcodes = [487, 738, 635];
+    private ushort[] _blacklistedOpcodes = [];
 
     internal MemoryService(Plugin plugin) {
         _plugin = plugin;
@@ -46,9 +46,9 @@ internal unsafe class MemoryService : IDisposable {
         }
 
         if(!_blacklistedOpcodes.Contains(opCode)) {
-            if(_plugin.DebugMode) {
-                Plugin.Log2.Debug($"OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
-            }
+            //if(_plugin.DebugMode) {
+            //    Plugin.Log2.Debug($"OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
+            //}
             //Plugin.Log2.Debug($"OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
             //_plugin.Functions.PrintAllChars(dataPtr, 0x2000, 8);
             //_plugin.Functions.PrintAllStrings(dataPtr, 0x500);

@@ -34,7 +34,7 @@ public class CrystallineConflictMatch : PvpMatch {
     public bool IsOvertime { get; set; }
 
     //if this is PlayerAlias will not deserialize-_-
-    public Dictionary<string, CrystallineConflictPlayer> IntroPlayerInfo { get; set; } = new();
+    public Dictionary<string, CrystallineConflictPlayer>? IntroPlayerInfo { get; set; }
 
     //stats results...
     public CrystallineConflictPostMatch? PostMatch { get; set; }
