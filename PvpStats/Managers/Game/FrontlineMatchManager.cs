@@ -148,17 +148,18 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
                 }
             });
 
-            Plugin.Log.Debug(string.Format("{0,-32} {1,-2}", "Player", "MAX BH"));
-            foreach(var x in _maxObservedBattleHigh) {
-                Plugin.Log.Debug(string.Format("{0,-32} {1,-2}", x.Key, x.Value));
-            }
-
+#if DEBUG
+            //Plugin.Log.Debug(string.Format("{0,-32} {1,-2}", "Player", "MAX BH"));
+            //foreach(var x in _maxObservedBattleHigh) {
+            //    Plugin.Log.Debug(string.Format("{0,-32} {1,-2}", x.Key, x.Value));
+            //}
             //var printTeamStats = (FrontlineResultsPacket.TeamStat team, string name) => {
             //    Plugin.Log.Debug($"{name}\nPlace {team.Placement}\nOvooPoints {team.OccupationPoints}\nKillPoints {team.EnemyKillPoints}\nDeathLosses {team.KOPointLosses}\nUnknown1 {team.Unknown1}\nIcePoints {team.IcePoints}\nTotalRating {team.TotalPoints}");
             //};
             //printTeamStats(resultsPacket.MaelStats, "Maelstrom");
             //printTeamStats(resultsPacket.AdderStats, "Adders");
             //printTeamStats(resultsPacket.FlameStats, "Flames");
+#endif
         } catch(Exception e) {
             Plugin.Log.Error(e, $"Error in FLMatchEnd10Detour");
         }
@@ -204,8 +205,8 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
     }
 
     private void FLPlayerPayload10Detour(IntPtr p1) {
-        //Plugin.Log.Debug("Fl player payload 10 detour entered.");
         try {
+            Plugin.Log2.Debug("Fl player payload 10 detour entered.");
 #if DEBUG
             //Plugin.Functions.CreateByteDump(p1, 0x400, "fl_player_payload");
 #endif
@@ -241,7 +242,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
             return false;
         }
 
-        Plugin.Log.Debug("Adding FL player payload.");
+        //Plugin.Log.Debug("Adding FL player payload.");
 
         PlayerAlias playerName;
         unsafe {
@@ -308,67 +309,78 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
         //}
 #endif
 
-        //max BH
-        foreach(IPlayerCharacter pc in Plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player).Cast<IPlayerCharacter>()) {
+        var objectTable = Plugin.ObjectTable;
+        for(int i = 0; i < objectTable.Length; i++) {
+            var obj = objectTable[i];
+            if(obj == null || obj.ObjectKind != ObjectKind.Player)
+                continue;
+
             try {
-                var battleHigh = 0;
-                foreach(var battleHighLevel in BattleHighStatuses) {
-                    if(pc.StatusList.Where(x => x.StatusId == battleHighLevel.Value).Any()) {
-                        battleHigh = battleHighLevel.Key; break;
+                var pc = (IPlayerCharacter)obj;
+                var statusList = pc.StatusList;
+                int battleHigh = 0;
+
+                foreach(var kvp in BattleHighStatuses) {
+                    foreach(var status in statusList) {
+                        if(status.StatusId == kvp.Value) {
+                            battleHigh = kvp.Key;
+                            goto FoundBattleHigh;
+                        }
                     }
                 }
 
-                var alias = (PlayerAlias)$"{pc.Name} {pc.HomeWorld.Value.Name}";
-                _maxObservedBattleHigh.TryAdd(alias, 0);
-                if(_maxObservedBattleHigh[alias] < battleHigh) {
-                    _maxObservedBattleHigh[alias] = battleHigh;
+            FoundBattleHigh:
+                var aliasKey = (PlayerAlias)$"{pc.Name} {pc.HomeWorld.Value.Name}";
+                if(_maxObservedBattleHigh.TryGetValue(aliasKey, out int existing)) {
+                    if(battleHigh > existing)
+                        _maxObservedBattleHigh[aliasKey] = battleHigh;
+                } else {
+                    _maxObservedBattleHigh[aliasKey] = battleHigh;
                 }
             } catch {
-                //suppress
+                // ignored: continue processing next player
             }
         }
 
         if(_currentMatchTimeline != null) {
-
-            //team points
+            // Update team scores
             try {
-                foreach(var team in _currentMatchTimeline.TeamPoints ?? []) {
-                    var lastEvent = team.Value.LastOrDefault();
-                    int? currentValue = null;
-                    switch(team.Key) {
-                        case FrontlineTeamName.Maelstrom:
-                            currentValue = director->MaelstromScore;
-                            break;
-                        case FrontlineTeamName.Adders:
-                            currentValue = director->AddersScore;
-                            break;
-                        case FrontlineTeamName.Flames:
-                            currentValue = director->FlamesScore;
-                            break;
-                        default:
-                            break;
-                    }
-                    if(currentValue != null && (lastEvent == null || lastEvent.Points != currentValue)) {
-                        team.Value.Add(new(now, (int)currentValue));
+                var teamPoints = _currentMatchTimeline.TeamPoints;
+                if(teamPoints != null) {
+                    foreach(var team in teamPoints) {
+                        int? currentValue = team.Key switch {
+                            FrontlineTeamName.Maelstrom => director->MaelstromScore,
+                            FrontlineTeamName.Adders => director->AddersScore,
+                            FrontlineTeamName.Flames => director->FlamesScore,
+                            _ => null
+                        };
+
+                        if(currentValue.HasValue) {
+                            var points = team.Value;
+                            var last = points.Count > 0 ? points[points.Count - 1] : null;
+                            if(last == null || last.Points != currentValue.Value)
+                                points.Add(new(now, currentValue.Value));
+                        }
                     }
                 }
             } catch {
-                //suppress
+                // ignored
             }
 
-            //self battle high
+            // Update self battle high
             try {
-                if(_currentMatchTimeline.SelfBattleHigh != null) {
-                    var lastBattleHighEvent = _currentMatchTimeline.SelfBattleHigh.LastOrDefault();
-                    int? currentBattleHigh = director->PlayerBattleHigh;
-                    if(currentBattleHigh != null && (lastBattleHighEvent == null || lastBattleHighEvent.Count != currentBattleHigh)) {
-                        _currentMatchTimeline.SelfBattleHigh.Add(new(now, (int)currentBattleHigh));
-                    }
+                var selfHigh = _currentMatchTimeline.SelfBattleHigh;
+                if(selfHigh != null) {
+                    int currentBattleHigh = director->PlayerBattleHigh;
+                    var last = selfHigh.Count > 0 ? selfHigh[selfHigh.Count - 1] : null;
+                    if(last == null || last.Count != currentBattleHigh)
+                        selfHigh.Add(new(now, currentBattleHigh));
                 }
             } catch {
-                //suppress
+                // ignored
             }
         }
+
         _lastUpdate = now;
     }
 
