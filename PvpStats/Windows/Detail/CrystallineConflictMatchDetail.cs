@@ -67,7 +67,6 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     private SnapshotStyle _snapshotStyle = SnapshotStyle.Impact;
     private bool _knockoutIcons = true;
     private bool _limitBreakIcons = true;
-
     private List<(float Crystal, float Astra, float Umbra)> _consolidatedEventTeamPoints = new();
     private readonly Dictionary<uint, string> _bNPCNames = [];
     private readonly Dictionary<uint, string> _actionNames = [];
@@ -83,6 +82,12 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         {CrystallineConflictTeamName.Umbra, new() },
     };
     private (float[] Xs, float[] Ys) _crystalPosition = new();
+
+    private PlayerAlias? _actionSelection;
+    private int _actionSelectionIndex;
+    private List<string> _actionSelectionList = new();
+    private Dictionary<string, Dictionary<uint, ActionAnalytics>>? _filteredPlayerAnalytics;
+    bool _triggerSort = false;
 
     internal CrystallineConflictMatchDetail(Plugin plugin, CrystallineConflictMatch match) : base(plugin, plugin.CCCache, match) {
         ForceMainWindow = true;
@@ -101,13 +106,13 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 _defaultScoreboardSize = new Vector2(700, 680);
                 _defaultGraphSize = new Vector2(975, 900);
                 _defaultTimelineSize = new Vector2(700, 680);
-                _defaultCastsSize = new Vector2(700, 680);
+                _defaultCastsSize = new Vector2(975, 900);
                 break;
             case CrystallineConflictMatchType.Ranked:
                 _defaultScoreboardSize = new Vector2(700, 700);
                 _defaultGraphSize = new Vector2(975, 920);
                 _defaultTimelineSize = new Vector2(700, 700);
-                _defaultCastsSize = new Vector2(700, 700);
+                _defaultCastsSize = new Vector2(975, 920);
                 break;
         }
 
@@ -133,7 +138,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             _teamScoreboard = match.GetTeamScoreboards();
             _playerContributions = match.GetPlayerContributions();
         }
-        SortByColumn(0, ImGuiSortDirection.Ascending);
+        ScoreboardSort(0, ImGuiSortDirection.Ascending);
 
         _timeline = Plugin.CCCache.GetTimeline(Match);
 
@@ -229,20 +234,24 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             _consolidatedEvents.Sort();
             ApplyTimelineFilters();
 
-            //add totalized actions to caches
-            foreach(var playerCasts in _timeline.TotalizedCasts ?? []) {
+            //add action icons and names to cache
+            var addToCache = (uint actionKey) => {
+                var action = Plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Action>(ClientLanguage.English).GetRow(actionKey);
+                _actionNames.TryAdd(action.RowId, action.Name.ToString());
+                _actionIcons.TryAdd(action.RowId, action.Icon);
+            };
+            //foreach(var playerCasts in _timeline.TotalizedCasts ?? []) {
+            //    foreach(var actionCasts in playerCasts.Value) {
+            //        addToCache(actionCasts.Key);
+            //    }
+            //}
+            foreach(var playerCasts in _timeline.PlayerActionAnalytics ?? []) {
                 foreach(var actionCasts in playerCasts.Value) {
-                    var action = Plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Action>(ClientLanguage.English).GetRow(actionCasts.Key);
-                    if(!_actionNames.ContainsKey(action.RowId)) {
-                        _actionNames.Add(action.RowId, action.Name.ToString());
-                        _actionIcons.Add(action.RowId, action.Icon);
-                    }
+                    addToCache(actionCasts.Key);
                 }
             }
             foreach(var value in Enum.GetValues(typeof(KeyAction))) {
-                var action = Plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Action>(ClientLanguage.English).GetRow((uint)value);
-                _actionNames.TryAdd(action.RowId, action.Name.ToString());
-                _actionIcons.TryAdd(action.RowId, action.Icon);
+                addToCache((uint)value);
             }
 
             //setup team point events
@@ -287,6 +296,13 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             SetupMidProgressGraph(CrystallineConflictTeamName.Astra);
             SetupMidProgressGraph(CrystallineConflictTeamName.Umbra);
             SetupCrystalPositionGraph();
+
+            //setup actions
+            _actionSelectionList.Add("ALL");
+            foreach(var player in Match.Players) {
+                _actionSelectionList.Add(player.Alias);
+            }
+            _filteredPlayerAnalytics = _timeline.PlayerActionAnalytics;
         }
 
         CSV = BuildCSV();
@@ -562,12 +578,12 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                             DrawGraphs();
                         }
                     }
-                    if(_timeline.TotalizedCasts != null) {
-                        using(var tab = ImRaii.TabItem("Casts")) {
+                    if(_timeline.PlayerActionAnalytics != null) {
+                        using(var tab = ImRaii.TabItem("Actions")) {
                             if(tab) {
-                                if(CurrentTab != "Casts") {
+                                if(CurrentTab != "Actions") {
                                     SetWindowSize(_savedCastsSize ?? _defaultCastsSize);
-                                    CurrentTab = "Casts";
+                                    CurrentTab = "Actions";
                                 }
                                 _savedCastsSize = ImGui.GetWindowSize();
                                 DrawCasts();
@@ -676,7 +692,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         //column sorting
         ImGuiTableSortSpecsPtr sortSpecs = ImGui.TableGetSortSpecs();
         if(sortSpecs.SpecsDirty) {
-            SortByColumn(sortSpecs.Specs.ColumnUserID, sortSpecs.Specs.SortDirection);
+            ScoreboardSort(sortSpecs.Specs.ColumnUserID, sortSpecs.Specs.SortDirection);
             sortSpecs.SpecsDirty = false;
         }
 
@@ -1334,9 +1350,167 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     }
 
     private void DrawCasts() {
-        using var child = ImRaii.Child("castsChild", ImGui.GetContentRegionAvail(), false);
+        if(ImGui.Combo("player", ref _actionSelectionIndex, _actionSelectionList.ToArray(), _actionSelectionList.Count)) {
+            if(_actionSelectionIndex == 0) {
+                _actionSelection = null;
+            } else {
+                _actionSelection = (PlayerAlias)_actionSelectionList[_actionSelectionIndex];
+                _triggerSort = true;
+            }
+        }
+
+        using var child = ImRaii.Child("castsChild", ImGui.GetContentRegionAvail(), false, ImGuiWindowFlags.NoScrollbar);
         if(child) {
-            DrawKeyCastsTable();
+            //DrawKeyCastsTable();
+            if(_actionSelection != null) {
+                DrawPlayerCastsTable(_actionSelection);
+                ////with pet
+                //if(_timeline?.PetActionAnalytics?.ContainsKey(_actionSelection) ?? false) {
+                //    ImGui.Text("Pet:");
+                //    DrawPlayerCastsTable(_actionSelection, true);
+                //}
+            }
+        }
+    }
+
+    private void DrawPlayerCastsTable(PlayerAlias player) {
+        var analyticsCache = _filteredPlayerAnalytics;
+        Dictionary<uint, ActionAnalytics>? analyticsTable = null;
+        if(!analyticsCache?.TryGetValue(player, out analyticsTable) ?? true) {
+            ImGui.TextDisabled("No actions by actor.");
+            return;
+        }
+
+        //ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X * 0.65f);
+        //using var child = ImRaii.Child("playerCastsChild", new Vector2(ImGui.GetContentRegionAvail().X * 0.65f, 0), false, ImGuiWindowFlags.NoScrollbar);
+        var tableFlags = ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.ScrollX | ImGuiTableFlags.ScrollY
+            | ImGuiTableFlags.NoSavedSettings | ImGuiTableFlags.PadOuterX | ImGuiTableFlags.Borders;
+        if(Plugin.Configuration.StretchScoreboardColumns ?? false) {
+            tableFlags -= ImGuiTableFlags.ScrollX;
+        }
+        using(var table = ImRaii.Table("playeCastsTable", 14, tableFlags)) {
+            if(table) {
+                var widthStyle = Plugin.Configuration.StretchScoreboardColumns ?? false ? ImGuiTableColumnFlags.WidthStretch : ImGuiTableColumnFlags.WidthFixed;
+                ImGui.TableSetupColumn("Action", ImGuiTableColumnFlags.WidthStretch | ImGuiTableColumnFlags.NoHide, ImGuiHelpers.GlobalScale * 100f, 0);
+                ImGui.TableSetupColumn("Casts", widthStyle, ImGuiHelpers.GlobalScale * 52f, (uint)"Casts".GetHashCode());
+                ImGui.TableSetupColumn("Average Targets", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"AverageTargets".GetHashCode());
+                ImGui.TableSetupColumn("Total Damage", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"Damage".GetHashCode());
+                ImGui.TableSetupColumn("Average Damage", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"AverageDamage".GetHashCode());
+                ImGui.TableSetupColumn("Total Reflect Damage", widthStyle | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 65f, (uint)"ReflectDamage".GetHashCode());
+                ImGui.TableSetupColumn("Average Reflect Damage", widthStyle | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 65f, (uint)"AverageReflectDamage".GetHashCode());
+                ImGui.TableSetupColumn("Total Heal", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"Heal".GetHashCode());
+                ImGui.TableSetupColumn("Average Heal", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"AverageHeal".GetHashCode());
+                ImGui.TableSetupColumn("Total MP Drain", widthStyle | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 65f, (uint)"MPDrain".GetHashCode());
+                ImGui.TableSetupColumn("Average MP Drain", widthStyle | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 65f, (uint)"AverageMPDrain".GetHashCode());
+                ImGui.TableSetupColumn("Total MP Gain", widthStyle | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 65f, (uint)"MPGain".GetHashCode());
+                ImGui.TableSetupColumn("Average MP Gain", widthStyle | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 65f, (uint)"AverageMPGain".GetHashCode());
+                ImGui.TableSetupColumn("Status Success Rate", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"StatusEffectiveness".GetHashCode());
+
+                ImGui.TableSetupScrollFreeze(1, 1);
+
+                if(ImGui.TableNextColumn()) {
+                    ImGuiHelper.DrawTableHeader("Action", 0);
+                }
+                if(ImGui.TableNextColumn()) {
+                    ImGuiHelper.DrawTableHeader("Casts");
+                }
+                if(ImGui.TableNextColumn()) {
+                    ImGuiHelper.DrawTableHeader("Average\nImpacts");
+                }
+                if(ImGui.TableNextColumn()) {
+                    ImGuiHelper.DrawTableHeader("Total\nDamage");
+                }
+                if(ImGui.TableNextColumn()) {
+                    ImGuiHelper.DrawTableHeader("Average\nDamage");
+                }
+                if(ImGui.TableNextColumn()) {
+                    ImGuiHelper.DrawTableHeader("Total\nReflect");
+                }
+                if(ImGui.TableNextColumn()) {
+                    ImGuiHelper.DrawTableHeader("Average\nReflect");
+                }
+                if(ImGui.TableNextColumn()) {
+                    ImGuiHelper.DrawTableHeader("Total\nHeal");
+                }
+                if(ImGui.TableNextColumn()) {
+                    ImGuiHelper.DrawTableHeader("Average\nHeal");
+                }
+                if(ImGui.TableNextColumn()) {
+                    ImGuiHelper.DrawTableHeader("Total\nMP Drain");
+                }
+                if(ImGui.TableNextColumn()) {
+                    ImGuiHelper.DrawTableHeader("Average\nMP Drain");
+                }
+                if(ImGui.TableNextColumn()) {
+                    ImGuiHelper.DrawTableHeader("Total\nMP Gain");
+                }
+                if(ImGui.TableNextColumn()) {
+                    ImGuiHelper.DrawTableHeader("Average\nMP Gain");
+                }
+                if(ImGui.TableNextColumn()) {
+                    ImGuiHelper.DrawTableHeader("Status\nRate");
+                }
+
+                //column sorting
+                ImGuiTableSortSpecsPtr sortSpecs = ImGui.TableGetSortSpecs();
+                if(sortSpecs.SpecsDirty || _triggerSort) {
+                    AnalyticsSort(sortSpecs.Specs.ColumnUserID, sortSpecs.Specs.SortDirection);
+                    sortSpecs.SpecsDirty = false;
+                    _triggerSort = false;
+                }
+
+                foreach(var action in analyticsTable ?? []) {
+                    if(ImGui.TableNextColumn()) {
+                        ImGui.AlignTextToFramePadding();
+                        ImGui.Image(Plugin.WindowManager.GetTextureHandle(_actionIcons[action.Key]), new Vector2(24 * ImGuiHelpers.GlobalScale));
+                        ImGui.SameLine();
+                        ImGui.Text(_actionNames[action.Key]);
+                        ImGuiHelper.WrappedTooltip($"ID: {action.Key}");
+                    }
+                    if(ImGui.TableNextColumn()) {
+                        ImGuiHelper.DrawNumericCell($"{action.Value.Casts:0}", -11f);
+                    }
+                    if(ImGui.TableNextColumn()) {
+                        ImGuiHelper.DrawNumericCell($"{action.Value.AverageTargets:0.0}", -11f);
+                        //ImGuiHelper.WrappedTooltip($"Friendly targets: {action.Value.FriendlyTargets / }\nHostile targets: {}");
+                    }
+                    if(ImGui.TableNextColumn()) {
+                        ImGuiHelper.DrawNumericCell($"{action.Value.Damage:0}", -11f);
+                    }
+                    if(ImGui.TableNextColumn()) {
+                        ImGuiHelper.DrawNumericCell($"{action.Value.AverageDamage:0}", -11f);
+                    }
+                    if(ImGui.TableNextColumn()) {
+                        ImGuiHelper.DrawNumericCell($"{action.Value.ReflectDamage:0}", -11f);
+                    }
+                    if(ImGui.TableNextColumn()) {
+                        ImGuiHelper.DrawNumericCell($"{action.Value.AverageReflectDamage:0}", -11f);
+                    }
+                    if(ImGui.TableNextColumn()) {
+                        ImGuiHelper.DrawNumericCell($"{action.Value.Heal:0}", -11f);
+                    }
+                    if(ImGui.TableNextColumn()) {
+                        ImGuiHelper.DrawNumericCell($"{action.Value.AverageHeal:0}", -11f);
+                    }
+                    if(ImGui.TableNextColumn()) {
+                        ImGuiHelper.DrawNumericCell($"{action.Value.MPDrain:0}", -11f);
+                    }
+                    if(ImGui.TableNextColumn()) {
+                        ImGuiHelper.DrawNumericCell($"{action.Value.AverageMPDrain:0}", -11f);
+                    }
+                    if(ImGui.TableNextColumn()) {
+                        ImGuiHelper.DrawNumericCell($"{action.Value.MPGain:0}", -11f);
+                    }
+                    if(ImGui.TableNextColumn()) {
+                        ImGuiHelper.DrawNumericCell($"{action.Value.AverageMPGain:0}", -11f);
+                    }
+                    if(ImGui.TableNextColumn()) {
+                        if(!float.IsNaN(action.Value.StatusEffectiveness)) {
+                            ImGuiHelper.DrawNumericCell($"{action.Value.StatusEffectiveness:P1}", -11f);
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -1478,7 +1652,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         _teamMidPoints[team] = (pointEvents.Select(x => (float)(x.Timestamp - Match.MatchStartTime).Value.TotalSeconds).ToArray(), pointEvents.Select(x => direction * (float)x.Points).ToArray());
     }
 
-    private void SortByColumn(uint columnId, ImGuiSortDirection direction) {
+    private void ScoreboardSort(uint columnId, ImGuiSortDirection direction) {
         if(_unfilteredScoreboard == null || _scoreboard == null) return;
 
         //Func<KeyValuePair<CrystallineConflictPostMatchRow, (CCScoreboard, CCScoreboardDouble)>, object> comparator = (r) => 0;
@@ -1539,6 +1713,53 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             _teamScoreboard = direction == ImGuiSortDirection.Ascending ? _teamScoreboard.OrderBy(teamComparator).ToDictionary()
             : _teamScoreboard.OrderByDescending(teamComparator).ToDictionary();
         }
+    }
+
+    private void AnalyticsSort(uint columnId, ImGuiSortDirection direction) {
+        if(_actionSelection == null) {
+            return;
+        }
+        Dictionary<uint, ActionAnalytics>? playerAnalytics = null;
+        _timeline?.PlayerActionAnalytics?.TryGetValue(_actionSelection, out playerAnalytics);
+        //Dictionary<uint, ActionAnalytics>? petAnalytics = null;
+        //_timeline?.PetActionAnalytics?.TryGetValue(_actionSelection, out petAnalytics);
+
+        Func<KeyValuePair<uint, ActionAnalytics>, object> comparator = (r) => 0;
+
+        //0 = Id
+        if(columnId == 0) {
+            comparator = (r) => r.Key;
+        } else {
+            var props = typeof(ActionAnalytics).GetProperties();
+            var fields = typeof(ActionAnalytics).GetFields();
+            List<MemberInfo> members = [.. props, .. fields];
+            //iterate to two levels
+            foreach(var member in members) {
+                var propId = member.Name.GetHashCode();
+                if((uint)propId == columnId) {
+                    if(member is PropertyInfo) {
+                        comparator = (r) => (member as PropertyInfo)!.GetValue(r.Value) ?? 0;
+                    } else if(member is FieldInfo) {
+                        comparator = (r) => (member as FieldInfo)!.GetValue(r.Value) ?? 0;
+                    }
+                    break;
+                }
+            }
+        }
+
+        //this might be sorting on the data layer...
+        if(playerAnalytics != null) {
+            _filteredPlayerAnalytics[_actionSelection] = direction == ImGuiSortDirection.Ascending ? playerAnalytics.OrderBy(comparator).ToDictionary()
+            : playerAnalytics.OrderByDescending(comparator).ToDictionary();
+        }
+
+        //if(petAnalytics != null) {
+        //    _filteredPetAnalytics[_actionSelection] = direction == ImGuiSortDirection.Ascending ? petAnalytics.OrderBy(comparator).ToDictionary()
+        //    : petAnalytics.OrderByDescending(comparator).ToDictionary();
+        //}
+
+        List<int> l1 = new(){ 5, 2, 3, 1, 4 };
+        var l2 = l1.OrderByDescending(x => x).ToList();
     }
 
     private Task ApplyTeamFilter() {

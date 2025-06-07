@@ -1,4 +1,5 @@
-﻿using PvpStats.Types.Event;
+﻿using PvpStats.Types.Action;
+using PvpStats.Types.Event;
 using PvpStats.Types.Event.CrystallineConflict;
 using System.Collections.Generic;
 
@@ -14,6 +15,8 @@ internal class CrystallineConflictMatchTimeline : PvpMatchTimeline {
     public List<ActionEvent>? LimitBreakEffects { get; set; }
 
     public Dictionary<string, Dictionary<uint, uint>>? TotalizedCasts { get; set; }
+    public Dictionary<string, Dictionary<uint, ActionAnalytics>>? PlayerActionAnalytics { get; set; }
+    //public Dictionary<string, Dictionary<uint, ActionAnalytics>>? PetActionAnalytics { get; set; }
     public Dictionary<string, uint>? TotalizedMedkits { get; set; }
 
     public CrystallineConflictMatchTimeline() : base() {
