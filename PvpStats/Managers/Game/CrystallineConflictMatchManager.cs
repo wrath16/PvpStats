@@ -29,12 +29,10 @@ internal class CrystallineConflictMatchManager : IDisposable {
 
     private Plugin _plugin;
     private CrystallineConflictMatch? _currentMatch;
-
     private CrystallineConflictMatchTimeline? _currentMatchTimeline;
+    private bool _scoreboardPayloadReceived;
     private float _lastEventTimer;
-
     public Dictionary<uint, Dictionary<ushort, HashSet<uint>>>? _castTargets;
-
     private DateTime _lastUpdate;
     private DateTime _lastPrint = DateTime.MinValue;
 
@@ -146,13 +144,16 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 LimitBreakEffects = new(),
                 MapEvents = new(),
 #if DEBUG
-                TotalizedMedkits = new(),
                 NameIdTargetedActionAnalytics = new(),
                 PlayerTargetedActionAnalytics = new(),
+                PlayerMedkitAnalytics = new(),
+                PlayerTargetedStatusAnalytics = new(),
+                NameIdTargetedStatusAnalytics = new(),
 #endif
             };
             _castTargets = [];
             _lastEventTimer = -1f;
+            _scoreboardPayloadReceived = false;
             _plugin.Log.Information($"starting new match on {_currentMatch.Arena}");
             _plugin.DataQueue.QueueDataOperation(async () => {
                 await _plugin.CCCache.AddMatch(_currentMatch);
@@ -238,8 +239,15 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 var world = _plugin.DataManager.GetExcelSheet<World>().GetRow((player as IPlayerCharacter).HomeWorld.RowId).Name.ToString();
                 var alias = (PlayerAlias)$"{player.Name} {world}";
 
-                if(!_currentMatchTimeline?.TotalizedMedkits?.TryAdd(alias, 1) ?? false) {
-                    _currentMatchTimeline!.TotalizedMedkits![alias]++;
+                ActionAnalytics actionAnalytics = new() {
+                    Impacts = 1,
+                    Heal = amount
+                };
+
+                if(_currentMatchTimeline?.PlayerMedkitAnalytics != null) {
+                    if(!_currentMatchTimeline.PlayerMedkitAnalytics.TryAdd(alias, actionAnalytics)) {
+                        _currentMatchTimeline.PlayerMedkitAnalytics[alias] += actionAnalytics;
+                    }
                 }
             }
         } finally {
@@ -321,13 +329,19 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 var targetSnapshot = new BattleCharaSnapshot(target as IBattleChara);
 
                 //setup action analytics
-                ActionAnalytics actionAnalytics = new();
+                ActionAnalytics? actionAnalytics = null;
                 if(target is IPlayerCharacter) {
                     targetWorld = _plugin.DataManager.GetExcelSheet<World>().GetRow((target as IPlayerCharacter)!.HomeWorld.RowId).Name.ToString();
                     targetAlias = (PlayerAlias)$"{(target as IPlayerCharacter)!.Name} {targetWorld}";
-                    playerActionAnalytics.TryAdd(targetAlias, actionAnalytics);
+                    if(!playerActionAnalytics.TryGetValue(targetAlias, out actionAnalytics)) {
+                        actionAnalytics = new();
+                        playerActionAnalytics.TryAdd(targetAlias, actionAnalytics);
+                    }
                 } else if(target is IBattleNpc) {
-                    nameIdActionAnalytics.TryAdd((target as IBattleNpc)!.NameId, actionAnalytics);
+                    if(!nameIdActionAnalytics.TryGetValue((target as IBattleNpc)!.NameId, out actionAnalytics)) {
+                        actionAnalytics = new();
+                        nameIdActionAnalytics.TryAdd((target as IBattleNpc)!.NameId, actionAnalytics);
+                    }
                 }
 
                 //add unique target
@@ -357,13 +371,20 @@ internal class CrystallineConflictMatchManager : IDisposable {
                     bool isReflected = (actionEffect.Flags2 & 0x80) == 0x80;
                     ActionAnalytics? reflectedActionAnalytics = null;
                     if(isReflected) {
-                        reflectedActionAnalytics = new() {
-                            Impacts = 1
-                        };
                         if(actorAlias != null) {
-                            playerActionAnalytics.TryAdd(actorAlias, reflectedActionAnalytics);
+                            if(!playerActionAnalytics.TryGetValue(actorAlias, out reflectedActionAnalytics)) {
+                                reflectedActionAnalytics = new() {
+                                    Impacts = 1
+                                };
+                                playerActionAnalytics.TryAdd(actorAlias, reflectedActionAnalytics);
+                            }
                         } else if(actorNameId != null) {
-                            nameIdActionAnalytics.TryAdd((uint)actorNameId, reflectedActionAnalytics);
+                            if(!nameIdActionAnalytics.TryGetValue((uint)actorNameId, out reflectedActionAnalytics)) {
+                                reflectedActionAnalytics = new() {
+                                    Impacts = 1
+                                };
+                                nameIdActionAnalytics.TryAdd((uint)actorNameId, reflectedActionAnalytics);
+                            }
                         }
                     }
                     if(_plugin.DebugMode) {
@@ -381,6 +402,10 @@ internal class CrystallineConflictMatchManager : IDisposable {
                     } else if(actionEffect.EffectType == ActionEffectType.Heal) {
                         if(isReflected) {
                             reflectedActionAnalytics!.Heal += amount;
+                            ////sacred claim exempt damage
+                            //if((target as IBattleChara).StatusList.Any(x => x.StatusId == 3025) && amount == 3000) {
+                                
+                            //}
                         } else {
                             actionAnalytics.Heal += amount;
                         }
@@ -401,8 +426,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                             actionAnalytics.StatusHits++;
                         }
                     } else if(actionEffect.EffectType == ActionEffectType.StatusNoEffect 
-                        || actionEffect.EffectType == ActionEffectType.FullResistStatus
-                        || actionEffect.EffectType == ActionEffectType.Miss) {
+                        || actionEffect.EffectType == ActionEffectType.FullResistStatus) {
                         if(!isReflected) {
                             actionAnalytics.StatusMisses++;
                         }
@@ -426,7 +450,8 @@ internal class CrystallineConflictMatchManager : IDisposable {
             }
             targetedActionAnalytics.PlayerAnalytics = playerActionAnalytics;
             targetedActionAnalytics.NameIdAnalytics = nameIdActionAnalytics;
-            if(_currentMatchTimeline != null) {
+
+            if(_currentMatchTimeline != null && !_scoreboardPayloadReceived) {
                 if(actorAlias != null && _currentMatchTimeline.PlayerTargetedActionAnalytics != null) {
                     _currentMatchTimeline.PlayerTargetedActionAnalytics?.TryAdd(actorAlias, new());
                     _currentMatchTimeline.PlayerTargetedActionAnalytics?[actorAlias].TryAdd(actionId, new());
@@ -461,6 +486,25 @@ internal class CrystallineConflictMatchManager : IDisposable {
             if(!_plugin.DebugMode && !IsMatchInProgress()) {
                 return;
             }
+            uint? sourceNameId = null;
+            var source = _plugin.ObjectTable.SearchByEntityId(sourceEntityId);
+            var target = _plugin.ObjectTable.CreateObjectReference(targetObj);
+            var status = _plugin.DataManager.GetExcelSheet<Status>().GetRow(statusId);
+            if(source is IBattleNpc) {
+                //attempt to retrieve owner in case of pet (summoner)
+                var owner = _plugin.ObjectTable.SearchByEntityId(source?.OwnerId ?? 0);
+                sourceNameId = (source as IBattleNpc)!.NameId;
+                if(owner is IPlayerCharacter) {
+                    source = owner;
+                }
+            }
+            string? actorWorld = null;
+            PlayerAlias? actorAlias = null;
+            ActionEvent? actionEvent = null;
+            if(source is IPlayerCharacter) {
+                actorWorld = _plugin.DataManager.GetExcelSheet<World>().GetRow((source as IPlayerCharacter)!.HomeWorld.RowId).Name.ToString();
+                actorAlias = (PlayerAlias)$"{(source as IPlayerCharacter)!.Name} {actorWorld}";
+            }
 
             //p3 has something to do with where to route the message
             //p3 = 1306 for sole survivor hp+mp, 3111 for haimatinon, 3104 for microcosmos
@@ -468,9 +512,6 @@ internal class CrystallineConflictMatchManager : IDisposable {
             //enum2: 0 = beneficial, -1 = detrimental
             if(_plugin.DebugMode) {
                 Plugin.Log2.Debug($"hot/dot detected! p1: 0x{targetStatusManager:X2} p2: 0x{targetObj:X2}, p3: {statusId}, p4: {enum1}, p5: {amount}, p6: 0x{sourceEntityId:X2}, p7: {enum2}");
-                var source = _plugin.ObjectTable.SearchByEntityId(sourceEntityId);
-                var target = _plugin.ObjectTable.CreateObjectReference(targetObj);
-                var status = _plugin.DataManager.GetExcelSheet<Status>().GetRow(statusId);
                 var effect = enum1 switch {
                     3 => "DoT",
                     4 => "HoT",
@@ -479,6 +520,72 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 };
                 Plugin.Log2.Debug($"{source?.Name} to {target?.Name} {effect} {status.Name} {amount}");
             }
+
+            if(statusId != 0) {
+                TargetedActionAnalytics targetedActionAnalytics = new() {
+                    Casts = 1,
+                    Targets = 1,
+                };
+                ActionAnalytics actionAnalytics = new() {
+                    Impacts = 1
+                };
+                switch(enum1) {
+                    case 0x3:
+                        actionAnalytics.Damage = amount;
+                        break;
+                    case 0x4:
+                        actionAnalytics.Heal = amount;
+                        break;
+                    case 0xB:
+                        actionAnalytics.MPGain = amount;
+                        break;
+                }
+
+                if(target is IPlayerCharacter) {
+                    var targetWorld = _plugin.DataManager.GetExcelSheet<World>().GetRow((target as IPlayerCharacter)!.HomeWorld.RowId).Name.ToString();
+                    var targetAlias = (PlayerAlias)$"{(target as IPlayerCharacter)!.Name} {targetWorld}";
+                    targetedActionAnalytics.PlayerAnalytics.Add(targetAlias, actionAnalytics);
+                } else if(target is IBattleNpc) {
+                    targetedActionAnalytics.NameIdAnalytics.Add((target as IBattleNpc)!.NameId, actionAnalytics);
+                }
+
+                if(_currentMatchTimeline != null && !_scoreboardPayloadReceived) {
+                    //if(actorAlias != null && _currentMatchTimeline.PlayerTargetedStatusAnalytics != null) {
+                    //    _currentMatchTimeline.PlayerTargetedStatusAnalytics?.TryAdd(actorAlias, new());
+                    //    _currentMatchTimeline.PlayerTargetedStatusAnalytics?[actorAlias].TryAdd(statusId, new());
+                    //    _currentMatchTimeline.PlayerTargetedStatusAnalytics![actorAlias][statusId] += targetedActionAnalytics;
+                    //} else if(sourceNameId != null && _currentMatchTimeline.NameIdTargetedStatusAnalytics != null) {
+                    //    _currentMatchTimeline.NameIdTargetedStatusAnalytics?.TryAdd((uint)sourceNameId, new());
+                    //    _currentMatchTimeline.NameIdTargetedStatusAnalytics?[(uint)sourceNameId].TryAdd(statusId, new());
+                    //    _currentMatchTimeline.NameIdTargetedStatusAnalytics![(uint)sourceNameId][statusId] += targetedActionAnalytics;
+                    //}
+                    if(actorAlias != null && _currentMatchTimeline.PlayerTargetedStatusAnalytics != null) {
+                        var dict = _currentMatchTimeline.PlayerTargetedStatusAnalytics;
+                        if(!dict.TryGetValue(actorAlias, out var statusDict)) {
+                            statusDict = [];
+                            dict[actorAlias] = statusDict;
+                        }
+                        if(!statusDict.TryGetValue(statusId, out var analytics)) {
+                            analytics = new TargetedActionAnalytics();
+                            statusDict[statusId] = analytics;
+                        }
+                        statusDict[statusId] += targetedActionAnalytics;
+                    } else if(sourceNameId != null && _currentMatchTimeline.NameIdTargetedStatusAnalytics != null) {
+                        var dict = _currentMatchTimeline.NameIdTargetedStatusAnalytics;
+                        uint key = (uint)sourceNameId;
+                        if(!dict.TryGetValue(key, out var statusDict)) {
+                            statusDict = [];
+                            dict[key] = statusDict;
+                        }
+                        if(!statusDict.TryGetValue(statusId, out var analytics)) {
+                            analytics = new TargetedActionAnalytics();
+                            statusDict[statusId] = analytics;
+                        }
+                        statusDict[statusId] += targetedActionAnalytics;
+                    }
+                }
+            }
+
         } finally {
             _processHoTDoTHook.Original(targetStatusManager, targetObj, statusId, enum1, amount, sourceEntityId, enum2);
         }
@@ -489,6 +596,8 @@ internal class CrystallineConflictMatchManager : IDisposable {
 #if DEBUG
         _plugin.Functions.CreateByteDump(p2, 0x400, "cc_match_results");
 #endif
+        _scoreboardPayloadReceived = true;
+
         CrystallineConflictResultsPacket resultsPacket;
         unsafe {
             resultsPacket = *(CrystallineConflictResultsPacket*)p2;
@@ -511,6 +620,8 @@ internal class CrystallineConflictMatchManager : IDisposable {
 #if DEBUG
         _plugin.Functions.CreateByteDump(p2, 0x400, "spectated_cc_match_results");
 #endif
+        _scoreboardPayloadReceived = true;
+
         CrystallineConflictResultsPacket resultsPacket;
         unsafe {
             resultsPacket = *(CrystallineConflictResultsPacket*)p2;

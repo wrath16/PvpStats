@@ -1,5 +1,4 @@
-﻿using LiteDB;
-using PvpStats.Types.Action;
+﻿using PvpStats.Types.Action;
 
 namespace PvpStats.Types.Display;
 internal class FlattenedActionAnalytics {
@@ -21,12 +20,31 @@ internal class FlattenedActionAnalytics {
     public float StatusEffectiveness => (float)StatusHits / (StatusHits + StatusMisses);
     public float AverageTargets => (float)Targets / Casts;
 
-    public static FlattenedActionAnalytics operator +(FlattenedActionAnalytics a, ActionAnalytics b) {
-        //var c = (a as ActionAnalytics) + b;
-        //return c as FlattenedActionAnalytics;
+    public FlattenedActionAnalytics() {
 
+    }
+
+    public FlattenedActionAnalytics(ActionAnalytics actionAnalytics) {
+        Casts = actionAnalytics.Impacts;
+        StatusHits = actionAnalytics.StatusHits;
+        StatusMisses = actionAnalytics.StatusMisses;
+        Damage = actionAnalytics.Damage;
+        ExemptDamage = actionAnalytics.ExemptDamage;
+        Heal = actionAnalytics.Heal;
+        ExemptHeal = actionAnalytics.ExemptHeal;
+        MPDrain = actionAnalytics.MPDrain;
+        MPGain = actionAnalytics.MPGain;
+    }
+
+    public FlattenedActionAnalytics(CCScoreboardTally scoreboard) {
+        Damage = scoreboard.DamageDealt;
+        Heal = scoreboard.HPRestored;
+    }
+
+    public static FlattenedActionAnalytics operator +(FlattenedActionAnalytics a, FlattenedActionAnalytics b) {
         return new FlattenedActionAnalytics() {
-            //Impacts = a.Impacts + b.Impacts,
+            Casts = a.Casts,
+            Targets = a.Targets,
             StatusHits = a.StatusHits + b.StatusHits,
             StatusMisses = a.StatusMisses + b.StatusMisses,
             Damage = a.Damage + b.Damage,
@@ -35,6 +53,51 @@ internal class FlattenedActionAnalytics {
             ExemptHeal = a.ExemptHeal + b.ExemptHeal,
             MPDrain = a.MPDrain + b.MPDrain,
             MPGain = a.MPGain + b.MPGain,
+        };
+    }
+
+    public static FlattenedActionAnalytics operator -(FlattenedActionAnalytics a, FlattenedActionAnalytics b) {
+        return new FlattenedActionAnalytics() {
+            Casts = a.Casts,
+            Targets = a.Targets,
+            StatusHits = a.StatusHits - b.StatusHits,
+            StatusMisses = a.StatusMisses - b.StatusMisses,
+            Damage = a.Damage - b.Damage,
+            ExemptDamage = a.ExemptDamage - b.ExemptDamage,
+            Heal = a.Heal - b.Heal,
+            ExemptHeal = a.ExemptHeal - b.ExemptHeal,
+            MPDrain = a.MPDrain - b.MPDrain,
+            MPGain = a.MPGain - b.MPGain,
+        };
+    }
+
+    public static FlattenedActionAnalytics operator +(FlattenedActionAnalytics a, ActionAnalytics b) {
+        return new FlattenedActionAnalytics() {
+            Casts = a.Casts,
+            Targets = a.Targets,
+            StatusHits = a.StatusHits + b.StatusHits,
+            StatusMisses = a.StatusMisses + b.StatusMisses,
+            Damage = a.Damage + b.Damage,
+            ExemptDamage = a.ExemptDamage + b.ExemptDamage,
+            Heal = a.Heal + b.Heal,
+            ExemptHeal = a.ExemptHeal + b.ExemptHeal,
+            MPDrain = a.MPDrain + b.MPDrain,
+            MPGain = a.MPGain + b.MPGain,
+        };
+    }
+
+    public static FlattenedActionAnalytics operator -(FlattenedActionAnalytics a, ActionAnalytics b) {
+        return new FlattenedActionAnalytics() {
+            Casts = a.Casts,
+            Targets = a.Targets,
+            StatusHits = a.StatusHits - b.StatusHits,
+            StatusMisses = a.StatusMisses - b.StatusMisses,
+            Damage = a.Damage - b.Damage,
+            ExemptDamage = a.ExemptDamage - b.ExemptDamage,
+            Heal = a.Heal - b.Heal,
+            ExemptHeal = a.ExemptHeal - b.ExemptHeal,
+            MPDrain = a.MPDrain - b.MPDrain,
+            MPGain = a.MPGain - b.MPGain,
         };
     }
 }

@@ -22,7 +22,6 @@ using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace PvpStats.Windows.Detail;
 
@@ -72,6 +71,8 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     private readonly Dictionary<uint, string> _bNPCNames = [];
     private readonly Dictionary<uint, string> _actionNames = [];
     private readonly Dictionary<uint, uint> _actionIcons = [];
+    private readonly Dictionary<uint, string> _statusNames = [];
+    private readonly Dictionary<uint, uint> _statusIcons = [];
     private readonly double[] _xAxisTicks = [];
     private readonly string[] _xAxisLabels = [];
     private Dictionary<CrystallineConflictTeamName, (float[] Xs, float[] Ys)> _teamPoints = new() {
@@ -291,14 +292,28 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             foreach(var kvp in _timeline.NameIdTargetedActionAnalytics ?? []) {
                 _actionSelectionList.Add(_bNPCNames[kvp.Key]);
             }
-            _filteredPlayerAnalytics = _timeline.SummarizePlayerAnalytics();
-            _filteredNameIdAnalytics = _timeline.SummarizeNameIdAnalytics();
+            _filteredPlayerAnalytics = _timeline.SummarizePlayerAnalytics(Match);
+            ////subtract reflect damage
+            //foreach(var player in _timeline.PlayerTargetedActionAnalytics ?? []) {
+            //    foreach(var action in player.Value) {
+            //        foreach(var target in action.Value.PlayerAnalytics) { 
+            //            if(target.Key == player.Key) {
+            //                _filteredPlayerAnalytics[player.Key][action.Key].Damage -= target.Value.Damage;
+            //            }
+            //        }
+            //    }
+            //}
+            _filteredNameIdAnalytics = _timeline.SummarizeNameIdAnalytics(Match);
 
             //add action icons and names to cache
             void addActionToCache(uint actionKey) {
-                var action = Plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Action>(ClientLanguage.English).GetRow(actionKey);
-                _actionNames.TryAdd(action.RowId, action.Name.ToString());
-                _actionIcons.TryAdd(action.RowId, action.Icon);
+                try {
+                    var action = Plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Action>(ClientLanguage.English).GetRow(actionKey);
+                    _actionNames.TryAdd(action.RowId, action.Name.ToString());
+                    _actionIcons.TryAdd(action.RowId, action.Icon);
+                } catch {
+                    //suppress
+                }
             }
             foreach(var kvp in _filteredPlayerAnalytics ?? []) {
                 foreach(var actionCasts in kvp.Value) {
@@ -312,6 +327,27 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             }
             foreach(var value in Enum.GetValues(typeof(KeyAction))) {
                 addActionToCache((uint)value);
+            }
+
+            //add status icons and names
+            void addStatusToCache(uint statusId) {
+                try {
+                    var status = Plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Status>(ClientLanguage.English).GetRow(statusId);
+                    _statusNames.TryAdd(status.RowId, status.Name.ToString());
+                    _statusIcons.TryAdd(status.RowId, status.Icon);
+                } catch {
+                    //suppress
+                }
+            }
+            foreach(var kvp in _timeline.PlayerTargetedStatusAnalytics ?? []) {
+                foreach(var kvp2 in kvp.Value) {
+                    addStatusToCache(kvp2.Key);
+                }
+            }
+            foreach(var kvp in _timeline.NameIdTargetedStatusAnalytics ?? []) {
+                foreach(var kvp2 in kvp.Value) {
+                    addStatusToCache(kvp2.Key);
+                }
             }
         }
 
@@ -1378,37 +1414,42 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         if(child) {
             //DrawKeyCastsTable();
             Dictionary<uint, FlattenedActionAnalytics>? totalAnalytics = null;
-            Dictionary<uint, TargetedActionAnalytics>? targetedAnalytics = null;
+            Dictionary<uint, TargetedActionAnalytics>? targetedActionAnalytics = null;
+            Dictionary<uint, TargetedActionAnalytics>? targetedStatusAnalytics = null;
             if(_actionSelectionPlayer != null) {
                 if(!_filteredPlayerAnalytics?.TryGetValue(_actionSelectionPlayer, out totalAnalytics) ?? true) {
                     ImGui.TextDisabled("No actions by actor.");
                     //return;
                 } else {
-                    targetedAnalytics = _timeline.PlayerTargetedActionAnalytics[_actionSelectionPlayer];
-                    DrawActionTable(totalAnalytics, targetedAnalytics);
+                    _timeline?.PlayerTargetedActionAnalytics?.TryGetValue(_actionSelectionPlayer, out targetedActionAnalytics);
+                    _timeline?.PlayerTargetedStatusAnalytics?.TryGetValue(_actionSelectionPlayer, out targetedStatusAnalytics);
+                    DrawActionTable(totalAnalytics, targetedActionAnalytics, targetedStatusAnalytics);
                 }
             } else if(_actionSelectionNameId != null) {
                 if(!_filteredNameIdAnalytics?.TryGetValue((uint)_actionSelectionNameId, out totalAnalytics) ?? true) {
                     ImGui.TextDisabled("No actions by actor.");
                     //return;
                 } else {
-                    targetedAnalytics = _timeline.NameIdTargetedActionAnalytics[(uint)_actionSelectionNameId];
-                    DrawActionTable(totalAnalytics, targetedAnalytics);
+                    _timeline?.NameIdTargetedActionAnalytics?.TryGetValue((uint)_actionSelectionNameId, out targetedActionAnalytics);
+                    _timeline?.NameIdTargetedStatusAnalytics?.TryGetValue((uint)_actionSelectionNameId, out targetedStatusAnalytics);
+                    DrawActionTable(totalAnalytics, targetedActionAnalytics, targetedStatusAnalytics);
                 }
             }
         }
     }
 
-    private void DrawActionTable(Dictionary<uint, FlattenedActionAnalytics> totalAnalytics, Dictionary<uint, TargetedActionAnalytics> targetedAnalytics) {
-#if DEBUG
-        long totalDmg = 0;
-        long totalHeal = 0;
-        foreach(var action in totalAnalytics ?? []) {
-            totalDmg += action.Value.Damage;
-            totalHeal += action.Value.Heal;
-        }
-        ImGui.Text($"Damage: {totalDmg} Healing: {totalHeal}");
-#endif
+    private void DrawActionTable(Dictionary<uint, FlattenedActionAnalytics> totalAnalytics
+        , Dictionary<uint, TargetedActionAnalytics>? targetedActionAnalytics
+        , Dictionary<uint, TargetedActionAnalytics>? targetedStatusAnalytics) {
+//#if DEBUG
+//        long totalDmg = 0;
+//        long totalHeal = 0;
+//        foreach(var action in totalAnalytics ?? []) {
+//            totalDmg += action.Value.Damage;
+//            totalHeal += action.Value.Heal;
+//        }
+//        ImGui.Text($"Damage: {totalDmg} Healing: {totalHeal}");
+//#endif
 
         //ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X * 0.65f);
         //using var child = ImRaii.Child("playerCastsChild", new Vector2(ImGui.GetContentRegionAvail().X * 0.65f, 0), false, ImGuiWindowFlags.NoScrollbar);
@@ -1417,11 +1458,12 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         if(Plugin.Configuration.StretchScoreboardColumns ?? false) {
             tableFlags -= ImGuiTableFlags.ScrollX;
         }
-        using(var table = ImRaii.Table("playeCastsTable", 12, tableFlags)) {
+        using(var table = ImRaii.Table("playeCastsTable", 13, tableFlags)) {
             if(table) {
                 var widthStyle = Plugin.Configuration.StretchScoreboardColumns ?? false ? ImGuiTableColumnFlags.WidthStretch : ImGuiTableColumnFlags.WidthFixed;
                 ImGui.TableSetupColumn("Action", ImGuiTableColumnFlags.WidthStretch | ImGuiTableColumnFlags.NoHide, ImGuiHelpers.GlobalScale * 100f, 0);
                 ImGui.TableSetupColumn("Casts", widthStyle, ImGuiHelpers.GlobalScale * 52f, (uint)"Casts".GetHashCode());
+                ImGui.TableSetupColumn("Total Targets", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"Targets".GetHashCode());
                 ImGui.TableSetupColumn("Average Targets", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"AverageTargets".GetHashCode());
                 ImGui.TableSetupColumn("Total Damage", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"Damage".GetHashCode());
                 ImGui.TableSetupColumn("Average Damage", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"AverageDamage".GetHashCode());
@@ -1438,13 +1480,16 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 ImGui.TableSetupScrollFreeze(1, 1);
 
                 if(ImGui.TableNextColumn()) {
-                    ImGuiHelper.DrawTableHeader("Action", 0);
+                    ImGuiHelper.DrawTableHeader("Action/Status", 0);
                 }
                 if(ImGui.TableNextColumn()) {
                     ImGuiHelper.DrawTableHeader("Casts");
                 }
                 if(ImGui.TableNextColumn()) {
-                    ImGuiHelper.DrawTableHeader("Average\nTargets");
+                    ImGuiHelper.DrawTableHeader("Total\nHits");
+                }
+                if(ImGui.TableNextColumn()) {
+                    ImGuiHelper.DrawTableHeader("Average\nHits");
                 }
                 if(ImGui.TableNextColumn()) {
                     ImGuiHelper.DrawTableHeader("Total\nDamage");
@@ -1489,65 +1534,237 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 }
 
                 foreach(var action in totalAnalytics ?? []) {
+                    bool isStatus = ((int)action.Key - CrystallineConflictMatchTimeline.StatusIdOffset) >= 0 && ((int)action.Key - CrystallineConflictMatchTimeline.UnknownId) < 0;
+                    var statusId = action.Key - CrystallineConflictMatchTimeline.StatusIdOffset;
+                    bool isUnknown = action.Key == CrystallineConflictMatchTimeline.UnknownId;
+                    bool isMedkit = action.Key == CrystallineConflictMatchTimeline.MedkitId;
                     if(ImGui.TableNextColumn()) {
                         ImGui.AlignTextToFramePadding();
-                        ImGui.Image(Plugin.WindowManager.GetTextureHandle(_actionIcons[action.Key]), new Vector2(24 * ImGuiHelpers.GlobalScale));
-                        ImGui.SameLine();
-                        ImGui.Text(_actionNames[action.Key]);
-                        ImGuiHelper.WrappedTooltip($"ID: {action.Key}");
+                        if(isUnknown) {
+                            ImGui.Text("UNKNOWN");
+                            ImGuiHelper.HelpMarker("This is calculated from discrepancies from the scoreboard and will includes DoTs, HoTs, reflected damage (e.g. Chiten), actions that land after the scoreboard calculates," +
+                                "sources of damage/healing that the server does not tell the client about and data missing from incomplete match recordings." +
+                                "\n\nRESEARCH NOTES: Sacred Claim heals are attributed to the targeted players on the scoreboard and HoTs and DoTs will only be counted if the source player is alive. " +
+                                "Medkits are not counted, nor is healing from status procs like Sole Survivor, but damage from Pressure Point for example, is counted.");
+                        } else if(isMedkit) {
+                            Plugin.WindowManager.DrawMedicineKit(new Vector2(24f * ImGuiHelpers.GlobalScale));
+                            ImGui.SameLine();
+                            ImGui.Text("Medicine Kits");
+                        } else if(isStatus) {
+                            var texture = Plugin.TextureProvider.GetFromGameIcon(_statusIcons[statusId]).GetWrapOrEmpty();
+                            var sizeHeight = 24f * ImGuiHelpers.GlobalScale;
+                            var sizeWidth = sizeHeight * texture.Width / texture.Height;
+                            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + (24f * ImGuiHelpers.GlobalScale) - sizeWidth);
+                            ImGui.Image(texture.ImGuiHandle, new Vector2(sizeWidth, sizeHeight), new Vector2(0.1f, 0.0f));
+                            ImGuiHelper.WrappedTooltip($"ID: {statusId}");
+                            ImGui.SameLine();
+                            ImGui.Text(_statusNames[statusId]);
+                            ImGuiHelper.WrappedTooltip($"ID: {statusId}");
+                        } else {
+                            ImGui.Image(Plugin.WindowManager.GetTextureHandle(_actionIcons[action.Key]), new Vector2(24 * ImGuiHelpers.GlobalScale));
+                            ImGuiHelper.WrappedTooltip($"ID: {action.Key}");
+                            ImGui.SameLine();
+                            ImGui.Text(_actionNames[action.Key]);
+                            ImGuiHelper.WrappedTooltip($"ID: {action.Key}");
+                        }
                     }
                     if(ImGui.TableNextColumn()) {
-                        ImGuiHelper.DrawNumericCell($"{action.Value.Casts:0}", -11f);
+                        if(!isUnknown) {
+                            ImGuiHelper.DrawNumericCell($"{action.Value.Casts:0}", -11f);
+                        }
                     }
                     if(ImGui.TableNextColumn()) {
-                        ImGuiHelper.DrawNumericCell($"{action.Value.AverageTargets:0.0}", -11f);
-                        //ImGuiHelper.WrappedTooltip($"Friendly targets: {action.Value.FriendlyTargets / }\nHostile targets: {}");
-                        if(ImGui.IsItemHovered()) {
-                            using var tooltip = ImRaii.Tooltip();
-                            foreach(var kvp in targetedAnalytics[action.Key].PlayerAnalytics) {
-                                DrawPlayer((PlayerAlias)kvp.Key);
-                                ImGui.SameLine();
-                                var averageTargets = (float)kvp.Value.Impacts / action.Value.Casts;
-                                ImGui.TextUnformatted(averageTargets.ToString("0.0"));
+                        if(!isUnknown && !isMedkit) {
+                            ImGuiHelper.DrawNumericCell($"{action.Value.Targets:0}", -11f);
+                            bool show(ActionAnalytics x) {
+                                return x.Impacts != 0;
+                            }
+                            string format(ActionAnalytics x) {
+                                return x.Impacts.ToString("0");
+                            }
+                            if(isStatus) {
+                                DrawTargetTableTooltip(targetedStatusAnalytics[statusId], show, format);
+                            } else {
+                                DrawTargetTableTooltip(targetedActionAnalytics[action.Key], show, format);
                             }
                         }
                     }
                     if(ImGui.TableNextColumn()) {
-                        ImGuiHelper.DrawNumericCell($"{action.Value.Damage:0}", -11f);
+                        if(!isUnknown && !isMedkit) {
+                            ImGuiHelper.DrawNumericCell($"{action.Value.AverageTargets:0.0}", -11f);
+                            bool show(ActionAnalytics x) {
+                                return x.Impacts != 0;
+                            }
+                            string format(ActionAnalytics x) {
+                                return ((float)x.Impacts / action.Value.Casts).ToString($"0.0");
+                            }
+                            if(isStatus) {
+                                DrawTargetTableTooltip(targetedStatusAnalytics[statusId], show, format);
+                            } else {
+                                DrawTargetTableTooltip(targetedActionAnalytics[action.Key], show, format);
+                            }
+                        }
                     }
                     if(ImGui.TableNextColumn()) {
-                        ImGuiHelper.DrawNumericCell($"{action.Value.AverageDamage:0}", -11f);
+                        if(!isMedkit) {
+                            ImGuiHelper.DrawNumericCell($"{action.Value.Damage:0}", -11f);
+                            if(!isUnknown) {
+                                bool show(ActionAnalytics x) {
+                                    return x.Damage != 0;
+                                }
+                                string format(ActionAnalytics x) {
+                                    return x.Damage.ToString($"0");
+                                }
+                                if(isStatus) {
+                                    DrawTargetTableTooltip(targetedStatusAnalytics[statusId], show, format);
+                                } else {
+                                    DrawTargetTableTooltip(targetedActionAnalytics[action.Key], show, format);
+                                }
+                            }
+                        }
                     }
-                    //if(ImGui.TableNextColumn()) {
-                    //    ImGuiHelper.DrawNumericCell($"{action.Value.ReflectDamage:0}", -11f);
-                    //}
-                    //if(ImGui.TableNextColumn()) {
-                    //    ImGuiHelper.DrawNumericCell($"{action.Value.AverageReflectDamage:0}", -11f);
-                    //}
+                    if(ImGui.TableNextColumn()) {
+                        if(!isUnknown && !isMedkit) {
+                            ImGuiHelper.DrawNumericCell($"{action.Value.AverageDamage:0}", -11f);
+                            bool show(ActionAnalytics x) {
+                                return x.Damage != 0;
+                            }
+                            string format(ActionAnalytics x) {
+                                return x.AverageDamage.ToString($"0");
+                            }
+                            if(isStatus) {
+                                DrawTargetTableTooltip(targetedStatusAnalytics[statusId], show, format);
+                            } else {
+                                DrawTargetTableTooltip(targetedActionAnalytics[action.Key], show, format);
+                            }
+                        }
+                    }
                     if(ImGui.TableNextColumn()) {
                         ImGuiHelper.DrawNumericCell($"{action.Value.Heal:0}", -11f);
+                        if(!isUnknown && !isMedkit) {
+                            bool show(ActionAnalytics x) {
+                                return x.Heal != 0;
+                            }
+                            string format(ActionAnalytics x) {
+                                return x.Heal.ToString($"0");
+                            }
+                            if(isStatus) {
+                                DrawTargetTableTooltip(targetedStatusAnalytics[statusId], show, format);
+                            } else {
+                                DrawTargetTableTooltip(targetedActionAnalytics[action.Key], show, format);
+                            }
+                        }
                     }
                     if(ImGui.TableNextColumn()) {
-                        ImGuiHelper.DrawNumericCell($"{action.Value.AverageHeal:0}", -11f);
+                        if(!isUnknown) {
+                            ImGuiHelper.DrawNumericCell($"{action.Value.AverageHeal:0}", -11f);
+                            bool show(ActionAnalytics x) {
+                                return x.Heal != 0;
+                            }
+                            string format(ActionAnalytics x) {
+                                return x.AverageHeal.ToString($"0");
+                            }
+                            if(isStatus) {
+                                DrawTargetTableTooltip(targetedStatusAnalytics[statusId], show, format);
+                            } else if(!isMedkit) {
+                                DrawTargetTableTooltip(targetedActionAnalytics[action.Key], show, format);
+                            }
+                        }
                     }
                     if(ImGui.TableNextColumn()) {
-                        ImGuiHelper.DrawNumericCell($"{action.Value.MPDrain:0}", -11f);
+                        if(!isUnknown && !isMedkit) {
+                            ImGuiHelper.DrawNumericCell($"{action.Value.MPDrain:0}", -11f);
+                            bool show(ActionAnalytics x) {
+                                return x.MPDrain != 0;
+                            }
+                            string format(ActionAnalytics x) {
+                                return x.MPDrain.ToString($"0");
+                            }
+                            if(isStatus) {
+                                DrawTargetTableTooltip(targetedStatusAnalytics[statusId], show, format);
+                            } else {
+                                DrawTargetTableTooltip(targetedActionAnalytics[action.Key], show, format);
+                            }
+                        }
                     }
                     if(ImGui.TableNextColumn()) {
-                        ImGuiHelper.DrawNumericCell($"{action.Value.AverageMPDrain:0}", -11f);
+                        if(!isUnknown && !isMedkit) {
+                            ImGuiHelper.DrawNumericCell($"{action.Value.AverageMPDrain:0}", -11f);
+                            bool show(ActionAnalytics x) {
+                                return x.MPDrain != 0;
+                            }
+                            string format(ActionAnalytics x) {
+                                return x.AverageMPDrain.ToString($"0");
+                            }
+                            if(isStatus) {
+                                DrawTargetTableTooltip(targetedStatusAnalytics[statusId], show, format);
+                            } else {
+                                DrawTargetTableTooltip(targetedActionAnalytics[action.Key], show, format);
+                            }
+                        }
                     }
                     if(ImGui.TableNextColumn()) {
-                        ImGuiHelper.DrawNumericCell($"{action.Value.MPGain:0}", -11f);
+                        if(!isUnknown && !isMedkit) {
+                            ImGuiHelper.DrawNumericCell($"{action.Value.MPGain:0}", -11f);
+                            bool show(ActionAnalytics x) {
+                                return x.MPGain != 0;
+                            }
+                            string format(ActionAnalytics x) {
+                                return x.MPGain.ToString($"0");
+                            }
+                            if(isStatus) {
+                                DrawTargetTableTooltip(targetedStatusAnalytics[statusId], show, format);
+                            } else {
+                                DrawTargetTableTooltip(targetedActionAnalytics[action.Key], show, format);
+                            }
+                        }
                     }
                     if(ImGui.TableNextColumn()) {
-                        ImGuiHelper.DrawNumericCell($"{action.Value.AverageMPGain:0}", -11f);
+                        if(!isUnknown && !isMedkit) {
+                            ImGuiHelper.DrawNumericCell($"{action.Value.AverageMPGain:0}", -11f);
+                            bool show(ActionAnalytics x) {
+                                return x.MPGain != 0;
+                            }
+                            string format(ActionAnalytics x) {
+                                return x.AverageMPGain.ToString($"0");
+                            }
+                            if(isStatus) {
+                                DrawTargetTableTooltip(targetedStatusAnalytics[statusId], show, format);
+                            } else {
+                                DrawTargetTableTooltip(targetedActionAnalytics[action.Key], show, format);
+                            }
+                        }
                     }
                     if(ImGui.TableNextColumn()) {
-                        if(!float.IsNaN(action.Value.StatusEffectiveness)) {
-                            ImGuiHelper.DrawNumericCell($"{action.Value.StatusEffectiveness:P1}", -11f);
+                        if(!isUnknown && !isMedkit && !isStatus) {
+                            if(!float.IsNaN(action.Value.StatusEffectiveness)) {
+                                ImGuiHelper.DrawNumericCell($"{action.Value.StatusEffectiveness:P1}", -11f);
+                                DrawTargetTableTooltip(targetedActionAnalytics[action.Key], x => {
+                                    return !float.IsNaN(x.StatusEffectiveness);
+                                }, x => {
+                                    return x.StatusEffectiveness.ToString($"P1");
+                                });
+                            }
                         }
                     }
                 }
+            }
+        }
+    }
+
+    private void DrawTargetTableTooltip(TargetedActionAnalytics targetedAnalytics, Func<ActionAnalytics, bool> include, Func<ActionAnalytics, string> output) {
+        if(ImGui.IsItemHovered()) {
+            using var tooltip = ImRaii.Tooltip();
+            using var table = ImRaii.Table($"##playerCastsTable--{targetedAnalytics.GetHashCode()}--{output.GetHashCode()}", 2, ImGuiTableFlags.None);
+            ImGui.TableSetupColumn("player", ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableSetupColumn("player", ImGuiTableColumnFlags.WidthStretch);
+            foreach(var kvp in targetedAnalytics.PlayerAnalytics) {
+                if(!include(kvp.Value)) continue;
+                ImGui.TableNextColumn();
+                DrawPlayer((PlayerAlias)kvp.Key);
+
+                ImGui.TableNextColumn();
+                ImGuiHelper.DrawNumericCell(output(kvp.Value));
             }
         }
     }
@@ -1606,17 +1823,17 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                         //    }
                         //}
 
-                        if(_timeline?.TotalizedMedkits != null) {
-                            if(ImGui.TableNextColumn()) {
-                                if(_timeline.TotalizedMedkits.TryGetValue(player.Alias.ToString(), out var playerMedKits)) {
-                                    ImGuiHelper.DrawNumericCell($"{playerMedKits:#}");
-                                } else {
-                                    ImGuiHelper.DrawNumericCell($"0");
-                                }
-                            }
-                        } else {
-                            ImGui.TableNextColumn();
-                        }
+                        //if(_timeline?.TotalizedMedkits != null) {
+                        //    if(ImGui.TableNextColumn()) {
+                        //        if(_timeline.TotalizedMedkits.TryGetValue(player.Alias.ToString(), out var playerMedKits)) {
+                        //            ImGuiHelper.DrawNumericCell($"{playerMedKits:#}");
+                        //        } else {
+                        //            ImGuiHelper.DrawNumericCell($"0");
+                        //        }
+                        //    }
+                        //} else {
+                        //    ImGui.TableNextColumn();
+                        //}
                     }
                 }
             }
