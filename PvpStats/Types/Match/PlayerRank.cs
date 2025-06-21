@@ -13,7 +13,9 @@ public class PlayerRank : IComparable<PlayerRank> {
         { ArenaTier.Gold, 4 },
         { ArenaTier.Platinum, 4 },
         { ArenaTier.Diamond, 5 },
-        { ArenaTier.Crystal, 0 }
+        { ArenaTier.Crystal, 0 },
+        { ArenaTier.Omega, 0 },
+        { ArenaTier.Ultima, 0 }
     };
     public static readonly int StarsPerRiser = 3;
 
@@ -45,7 +47,7 @@ public class PlayerRank : IComparable<PlayerRank> {
     [BsonIgnore]
     public int TotalCredit {
         get {
-            if(Tier == ArenaTier.Crystal && Credit != null) {
+            if((Tier == ArenaTier.Crystal || Tier == ArenaTier.Omega || Tier == ArenaTier.Ultima) && Credit != null) {
                 return (int)Credit;
             }
             return (MaxRank.TotalStars - TotalStars) * -100;
@@ -115,7 +117,7 @@ public class PlayerRank : IComparable<PlayerRank> {
             rank += $"{Tier}";
         }
 
-        if(Tier == ArenaTier.Crystal) {
+        if(Tier == ArenaTier.Crystal || Tier == ArenaTier.Omega || Tier == ArenaTier.Ultima) {
             if(Credit != null) {
                 rank += $"   {Credit}";
             }

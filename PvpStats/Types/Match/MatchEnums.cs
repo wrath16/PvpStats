@@ -36,7 +36,9 @@ public enum ArenaTier {
     Gold = 3,
     Platinum = 4,
     Diamond = 5,
-    Crystal = 6
+    Crystal = 6,
+    Omega = 7,
+    Ultima = 8
 }
 
 public enum CrystallineConflictMatchEvent {
