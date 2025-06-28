@@ -1,4 +1,4 @@
-﻿using PvpStats.Types.Display;
+﻿using PvpStats.Types.Display.Action;
 using System.Collections.Generic;
 
 namespace PvpStats.Types.Action;

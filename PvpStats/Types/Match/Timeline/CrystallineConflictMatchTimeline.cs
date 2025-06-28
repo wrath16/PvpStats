@@ -1,6 +1,6 @@
 ﻿using LiteDB;
 using PvpStats.Types.Action;
-using PvpStats.Types.Display;
+using PvpStats.Types.Display.Action;
 using PvpStats.Types.Event;
 using PvpStats.Types.Event.CrystallineConflict;
 using PvpStats.Types.Player;
