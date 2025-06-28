@@ -25,7 +25,8 @@ public enum CrystallineConflictMap {
     VolcanicHeart,
     CloudNine,
     ClockworkCastleTown,
-    RedSands
+    RedSands,
+    BaysideBattleground,
 }
 
 //this matches the data sheet row IDs for ColosseumMatchRank

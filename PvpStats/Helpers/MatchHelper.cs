@@ -109,6 +109,7 @@ public static class MatchHelper {
             CrystallineConflictMap.CloudNine => "Cloud Nine",
             CrystallineConflictMap.ClockworkCastleTown => "Clockwork Castletown",
             CrystallineConflictMap.RedSands => "The Red Sands",
+            CrystallineConflictMap.BaysideBattleground => "Bayside Battleground",
             _ => "Unknown",
         };
     }
