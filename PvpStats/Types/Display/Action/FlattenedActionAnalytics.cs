@@ -1,6 +1,6 @@
 ﻿using PvpStats.Types.Action;
 
-namespace PvpStats.Types.Display;
+namespace PvpStats.Types.Display.Action;
 internal class FlattenedActionAnalytics {
     public int Casts { get; set; }
     public int Targets { get; set; }
