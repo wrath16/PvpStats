@@ -1,4 +1,5 @@
-﻿using LiteDB;
+﻿using FFXIVClientStructs.STD;
+using LiteDB;
 using PvpStats.Types.Action;
 using PvpStats.Types.Display.Action;
 using PvpStats.Types.Event;
@@ -13,9 +14,11 @@ internal class CrystallineConflictMatchTimeline : PvpMatchTimeline {
     [BsonIgnore]
     public static uint StatusIdOffset => 1000000;
     [BsonIgnore]
-    public static uint UnknownId => 2000000;
+    public static uint ActionSetOffset => 2000000;
     [BsonIgnore]
-    public static uint MedkitId => 2000001;
+    public static uint UnknownId => 3000000;
+    [BsonIgnore]
+    public static uint MedkitId => 3000001;
 
 
     public List<GenericMatchEvent>? MapEvents { get; set; }
@@ -107,6 +110,46 @@ internal class CrystallineConflictMatchTimeline : PvpMatchTimeline {
         }
 
         return total;
+    }
+
+    public static Dictionary<string, Dictionary<uint, FlattenedActionAnalytics>>? CreateActionSets(Dictionary<string, Dictionary<uint, FlattenedActionAnalytics>> summarized) {
+        Dictionary<string, Dictionary<uint, FlattenedActionAnalytics>> results = [];
+        Dictionary<uint, uint> actionIdLookup = [];
+
+        //create lookup for id -> action set
+        for(int i = 0; i < ActionSet.Sets.Count; i++) {
+            var actionSet = ActionSet.Sets[i];
+            foreach(var action in actionSet.Actions) {
+                actionIdLookup.Add(action.Key, (uint)(i + ActionSetOffset));
+            }
+        }
+
+        foreach(var player in summarized) {
+            Dictionary<uint, FlattenedActionAnalytics> resultAnalytics = [];
+            results.Add(player.Key, resultAnalytics);
+            foreach(var actionAnalytics in player.Value) {
+                if(actionIdLookup.TryGetValue(actionAnalytics.Key, out var setId)) {
+                    var setIndex = setId - ActionSetOffset;
+                    var actionParams = ActionSet.Sets[(int)setIndex].Actions[actionAnalytics.Key];
+
+                    if(!resultAnalytics.TryGetValue(setId, out var existingSet)) {
+                        existingSet = new();
+                        resultAnalytics.Add(setId, existingSet);
+                    }
+                    existingSet += actionAnalytics.Value;
+                    if(!actionParams.IncludeCasts) {
+                        existingSet.Casts -= actionAnalytics.Value.Casts;
+                    }
+                    if(!actionParams.IncludeTargets) {
+                        existingSet.Targets -= actionAnalytics.Value.Targets;
+                    }
+                    resultAnalytics[setId] = existingSet;
+                } else {
+                    resultAnalytics[actionAnalytics.Key] = actionAnalytics.Value;
+                }
+            }
+        }
+        return results;
     }
 
     public Dictionary<uint, Dictionary<uint, FlattenedActionAnalytics>>? SummarizeNameIdAnalytics(CrystallineConflictMatch match) {

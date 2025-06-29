@@ -244,7 +244,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                     Heal = amount
                 };
 
-                if(_currentMatchTimeline?.PlayerMedkitAnalytics != null) {
+                if(_currentMatchTimeline?.PlayerMedkitAnalytics != null && !_scoreboardPayloadReceived) {
                     if(!_currentMatchTimeline.PlayerMedkitAnalytics.TryAdd(alias, actionAnalytics)) {
                         _currentMatchTimeline.PlayerMedkitAnalytics[alias] += actionAnalytics;
                     }
@@ -857,10 +857,10 @@ internal class CrystallineConflictMatchManager : IDisposable {
 #if DEBUG
         if(now - _lastPrint > TimeSpan.FromSeconds(30)) {
             _lastPrint = now;
-            var x = new IntPtr((nint*)director + 0x408);
-            var y = new IntPtr(*(nint*)x);
-            Plugin.Log2.Debug($"creating cc content director dump director: 0x{new IntPtr(director):X2} 0x{x:X2} 0x{y:X2}");
-            _plugin.Functions.CreateByteDump((nint)director, 0x10000, "CCICD");
+            //var x = new IntPtr((nint*)director + 0x408);
+            //var y = new IntPtr(*(nint*)x);
+            //Plugin.Log2.Debug($"creating cc content director dump director: 0x{new IntPtr(director):X2} 0x{x:X2} 0x{y:X2}");
+            //_plugin.Functions.CreateByteDump((nint)director, 0x10000, "CCICD");
             //var x = (nint*)((nint)director + 0x408);
             //var y = (nint*)*x;
             //var z = *y;

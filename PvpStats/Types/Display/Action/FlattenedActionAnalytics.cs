@@ -42,33 +42,31 @@ internal class FlattenedActionAnalytics {
     }
 
     public static FlattenedActionAnalytics operator +(FlattenedActionAnalytics a, FlattenedActionAnalytics b) {
-        return new FlattenedActionAnalytics() {
-            Casts = a.Casts,
-            Targets = a.Targets,
-            StatusHits = a.StatusHits + b.StatusHits,
-            StatusMisses = a.StatusMisses + b.StatusMisses,
-            Damage = a.Damage + b.Damage,
-            ExemptDamage = a.ExemptDamage + b.ExemptDamage,
-            Heal = a.Heal + b.Heal,
-            ExemptHeal = a.ExemptHeal + b.ExemptHeal,
-            MPDrain = a.MPDrain + b.MPDrain,
-            MPGain = a.MPGain + b.MPGain,
-        };
+        a.Casts += b.Casts;
+        a.Targets += b.Targets;
+        a.StatusHits += b.StatusHits;
+        a.StatusMisses += b.StatusMisses;
+        a.Damage += b.Damage;
+        a.ExemptDamage += b.ExemptDamage;
+        a.Heal += b.Heal;
+        a.ExemptHeal += b.ExemptHeal;
+        a.MPDrain += b.MPDrain;
+        a.MPGain += b.MPGain;
+        return a;
     }
 
     public static FlattenedActionAnalytics operator -(FlattenedActionAnalytics a, FlattenedActionAnalytics b) {
-        return new FlattenedActionAnalytics() {
-            Casts = a.Casts,
-            Targets = a.Targets,
-            StatusHits = a.StatusHits - b.StatusHits,
-            StatusMisses = a.StatusMisses - b.StatusMisses,
-            Damage = a.Damage - b.Damage,
-            ExemptDamage = a.ExemptDamage - b.ExemptDamage,
-            Heal = a.Heal - b.Heal,
-            ExemptHeal = a.ExemptHeal - b.ExemptHeal,
-            MPDrain = a.MPDrain - b.MPDrain,
-            MPGain = a.MPGain - b.MPGain,
-        };
+        a.Casts -= b.Casts;
+        a.Targets -= b.Targets;
+        a.StatusHits -= b.StatusHits;
+        a.StatusMisses -= b.StatusMisses;
+        a.Damage -= b.Damage;
+        a.ExemptDamage -= b.ExemptDamage;
+        a.Heal -= b.Heal;
+        a.ExemptHeal -= b.ExemptHeal;
+        a.MPDrain -= b.MPDrain;
+        a.MPGain -= b.MPGain;
+        return a;
     }
 
     public static FlattenedActionAnalytics operator +(FlattenedActionAnalytics a, ActionAnalytics b) {
