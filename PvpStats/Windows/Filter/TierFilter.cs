@@ -11,7 +11,7 @@ public class TierFilter : DataFilter {
     public override string Name => "Ranked Tier";
     public override string HelpMessage => "Ranked match tier is determined by the highest ranked player in each match.";
     public ArenaTier TierLow { get; set; } = ArenaTier.None;
-    public ArenaTier TierHigh { get; set; } = ArenaTier.Crystal;
+    public ArenaTier TierHigh { get; set; } = ArenaTier.Ultima;
     private readonly List<string> _tierCombo = [];
 
     public TierFilter() { }
