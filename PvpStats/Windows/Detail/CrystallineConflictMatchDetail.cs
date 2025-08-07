@@ -3,8 +3,6 @@ using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
-using FFXIVClientStructs.FFXIV.Application.Network.WorkDefinitions;
-using FFXIVClientStructs.FFXIV.Common.Lua;
 using ImGuiNET;
 using ImPlotNET;
 using Lumina.Excel.Sheets;
@@ -74,8 +72,8 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     private readonly Dictionary<uint, string> _bNPCNames = [];
     private readonly Dictionary<uint, string> _actionNames = [];
     private readonly Dictionary<uint, uint> _actionIcons = [];
-    private readonly Dictionary<uint, string> _statusNames = [];
-    private readonly Dictionary<uint, uint> _statusIcons = [];
+    //private readonly Dictionary<uint, string> _statusNames = [];
+    //private readonly Dictionary<uint, uint> _statusIcons = [];
     private readonly double[] _xAxisTicks = [];
     private readonly string[] _xAxisLabels = [];
     private Dictionary<CrystallineConflictTeamName, (float[] Xs, float[] Ys)> _teamPoints = new() {
@@ -342,12 +340,12 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 }
             }
 
-            //add status icons and names
+            ////add status icons and names
             void addStatusToCache(uint statusId) {
                 try {
                     var status = Plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Status>(ClientLanguage.English).GetRow(statusId);
-                    _statusNames.TryAdd(status.RowId, status.Name.ToString());
-                    _statusIcons.TryAdd(status.RowId, status.Icon);
+                    _actionNames.TryAdd(status.RowId + CrystallineConflictMatchTimeline.StatusIdOffset, status.Name.ToString());
+                    _actionIcons.TryAdd(status.RowId + CrystallineConflictMatchTimeline.StatusIdOffset, status.Icon);
                 } catch {
                     //suppress
                 }
@@ -1595,14 +1593,14 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                             ImGui.SameLine();
                             ImGui.Text("Medicine Kits");
                         } else if(isStatus) {
-                            var texture = Plugin.TextureProvider.GetFromGameIcon(_statusIcons[statusId]).GetWrapOrEmpty();
+                            var texture = Plugin.TextureProvider.GetFromGameIcon(_actionIcons[action.Key]).GetWrapOrEmpty();
                             var sizeHeight = 24f * ImGuiHelpers.GlobalScale;
                             var sizeWidth = sizeHeight * texture.Width / texture.Height;
                             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + (24f * ImGuiHelpers.GlobalScale) - sizeWidth);
                             ImGui.Image(texture.ImGuiHandle, new Vector2(sizeWidth, sizeHeight), new Vector2(0.1f, 0.0f));
                             ImGuiHelper.WrappedTooltip($"ID: {statusId}");
                             ImGui.SameLine();
-                            ImGui.Text(_statusNames[statusId]);
+                            ImGui.Text(_actionNames[action.Key]);
                             ImGuiHelper.WrappedTooltip($"ID: {statusId}");
                         } else if(isActionSet) {
                             ImGui.Image(Plugin.WindowManager.GetTextureHandle(ActionSet.Sets[setIndex].IconId), new Vector2(24 * ImGuiHelpers.GlobalScale));
@@ -1829,7 +1827,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             using var tooltip = ImRaii.Tooltip();
             using var table = ImRaii.Table($"##playerCastsTable--{targetedAnalytics.GetHashCode()}--{output.GetHashCode()}", 2, ImGuiTableFlags.None);
             ImGui.TableSetupColumn("player", ImGuiTableColumnFlags.WidthStretch);
-            ImGui.TableSetupColumn("player", ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableSetupColumn("value", ImGuiTableColumnFlags.WidthStretch);
             foreach(var kvp in targetedAnalytics.PlayerAnalytics) {
                 if(!include(kvp.Value)) continue;
                 ImGui.TableNextColumn();

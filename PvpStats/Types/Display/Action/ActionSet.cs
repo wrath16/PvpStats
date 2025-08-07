@@ -1,4 +1,5 @@
 ﻿using PvpStats.Types.Match.Timeline;
+using System;
 using System.Collections.Generic;
 
 namespace PvpStats.Types.Display.Action;
@@ -76,7 +77,7 @@ internal class ActionSet {
         new("Fire IV Combo", 9239, new() { { 29649, new(true) }, { 30896, new(true) }, { 29650, new(true) }, }),
         new("Blizzard IV Combo", 9240, new() { { 29653, new(true) }, { 30897, new(true) }, { 29654, new(true) }, }),
         //SMN
-        new("Primal's Ruin", 9675, new() { { 29665, new(true) }, { 29666, new(true) }, }),
+        //new("Primal's Ruin", 9675, new() { { 29665, new(true) }, { 29666, new(true) }, }),
         //RDM
         new("Enchanted Redoublement Combo", 9265, new() { { 41488, new(true) }, { 41489, new(true) }, { 41490, new(true) }, }),
         //PCT
@@ -102,13 +103,19 @@ internal class ActionSet {
 internal class ActionSetParams {
     public bool IncludeCasts {  get; set; }
     public bool IncludeTargets { get; set; }
+    public Func<FlattenedActionAnalytics, FlattenedActionAnalytics> Transform { get; set; }
 
-    public ActionSetParams(bool includeCasts, bool? includeTargets = null) {
+    public ActionSetParams(bool includeCasts, bool? includeTargets = null, Func<FlattenedActionAnalytics, FlattenedActionAnalytics>? transform = null) {
         IncludeCasts = includeCasts;
         if(includeTargets == null) {
             IncludeTargets = includeCasts;
         } else {
             IncludeTargets = includeTargets.Value;
+        }
+        if(transform == null) {
+            Transform = (FlattenedActionAnalytics x) => x;
+        } else {
+            Transform = transform;
         }
     }
 }

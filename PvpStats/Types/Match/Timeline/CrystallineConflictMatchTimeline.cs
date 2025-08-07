@@ -131,17 +131,18 @@ internal class CrystallineConflictMatchTimeline : PvpMatchTimeline {
                 if(actionIdLookup.TryGetValue(actionAnalytics.Key, out var setId)) {
                     var setIndex = setId - ActionSetOffset;
                     var actionParams = ActionSet.Sets[(int)setIndex].Actions[actionAnalytics.Key];
+                    var transformedAnalytics = actionParams.Transform(actionAnalytics.Value);
 
                     if(!resultAnalytics.TryGetValue(setId, out var existingSet)) {
                         existingSet = new();
                         resultAnalytics.Add(setId, existingSet);
                     }
-                    existingSet += actionAnalytics.Value;
+                    existingSet += transformedAnalytics;
                     if(!actionParams.IncludeCasts) {
-                        existingSet.Casts -= actionAnalytics.Value.Casts;
+                        existingSet.Casts -= transformedAnalytics.Casts;
                     }
                     if(!actionParams.IncludeTargets) {
-                        existingSet.Targets -= actionAnalytics.Value.Targets;
+                        existingSet.Targets -= transformedAnalytics.Targets;
                     }
                     resultAnalytics[setId] = existingSet;
                 } else {
