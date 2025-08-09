@@ -1,8 +1,8 @@
-﻿using Dalamud.Interface;
+﻿using Dalamud.Bindings.ImGui;
+using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -345,7 +345,7 @@ internal static class ImGuiHelper {
         }
     }
 
-    public static void DrawRotatedImage(nint image, Vector2 size, Vector2 pos, Vector2 pivot, float angleDeg) {
+    public static void DrawRotatedImage(ImTextureID image, Vector2 size, Vector2 pos, Vector2 pivot, float angleDeg) {
         var drawList = ImGui.GetWindowDrawList();
         var angle = angleDeg * (float)Math.PI / 180;
         Vector2 halfSize = size / 2;
