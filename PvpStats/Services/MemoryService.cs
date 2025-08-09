@@ -4,9 +4,9 @@ using Dalamud.Utility.Signatures;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Linq;
 
 namespace PvpStats.Services;
 
@@ -19,7 +19,7 @@ internal unsafe class MemoryService : IDisposable {
     private DateTime _lastSortTime;
     internal bool _qPopped = false;
 
-    private ushort[] _blacklistedOpcodes = [150,436,736,391,676,890,500,139,391,929,938,713,583,992,445,623];
+    private ushort[] _blacklistedOpcodes = [150, 436, 736, 391, 676, 890, 500, 139, 391, 929, 938, 713, 583, 992, 445, 623];
 
     private delegate void NetworkMessageDelegate(nint dispatcher, uint targetId, nint packet);
     [Signature("48 89 5C 24 ?? 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ?? ?? ?? ?? B8 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 2B E0 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 85 ?? ?? ?? ?? 45 0F B7 78", DetourName = nameof(OnNetworkMessage))]

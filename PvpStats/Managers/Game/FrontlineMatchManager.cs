@@ -37,11 +37,6 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
         { 5, 2135 },
     };
 
-    ////fl director ctor
-    //private delegate IntPtr FLDirectorCtorDelegate(IntPtr p1, IntPtr p2, IntPtr p3);
-    //[Signature("48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 48 8B F9 E8 ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? BA", DetourName = nameof(FLDirectorCtorDetour))]
-    //private readonly Hook<FLDirectorCtorDelegate> _flDirectorCtorHook;
-
     //p1 = director
     //p2 = data packet
     private delegate void FLMatchEnd10Delegate(IntPtr p1, IntPtr p2);
@@ -243,89 +238,6 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
         CurrentMatch.TimelineId = _currentMatchTimeline?.Id;
         return true;
     }
-
-//    private void FLPlayerPayload10Detour(IntPtr p1) {
-//        try {
-//            Plugin.Log2.Debug("Fl player payload 10 detour entered.");
-//#if DEBUG
-//            Plugin.Functions.CreateByteDump(p1, 0x400, "fl_player_payload");
-//#endif
-//            FrontlinePlayerResultsPacket resultsPacket;
-//            unsafe {
-//                resultsPacket = *(FrontlinePlayerResultsPacket*)p1;
-//            }
-//            Plugin.DataQueue.QueueDataOperation(async () => {
-//                if(ProcessPlayerResults(resultsPacket)) {
-//                    await Plugin.FLCache.UpdateMatch(CurrentMatch!);
-//                }
-//            });
-//            //unsafe {
-//            //    var playerName = (PlayerAlias)$"{MemoryService.ReadString(resultsPacket.PlayerName, 32)} {Plugin.DataManager.GetExcelSheet<World>()?.GetRow(resultsPacket.WorldId)?.Name}";
-//            //    var team = resultsPacket.Team == 0 ? "Maelstrom" : resultsPacket.Team == 1 ? "Adders" : "Flames";
-//            //    var job = PlayerJobHelper.GetJobFromName(Plugin.DataManager.GetExcelSheet<ClassJob>()?.GetRow(resultsPacket.ClassJobId)?.NameEnglish ?? "");
-//            //    Plugin.Log.Debug(string.Format("{0,-32} {1,-15} {2,-10} {3,-8} {4,-8} {5,-8} {6,-8} {7,-15} {8,-15} {9,-15} {10,-15} {11,-15} {12,-15} {13,-15}", "NAME", "TEAM", "ALLIANCE", "JOB", "KILLS", "DEATHS", "ASSISTS", "DAMAGE DEALT", "DAMAGE OTHER", "DAMAGE TAKEN", "HP RESTORED", "HP RECEIVED", "??? 2", "OCCUPATIONS"));
-//            //    Plugin.Log.Debug(string.Format("{0,-32} {1,-15} {2,-10} {3,-8} {4,-8} {5,-8} {6,-8} {7,-15} {8,-15} {9,-15} {10,-15} {11,-15} {12,-15} {13,-15}", playerName, team, resultsPacket.Alliance, job, resultsPacket.Kills, resultsPacket.Deaths, resultsPacket.Assists, resultsPacket.DamageDealt, resultsPacket.DamageToOther, resultsPacket.DamageTaken, resultsPacket.HPRestored, resultsPacket.Unknown1, resultsPacket.Unknown2, resultsPacket.Occupations));
-//            //}
-//        } catch(Exception e) {
-//            Plugin.Log.Error(e, $"Error in FLPlayerPayload10Detour");
-//        }
-//        _flPlayerPayloadHook.Original(p1);
-//    }
-
-//    private bool ProcessPlayerResults(FrontlinePlayerResultsPacket results) {
-//        if(!IsMatchInProgress()) {
-//            Plugin.Log.Error("trying to process FL player results on no match!");
-//            return false;
-//            //fallback for case where you load into a game after the match has completed creating a new match
-//        } else if((DateTime.Now - CurrentMatch!.DutyStartTime).TotalSeconds < 10) {
-//            //Plugin.Log.Error("double match detected.");
-//            return false;
-//        }
-
-//        //Plugin.Log.Debug("Adding FL player payload.");
-
-//        PlayerAlias playerName;
-//        unsafe {
-//            playerName = (PlayerAlias)$"{MemoryService.ReadString(results.PlayerName, 32)} {Plugin.DataManager.GetExcelSheet<World>()?.GetRow(results.WorldId).Name}";
-//        }
-//        //this should probably use id instead of name string
-//        var job = PlayerJobHelper.GetJobFromName(Plugin.DataManager.GetExcelSheet<ClassJob>()?.GetRow(results.ClassJobId).NameEnglish.ToString() ?? "");
-
-//        FrontlinePlayer newPlayer = new(playerName, job, (FrontlineTeamName)results.Team) {
-//            ClassJobId = results.ClassJobId,
-//            Alliance = results.Alliance % 3,
-//            //AccountId = results.AccountId,
-//            //ContentId = results.ContentId,
-//        };
-//        FrontlineScoreboard newScoreboard = new() {
-//            Kills = results.Kills,
-//            Deaths = results.Deaths,
-//            Assists = results.Assists,
-//            DamageDealt = results.DamageDealt,
-//            DamageTaken = results.DamageTaken,
-//            HPRestored = results.HPRestored,
-//            Special1 = results.Unknown1,
-//            Occupations = results.Occupations,
-//            DamageToOther = results.DamageToOther
-//        };
-
-//        //if(CurrentMatch.Players.ContainsKey(newPlayer)) {
-//        //    Plugin.Log.Warning("Player already exists in match!");
-//        //    return false;
-//        //}
-//        //if(CurrentMatch.Players.Select(x => x.Player).Contains(newPlayer)) {
-//        //    Plugin.Log.Warning("Player already exists in match!");
-//        //}
-//        CurrentMatch.Players.Add(newPlayer);
-//        CurrentMatch.PlayerScoreboards.Add(newPlayer.Name, newScoreboard);
-//        if(CurrentMatch.MaxBattleHigh != null) {
-
-//            int maxBattleHigh = 0;
-//            _maxObservedBattleHigh.TryGetValue(playerName, out maxBattleHigh);
-//            CurrentMatch.MaxBattleHigh.TryAdd(playerName, maxBattleHigh);
-//        }
-//        return true;
-//    }
 
     private unsafe void OnFrameworkUpdate(IFramework framework) {
         if(!IsMatchInProgress()) {

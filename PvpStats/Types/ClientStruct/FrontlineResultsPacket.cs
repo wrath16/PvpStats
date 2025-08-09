@@ -1,5 +1,5 @@
-﻿using System.Runtime.CompilerServices;
-using System;
+﻿using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace PvpStats.Types.ClientStruct;
@@ -58,25 +58,3 @@ public unsafe struct FrontlineResultsPacket {
 
     }
 }
-
-
-//[StructLayout(LayoutKind.Explicit)]
-//public unsafe struct FrontlinePlayerResultsPacket {
-//    [FieldOffset(0x00)] public ulong AccountId;
-//    [FieldOffset(0x08)] public ulong ContentId;
-//    [FieldOffset(0x10)] public uint DamageDealt;                //includes players+other
-//    [FieldOffset(0x14)] public uint DamageToOther;
-//    [FieldOffset(0x18)] public uint DamageTaken;
-//    [FieldOffset(0x1C)] public uint HPRestored;
-//    [FieldOffset(0x20)] public uint Unknown1;                   //believed to be HP received
-//    [FieldOffset(0x24)] public uint Occupations;
-//    [FieldOffset(0x28)] public ushort Unknown2;
-//    [FieldOffset(0x2A)] public ushort WorldId;
-//    [FieldOffset(0x2C)] public byte ClassJobId;
-//    [FieldOffset(0x2D)] public byte Kills;
-//    [FieldOffset(0x2E)] public byte Deaths;
-//    [FieldOffset(0x2F)] public byte Team;                       //0 = mael, 1 = adders, 2 = flames
-//    [FieldOffset(0x30)] public byte Alliance;                   //0 = mael A ... 8 = flames C
-//    [FieldOffset(0x31)] public byte Assists;
-//    [FieldOffset(0x32)] public fixed byte PlayerName[32];
-//}
