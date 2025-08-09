@@ -1,9 +1,9 @@
-﻿using Dalamud.Interface.Colors;
+﻿using Dalamud.Bindings.ImGui;
+using Dalamud.Bindings.ImPlot;
+using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
-using ImPlotNET;
 using PvpStats.Helpers;
 using PvpStats.Types.Display;
 using PvpStats.Types.Match;
@@ -104,7 +104,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
             var cursorPosBefore = ImGui.GetCursorPos();
             ImGui.SetCursorPosX(ImGui.GetWindowSize().X / 2 - (259 / 2 + 0f) * ImGuiHelpers.GlobalScale);
             ImGui.SetCursorPosY((ImGui.GetCursorPos().Y + 40f * ImGuiHelpers.GlobalScale));
-            ImGui.Image(Plugin.TextureProvider.GetFromFile(Path.Combine(Plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "fl_logo.png")).GetWrapOrEmpty().ImGuiHandle,
+            ImGui.Image(Plugin.TextureProvider.GetFromFile(Path.Combine(Plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "fl_logo.png")).GetWrapOrEmpty().Handle,
                 new Vector2(259, 233) * ImGuiHelpers.GlobalScale, Vector2.Zero, Vector2.One, new Vector4(1, 1, 1, 0.1f));
             ImGui.SetCursorPos(cursorPosBefore);
         }

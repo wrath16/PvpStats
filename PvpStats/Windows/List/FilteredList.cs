@@ -1,6 +1,6 @@
-﻿using Dalamud.Interface.Utility;
+﻿using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
 using LiteDB;
 using PvpStats.Helpers;
 using PvpStats.Types.Match;
@@ -282,7 +282,7 @@ public unsafe class ListClipper : IEnumerable<(int, int)>, IDisposable {
         CurrentColumns = cols;
         CurrentRows = TwoDimensional ? items : (int)MathF.Ceiling((float)items / CurrentColumns);
         ItemRemainder = !TwoDimensional ? items % CurrentColumns : 0;
-        Clipper = new ImGuiListClipperPtr(ImGuiNative.ImGuiListClipper_ImGuiListClipper());
+        Clipper = new ImGuiListClipperPtr(ImGuiNative.ImGuiListClipper());
         Clipper.Begin(CurrentRows, itemHeight);
     }
 

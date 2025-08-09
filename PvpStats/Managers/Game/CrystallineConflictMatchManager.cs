@@ -53,11 +53,11 @@ internal class CrystallineConflictMatchManager : IDisposable {
     private readonly Hook<ProcessPacketActorControlDelegate> _processPacketActorControlHook = null!;
 
     private unsafe delegate void ProcessPacketActionEffectDelegate(uint entityId, IntPtr sourceCharacter, IntPtr pos, ActionEffectHeader* effectHeader, ActionEffect* effectArray, ulong* effectTrail);
-    [Signature("40 55 53 56 41 54 41 55 41 56 41 57 48 8D AC 24 60 FF FF FF 48 81 EC A0 01 00 00", DetourName = nameof(ProcessPacketActionEffectDetour))]
+    [Signature("40 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24", DetourName = nameof(ProcessPacketActionEffectDetour))]
     private readonly Hook<ProcessPacketActionEffectDelegate> _processPacketActionEffectHook = null!;
 
     private delegate void ProcessKillDelegate(IntPtr agent, IntPtr killerPlayer, uint killStreak, IntPtr victimPlayer, uint localPlayerTeam);
-    [Signature("40 55 41 54 41 55 41 56 41 57 48 8D 6C 24 ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 45 ?? 48 8B 01", DetourName = nameof(ProcessKillDetour))]
+    [Signature("40 55 53 41 54 41 55 41 57 48 8D 6C 24 ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 45 ?? 48 8B 01", DetourName = nameof(ProcessKillDetour))]
     private readonly Hook<ProcessKillDelegate> _processKillHook;
 
     private delegate void ProcessHoTDoTDelegate(IntPtr p1, IntPtr p2, uint p3, uint p4, int p5, uint p6, int p7);
@@ -391,8 +391,8 @@ internal class CrystallineConflictMatchManager : IDisposable {
                         Plugin.Log2.Debug($"{target?.Name} was hit by {actionEffect.EffectType} p0: {actionEffect.Param0} p1: {actionEffect.Param1} p2: {actionEffect.Param2} " +
                         $"f1: {actionEffect.Flags1} f2: {actionEffect.Flags2} value: {actionEffect.Value} amount: {amount}");
                     }
-                    if(actionEffect.EffectType == ActionEffectType.Damage 
-                        || actionEffect.EffectType == ActionEffectType.BlockedDamage 
+                    if(actionEffect.EffectType == ActionEffectType.Damage
+                        || actionEffect.EffectType == ActionEffectType.BlockedDamage
                         || actionEffect.EffectType == ActionEffectType.ParriedDamage) {
                         if(isReflected) {
                             reflectedActionAnalytics!.Damage += amount;
@@ -404,7 +404,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                             reflectedActionAnalytics!.Heal += amount;
                             ////sacred claim exempt damage
                             //if((target as IBattleChara).StatusList.Any(x => x.StatusId == 3025) && amount == 3000) {
-                                
+
                             //}
                         } else {
                             actionAnalytics.Heal += amount;
@@ -425,7 +425,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                         if(!isReflected) {
                             actionAnalytics.StatusHits++;
                         }
-                    } else if(actionEffect.EffectType == ActionEffectType.StatusNoEffect 
+                    } else if(actionEffect.EffectType == ActionEffectType.StatusNoEffect
                         || actionEffect.EffectType == ActionEffectType.FullResistStatus) {
                         if(!isReflected) {
                             actionAnalytics.StatusMisses++;
@@ -642,7 +642,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
     private void OnTerritoryChanged(ushort territoryId) {
         var dutyId = _plugin.GameState.GetCurrentDutyId();
         _plugin.Log.Debug($"Territory changed: {territoryId}, Current duty: {dutyId}");
-        if(MatchHelper.CrystallineConflictMapLookup.ContainsKey(territoryId) && MatchHelper.GetMatchType(dutyId) != CrystallineConflictMatchType.Unknown) {
+        if(MatchHelper.CrystallineConflictMapLookup.ContainsKey(territoryId)) {
             StartMatch();
         } else if(IsMatchInProgress()) {
             _plugin.DataQueue.QueueDataOperation(async () => {
@@ -742,7 +742,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 TimeOnCrystal = TimeSpan.FromSeconds(player.TimeOnCrystal),
             };
             unsafe {
-                playerStats.Player = (PlayerAlias)$"{MemoryService.ReadString(player.PlayerName, 32)} {_plugin.DataManager.GetExcelSheet<World>()?.GetRow((uint)player.WorldId).Name}";
+                playerStats.Player = (PlayerAlias)$"{MemoryService.ReadString(player.PlayerName, 32)} {_plugin.DataManager.GetExcelSheet<World>()?.GetRow(player.WorldId).Name}";
             }
 
             //add to team

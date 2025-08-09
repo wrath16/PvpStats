@@ -50,7 +50,7 @@ internal abstract class MatchManager<T> : IDisposable where T : PvpMatch {
         hook.Dispose();
     }
 
-    protected void OnTerritoryChanged(ushort territoryId) {
+    protected virtual void OnTerritoryChanged(ushort territoryId) {
         var dutyId = Plugin.GameState.GetCurrentDutyId();
         //Plugin.Log.Debug($"Territory changed: {territoryId}, Current duty: {dutyId}");
         if(IsMatchInProgress()) {

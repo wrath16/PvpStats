@@ -17,7 +17,9 @@ public static class MatchHelper {
         { 1116, CrystallineConflictMap.ClockworkCastleTown },
         { 1117, CrystallineConflictMap.ClockworkCastleTown }, //custom match
         { 1138, CrystallineConflictMap.RedSands },
-        { 1139, CrystallineConflictMap.RedSands } //custom match
+        { 1139, CrystallineConflictMap.RedSands }, //custom match
+        { 1293, CrystallineConflictMap.BaysideBattleground },
+        { 1294, CrystallineConflictMap.BaysideBattleground } //custom match
     };
 
     public static readonly Dictionary<ArenaTier, string> ArenaRankLookup = new() {
@@ -39,11 +41,12 @@ public static class MatchHelper {
 
     public static CrystallineConflictMatchType GetMatchType(uint dutyId) {
         switch(dutyId) {
-            case 835: //palaistra
-            case 836: //volcanic heart
-            case 837: //cloud 9
-            case 912: //clockwork castletown
-            case 967: //red sands
+            case 835:  //palaistra
+            case 836:  //volcanic heart
+            case 837:  //cloud 9
+            case 912:  //clockwork castletown
+            case 967:  //red sands
+            case 1046: //bayside battleground
                 return CrystallineConflictMatchType.Casual;
             case 838: //palaistra (assumed)
             case 841: //palaistra (assumed)
@@ -86,12 +89,23 @@ public static class MatchHelper {
             case 975: //red sands (assumed)
             case 976: //red sands (assumed)
             case 977: //red sands (assumed)
+            case 1047://bayside battleground
+            case 1048://bayside battleground
+            case 1049://bayside battleground
+            case 1050://bayside battleground
+            case 1051://bayside battleground
+            case 1052://bayside battleground
+            case 1053://bayside battleground
+            case 1054://bayside battleground
+            case 1055://bayside battleground
+            case 1056://bayside battleground
                 return CrystallineConflictMatchType.Ranked;
             case 862: //palaistra
             case 863: //volcanic heart
             case 864: //cloud 9
             case 923: //clockwork castletown
             case 978: //red sands
+            case 1057: //bayside battleground
                 return CrystallineConflictMatchType.Custom;
             default:
                 return CrystallineConflictMatchType.Unknown;

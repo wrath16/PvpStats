@@ -1,5 +1,6 @@
 ﻿#pragma warning disable
 #if DEBUG
+using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.ClientState.Objects.Types;
@@ -13,7 +14,6 @@ using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
 using Lumina.Excel.Sheets;
 using PvpStats.Helpers;
 using PvpStats.Managers.Game;
@@ -174,7 +174,7 @@ internal unsafe class DebugWindow : Window {
                     }
 
                     if(ImGui.Button("Print ICD Bytes")) {
-                        _plugin.Functions.FindValue<byte>(0, (nint)instanceDirector, 0x2000, 0, true);
+                        _plugin.Functions.FindValue<byte>(0, (nint)instanceDirector, 0x3000, 0, true);
                         //var x = _plugin.Functions.GetRawInstanceContentDirector();
                         //_plugin.Log.Debug($"object size: {x.Length.ToString("X2")} bytes");
                         //int offset = 0x0;
@@ -186,7 +186,7 @@ internal unsafe class DebugWindow : Window {
                     }
 
                     if(ImGui.Button("Create ICD Byte Dump")) {
-                        _plugin.Functions.CreateByteDump((nint)instanceDirector, 0x3000, "ICD");
+                        _plugin.Functions.CreateByteDump((nint)instanceDirector, 0x10000, "ICD");
                     }
 
                     if(ImGui.Button("Print Object Table")) {

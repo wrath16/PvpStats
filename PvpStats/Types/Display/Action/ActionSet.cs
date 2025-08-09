@@ -101,7 +101,7 @@ internal class ActionSet {
 }
 
 internal class ActionSetParams {
-    public bool IncludeCasts {  get; set; }
+    public bool IncludeCasts { get; set; }
     public bool IncludeTargets { get; set; }
     public Func<FlattenedActionAnalytics, FlattenedActionAnalytics> Transform { get; set; }
 

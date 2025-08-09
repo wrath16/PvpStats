@@ -1,7 +1,7 @@
-﻿using Dalamud.Interface;
+﻿using Dalamud.Bindings.ImGui;
+using Dalamud.Interface;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
 using LiteDB;
 using PvpStats.Helpers;
 using PvpStats.Services.DataCache;
@@ -90,7 +90,7 @@ internal abstract class MatchList<T> : FilteredList<T, T> where T : PvpMatch {
         ImGui.SameLine();
         using(var font = ImRaii.PushFont(UiBuilder.IconFont)) {
             var style = ImGui.GetStyle();
-            ImGuiHelper.RightAlignCursor2(FontAwesomeIcon.Heart.ToIconString() + FontAwesomeIcon.Cog.ToIconString(),  -4 * style.FramePadding.X - ImGui.GetStyle().ItemSpacing.X);
+            ImGuiHelper.RightAlignCursor2(FontAwesomeIcon.Heart.ToIconString() + FontAwesomeIcon.Cog.ToIconString(), -4 * style.FramePadding.X - ImGui.GetStyle().ItemSpacing.X);
         }
         using(_ = ImRaii.PushFont(UiBuilder.IconFont)) {
             if(ImGui.Button($"{FontAwesomeIcon.Cog.ToIconString()}##--OpenSettings")) {
@@ -113,7 +113,7 @@ internal abstract class MatchList<T> : FilteredList<T, T> where T : PvpMatch {
     protected override void ContextMenuItems(T item) {
         bool isBookmarked = item.IsBookmarked;
         string tags = item.Tags;
-        if(ImGui.MenuItem($"Favorite##{item!.GetHashCode()}--AddBookmark", null, isBookmarked)) {
+        if(ImGui.MenuItem($"Favorite##{item!.GetHashCode()}--AddBookmark", ImU8String.Empty, isBookmarked)) {
             item.IsBookmarked = !item.IsBookmarked;
             _plugin.DataQueue.QueueDataOperation(async () => {
                 await Cache.UpdateMatch(item);

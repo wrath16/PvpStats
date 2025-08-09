@@ -1,6 +1,5 @@
 ﻿using Dalamud.Plugin.Ipc;
 using Dalamud.Plugin.Ipc.Exceptions;
-using Dalamud.Utility;
 using Lumina.Excel.Sheets;
 using PvpStats.Types.Player;
 using System;

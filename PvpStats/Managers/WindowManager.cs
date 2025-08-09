@@ -1,10 +1,10 @@
-﻿using Dalamud.Game.ClientState.Objects.Types;
+﻿using Dalamud.Bindings.ImGui;
+using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface.GameFonts;
 using Dalamud.Interface.ManagedFontAtlas;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
-using ImGuiNET;
 using LiteDB;
 using PvpStats.Helpers;
 using PvpStats.Services.DataCache;
@@ -296,12 +296,12 @@ internal class WindowManager : IDisposable {
         await RWTrackerWindow.Refresh(fullRefresh);
     }
 
-    public nint GetTextureHandle(uint iconId) {
-        return _plugin.TextureProvider.GetFromGameIcon(iconId).GetWrapOrEmpty().ImGuiHandle;
+    public ImTextureID GetTextureHandle(uint iconId) {
+        return _plugin.TextureProvider.GetFromGameIcon(iconId).GetWrapOrEmpty().Handle;
     }
 
-    public nint GetTextureHandle(string path) {
-        return _plugin.TextureProvider.GetFromGame(path).GetWrapOrEmpty().ImGuiHandle;
+    public ImTextureID GetTextureHandle(string path) {
+        return _plugin.TextureProvider.GetFromGame(path).GetWrapOrEmpty().Handle;
     }
 
     public unsafe void DrawPlayerSnapshot(uint entityId) {
@@ -344,7 +344,7 @@ internal class WindowManager : IDisposable {
                 ImGui.Text($"{effect.Item1}");
                 ImGui.SameLine();
             }
-            ImGui.Image(texture.ImGuiHandle, new Vector2(sizeHeight * texture.Width / texture.Height, sizeHeight));
+            ImGui.Image(texture.Handle, new Vector2(sizeHeight * texture.Width / texture.Height, sizeHeight));
             ImGui.SameLine();
         }
         ImGui.NewLine();
@@ -354,7 +354,7 @@ internal class WindowManager : IDisposable {
                 ImGui.Text($"{effect.Item1}");
                 ImGui.SameLine();
             }
-            ImGui.Image(texture.ImGuiHandle, new Vector2(sizeHeight * texture.Width / texture.Height, sizeHeight));
+            ImGui.Image(texture.Handle, new Vector2(sizeHeight * texture.Width / texture.Height, sizeHeight));
             ImGui.SameLine();
         }
     }

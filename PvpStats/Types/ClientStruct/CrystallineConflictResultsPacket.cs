@@ -19,12 +19,12 @@ public unsafe struct CrystallineConflictResultsPacket {
     [FieldOffset(0x2A)] public ushort CreditAfter;
 
     //1=victory, 2=defeat   1=astra victory on spectating, 2=umbra victory?
-    [FieldOffset(0x36)] public byte Result;
+    [FieldOffset(0x3C)] public byte Result;
     //measured in 0.1%
-    [FieldOffset(0x38)] public uint AstraProgress;
-    [FieldOffset(0x3C)] public uint UmbraProgress;
+    [FieldOffset(0x40)] public uint AstraProgress;
+    [FieldOffset(0x44)] public uint UmbraProgress;
 
-    [FieldOffset(0x40)] public fixed byte Players[0x50 * 10];
+    [FieldOffset(0x48)] public fixed byte Players[0x50 * 10];
     public unsafe Span<CrystallineConflictPlayer> PlayerSpan => new(Unsafe.AsPointer(ref Players[0]), 10);
 
     [StructLayout(LayoutKind.Explicit, Size = 0x50)]

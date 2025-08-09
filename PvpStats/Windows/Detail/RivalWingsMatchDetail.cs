@@ -1,9 +1,9 @@
-﻿using Dalamud.Interface.Colors;
+﻿using Dalamud.Bindings.ImGui;
+using Dalamud.Bindings.ImPlot;
+using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
-using ImPlotNET;
 using PvpStats.Helpers;
 using PvpStats.Types.Display;
 using PvpStats.Types.Event;
@@ -189,7 +189,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             bool flipImage = Match.LocalPlayerTeam == RivalWingsTeamName.Ravens && Plugin.Configuration.LeftPlayerTeam;
             var uv0 = flipImage ? new Vector2(1f, 0f) : Vector2.Zero;
             var uv1 = flipImage ? new Vector2(0f, 1f) : Vector2.One;
-            ImGui.Image(Plugin.TextureProvider.GetFromFile(Path.Combine(Plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "rw_logo.png")).GetWrapOrEmpty().ImGuiHandle,
+            ImGui.Image(Plugin.TextureProvider.GetFromFile(Path.Combine(Plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "rw_logo.png")).GetWrapOrEmpty().Handle,
                 new Vector2(250, 240) * ImGuiHelpers.GlobalScale, uv0, uv1, new Vector4(1, 1, 1, 0.1f));
             ImGui.SetCursorPos(cursorPosBefore);
         }
@@ -517,7 +517,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             ImGui.TableSetupColumn("c2", ImGuiTableColumnFlags.WidthFixed, 25f * ImGuiHelpers.GlobalScale);
             ImGui.TableSetupColumn("c3", ImGuiTableColumnFlags.WidthFixed, 15f * ImGuiHelpers.GlobalScale);
 
-            var drawImage = (nint image, float size) => {
+            var drawImage = (ImTextureID image, float size) => {
                 ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().X / 2 - size / 2 * ImGuiHelpers.GlobalScale);
                 ImGui.Image(image, new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), new Vector2(0.2f), new Vector2(0.8f));
             };
@@ -899,7 +899,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
             ImGui.TextColored(color, text);
         };
 
-        var drawImage = (nint image, float size) => {
+        var drawImage = (ImTextureID image, float size) => {
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().X / 2 - size / 2 * ImGuiHelpers.GlobalScale);
             ImGui.Image(image, new Vector2(size * ImGuiHelpers.GlobalScale, size * ImGuiHelpers.GlobalScale), new Vector2(0f), new Vector2(1));
         };

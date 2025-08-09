@@ -1,5 +1,5 @@
-﻿using Dalamud.Interface.Utility;
-using ImGuiNET;
+﻿using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Utility;
 using PvpStats.Helpers;
 using PvpStats.Managers.Stats;
 using PvpStats.Types.Display;

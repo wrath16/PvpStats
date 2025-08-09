@@ -1,10 +1,12 @@
 using Dalamud.Game.Network;
+using Dalamud.Hooking;
+using Dalamud.Utility.Signatures;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Linq;
 
 namespace PvpStats.Services;
 
@@ -17,57 +19,58 @@ internal unsafe class MemoryService : IDisposable {
     private DateTime _lastSortTime;
     internal bool _qPopped = false;
 
-    private ushort[] _blacklistedOpcodes = [];
+    private ushort[] _blacklistedOpcodes = [150,436,736,391,676,890,500,139,391,929,938,713,583,992,445,623];
+
+    private delegate void NetworkMessageDelegate(nint dispatcher, uint targetId, nint packet);
+    [Signature("48 89 5C 24 ?? 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ?? ?? ?? ?? B8 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 2B E0 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 85 ?? ?? ?? ?? 45 0F B7 78", DetourName = nameof(OnNetworkMessage))]
+    private readonly Hook<NetworkMessageDelegate> _networkMessageHook;
+
+    ////E8 ?? ?? ?? ?? 80 BB ?? ?? ?? ?? ?? 77 
+    //private delegate nint NetworkMessageDelegate(nint dispatcher, uint targetId, nint packet);
+    //[Signature("48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 48 8B FA 48 8B F1 0F B7 12 49 8B D8 8B 4F ??", DetourName = nameof(OnNetworkMessage))]
+    //private readonly Hook<NetworkMessageDelegate> _networkMessageHook;
 
     internal MemoryService(Plugin plugin) {
         _plugin = plugin;
-
 #if DEBUG
-        _plugin.GameNetwork.NetworkMessage += OnNetworkMessage;
+        plugin.InteropProvider.InitializeFromAttributes(this);
+        plugin.Log.Debug($"special packet process address: 0x{_networkMessageHook!.Address:X2}");
+        //_networkMessageHook!.Enable();
 #endif
     }
 
     public void Dispose() {
 #if DEBUG
-        _plugin.GameNetwork.NetworkMessage -= OnNetworkMessage;
+        //_networkMessageHook.Dispose();
 #endif
     }
 
-    private unsafe void OnNetworkMessage(nint dataPtr, ushort opCode, uint sourceActorId, uint targetActorId, NetworkMessageDirection direction) {
-        if(direction != NetworkMessageDirection.ZoneDown) {
-            //_plugin.Log.Debug($"SEND OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
-            return;
-        }
+    private unsafe void OnNetworkMessage(nint dispatcher, uint targetId, nint dataPtr) {
+        //Plugin.Log2.Debug("special packet process!");
+        try {
+            var opCode = (ushort)Marshal.ReadInt16(dataPtr, 0x02);
+            var direction = NetworkMessageDirection.ZoneDown;
+            if(_opCodeCount.ContainsKey(opCode)) {
+                _opCodeCount[opCode]++;
+            } else {
+                _opCodeCount.Add(opCode, 1);
+            }
 
-        if(_opCodeCount.ContainsKey(opCode)) {
-            _opCodeCount[opCode]++;
-        } else {
-            _opCodeCount.Add(opCode, 1);
-        }
+            if(!_blacklistedOpcodes.Contains(opCode)) {
+                //if(_plugin.DebugMode) {
+                //    Plugin.Log2.Debug($"OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")}");
+                //}
+                Plugin.Log2.Debug($"OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")}");
+            }
 
-        if(!_blacklistedOpcodes.Contains(opCode)) {
-            //if(_plugin.DebugMode) {
-            //    Plugin.Log2.Debug($"OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
-            //}
-            //Plugin.Log2.Debug($"OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")} SOURCEACTORID: {sourceActorId} TARGETACTORID: {targetActorId}");
-            //_plugin.Functions.PrintAllChars(dataPtr, 0x2000, 8);
-            //_plugin.Functions.PrintAllStrings(dataPtr, 0x500);
-
-            //look for player entity id in dataptr
-            //var playerEntityId = _plugin.ClientState.LocalPlayer?.EntityId;
-            //if(playerEntityId != null) {
-            //    var bytes = new ReadOnlySpan<byte>((void*)dataPtr, 0x100).ToArray();
-            //    var indexes = FindValue<int>(bytes, (long)playerEntityId);
-            //    if(indexes.Length > 0) {
-            //        Plugin.Log2.Debug($"player entity id found for opcode {opCode}");
-            //    }
-            //}
+            if(DateTime.Now - _lastSortTime > TimeSpan.FromSeconds(30)) {
+                _lastSortTime = DateTime.Now;
+                _opCodeCount = _opCodeCount.OrderBy(x => x.Value).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            }
+        } catch {
+            //
         }
-
-        if(DateTime.Now - _lastSortTime > TimeSpan.FromSeconds(30)) {
-            _lastSortTime = DateTime.Now;
-            _opCodeCount = _opCodeCount.OrderBy(x => x.Value).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-        }
+        _networkMessageHook.Original(dispatcher, targetId, dataPtr);
     }
 
     internal void CreateByteDump(nint ptr, int length, string name) {

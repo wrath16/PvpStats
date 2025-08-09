@@ -1,10 +1,10 @@
-﻿using Dalamud.Game;
+﻿using Dalamud.Bindings.ImGui;
+using Dalamud.Bindings.ImPlot;
+using Dalamud.Game;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
-using ImPlotNET;
 using Lumina.Excel.Sheets;
 using PvpStats.Helpers;
 using PvpStats.Types.Action;
@@ -242,7 +242,6 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             _consolidatedEvents.Sort();
             ApplyTimelineFilters();
 
-
             //setup team point events
             if(_timeline.CrystalPosition != null && _timeline.TeamProgress != null) {
                 SetupTimelineTeamPoints();
@@ -264,7 +263,6 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             SetupMidProgressGraph(CrystallineConflictTeamName.Astra);
             SetupMidProgressGraph(CrystallineConflictTeamName.Umbra);
             SetupCrystalPositionGraph();
-
 
             //setup battlenpc names
             var killNPCs = _timeline.Kills?.Where(x => x.KillerNameId != null).Select(x => x.KillerNameId ?? 0);
@@ -336,7 +334,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
 
             foreach(var actionSet in ActionSet.Sets) {
                 foreach(var action in actionSet.Actions) {
-                    addActionToCache((uint)action.Key);
+                    addActionToCache(action.Key);
                 }
             }
 
@@ -381,7 +379,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             //ImGui.Image(Plugin.WindowManager.CCBannerImage.ImGuiHandle, new Vector2(500, 230) * ImGuiHelpers.GlobalScale, Vector2.Zero, Vector2.One, new Vector4(1, 1, 1, 0.1f));
             ImGui.SetCursorPosX(ImGui.GetWindowSize().X / 2 - (243 / 2 + 3f) * ImGuiHelpers.GlobalScale);
             ImGui.SetCursorPosY((ImGui.GetCursorPos().Y + 40f * ImGuiHelpers.GlobalScale));
-            ImGui.Image(Plugin.TextureProvider.GetFromFile(Path.Combine(Plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "cc_logo_full.png")).GetWrapOrEmpty().ImGuiHandle,
+            ImGui.Image(Plugin.TextureProvider.GetFromFile(Path.Combine(Plugin.PluginInterface.AssemblyLocation.Directory?.FullName!, "cc_logo_full.png")).GetWrapOrEmpty().Handle,
                 new Vector2(243, 275) * ImGuiHelpers.GlobalScale, Vector2.Zero, Vector2.One, new Vector4(1, 1, 1, 0.1f));
 
             ImGui.SetCursorPos(cursorPosBefore);
@@ -1440,7 +1438,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 } else {
                     _timeline?.PlayerTargetedActionAnalytics?.TryGetValue(_actionSelectionPlayer, out targetedActionAnalytics);
                     _timeline?.PlayerTargetedStatusAnalytics?.TryGetValue(_actionSelectionPlayer, out targetedStatusAnalytics);
-                    
+
                     if(_summarizeActions) {
                         if(_actionSetPlayerAnalytics?.TryGetValue(_actionSelectionPlayer, out var actionSetPlayerAnalytics) ?? false) {
                             DrawActionTable(actionSetPlayerAnalytics, targetedActionAnalytics, targetedStatusAnalytics);
@@ -1467,15 +1465,15 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     private void DrawActionTable(Dictionary<uint, FlattenedActionAnalytics> totalAnalytics
         , Dictionary<uint, TargetedActionAnalytics>? targetedActionAnalytics
         , Dictionary<uint, TargetedActionAnalytics>? targetedStatusAnalytics) {
-//#if DEBUG
-//        long totalDmg = 0;
-//        long totalHeal = 0;
-//        foreach(var action in totalAnalytics ?? []) {
-//            totalDmg += action.Value.Damage;
-//            totalHeal += action.Value.Heal;
-//        }
-//        ImGui.Text($"Damage: {totalDmg} Healing: {totalHeal}");
-//#endif
+        //#if DEBUG
+        //        long totalDmg = 0;
+        //        long totalHeal = 0;
+        //        foreach(var action in totalAnalytics ?? []) {
+        //            totalDmg += action.Value.Damage;
+        //            totalHeal += action.Value.Heal;
+        //        }
+        //        ImGui.Text($"Damage: {totalDmg} Healing: {totalHeal}");
+        //#endif
 
         //ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X * 0.65f);
         //using var child = ImRaii.Child("playerCastsChild", new Vector2(ImGui.GetContentRegionAvail().X * 0.65f, 0), false, ImGuiWindowFlags.NoScrollbar);
@@ -1597,7 +1595,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                             var sizeHeight = 24f * ImGuiHelpers.GlobalScale;
                             var sizeWidth = sizeHeight * texture.Width / texture.Height;
                             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + (24f * ImGuiHelpers.GlobalScale) - sizeWidth);
-                            ImGui.Image(texture.ImGuiHandle, new Vector2(sizeWidth, sizeHeight), new Vector2(0.1f, 0.0f));
+                            ImGui.Image(texture.Handle, new Vector2(sizeWidth, sizeHeight), new Vector2(0.1f, 0.0f));
                             ImGuiHelper.WrappedTooltip($"ID: {statusId}");
                             ImGui.SameLine();
                             ImGui.Text(_actionNames[action.Key]);

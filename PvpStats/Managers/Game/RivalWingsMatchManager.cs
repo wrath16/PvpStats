@@ -1,4 +1,5 @@
 ﻿using Dalamud.Game.Addon.Events;
+using Dalamud.Game.Addon.Events.EventDataTypes;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Game.ClientState.Conditions;
@@ -65,8 +66,9 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
     //p2 = payload
     //40 55 57 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 48 8B E9
     //48 89 6C 24 ?? 56 48 81 EC ?? ?? ?? ?? 48 8B E9 
+    //48 89 6C 24 ?? 56 48 81 EC ?? ?? ?? ?? 48 8B E9 48 8B F2
     private delegate void RWMatchEnd10Delegate(IntPtr p1, IntPtr p2);
-    [Signature("48 89 6C 24 ?? 56 48 81 EC ?? ?? ?? ?? 48 8B E9 48 8B F2", DetourName = nameof(RWMatchEnd10Detour))]
+    [Signature("40 55 57 48 81 EC ?? ?? ?? ?? 48 8B F9 48 8B EA", DetourName = nameof(RWMatchEnd10Detour))]
     private readonly Hook<RWMatchEnd10Delegate> _rwMatchEndHook;
 
     //private delegate void MechDeployDelegate(IntPtr p1, IntPtr p2);
@@ -421,9 +423,9 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         Plugin.Log.Debug("Duty menu setup");
         unsafe {
             if(_matchEnded && !_resultPayloadReceived) {
-                var addon = (AtkUnitBase*)args.Addon;
+                var addon = (AtkUnitBase*)(nint)args.Addon;
                 //var buttonNode = (AtkComponentButton*)AtkNodeService.GetNodeByIDChain(addon, 1, 5, 6, 7, 8);
-                var buttonNode = addon->GetButtonNodeById(8);
+                var buttonNode = addon->GetComponentButtonById(8);
                 if(buttonNode != null) {
                     Plugin.Log.Debug($"Disabling button at node: 0x{new IntPtr(buttonNode):X8}");
                     buttonNode->AtkComponentBase.SetEnabledState(false);
@@ -441,11 +443,12 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         }
     }
 
-    private unsafe void TooltipHandler(AddonEventType type, IntPtr addon, IntPtr node) {
-        var addonId = ((AtkUnitBase*)addon)->Id;
+    //TooltipHandler(AddonEventType type, IntPtr addon, IntPtr node)
+    private unsafe void TooltipHandler(AddonEventType type, AddonEventData data) {
+        var addonId = ((AtkUnitBase*)data.AddonPointer)->Id;
         switch(type) {
             case AddonEventType.MouseOver:
-                AtkStage.Instance()->TooltipManager.ShowTooltip(addonId, (AtkResNode*)node, "Disabled by PvP Tracker until scoreboard payload is received by client. This can be disabled in plugin settings.");
+                AtkStage.Instance()->TooltipManager.ShowTooltip(addonId, (AtkResNode*)data.NodeTargetPointer, "Disabled by PvP Tracker until scoreboard payload is received by client. This can be disabled in plugin settings.");
                 break;
             case AddonEventType.MouseOut:
                 AtkStage.Instance()->TooltipManager.HideTooltip(addonId);

@@ -1,5 +1,4 @@
-﻿using FFXIVClientStructs.STD;
-using LiteDB;
+﻿using LiteDB;
 using PvpStats.Types.Action;
 using PvpStats.Types.Display.Action;
 using PvpStats.Types.Event;
@@ -19,7 +18,6 @@ internal class CrystallineConflictMatchTimeline : PvpMatchTimeline {
     public static uint UnknownId => 3000000;
     [BsonIgnore]
     public static uint MedkitId => 3000001;
-
 
     public List<GenericMatchEvent>? MapEvents { get; set; }
     public List<ProgressEvent>? CrystalPosition { get; set; }
