@@ -25,11 +25,6 @@ internal unsafe class MemoryService : IDisposable {
     [Signature("48 89 5C 24 ?? 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ?? ?? ?? ?? B8 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 2B E0 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 85 ?? ?? ?? ?? 45 0F B7 78", DetourName = nameof(OnNetworkMessage))]
     private readonly Hook<NetworkMessageDelegate> _networkMessageHook;
 
-    ////E8 ?? ?? ?? ?? 80 BB ?? ?? ?? ?? ?? 77 
-    //private delegate nint NetworkMessageDelegate(nint dispatcher, uint targetId, nint packet);
-    //[Signature("48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 48 8B FA 48 8B F1 0F B7 12 49 8B D8 8B 4F ??", DetourName = nameof(OnNetworkMessage))]
-    //private readonly Hook<NetworkMessageDelegate> _networkMessageHook;
-
     internal MemoryService(Plugin plugin) {
         _plugin = plugin;
 #if DEBUG
@@ -40,9 +35,7 @@ internal unsafe class MemoryService : IDisposable {
     }
 
     public void Dispose() {
-#if DEBUG
-        //_networkMessageHook.Dispose();
-#endif
+        _networkMessageHook.Dispose();
     }
 
     private unsafe void OnNetworkMessage(nint dispatcher, uint targetId, nint dataPtr) {

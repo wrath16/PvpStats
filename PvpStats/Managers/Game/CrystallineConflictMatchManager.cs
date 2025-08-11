@@ -45,7 +45,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
     private readonly Hook<CCMatchEnd101Delegate> _ccMatchEndHook;
 
     //40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ?? ?? ?? ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 45 ?? 4C 8B E1 
-    [Signature("40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ?? ?? ?? ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 45 ?? 4C 8B E1", DetourName = nameof(CCMatchEndSpectatorDetour))]
+    [Signature("40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ?? ?? ?? ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 85 ?? ?? ?? ?? 4C 8B E1", DetourName = nameof(CCMatchEndSpectatorDetour))]
     private readonly Hook<CCMatchEnd101Delegate> _ccMatchEndSpectatorHook;
 
     private delegate void ProcessPacketActorControlDelegate(uint entityId, uint type, uint statusId, uint amount, uint a5, uint source, uint a7, uint a8, ulong a9, byte flag);
