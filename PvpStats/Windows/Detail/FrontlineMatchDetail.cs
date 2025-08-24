@@ -850,7 +850,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         }
         var pointEvents = _timeline.TeamPoints[team]
             //.Where(x => x.Points != 0 || (x.Timestamp - Match.MatchStartTime).Value.TotalSeconds > 10)
-            .Append(new((DateTime)Match.MatchEndTime!, _timeline.TeamPoints[team].Last().Points));
+            .Append(new((DateTime)Match.MatchEndTime!, Match.Teams[team].TotalPoints));
         _teamPoints[team] = (pointEvents.Select(x => (float)(x.Timestamp - Match.MatchStartTime).Value.TotalSeconds).ToArray(), pointEvents.Select(x => (float)x.Points).ToArray());
     }
 
