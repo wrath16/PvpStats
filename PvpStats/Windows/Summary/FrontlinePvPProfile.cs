@@ -48,7 +48,7 @@ internal class FrontlinePvPProfile {
                 ImGui.Text($"{firstPlace:N0}");
                 ImGui.TableNextColumn();
                 if(matches > 0) {
-                    ImGui.Text($"{string.Format("{0:P}%", (double)firstPlace / (matches))}");
+                    ImGui.Text($"{string.Format("{0:P}", (double)firstPlace / (matches))}");
                 }
 
                 ImGui.TableNextColumn();
@@ -57,7 +57,7 @@ internal class FrontlinePvPProfile {
                 ImGui.Text($"{secondPlace:N0}");
                 ImGui.TableNextColumn();
                 if(matches > 0) {
-                    ImGui.Text($"{string.Format("{0:P}%", (double)secondPlace / (matches))}");
+                    ImGui.Text($"{string.Format("{0:P}", (double)secondPlace / (matches))}");
                 }
 
                 ImGui.TableNextColumn();
@@ -66,7 +66,7 @@ internal class FrontlinePvPProfile {
                 ImGui.Text($"{thirdPlace:N0}");
                 ImGui.TableNextColumn();
                 if(matches > 0) {
-                    ImGui.Text($"{string.Format("{0:P}%", (double)thirdPlace / (matches))}");
+                    ImGui.Text($"{string.Format("{0:P}", (double)thirdPlace / (matches))}");
                 }
 
                 ImGui.TableNextColumn();

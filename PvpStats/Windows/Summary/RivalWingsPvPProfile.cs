@@ -46,7 +46,7 @@ internal class RivalWingsPvPProfile {
                 ImGui.Text($"{wins:N0}");
                 ImGui.TableNextColumn();
                 if(matches > 0) {
-                    ImGui.Text($"{string.Format("{0:P}%", (double)wins / (matches))}");
+                    ImGui.Text($"{string.Format("{0:P}", (double)wins / (matches))}");
                 }
             }
         }
