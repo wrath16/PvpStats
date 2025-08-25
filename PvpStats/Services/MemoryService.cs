@@ -35,7 +35,7 @@ internal unsafe class MemoryService : IDisposable {
     }
 
     public void Dispose() {
-        _networkMessageHook.Dispose();
+        _networkMessageHook?.Dispose();
     }
 
     private unsafe void OnNetworkMessage(nint dispatcher, uint targetId, nint dataPtr) {
