@@ -28,8 +28,8 @@ internal unsafe class MemoryService : IDisposable {
     internal MemoryService(Plugin plugin) {
         _plugin = plugin;
 #if DEBUG
-        plugin.InteropProvider.InitializeFromAttributes(this);
-        plugin.Log.Debug($"special packet process address: 0x{_networkMessageHook!.Address:X2}");
+        //plugin.InteropProvider.InitializeFromAttributes(this);
+        //plugin.Log.Debug($"special packet process address: 0x{_networkMessageHook!.Address:X2}");
         //_networkMessageHook!.Enable();
 #endif
     }

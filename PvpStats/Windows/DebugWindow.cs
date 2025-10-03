@@ -401,6 +401,8 @@ internal unsafe class DebugWindow : Window {
                         }
 
                     }
+                    var pvpProfile = PvPProfile.Instance();
+                    ImGui.Text($"PvP Profile Addr: {(IntPtr)pvpProfile:X2}");
 
                     ImGui.Text(Framework.Instance()->GameVersionString);
                     ImGui.Text(Assembly.GetExecutingAssembly().GetName().Version.ToString());

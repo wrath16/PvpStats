@@ -41,7 +41,11 @@ internal class PlayerLinkService {
             foreach(var link in AutoPlayerLinksCache) {
                 foreach(var linkedAlias in link.LinkedAliases) {
                     if(linkedAlias != null) {
-                        linkedAliasMap.Add(linkedAlias, link.CurrentAlias);
+                        //note that there may be different characters that have used the same alias
+                        //ignore all but the first entry for now
+                        if(!linkedAliasMap.TryAdd(linkedAlias, link.CurrentAlias)) {
+                            Plugin.Log2.Debug($"Duplicate player link alias: {linkedAlias} {link.CurrentAlias} {linkedAliasMap[linkedAlias]}");
+                        }
                     }
                 }
             }
@@ -56,7 +60,7 @@ internal class PlayerLinkService {
                         //override auto link
                         existingLink = link.CurrentAlias;
                     } else {
-                        linkedAliasMap.Add(linkedAlias, link.CurrentAlias);
+                        linkedAliasMap.TryAdd(linkedAlias, link.CurrentAlias);
                     }
                     //delete existing pointer if it loops back on old value
                     if(nextAlias == linkedAlias) {
