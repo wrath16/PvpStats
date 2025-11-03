@@ -14,6 +14,6 @@ public class PvpMatchTimeline {
 
     public PvpMatchTimeline() {
         Id = new();
-        Time = DateTime.Now;
+        Time = DateTime.UtcNow;
     }
 }

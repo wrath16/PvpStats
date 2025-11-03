@@ -164,7 +164,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
 
     private unsafe void ProcessKillDetour(IntPtr agent, IntPtr killerPlayer, uint killStreak, IntPtr victimPlayer, uint localPlayerTeam) {
         try {
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow;
             Plugin.Log2.Debug($"kill feed detour occurred. killer: 0x{((CCPlayer*)killerPlayer)->EntityId:X2} kills: {killStreak} victim: 0x{((CCPlayer*)victimPlayer)->EntityId:X2} localPlayerTeam: {localPlayerTeam}");
 
             if(IsMatchInProgress() && _currentMatchTimeline != null && _currentMatchTimeline.Kills != null) {
@@ -186,14 +186,17 @@ internal class CrystallineConflictMatchManager : IDisposable {
         }
     }
 
-    private void ProcessPacketActorControlDetour(uint sourceEntityId, uint type, uint statusId, uint amount, uint a5, uint source, uint a7, uint a8, ulong targetEntityId, byte flag) {
+    private void ProcessPacketActorControlDetour(uint sourceEntityId, uint type, uint statusId, uint amount, uint effectSourceEntityId, uint source, uint a7, uint a8, ulong targetEntityId, byte flag) {
         try {
             if(!_plugin.DebugMode && (!IsMatchInProgress() || _currentMatchTimeline == null)) {
                 return;
             }
+            if(_plugin.DebugMode) {
+                Plugin.Log2.Debug($"actor control: 0x{type:X2} {(ActorControlCategory)type} 0x{sourceEntityId:X2} StatusId: 0x{statusId:X2} Source: {source} Amount: {amount} a5: 0x{effectSourceEntityId:X2} a7: {a7} a8: {a8} a9: 0x{targetEntityId:X2} flag: {flag}");
+            }
             //Plugin.Log2.Debug($"actor control: 0x{type:X2} {(ActorControlCategory)type} 0x{sourceEntityId:X2} StatusId: 0x{statusId:X2} Source: {source} Amount: {amount} a5: {a5} a7: {a7} a8: {a8} a9: {targetEntityId} flag: {flag}");
 
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow;
             if(type == (uint)ActorControlCategory.Death && _currentMatchTimeline?.Kills != null) {
                 //Plugin.Log2.Debug($"0x{sourceEntityId:X2} was owned by: StatusId: 0x{statusId:X2} Source: {source} Amount: 0x{amount:X2} a5: {a5} a7: {a7} a8: {a8} a9: {targetEntityId} flag: {flag}");
                 var victim = _plugin.ObjectTable.SearchByEntityId(sourceEntityId);
@@ -232,7 +235,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
             } else if(type == (uint)ActorControlCategory.CCPot) {
                 var player = _plugin.ObjectTable.SearchByEntityId(sourceEntityId);
 
-                Plugin.Log2.Debug($"Potion detected: 0x{sourceEntityId:X2} {player?.Name ?? ""} 0x{type:X2} {(ActorControlCategory)type} StatusId: 0x{statusId:X2} Source: {source} Amount: {amount} a5: {a5} a7: {a7} a8: {a8} a9: {targetEntityId} flag: {flag}");
+                Plugin.Log2.Debug($"Potion detected: 0x{sourceEntityId:X2} {player?.Name ?? ""} 0x{type:X2} {(ActorControlCategory)type} StatusId: 0x{statusId:X2} Source: {source} Amount: {amount} a5: {effectSourceEntityId} a7: {a7} a8: {a8} a9: {targetEntityId} flag: {flag}");
                 if(amount != 30000) {
                     Plugin.Log2.Warning($"Non-standard potion amount: {amount}");
                 }
@@ -251,7 +254,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 }
             }
         } finally {
-            _processPacketActorControlHook.Original(sourceEntityId, type, statusId, amount, a5, source, a7, a8, targetEntityId, flag);
+            _processPacketActorControlHook.Original(sourceEntityId, type, statusId, amount, effectSourceEntityId, source, a7, a8, targetEntityId, flag);
         }
     }
 
@@ -261,7 +264,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 return;
             }
             var director = (CrystallineConflictContentDirector*)EventFramework.Instance()->GetInstanceContentDirector();
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow;
             var actionId = effectHeader->ActionAnimationId;
             uint targets = effectHeader->EffectCount;
             uint? actorNameId = null;
@@ -506,7 +509,6 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 actorAlias = (PlayerAlias)$"{(source as IPlayerCharacter)!.Name} {actorWorld}";
             }
 
-            //p3 has something to do with where to route the message
             //p3 = 1306 for sole survivor hp+mp, 3111 for haimatinon, 3104 for microcosmos
             //enum1: 4 = heal, 3 = damage, 11 = mp gain
             //enum2: 0 = beneficial, -1 = detrimental
@@ -664,7 +666,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
             return false;
             //fallback for case where you load into a game after the match has completed creating a new match
             //this will trigger if you load in after a disconnect as the match as ending...
-        } else if((DateTime.Now - _currentMatch!.DutyStartTime).TotalSeconds < 10) {
+        } else if((DateTime.UtcNow - _currentMatch!.DutyStartTime).TotalSeconds < 10) {
             _plugin.Log.Error("double match detected.");
             return false;
         }
@@ -701,7 +703,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
 
         //set duration
         postMatch.MatchDuration = TimeSpan.FromSeconds(resultsPacket.MatchLength);
-        _currentMatch.MatchEndTime = DateTime.Now;
+        _currentMatch.MatchEndTime = DateTime.UtcNow;
         _currentMatch.MatchStartTime = _currentMatch.MatchEndTime - postMatch.MatchDuration;
 
         //set rank change
@@ -852,7 +854,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
             return;
         }
 
-        var now = DateTime.Now;
+        var now = DateTime.UtcNow;
 
 #if DEBUG
         if(now - _lastPrint > TimeSpan.FromSeconds(30)) {

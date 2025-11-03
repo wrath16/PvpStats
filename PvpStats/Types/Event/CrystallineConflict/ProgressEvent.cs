@@ -14,7 +14,7 @@ internal class ProgressEvent : MatchEvent {
         Points = points;
     }
 
-    public ProgressEvent(int points) : base(DateTime.Now) {
+    public ProgressEvent(int points) : base(DateTime.UtcNow) {
         Points = points;
     }
 }

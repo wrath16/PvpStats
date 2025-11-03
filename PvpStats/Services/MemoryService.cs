@@ -56,8 +56,8 @@ internal unsafe class MemoryService : IDisposable {
                 Plugin.Log2.Debug($"OPCODE: {opCode} {opCode:X2} DATAPTR: 0x{dataPtr.ToString("X2")}");
             }
 
-            if(DateTime.Now - _lastSortTime > TimeSpan.FromSeconds(30)) {
-                _lastSortTime = DateTime.Now;
+            if(DateTime.UtcNow - _lastSortTime > TimeSpan.FromSeconds(30)) {
+                _lastSortTime = DateTime.UtcNow;
                 _opCodeCount = _opCodeCount.OrderBy(x => x.Value).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
             }
         } catch {
@@ -69,7 +69,7 @@ internal unsafe class MemoryService : IDisposable {
     internal void CreateByteDump(nint ptr, int length, string name) {
 #if DEBUG
         var bytes = new ReadOnlySpan<byte>((void*)ptr, length);
-        var timeStamp = DateTime.Now;
+        var timeStamp = DateTime.UtcNow;
         using(FileStream fs = File.Create($"{_plugin.PluginInterface.GetPluginConfigDirectory()}\\{name}_{timeStamp:yyyy_MM_dd-HH_mm_ss_fff}_dump.bin")) {
             fs.Write(bytes);
         }

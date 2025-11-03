@@ -39,7 +39,7 @@ internal class DataQueue {
     }
 
     private Task AddToTaskQueue(Task task) {
-        DataTaskQueue.Enqueue((task, DateTime.Now));
+        DataTaskQueue.Enqueue((task, DateTime.UtcNow));
         RunNextTask();
         return task;
     }

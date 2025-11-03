@@ -11,7 +11,7 @@ internal class TeamPointsEvent : MatchEvent {
         Points = points;
     }
 
-    public TeamPointsEvent(int points) : base(DateTime.Now) {
+    public TeamPointsEvent(int points) : base(DateTime.UtcNow) {
         Points = points;
     }
 }

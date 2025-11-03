@@ -29,7 +29,7 @@ internal class ActionEvent : MatchEvent {
         Actor = actor;
     }
 
-    public ActionEvent(uint actionId, PlayerAlias actor) : base(DateTime.Now) {
+    public ActionEvent(uint actionId, PlayerAlias actor) : base(DateTime.UtcNow) {
         ActionId = actionId;
         Actor = actor;
     }

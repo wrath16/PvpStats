@@ -33,7 +33,7 @@ public abstract class PvpMatch : IEquatable<PvpMatch> {
 
     public PvpMatch() {
         Id = new();
-        DutyStartTime = DateTime.Now;
+        DutyStartTime = DateTime.UtcNow;
     }
 
     public override int GetHashCode() {

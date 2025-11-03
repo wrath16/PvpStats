@@ -125,7 +125,7 @@ public class CrystallineConflictMatch : PvpMatch {
 
     public CrystallineConflictMatch() {
         Id = new();
-        DutyStartTime = DateTime.Now;
+        DutyStartTime = DateTime.UtcNow;
     }
 
     public Dictionary<PlayerAlias, CCScoreboardTally>? GetPlayerScoreboards() {

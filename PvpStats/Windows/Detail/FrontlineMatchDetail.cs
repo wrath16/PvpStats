@@ -122,7 +122,7 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
                 ImGui.TableNextColumn();
                 DrawFunctions();
                 ImGui.TableNextColumn();
-                var dutyStartTime = Match.DutyStartTime.ToString();
+                var dutyStartTime = Match.DutyStartTime.ToLocalTime().ToString();
                 ImGuiHelper.RightAlignCursor(dutyStartTime);
                 ImGui.Text($"{dutyStartTime}");
 

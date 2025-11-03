@@ -11,7 +11,7 @@ public class MidClaimEvent : MatchEvent {
         Kind = kind;
     }
 
-    public MidClaimEvent(RivalWingsTeamName team, RivalWingsSupplies kind) : base(DateTime.Now) {
+    public MidClaimEvent(RivalWingsTeamName team, RivalWingsSupplies kind) : base(DateTime.UtcNow) {
         Team = team;
         Kind = kind;
     }

@@ -22,7 +22,7 @@ public class KnockoutEvent : MatchEvent {
         Victim = victim;
     }
 
-    public KnockoutEvent(PlayerAlias victim) : base(DateTime.Now) {
+    public KnockoutEvent(PlayerAlias victim) : base(DateTime.UtcNow) {
         Victim = victim;
     }
 }

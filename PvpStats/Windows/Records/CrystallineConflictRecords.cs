@@ -140,7 +140,7 @@ internal class CrystallineConflictRecords : MatchRecords<CrystallineConflictMatc
                 ImGui.TableSetupColumn("Result", ImGuiTableColumnFlags.WidthFixed, ImGuiHelpers.GlobalScale * 40f);
 
                 ImGui.TableNextColumn();
-                ImGui.Text($"{match.DutyStartTime:yyyy-MM-dd HH:mm}");
+                ImGui.Text($"{match.DutyStartTime.ToLocalTime():yyyy-MM-dd HH:mm}");
                 ImGui.TableNextColumn();
                 if(match.Arena != null) {
                     ImGui.Text(MatchHelper.GetArenaName((CrystallineConflictMap)match.Arena));

@@ -9,7 +9,7 @@ internal class BattleHighLevelEvent : MatchEvent {
         Count = count;
     }
 
-    public BattleHighLevelEvent(int count) : base(DateTime.Now) {
+    public BattleHighLevelEvent(int count) : base(DateTime.UtcNow) {
         Count = count;
     }
 }

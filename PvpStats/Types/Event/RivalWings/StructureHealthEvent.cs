@@ -12,7 +12,7 @@ public class StructureHealthEvent : MatchEvent {
         Health = health;
     }
 
-    public StructureHealthEvent(int health) : base(DateTime.Now) {
+    public StructureHealthEvent(int health) : base(DateTime.UtcNow) {
         Health = health;
     }
 }

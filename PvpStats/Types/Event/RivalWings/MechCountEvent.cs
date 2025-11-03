@@ -12,7 +12,7 @@ public class MechCountEvent : MatchEvent {
         Count = count;
     }
 
-    public MechCountEvent(int count) : base(DateTime.Now) {
+    public MechCountEvent(int count) : base(DateTime.UtcNow) {
         Count = count;
     }
 }

@@ -12,7 +12,7 @@ public class AllianceSoaringEvent : MatchEvent {
         Count = count;
     }
 
-    public AllianceSoaringEvent(int count) : base(DateTime.Now) {
+    public AllianceSoaringEvent(int count) : base(DateTime.UtcNow) {
         Count = count;
     }
 }

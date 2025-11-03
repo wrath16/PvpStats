@@ -79,28 +79,29 @@ internal abstract class StatsManager<T> where T : PvpMatch {
 
     protected virtual List<T> ApplyFilter(TimeFilter filter, List<T> matches) {
         List<T> filteredMatches = new(matches);
+        var now = DateTime.UtcNow;
         switch(filter.StatRange) {
             case TimeRange.PastDay:
-                filteredMatches = filteredMatches.Where(x => (DateTime.Now - x.DutyStartTime).TotalHours < 24).ToList();
+                filteredMatches = filteredMatches.Where(x => (now - x.DutyStartTime).TotalHours < 24).ToList();
                 break;
             case TimeRange.PastWeek:
-                filteredMatches = filteredMatches.Where(x => (DateTime.Now - x.DutyStartTime).TotalDays < 7).ToList();
+                filteredMatches = filteredMatches.Where(x => (now - x.DutyStartTime).TotalDays < 7).ToList();
                 break;
             case TimeRange.ThisMonth:
-                filteredMatches = filteredMatches.Where(x => x.DutyStartTime.Month == DateTime.Now.Month && x.DutyStartTime.Year == DateTime.Now.Year).ToList();
+                filteredMatches = filteredMatches.Where(x => x.DutyStartTime.Month == now.Month && x.DutyStartTime.Year == now.Year).ToList();
                 break;
             case TimeRange.LastMonth:
-                var lastMonth = DateTime.Now.AddMonths(-1);
+                var lastMonth = now.AddMonths(-1);
                 filteredMatches = filteredMatches.Where(x => x.DutyStartTime.Month == lastMonth.Month && x.DutyStartTime.Year == lastMonth.Year).ToList();
                 break;
             case TimeRange.ThisYear:
-                filteredMatches = filteredMatches.Where(x => x.DutyStartTime.Year == DateTime.Now.Year).ToList();
+                filteredMatches = filteredMatches.Where(x => x.DutyStartTime.Year == now.Year).ToList();
                 break;
             case TimeRange.LastYear:
-                filteredMatches = filteredMatches.Where(x => x.DutyStartTime.Year == DateTime.Now.AddYears(-1).Year).ToList();
+                filteredMatches = filteredMatches.Where(x => x.DutyStartTime.Year == now.AddYears(-1).Year).ToList();
                 break;
             case TimeRange.Custom:
-                filteredMatches = filteredMatches.Where(x => x.DutyStartTime > filter.StartTime && x.DutyStartTime < filter.EndTime).ToList();
+                filteredMatches = filteredMatches.Where(x => x.DutyStartTime.ToLocalTime() > filter.StartTime && x.DutyStartTime.ToLocalTime() < filter.EndTime).ToList();
                 break;
             case TimeRange.Season:
                 filteredMatches = FilterByTimeRelation(filteredMatches, GamePeriod.Season[filter.Season].StartDate, GamePeriod.Season[filter.Season].EndDate, filter.SeasonRelation);
@@ -121,7 +122,7 @@ internal abstract class StatsManager<T> where T : PvpMatch {
     private List<T> FilterByTimeRelation(List<T> matches, DateTime startTime, DateTime? endTime, TimeRelation relation) {
         switch(relation) {
             case TimeRelation.Before:
-                return matches.Where(x => x.DutyStartTime < startTime).ToList();
+                return matches.Where(x => x.DutyStartTime.ToUniversalTime() < startTime).ToList();
             case TimeRelation.Since:
                 return matches.Where(x => x.DutyStartTime >= startTime).ToList();
             case TimeRelation.During:

@@ -208,7 +208,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 ImGui.TableNextColumn();
                 DrawFunctions();
                 ImGui.TableNextColumn();
-                var dutyStartTime = Match.DutyStartTime.ToString();
+                var dutyStartTime = Match.DutyStartTime.ToLocalTime().ToString();
                 ImGuiHelper.RightAlignCursor(dutyStartTime);
                 ImGui.Text($"{dutyStartTime}");
                 ImGui.TableNextRow(ImGuiTableRowFlags.None, 5f * ImGuiHelpers.GlobalScale);

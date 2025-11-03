@@ -34,7 +34,7 @@ internal class FrontlineMatchList : MatchList<FrontlineMatch> {
         if(item.IsBookmarked) {
             ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(_plugin.Configuration.Colors.Favorite - new Vector4(0f, 0f, 0f, 0.7f)));
         }
-        ImGui.Text($"{item.DutyStartTime:yyyy-MM-dd HH:mm}");
+        ImGui.Text($"{item.DutyStartTime.ToLocalTime():yyyy-MM-dd HH:mm}");
 
         ImGui.TableNextColumn();
         ImGui.TextUnformatted(MatchHelper.GetFrontlineArenaName(item.Arena));

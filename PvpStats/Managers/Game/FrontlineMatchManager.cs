@@ -163,14 +163,14 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
             Plugin.Log.Error("trying to process match results on no match!");
             return false;
             //fallback for case where you load into a game after the match has completed creating a new match
-        } else if((DateTime.Now - CurrentMatch!.DutyStartTime).TotalSeconds < 10) {
+        } else if((DateTime.UtcNow - CurrentMatch!.DutyStartTime).TotalSeconds < 10) {
             Plugin.Log.Error("double match detected.");
             return false;
         }
 
         Plugin.Log.Information("FL match has ended.");
 
-        CurrentMatch.MatchEndTime = DateTime.Now;
+        CurrentMatch.MatchEndTime = DateTime.UtcNow;
         CurrentMatch.MatchStartTime = CurrentMatch.MatchEndTime - TimeSpan.FromSeconds(results.MatchLength);
         CurrentMatch.LocalPlayer ??= Plugin.GameState.CurrentPlayer;
         CurrentMatch.DataCenter ??= Plugin.GameState.DataCenterName;
@@ -251,7 +251,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
             return;
         }
 
-        var now = DateTime.Now;
+        var now = DateTime.UtcNow;
 
 #if DEBUG
         //if(now - _lastPrint > TimeSpan.FromSeconds(30)) {

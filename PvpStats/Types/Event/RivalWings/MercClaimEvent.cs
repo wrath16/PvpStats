@@ -9,7 +9,7 @@ public class MercClaimEvent : MatchEvent {
         Team = team;
     }
 
-    public MercClaimEvent(RivalWingsTeamName team) : base(DateTime.Now) {
+    public MercClaimEvent(RivalWingsTeamName team) : base(DateTime.UtcNow) {
         Team = team;
     }
 }
