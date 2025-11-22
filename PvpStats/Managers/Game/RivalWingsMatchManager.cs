@@ -505,9 +505,10 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         var now = DateTime.UtcNow;
 
 #if DEBUG
-        //if(now - _lastUpdate > TimeSpan.FromSeconds(30)) {
-        //    Plugin.Functions.CreateByteDump((nint)director, 0x3000, "RWICD");
-        //}
+        if(now - _lastUpdate > TimeSpan.FromSeconds(30)) {
+            Plugin.Log2.Debug("rw icd byte dump");
+            Plugin.Functions.CreateByteDump((nint)director, 0x3000, "RWICD");
+        }
 #endif
 
         try {

@@ -148,13 +148,11 @@ public sealed class Plugin : IDalamudPlugin {
             } catch(SignatureException e) {
                 Log.Error(e, $"failed to initialize fl match manager");
             }
-#if DEBUG
             try {
                 RWMatchManager = new(this);
             } catch(SignatureException e) {
                 Log.Error(e, $"failed to initialize rw match manager");
             }
-#endif
 
             CommandManager.AddHandler(SplashCommandName, new CommandInfo(OnSplashCommand) {
                 HelpMessage = "Opens launcher window."
