@@ -4,7 +4,7 @@ namespace PvpStats.Types.ClientStruct;
 
 [StructLayout(LayoutKind.Explicit)]
 internal unsafe struct CrystallineConflictContentDirector {
-    private const int Offset = 0x1FF0;
+    private const int Offset = 0x1F90;
 
     public CCPlayer? GetPlayerByEntityId(uint entityId) {
         for(var i = 0; i < 10; i++) {
@@ -14,7 +14,11 @@ internal unsafe struct CrystallineConflictContentDirector {
         return null;
     }
 
-    [FieldOffset(Offset + 0x050)] public CCPlayer* Players;
+    [FieldOffset(Offset + 0x058)] public CCPlayer* Players;
+    //for debugging
+    //[FieldOffset(Offset + 0x060)] public CCPlayer* Players2;
+    //[FieldOffset(Offset + 0x068)] public CCPlayer* Players3;
+    //[FieldOffset(Offset + 0x070)] public CCPlayer* Players4;
 
     [FieldOffset(Offset + 0x148)] public int Unknown4;
     [FieldOffset(Offset + 0x14C)] public int Unknown5;

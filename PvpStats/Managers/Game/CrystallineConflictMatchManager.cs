@@ -776,7 +776,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
         }
 
         //add players who left match. omit ones with incomplete name or blacklisted name as a failsafe
-        foreach(var introPlayer in _currentMatch.IntroPlayerInfo.Where(x => !x.Value.Alias.FullName.Contains('.') && !Regex.IsMatch(x.Value.Alias.Name, @"\d+") && !x.Value.Alias.HomeWorld.Equals("Unknown", StringComparison.OrdinalIgnoreCase))) {
+        foreach(var introPlayer in _currentMatch.IntroPlayerInfo?.Where(x => !x.Value.Alias.FullName.Contains('.') && !Regex.IsMatch(x.Value.Alias.Name, @"\d+") && !x.Value.Alias.HomeWorld.Equals("Unknown", StringComparison.OrdinalIgnoreCase)) ?? []) {
             bool isFound = false;
             foreach(var team in _currentMatch.Teams) {
                 foreach(var player in team.Value.Players) {
@@ -862,7 +862,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
             //var x = new IntPtr((nint*)director + 0x408);
             //var y = new IntPtr(*(nint*)x);
             //Plugin.Log2.Debug($"creating cc content director dump director: 0x{new IntPtr(director):X2} 0x{x:X2} 0x{y:X2}");
-            //_plugin.Functions.CreateByteDump((nint)director, 0x10000, "CCICD");
+            _plugin.Functions.CreateByteDump((nint)director, 0x10000, "CCICD");
             //var x = (nint*)((nint)director + 0x408);
             //var y = (nint*)*x;
             //var z = *y;
@@ -870,7 +870,9 @@ internal class CrystallineConflictMatchManager : IDisposable {
             //_plugin.Functions.CreateByteDump(y, 0x10000, "CCICD_PLAYERS");
             //_plugin.Functions.CreateByteDump(y, 0x10000, "CCICD_PLAYERS");
         }
+        //return;
 #endif
+
         //rematch detection
         //this won't work for matches where the crystal literally never moves
         if(_currentMatch!.IsCompleted && director->AstraProgress == 0 && director->UmbraProgress == 0) {

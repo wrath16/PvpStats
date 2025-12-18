@@ -200,7 +200,7 @@ internal unsafe class DebugWindow : Window {
                     var directorToDo = UIState.Instance()->DirectorTodo;
                     ImGui.Text($"ToDo Director: 0x{new IntPtr(directorToDo.Director):X2}");
                     ImGui.Text($"Title: {directorToDo.Title}");
-                    ImGui.Text($"Description: {directorToDo.Description}");
+                    ImGui.Text($"Description: {directorToDo.Objective}");
                     ImGui.Text($"Relief Text: {directorToDo.ReliefText}");
                     ImGui.Text($"Update pending?: {directorToDo.IsFullUpdatePending}");
                     ImGui.Text($"Shown?: {directorToDo.IsShown}");
@@ -704,21 +704,85 @@ internal unsafe class DebugWindow : Window {
 
                 ImGui.TableHeadersRow();
 
-                for(int i = 0; i < 10; i++) {
-                    var player = instanceDirector->Players[i];
-                    ImGui.TableNextColumn();
-                    ImGui.TextUnformatted(MemoryService.ReadString(player.Name, 64));
-                    ImGui.TableNextColumn();
-                    ImGui.TextUnformatted(player.WorldId.ToString());
-                    ImGui.TableNextColumn();
-                    ImGui.TextUnformatted(player.ClassJobId.ToString());
-                    ImGui.TableNextColumn();
-                    ImGui.TextUnformatted(((CrystallineConflictTeamName)(player.Team + 1)).ToString());
-                    ImGui.TableNextColumn();
-                    ImGui.TextUnformatted(((ArenaTier)player.ColosseumMatchRankId).ToString());
-                    ImGui.TableNextColumn();
-                    ImGui.TextUnformatted(player.Riser.ToString());
+                try {
+                    for(int i = 0; i < 10; i++) {
+                        var player = instanceDirector->Players[i];
+                        ImGui.TableNextColumn();
+                        ImGui.TextUnformatted(MemoryService.ReadString(player.Name, 64));
+                        ImGui.TableNextColumn();
+                        ImGui.TextUnformatted(player.WorldId.ToString());
+                        ImGui.TableNextColumn();
+                        ImGui.TextUnformatted(player.ClassJobId.ToString());
+                        ImGui.TableNextColumn();
+                        ImGui.TextUnformatted(((CrystallineConflictTeamName)(player.Team + 1)).ToString());
+                        ImGui.TableNextColumn();
+                        ImGui.TextUnformatted(((ArenaTier)player.ColosseumMatchRankId).ToString());
+                        ImGui.TableNextColumn();
+                        ImGui.TextUnformatted(player.Riser.ToString());
+                    }
+                } catch {
+
                 }
+
+                //try {
+                //    for(int i = 0; i < 10; i++) {
+                //        var player = instanceDirector->Players2[i];
+                //        ImGui.TableNextColumn();
+                //        ImGui.TextUnformatted(MemoryService.ReadString(player.Name, 64));
+                //        ImGui.TableNextColumn();
+                //        ImGui.TextUnformatted(player.WorldId.ToString());
+                //        ImGui.TableNextColumn();
+                //        ImGui.TextUnformatted(player.ClassJobId.ToString());
+                //        ImGui.TableNextColumn();
+                //        ImGui.TextUnformatted(((CrystallineConflictTeamName)(player.Team + 1)).ToString());
+                //        ImGui.TableNextColumn();
+                //        ImGui.TextUnformatted(((ArenaTier)player.ColosseumMatchRankId).ToString());
+                //        ImGui.TableNextColumn();
+                //        ImGui.TextUnformatted(player.Riser.ToString());
+                //    }
+                //} catch {
+
+                //}
+
+                //try {
+                //    for(int i = 0; i < 10; i++) {
+                //        var player = instanceDirector->Players3[i];
+                //        ImGui.TableNextColumn();
+                //        ImGui.TextUnformatted(MemoryService.ReadString(player.Name, 64));
+                //        ImGui.TableNextColumn();
+                //        ImGui.TextUnformatted(player.WorldId.ToString());
+                //        ImGui.TableNextColumn();
+                //        ImGui.TextUnformatted(player.ClassJobId.ToString());
+                //        ImGui.TableNextColumn();
+                //        ImGui.TextUnformatted(((CrystallineConflictTeamName)(player.Team + 1)).ToString());
+                //        ImGui.TableNextColumn();
+                //        ImGui.TextUnformatted(((ArenaTier)player.ColosseumMatchRankId).ToString());
+                //        ImGui.TableNextColumn();
+                //        ImGui.TextUnformatted(player.Riser.ToString());
+                //    }
+                //} catch {
+
+                //}
+
+                //try {
+                //    for(int i = 0; i < 10; i++) {
+                //        var player = instanceDirector->Players4[i];
+                //        ImGui.TableNextColumn();
+                //        ImGui.TextUnformatted(MemoryService.ReadString(player.Name, 64));
+                //        ImGui.TableNextColumn();
+                //        ImGui.TextUnformatted(player.WorldId.ToString());
+                //        ImGui.TableNextColumn();
+                //        ImGui.TextUnformatted(player.ClassJobId.ToString());
+                //        ImGui.TableNextColumn();
+                //        ImGui.TextUnformatted(((CrystallineConflictTeamName)(player.Team + 1)).ToString());
+                //        ImGui.TableNextColumn();
+                //        ImGui.TextUnformatted(((ArenaTier)player.ColosseumMatchRankId).ToString());
+                //        ImGui.TableNextColumn();
+                //        ImGui.TextUnformatted(player.Riser.ToString());
+                //    }
+                //} catch {
+
+                //}
             }
         }
     }
