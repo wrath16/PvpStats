@@ -277,7 +277,6 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         }
         //this is hacky
         int columnCount = 16;
-
         bool hasOccupations = Match.Arena == FrontlineMap.SealRock || Match.Arena == FrontlineMap.BorderlandRuins;
         bool hasDamageToNPCs = Match.Arena == FrontlineMap.FieldsOfGlory || Match.Arena == FrontlineMap.BorderlandRuins;
         bool hasClaimTime = Match.Arena == FrontlineMap.WorqorChirteh;
@@ -290,7 +289,6 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         if(hasClaimTime) {
             columnCount += 1;
         }
-
         if(Match.MaxBattleHigh != null) {
             columnCount += 1;
             //tableFlags &= ~ImGuiTableFlags.PadOuterX;
@@ -483,22 +481,21 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
                     if(ImGui.TableNextColumn()) {
                         ImGuiHelper.DrawNumericCell($"{ImGuiHelper.GetTimeSpanString(row.Value.ClaimTime)}", -11f);
                     }
-
-                    if(ImGui.TableNextColumn()) {
-                        ImGuiHelper.DrawNumericCell($"{row.Value.DamageDealtPerKA}", -11f);
-                    }
-                    if(ImGui.TableNextColumn()) {
-                        ImGuiHelper.DrawNumericCell($"{row.Value.DamageDealtPerLife}", -11f);
-                    }
-                    if(ImGui.TableNextColumn()) {
-                        ImGuiHelper.DrawNumericCell($"{row.Value.DamageTakenPerLife}", -11f);
-                    }
-                    if(ImGui.TableNextColumn()) {
-                        ImGuiHelper.DrawNumericCell($"{row.Value.HPRestoredPerLife}", -11f);
-                    }
-                    if(ImGui.TableNextColumn()) {
-                        ImGuiHelper.DrawNumericCell($"{string.Format("{0:0.00}", row.Value.KDA)}", -11f);
-                    }
+                }
+                if(ImGui.TableNextColumn()) {
+                    ImGuiHelper.DrawNumericCell($"{row.Value.DamageDealtPerKA}", -11f);
+                }
+                if(ImGui.TableNextColumn()) {
+                    ImGuiHelper.DrawNumericCell($"{row.Value.DamageDealtPerLife}", -11f);
+                }
+                if(ImGui.TableNextColumn()) {
+                    ImGuiHelper.DrawNumericCell($"{row.Value.DamageTakenPerLife}", -11f);
+                }
+                if(ImGui.TableNextColumn()) {
+                    ImGuiHelper.DrawNumericCell($"{row.Value.HPRestoredPerLife}", -11f);
+                }
+                if(ImGui.TableNextColumn()) {
+                    ImGuiHelper.DrawNumericCell($"{string.Format("{0:0.00}", row.Value.KDA)}", -11f);
                 }
             }
 
