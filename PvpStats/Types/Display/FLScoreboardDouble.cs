@@ -24,7 +24,7 @@ public class FLScoreboardDouble : PvpScoreboardDouble, IEquatable<FLScoreboardDo
             var teamFLScoreboard = teamScoreboard as FLScoreboardTally;
 
             Occupations = playerFLScoreboard!.Occupations != 0 ? (double)playerFLScoreboard.Occupations / teamFLScoreboard!.Occupations : 0;
-            ClaimTime = playerFLScoreboard!.ClaimTime != TimeSpan.Zero ? playerFLScoreboard.ClaimTime / playerFLScoreboard!.ClaimTime : 0;
+            ClaimTime = playerFLScoreboard!.ClaimTime != TimeSpan.Zero ? playerFLScoreboard.ClaimTime / teamFLScoreboard!.ClaimTime : 0;
             DamageToOther = playerFLScoreboard!.DamageToOther != 0 ? (double)playerFLScoreboard.DamageToOther / teamFLScoreboard!.DamageToOther : 0;
             DamageToPCs = playerFLScoreboard!.DamageToPCs != 0 ? (double)playerFLScoreboard.DamageToPCs / teamFLScoreboard!.DamageToPCs : 0;
             Special1 = playerFLScoreboard!.Special1 != 0 ? (double)playerFLScoreboard.Special1 / teamFLScoreboard!.Special1 : 0;
