@@ -145,6 +145,7 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
     public static void SetScoreboardStats(FLPlayerJobStats stats, List<FLScoreboardDouble> teamContributions, TimeSpan time) {
         var statMatches = teamContributions.Count;
 
+        stats.ScoreboardTotal.ClaimTime = TimeSpan.FromTicks(stats.ScoreboardTotal.ClaimTimeTicks);
         //stats.ScoreboardTotal.Size--;
         stats.ScoreboardTotal.Size = statMatches;
         stats.ScoreboardPerMatch = (FLScoreboardDouble)stats.ScoreboardTotal / statMatches;
@@ -163,6 +164,7 @@ internal class FrontlineStatsManager : StatsManager<FrontlineMatch> {
             stats.ScoreboardContrib.DamageToPCs = teamContributions.OrderBy(x => x.DamageToPCs).ElementAt(statMatches / 2).DamageToPCs;
             stats.ScoreboardContrib.DamageToOther = teamContributions.OrderBy(x => x.DamageToOther).ElementAt(statMatches / 2).DamageToOther;
             stats.ScoreboardContrib.Occupations = teamContributions.OrderBy(x => x.Occupations).ElementAt(statMatches / 2).Occupations;
+            stats.ScoreboardContrib.ClaimTime = teamContributions.OrderBy(x => x.ClaimTime).ElementAt(statMatches / 2).ClaimTime;
             stats.ScoreboardContrib.Special1 = teamContributions.OrderBy(x => x.Special1).ElementAt(statMatches / 2).Special1;
             stats.ScoreboardContrib.KillsAndAssists = teamContributions.OrderBy(x => x.KillsAndAssists).ElementAt(statMatches / 2).KillsAndAssists;
         } else {

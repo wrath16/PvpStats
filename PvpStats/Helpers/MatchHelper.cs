@@ -165,18 +165,14 @@ public static class MatchHelper {
     }
 
     public static FrontlineMap? GetFrontlineMap(uint dutyId) {
-        switch(dutyId) {
-            case 127:
-                return FrontlineMap.BorderlandRuins;
-            case 130:
-                return FrontlineMap.SealRock;
-            case 180:
-                return FrontlineMap.FieldsOfGlory;
-            case 701:
-                return FrontlineMap.OnsalHakair;
-            default:
-                return null;
-        }
+        return dutyId switch {
+            127 => FrontlineMap.BorderlandRuins,
+            130 => FrontlineMap.SealRock,
+            180 => FrontlineMap.FieldsOfGlory,
+            701 => FrontlineMap.OnsalHakair,
+            1080 => FrontlineMap.WorqorChirteh,
+            _ => null,
+        };
     }
 
     public static string GetFrontlineArenaName(FrontlineMap? map) {
@@ -185,6 +181,7 @@ public static class MatchHelper {
             FrontlineMap.SealRock => "Seal Rock",
             FrontlineMap.FieldsOfGlory => "The Fields of Glory",
             FrontlineMap.OnsalHakair => "Onsal Hakair",
+            FrontlineMap.WorqorChirteh => "Worqor Chirteh",
             _ => "Unknown",
         };
     }
@@ -195,6 +192,7 @@ public static class MatchHelper {
             FrontlineMap.SealRock => "Seize",
             FrontlineMap.FieldsOfGlory => "Shatter",
             FrontlineMap.OnsalHakair => "Danshig Naadam",
+            FrontlineMap.WorqorChirteh => "Triumph",
             _ => "Unknown",
         };
     }
@@ -212,6 +210,7 @@ public static class MatchHelper {
             case FrontlineMap.FieldsOfGlory:
                 return 1600;
             case FrontlineMap.OnsalHakair:
+            case FrontlineMap.WorqorChirteh:
                 return 1400;
             default:
                 return 2000;

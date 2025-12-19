@@ -224,6 +224,12 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
                 DamageToOther = player.DamageToOther
             };
 
+            //claim time
+            if(CurrentMatch.Arena == FrontlineMap.WorqorChirteh) {
+                newScoreboard.ClaimTime = TimeSpan.FromSeconds(player.Occupations);
+                newScoreboard.Occupations = 0;
+            }
+
             CurrentMatch.Players.Add(newPlayer);
             CurrentMatch.PlayerScoreboards.Add(newPlayer.Name, newScoreboard);
             if(CurrentMatch.MaxBattleHigh != null) {

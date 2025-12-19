@@ -5,7 +5,7 @@ namespace PvpStats.Types.ClientStruct;
 [StructLayout(LayoutKind.Explicit)]
 public unsafe struct FrontlineContentDirector {
 
-    private const int Offset = 0x2522;
+    private const int Offset = 0x24D2;
 
     [FieldOffset(Offset + 0x000)] public short MaelstromScore;
     [FieldOffset(Offset + 0x020)] public short AddersScore;

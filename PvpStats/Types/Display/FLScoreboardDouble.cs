@@ -7,6 +7,7 @@ public class FLScoreboardDouble : PvpScoreboardDouble, IEquatable<FLScoreboardDo
     public static int BattleHighPerAssist => 4;
 
     public double Occupations { get; set; }
+    public double ClaimTime { get; set; }
     public double DamageToOther { get; set; }
     public double DamageToPCs { get; set; }
     public double Special1 { get; set; }
@@ -23,6 +24,7 @@ public class FLScoreboardDouble : PvpScoreboardDouble, IEquatable<FLScoreboardDo
             var teamFLScoreboard = teamScoreboard as FLScoreboardTally;
 
             Occupations = playerFLScoreboard!.Occupations != 0 ? (double)playerFLScoreboard.Occupations / teamFLScoreboard!.Occupations : 0;
+            ClaimTime = playerFLScoreboard!.ClaimTime != TimeSpan.Zero ? playerFLScoreboard.ClaimTime / playerFLScoreboard!.ClaimTime : 0;
             DamageToOther = playerFLScoreboard!.DamageToOther != 0 ? (double)playerFLScoreboard.DamageToOther / teamFLScoreboard!.DamageToOther : 0;
             DamageToPCs = playerFLScoreboard!.DamageToPCs != 0 ? (double)playerFLScoreboard.DamageToPCs / teamFLScoreboard!.DamageToPCs : 0;
             Special1 = playerFLScoreboard!.Special1 != 0 ? (double)playerFLScoreboard.Special1 / teamFLScoreboard!.Special1 : 0;
@@ -40,6 +42,7 @@ public class FLScoreboardDouble : PvpScoreboardDouble, IEquatable<FLScoreboardDo
             HPRestored = c.HPRestored,
             KillsAndAssists = c.KillsAndAssists,
             Occupations = a.Occupations / b,
+            ClaimTime = a.ClaimTime / b,
             DamageToPCs = a.DamageToPCs / b,
             DamageToOther = a.DamageToOther / b,
             Special1 = a.Special1 / b,
@@ -57,6 +60,7 @@ public class FLScoreboardDouble : PvpScoreboardDouble, IEquatable<FLScoreboardDo
             HPRestored = c.HPRestored,
             KillsAndAssists = c.KillsAndAssists,
             Occupations = a.Occupations,
+            ClaimTime = a.ClaimTime.TotalSeconds,
             DamageToPCs = a.DamageToPCs,
             DamageToOther = a.DamageToOther,
             Special1 = a.Special1,
@@ -79,12 +83,13 @@ public class FLScoreboardDouble : PvpScoreboardDouble, IEquatable<FLScoreboardDo
         var otherPvPScoreboard = (PvpScoreboardDouble)other;
         return thisPvPScoreboard.Equals(otherPvPScoreboard)
             && Occupations == other.Occupations
+            && ClaimTime == other.ClaimTime
             && DamageToPCs == other.DamageToPCs
             && DamageToOther == other.DamageToOther
             && Special1 == other.Special1;
     }
 
     public override int GetHashCode() {
-        return HashCode.Combine(base.GetHashCode(), Occupations, DamageToPCs, DamageToOther, Special1);
+        return HashCode.Combine(base.GetHashCode(), Occupations, ClaimTime, DamageToPCs, DamageToOther, Special1);
     }
 }

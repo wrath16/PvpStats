@@ -48,7 +48,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
     [Signature("40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ?? ?? ?? ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 85 ?? ?? ?? ?? 4C 8B E1", DetourName = nameof(CCMatchEndSpectatorDetour))]
     private readonly Hook<CCMatchEnd101Delegate> _ccMatchEndSpectatorHook;
 
-    private delegate void ProcessPacketActorControlDelegate(uint entityId, uint type, uint statusId, uint amount, uint a5, uint source, uint a7, uint a8, ulong a9, byte flag);
+    private delegate void ProcessPacketActorControlDelegate(uint entityId, uint type, uint statusId, uint amount, uint a5, uint source, uint a7, uint a8, uint a10, uint a9, ulong targetEntityId, byte flag);
     [Signature("E8 ?? ?? ?? ?? 0F B7 0B 83 E9 64", DetourName = nameof(ProcessPacketActorControlDetour))]
     private readonly Hook<ProcessPacketActorControlDelegate> _processPacketActorControlHook = null!;
 
@@ -186,13 +186,13 @@ internal class CrystallineConflictMatchManager : IDisposable {
         }
     }
 
-    private void ProcessPacketActorControlDetour(uint sourceEntityId, uint type, uint statusId, uint amount, uint effectSourceEntityId, uint source, uint a7, uint a8, ulong targetEntityId, byte flag) {
+    private void ProcessPacketActorControlDetour(uint sourceEntityId, uint type, uint statusId, uint amount, uint effectSourceEntityId, uint source, uint a7, uint a8, uint a9, uint a10, ulong targetEntityId, byte flag) {
         try {
             if(!_plugin.DebugMode && (!IsMatchInProgress() || _currentMatchTimeline == null)) {
                 return;
             }
             if(_plugin.DebugMode) {
-                Plugin.Log2.Debug($"actor control: 0x{type:X2} {(ActorControlCategory)type} 0x{sourceEntityId:X2} StatusId: 0x{statusId:X2} Source: {source} Amount: {amount} a5: 0x{effectSourceEntityId:X2} a7: {a7} a8: {a8} a9: 0x{targetEntityId:X2} flag: {flag}");
+                Plugin.Log2.Debug($"actor control: 0x{type:X2} {(ActorControlCategory)type} 0x{sourceEntityId:X2} StatusId: 0x{statusId:X2} Source: {source} Amount: {amount} a5: 0x{effectSourceEntityId:X2} a7: {a7} a8: {a8} a9: 0x{a9:X2} a10: 0x{a10:X2} targetEntityId: 0x{targetEntityId:X2} flag: {flag}");
             }
             //Plugin.Log2.Debug($"actor control: 0x{type:X2} {(ActorControlCategory)type} 0x{sourceEntityId:X2} StatusId: 0x{statusId:X2} Source: {source} Amount: {amount} a5: {a5} a7: {a7} a8: {a8} a9: {targetEntityId} flag: {flag}");
 
@@ -254,7 +254,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 }
             }
         } finally {
-            _processPacketActorControlHook.Original(sourceEntityId, type, statusId, amount, effectSourceEntityId, source, a7, a8, targetEntityId, flag);
+            _processPacketActorControlHook.Original(sourceEntityId, type, statusId, amount, effectSourceEntityId, source, a7, a8, a9, a10, targetEntityId, flag);
         }
     }
 

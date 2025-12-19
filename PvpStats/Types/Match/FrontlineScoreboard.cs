@@ -1,4 +1,5 @@
 ﻿using LiteDB;
+using System;
 
 namespace PvpStats.Types.Match;
 public class FrontlineScoreboard : PvpScoreboard {
@@ -7,6 +8,7 @@ public class FrontlineScoreboard : PvpScoreboard {
     [BsonIgnore]
     public long DamageToPCs => DamageDealt - DamageToOther;
     public long Special1 { get; set; } //believed to be healing received
+    public TimeSpan ClaimTime { get; set; }
 
     [BsonIgnore]
     public override long DamageDealtPerKA => KillsAndAssists > 0 ? DamageToPCs / KillsAndAssists : DamageToPCs;
@@ -23,6 +25,7 @@ public class FrontlineScoreboard : PvpScoreboard {
             Occupations = a.Occupations + b.Occupations,
             DamageToOther = a.DamageToOther + b.DamageToOther,
             Special1 = a.Special1 + b.Special1,
+            ClaimTime = a.ClaimTime + b.ClaimTime
         };
     }
 
@@ -38,6 +41,7 @@ public class FrontlineScoreboard : PvpScoreboard {
             Occupations = a.Occupations - b.Occupations,
             DamageToOther = a.DamageToOther - b.DamageToOther,
             Special1 = a.Special1 - b.Special1,
+            ClaimTime = a.ClaimTime - b.ClaimTime
         };
     }
 }

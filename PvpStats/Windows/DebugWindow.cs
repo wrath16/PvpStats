@@ -14,6 +14,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using LiteDB;
 using Lumina.Excel.Sheets;
 using PvpStats.Helpers;
 using PvpStats.Managers.Game;
@@ -395,10 +396,15 @@ internal unsafe class DebugWindow : Window {
                     }
 
                     if(ImGui.Button("Test Function")) {
-                        var addonIds = _plugin.Localization.GetRowId<Addon>("Crystal", "Text");
-                        foreach(var addonId in addonIds) {
-                            Plugin.Log2.Debug($"addonId: {addonId}");
-                        }
+                        //var match = _plugin.FLCache.Matches.FirstOrDefault(x => x.Id.ToString() == "6945d0c8505fee0dd5ec1ffe");
+                        //if(match != null) {
+                        //    foreach(var playerScoreboard in match.PlayerScoreboards) {
+                        //        var scoreboard = playerScoreboard.Value;
+                        //        scoreboard.ClaimTime = TimeSpan.FromSeconds(scoreboard.Occupations);
+                        //        scoreboard.Occupations = 0;
+                        //    }
+                        //    _plugin.FLCache.UpdateMatch(match);
+                        //}
 
                     }
                     var pvpProfile = PvPProfile.Instance();

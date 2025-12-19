@@ -54,6 +54,7 @@ public enum FrontlineMap {
     SealRock,
     FieldsOfGlory,
     OnsalHakair,
+    WorqorChirteh,
 }
 
 public enum FrontlineTeamName {
