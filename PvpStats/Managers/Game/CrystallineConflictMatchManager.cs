@@ -888,7 +888,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
 
         //get player intro info
         //wait for data to be initialized, with small failsafe period
-        if(_currentMatch.IntroPlayerInfo == null && director->Players[0].EntityId != 0 && (now - _currentMatch.DutyStartTime) > TimeSpan.FromSeconds(8)) {
+        if(_currentMatch.IntroPlayerInfo == null && director->Players[0].ClassJobId != 0 && (now - _currentMatch.DutyStartTime) > TimeSpan.FromSeconds(8)) {
             Plugin.Log2.Information("Setting intro info...");
             _currentMatch.IntroPlayerInfo = new();
             for(int i = 0; i < 10; i++) {
