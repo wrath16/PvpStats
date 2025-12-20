@@ -776,7 +776,11 @@ internal class CrystallineConflictMatchManager : IDisposable {
         }
 
         //add players who left match. omit ones with incomplete name or blacklisted name as a failsafe
-        foreach(var introPlayer in _currentMatch.IntroPlayerInfo?.Where(x => !x.Value.Alias.FullName.Contains('.') && !Regex.IsMatch(x.Value.Alias.Name, @"\d+") && !x.Value.Alias.HomeWorld.Equals("Unknown", StringComparison.OrdinalIgnoreCase)) ?? []) {
+        foreach(var introPlayer in _currentMatch.IntroPlayerInfo?
+            .Where(x => !x.Value.Alias.FullName.Contains('.') 
+            && !Regex.IsMatch(x.Value.Alias.Name, @"\d+") 
+            && !x.Value.Alias.Equals("")
+            && !x.Value.Alias.HomeWorld.Equals("Unknown", StringComparison.OrdinalIgnoreCase)) ?? []) {
             bool isFound = false;
             foreach(var team in _currentMatch.Teams) {
                 foreach(var player in team.Value.Players) {
@@ -884,7 +888,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
 
         //get player intro info
         //wait for data to be initialized, with small failsafe period
-        if(_currentMatch.IntroPlayerInfo == null && director->Players[0].EntityId != 0 && (now - _currentMatch.DutyStartTime) > TimeSpan.FromSeconds(5)) {
+        if(_currentMatch.IntroPlayerInfo == null && director->Players[0].EntityId != 0 && (now - _currentMatch.DutyStartTime) > TimeSpan.FromSeconds(8)) {
             Plugin.Log2.Information("Setting intro info...");
             _currentMatch.IntroPlayerInfo = new();
             for(int i = 0; i < 10; i++) {
