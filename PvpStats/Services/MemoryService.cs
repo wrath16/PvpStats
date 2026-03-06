@@ -1,4 +1,3 @@
-using Dalamud.Game.Network;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using System;
@@ -42,7 +41,6 @@ internal unsafe class MemoryService : IDisposable {
         //Plugin.Log2.Debug("special packet process!");
         try {
             var opCode = (ushort)Marshal.ReadInt16(dataPtr, 0x02);
-            var direction = NetworkMessageDirection.ZoneDown;
             if(_opCodeCount.ContainsKey(opCode)) {
                 _opCodeCount[opCode]++;
             } else {
