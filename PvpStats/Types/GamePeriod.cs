@@ -207,11 +207,11 @@ internal class GamePeriod {
         } },
         { new GamePeriod() {
             Name = "7.5X",
-            StartDate = new DateTime(2026,1,27,10,0,0,DateTimeKind.Utc),
+            StartDate = new DateTime(2026,4,28,10,0,0,DateTimeKind.Utc),
         } },
         { new GamePeriod() {
             Name = "7.5",
-            StartDate = new DateTime(2026,1,27,10,0,0,DateTimeKind.Utc),
+            StartDate = new DateTime(2026,4,28,10,0,0,DateTimeKind.Utc),
         } },
     };
 
