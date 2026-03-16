@@ -111,6 +111,11 @@ internal class GamePeriod {
         { new GamePeriod() {
             Name = "19",
             StartDate = new DateTime(2026,3,3,10,0,0,DateTimeKind.Utc),
+            EndDate = new DateTime(2026,4,28,10,0,0,DateTimeKind.Utc),
+        } },
+        { new GamePeriod() {
+            Name = "20",
+            StartDate = new DateTime(2026,4,28,10,0,0,DateTimeKind.Utc),
         } },
     };
 
@@ -183,6 +188,7 @@ internal class GamePeriod {
         { new GamePeriod() {
             Name = "7.4X",
             StartDate = new DateTime(2025,12,16,10,0,0,DateTimeKind.Utc),
+            EndDate = new DateTime(2026,4,28,10,0,0,DateTimeKind.Utc),
         } },
         { new GamePeriod() {
             Name = "7.4",
@@ -197,6 +203,15 @@ internal class GamePeriod {
         { new GamePeriod() {
             Name = "7.45-7.48",
             StartDate = new DateTime(2026,3,3,10,0,0,DateTimeKind.Utc),
+            EndDate = new DateTime(2026,4,28,10,0,0,DateTimeKind.Utc),
+        } },
+        { new GamePeriod() {
+            Name = "7.5X",
+            StartDate = new DateTime(2026,1,27,10,0,0,DateTimeKind.Utc),
+        } },
+        { new GamePeriod() {
+            Name = "7.5",
+            StartDate = new DateTime(2026,1,27,10,0,0,DateTimeKind.Utc),
         } },
     };
 
