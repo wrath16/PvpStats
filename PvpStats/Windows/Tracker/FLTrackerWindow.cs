@@ -1,5 +1,6 @@
 ﻿using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility.Raii;
+using Dalamud.Interface.Windowing;
 using PvpStats.Types.Match;
 using PvpStats.Windows.Filter;
 using PvpStats.Windows.List;

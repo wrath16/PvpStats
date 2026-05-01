@@ -68,7 +68,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
     //    Plugin.Log.Debug("Duty has completed.");
     //}
 
-    protected override void OnTerritoryChanged(ushort territoryId) {
+    protected override void OnTerritoryChanged(uint territoryId) {
         var dutyId = Plugin.GameState.GetCurrentDutyId();
         if(MatchHelper.GetFrontlineMap(dutyId) != null) {
             StartMatch();
@@ -270,7 +270,7 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
         var objectTable = Plugin.ObjectTable;
         for(int i = 0; i < objectTable.Length; i++) {
             var obj = objectTable[i];
-            if(obj == null || obj.ObjectKind != ObjectKind.Player)
+            if(obj == null || obj.ObjectKind != ObjectKind.Pc)
                 continue;
 
             try {

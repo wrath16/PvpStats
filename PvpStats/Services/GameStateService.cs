@@ -34,16 +34,16 @@ internal class GameStateService : IDisposable {
     }
 
     private void OnFrameworkUpdate(IFramework framework) {
-        string? currentPlayerName = _plugin.ClientState.LocalPlayer?.Name?.ToString();
-        string? currentPlayerWorld = _plugin.ClientState.LocalPlayer?.HomeWorld.Value.Name.ToString();
+        string? currentPlayerName = _plugin.ObjectTable.LocalPlayer?.Name?.ToString();
+        string? currentPlayerWorld = _plugin.ObjectTable.LocalPlayer?.HomeWorld.Value.Name.ToString();
         if(currentPlayerName != null && currentPlayerWorld != null) {
             CurrentPlayer = (PlayerAlias)$"{currentPlayerName} {currentPlayerWorld}";
         }
-        DataCenterName = _plugin.ClientState.LocalPlayer?.CurrentWorld.Value.DataCenter.Value.Name.ToString();
+        DataCenterName = _plugin.ObjectTable.LocalPlayer?.CurrentWorld.Value.DataCenter.Value.Name.ToString();
     }
 
     public void PrintAllPlayerObjects() {
-        foreach(IPlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
+        foreach(IPlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Pc)) {
             _plugin.Log.Debug($"0x{pc.GameObjectId.ToString("X2")} {pc.Name}");
         }
     }

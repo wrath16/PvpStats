@@ -204,7 +204,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 var owner = _plugin.ObjectTable.SearchByEntityId((killer?.OwnerId ?? 0));
                 Plugin.Log2.Debug($"Death detected: 0x{sourceEntityId:X2} {victim?.Name ?? ""} was deleted by: 0x{amount:X2} {killer?.Name ?? ""}, owner: 0x{killer?.OwnerId:X2} {owner?.Name ?? ""}");
 
-                if(victim?.ObjectKind is ObjectKind.Player) {
+                if(victim?.ObjectKind is ObjectKind.Pc) {
                     var victimWorld = _plugin.DataManager.GetExcelSheet<World>().GetRow((victim as IPlayerCharacter).HomeWorld.RowId).Name.ToString();
                     var victimAlias = (PlayerAlias)$"{victim.Name} {victimWorld}";
 
@@ -223,7 +223,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                                 KillerNameId = nameId,
                             });
                         }
-                    } else if(killer?.ObjectKind is ObjectKind.Player && killer.EntityId == victim.EntityId) {
+                    } else if(killer?.ObjectKind is ObjectKind.Pc && killer.EntityId == victim.EntityId) {
                         //add suicide death
                         if(matchingEvent == null) {
                             Plugin.Log2.Warning($"No credited killer found for suicide death for: {victimAlias}");
@@ -641,7 +641,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
         _ccMatchEndSpectatorHook.Original(p1, p2, p3, p4);
     }
 
-    private void OnTerritoryChanged(ushort territoryId) {
+    private void OnTerritoryChanged(uint territoryId) {
         var dutyId = _plugin.GameState.GetCurrentDutyId();
         _plugin.Log.Debug($"Territory changed: {territoryId}, Current duty: {dutyId}");
         if(MatchHelper.CrystallineConflictMapLookup.ContainsKey(territoryId)) {
