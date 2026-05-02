@@ -19,7 +19,9 @@ public static class MatchHelper {
         { 1138, CrystallineConflictMap.RedSands },
         { 1139, CrystallineConflictMap.RedSands }, //custom match
         { 1293, CrystallineConflictMap.BaysideBattleground },
-        { 1294, CrystallineConflictMap.BaysideBattleground } //custom match
+        { 1294, CrystallineConflictMap.BaysideBattleground }, //custom match
+        { 1357, CrystallineConflictMap.ArcheiaHarmonias },
+        { 1358, CrystallineConflictMap.ArcheiaHarmonias }, //custom match (assume)
     };
 
     public static readonly Dictionary<ArenaTier, string> ArenaRankLookup = new() {
@@ -124,6 +126,7 @@ public static class MatchHelper {
             CrystallineConflictMap.ClockworkCastleTown => "Clockwork Castletown",
             CrystallineConflictMap.RedSands => "The Red Sands",
             CrystallineConflictMap.BaysideBattleground => "Bayside Battleground",
+            CrystallineConflictMap.ArcheiaHarmonias => "Archeia Harmonias",
             _ => "Unknown",
         };
     }
