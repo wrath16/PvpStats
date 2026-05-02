@@ -49,6 +49,7 @@ public static class MatchHelper {
             case 912:  //clockwork castletown
             case 967:  //red sands
             case 1046: //bayside battleground
+            case 1102: //archeia harmonias
                 return CrystallineConflictMatchType.Casual;
             case 838: //palaistra (assumed)
             case 841: //palaistra (assumed)
