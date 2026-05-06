@@ -52,15 +52,15 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         switch(match.Arena) {
             case FrontlineMap.BorderlandRuins:
             case FrontlineMap.FieldsOfGlory:
-                _scoreboardSize = new Vector2(930, 800);
+                _scoreboardSize = new Vector2(950, 800);
                 break;
             case FrontlineMap.SealRock:
             case FrontlineMap.WorqorChirteh:
-                _scoreboardSize = new Vector2(920, 800);
+                _scoreboardSize = new Vector2(935, 800);
                 break;
             default:
             case FrontlineMap.OnsalHakair:
-                _scoreboardSize = new Vector2(865, 800);
+                _scoreboardSize = new Vector2(880, 800);
                 break;
         }
         Size = new Vector2(_scoreboardSize.X, _scoreboardSize.Y);
@@ -311,15 +311,15 @@ internal class FrontlineMatchDetail : MatchDetail<FrontlineMatch> {
         ImGui.TableSetupColumn("Deaths", widthStyle, ImGuiHelpers.GlobalScale * 52f, (uint)"Deaths".GetHashCode());
         ImGui.TableSetupColumn("Assists", widthStyle, ImGuiHelpers.GlobalScale * 52f, (uint)"Assists".GetHashCode());
         if(hasDamageToNPCs) {
-            ImGui.TableSetupColumn("Damage to PCs", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"DamageToPCs".GetHashCode());
+            ImGui.TableSetupColumn("Damage to PCs", widthStyle, ImGuiHelpers.GlobalScale * 70f, (uint)"DamageToPCs".GetHashCode());
             var npcDamageName = Match.Arena == FrontlineMap.FieldsOfGlory ? "Ice Damage" : "Drone Damage";
-            ImGui.TableSetupColumn(npcDamageName, widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"DamageToOther".GetHashCode());
-            ImGui.TableSetupColumn("Damage Dealt", widthStyle | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 65f, (uint)"DamageDealt".GetHashCode());
+            ImGui.TableSetupColumn(npcDamageName, widthStyle, ImGuiHelpers.GlobalScale * 70f, (uint)"DamageToOther".GetHashCode());
+            ImGui.TableSetupColumn("Damage Dealt", widthStyle | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 70f, (uint)"DamageDealt".GetHashCode());
         } else {
-            ImGui.TableSetupColumn("Damage Dealt", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"DamageDealt".GetHashCode());
+            ImGui.TableSetupColumn("Damage Dealt", widthStyle, ImGuiHelpers.GlobalScale * 70f, (uint)"DamageDealt".GetHashCode());
         }
-        ImGui.TableSetupColumn("Damage Taken", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"DamageTaken".GetHashCode());
-        ImGui.TableSetupColumn("HP Restored", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"HPRestored".GetHashCode());
+        ImGui.TableSetupColumn("Damage Taken", widthStyle, ImGuiHelpers.GlobalScale * 70f, (uint)"DamageTaken".GetHashCode());
+        ImGui.TableSetupColumn("HP Restored", widthStyle, ImGuiHelpers.GlobalScale * 70f, (uint)"HPRestored".GetHashCode());
         ImGui.TableSetupColumn("Special", widthStyle | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 65f, (uint)"Special1".GetHashCode());
         if(hasOccupations) {
             ImGui.TableSetupColumn("Occupations", widthStyle, ImGuiHelpers.GlobalScale * 55f, (uint)"Occupations".GetHashCode());

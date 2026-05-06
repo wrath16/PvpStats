@@ -55,7 +55,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
 
     public RivalWingsMatchDetail(Plugin plugin, RivalWingsMatch match) : base(plugin, plugin.RWCache, match) {
         SizeConstraints = new WindowSizeConstraints {
-            MinimumSize = new Vector2(500, 500),
+            MinimumSize = new Vector2(520, 500),
             MaximumSize = new Vector2(5000, 5000)
         };
         //Size = new Vector2(980,900);
@@ -583,11 +583,11 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
         ImGui.TableSetupColumn("Kills", widthStyle, ImGuiHelpers.GlobalScale * 52f, (uint)"Kills".GetHashCode());
         ImGui.TableSetupColumn("Deaths", widthStyle, ImGuiHelpers.GlobalScale * 52f, (uint)"Deaths".GetHashCode());
         ImGui.TableSetupColumn("Assists", widthStyle, ImGuiHelpers.GlobalScale * 52f, (uint)"Assists".GetHashCode());
-        ImGui.TableSetupColumn("Damage to PCs", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"DamageToPCs".GetHashCode());
-        ImGui.TableSetupColumn("Damage to Other", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"DamageToOther".GetHashCode());
+        ImGui.TableSetupColumn("Damage to PCs", widthStyle, ImGuiHelpers.GlobalScale * 70f, (uint)"DamageToPCs".GetHashCode());
+        ImGui.TableSetupColumn("Damage to Other", widthStyle, ImGuiHelpers.GlobalScale * 70f, (uint)"DamageToOther".GetHashCode());
         ImGui.TableSetupColumn("Damage Dealt", widthStyle | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 65f, (uint)"DamageDealt".GetHashCode());
-        ImGui.TableSetupColumn("Damage Taken", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"DamageTaken".GetHashCode());
-        ImGui.TableSetupColumn("HP Restored", widthStyle, ImGuiHelpers.GlobalScale * 65f, (uint)"HPRestored".GetHashCode());
+        ImGui.TableSetupColumn("Damage Taken", widthStyle, ImGuiHelpers.GlobalScale * 70f, (uint)"DamageTaken".GetHashCode());
+        ImGui.TableSetupColumn("HP Restored", widthStyle, ImGuiHelpers.GlobalScale * 70f, (uint)"HPRestored".GetHashCode());
         ImGui.TableSetupColumn("Special", widthStyle | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 60f, (uint)"Special1".GetHashCode());
         ImGui.TableSetupColumn("Ceruleum", widthStyle, ImGuiHelpers.GlobalScale * 55f, (uint)"Ceruleum".GetHashCode());
         ImGui.TableSetupColumn("Damage Dealt per Kill/Assist", widthStyle | ImGuiTableColumnFlags.DefaultHide, ImGuiHelpers.GlobalScale * 100f, (uint)"DamageDealtPerKA".GetHashCode());
