@@ -95,6 +95,8 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     private Dictionary<string, Dictionary<uint, FlattenedActionAnalytics>>? _filteredPlayerAnalytics;
     private Dictionary<uint, Dictionary<uint, FlattenedActionAnalytics>>? _filteredNameIdAnalytics;
     private Dictionary<string, Dictionary<uint, FlattenedActionAnalytics>>? _actionSetPlayerAnalytics;
+    private Dictionary<string, Dictionary<uint, TargetedActionAnalytics>>? _targetedPlayerActionAnalytics;
+    private Dictionary<uint, Dictionary<uint, TargetedActionAnalytics>>? _targetedNameIdActionAnalytics;
 
     bool _triggerSort = false;
 
@@ -288,7 +290,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
 
             //setup actions
             _actionSelectionList.Add("ALL");
-            foreach(var player in Match.Players) {
+            foreach(var player in _players) {
                 _actionSelectionList.Add(player.Alias);
             }
             foreach(var kvp in _timeline.NameIdTargetedActionAnalytics ?? []) {
@@ -308,6 +310,19 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             _filteredNameIdAnalytics = _timeline.SummarizeNameIdAnalytics(Match);
             //should put this method somewhere else
             _actionSetPlayerAnalytics = CrystallineConflictMatchTimeline.CreateActionSets(_filteredPlayerAnalytics ?? []);
+            //action set targeted action analytics
+            _targetedPlayerActionAnalytics = _timeline.CreatePlayerTargetedActionSets();
+            _targetedNameIdActionAnalytics = _timeline.CreateNameIdTargetedActionSets();
+            //foreach(var player in _players) {
+            //    if(_timeline.PlayerTargetedActionAnalytics?.TryGetValue(player.Alias, out var targetedActionAnalytics) ?? false) {
+            //        //var newTargetedActionAnalytics = targetedActionAnalytics + new TargetedActionAnalytics();
+            //        foreach(var kvp in targetedActionAnalytics) {
+            //            //extremely hacky way to create a copy of targetedActionAnalytics
+            //            var newTargetedActionAnalytics = kvp.Value + new TargetedActionAnalytics();
+            //        }
+            //    }
+            //}
+
 
             //add action icons and names to cache
             void addActionToCache(uint actionKey) {
@@ -339,7 +354,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                 }
             }
 
-            ////add status icons and names
+            //add status icons and names
             void addStatusToCache(uint statusId) {
                 try {
                     var status = Plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Status>(ClientLanguage.English).GetRow(statusId);
@@ -1240,7 +1255,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
 
         if(snapshot != null) {
             if(tooltipSnapshot && ImGui.IsItemHovered()) {
-                using (ImRaii.Tooltip()) {
+                using(ImRaii.Tooltip()) {
                     Plugin.WindowManager.DrawPlayerSnapshot(snapshot);
                 }
             } else if(!tooltipSnapshot) {
@@ -1367,7 +1382,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             //Plugin.Log2.Debug($"{mEvent.Victim} mouse position: {mousePos} startPosition: {startPosPixels} endPosition: {endPosPixels}");
             if(mousePos.X >= startPosPixels.X && mousePos.X <= endPosPixels.X &&
                 mousePos.Y >= endPosPixels.Y && mousePos.Y <= startPosPixels.Y) {
-                using (ImRaii.Tooltip()) {
+                using(ImRaii.Tooltip()) {
                     DrawEvent(mEvent);
                 }
             }
@@ -1395,7 +1410,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             Vector2 mousePos = ImGui.GetMousePos();
             if(mousePos.X >= startPosPixels.X && mousePos.X <= endPosPixels.X &&
                 mousePos.Y >= endPosPixels.Y && mousePos.Y <= startPosPixels.Y) {
-                using (ImRaii.Tooltip()) {
+                using(ImRaii.Tooltip()) {
                     DrawEvent(actionEvent);
                 }
             }
@@ -1427,22 +1442,15 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
         using var child = ImRaii.Child("castsChild", ImGui.GetContentRegionAvail(), false, ImGuiWindowFlags.NoScrollbar);
         if(child) {
             Dictionary<uint, FlattenedActionAnalytics>? totalAnalytics = null;
-            Dictionary<uint, TargetedActionAnalytics>? targetedActionAnalytics = null;
-            Dictionary<uint, TargetedActionAnalytics>? targetedStatusAnalytics = null;
             if(_actionSelectionPlayer != null) {
                 if(!_filteredPlayerAnalytics?.TryGetValue(_actionSelectionPlayer, out totalAnalytics) ?? true) {
                     ImGui.TextDisabled("No actions by actor.");
                     //return;
                 } else {
-                    _timeline?.PlayerTargetedActionAnalytics?.TryGetValue(_actionSelectionPlayer, out targetedActionAnalytics);
-                    _timeline?.PlayerTargetedStatusAnalytics?.TryGetValue(_actionSelectionPlayer, out targetedStatusAnalytics);
-
                     if(_summarizeActions) {
-                        if(_actionSetPlayerAnalytics?.TryGetValue(_actionSelectionPlayer, out var actionSetPlayerAnalytics) ?? false) {
-                            DrawActionTable(actionSetPlayerAnalytics, targetedActionAnalytics, targetedStatusAnalytics);
-                        }
+                        DrawActionTable(_actionSetPlayerAnalytics[_actionSelectionPlayer], _targetedPlayerActionAnalytics[_actionSelectionPlayer]);
                     } else {
-                        DrawActionTable(totalAnalytics, targetedActionAnalytics, targetedStatusAnalytics);
+                        DrawActionTable(totalAnalytics, _targetedPlayerActionAnalytics[_actionSelectionPlayer]);
                     }
                 }
             } else if(_actionSelectionNameId != null) {
@@ -1450,9 +1458,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                     ImGui.TextDisabled("No actions by actor.");
                     //return;
                 } else {
-                    _timeline?.NameIdTargetedActionAnalytics?.TryGetValue((uint)_actionSelectionNameId, out targetedActionAnalytics);
-                    _timeline?.NameIdTargetedStatusAnalytics?.TryGetValue((uint)_actionSelectionNameId, out targetedStatusAnalytics);
-                    DrawActionTable(totalAnalytics, targetedActionAnalytics, targetedStatusAnalytics);
+                    DrawActionTable(totalAnalytics, _targetedNameIdActionAnalytics[_actionSelectionNameId ?? 0]);
                 }
             } else {
                 DrawKeyCastsTable();
@@ -1461,8 +1467,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
     }
 
     private void DrawActionTable(Dictionary<uint, FlattenedActionAnalytics> totalAnalytics
-        , Dictionary<uint, TargetedActionAnalytics>? targetedActionAnalytics
-        , Dictionary<uint, TargetedActionAnalytics>? targetedStatusAnalytics) {
+        , Dictionary<uint, TargetedActionAnalytics>? targetedAnalytics) {
         //#if DEBUG
         //        long totalDmg = 0;
         //        long totalHeal = 0;
@@ -1567,6 +1572,8 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                     bool isActionSet = ((int)action.Key - CrystallineConflictMatchTimeline.ActionSetOffset) >= 0 && ((int)action.Key - CrystallineConflictMatchTimeline.UnknownId) < 0;
                     int setIndex = (int)(action.Key - CrystallineConflictMatchTimeline.ActionSetOffset);
 
+                    targetedAnalytics.TryGetValue(action.Key, out var targeted);
+
                     using var textColor = new ImRaii.ColorDisposable();
                     if(isActionSet) {
                         textColor.Push(ImGuiCol.Text, ImGuiColors.DalamudYellow);
@@ -1632,11 +1639,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                             string format(ActionAnalytics x) {
                                 return x.Impacts.ToString("0");
                             }
-                            if(isStatus) {
-                                DrawTargetTableTooltip(targetedStatusAnalytics[statusId], show, format);
-                            } else if(!isActionSet) {
-                                DrawTargetTableTooltip(targetedActionAnalytics[action.Key], show, format);
-                            }
+                            DrawTargetTableTooltip(targeted, show, format);
                         }
                     }
                     if(ImGui.TableNextColumn()) {
@@ -1648,11 +1651,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                             string format(ActionAnalytics x) {
                                 return ((float)x.Impacts / action.Value.Casts).ToString($"0.0");
                             }
-                            if(isStatus) {
-                                DrawTargetTableTooltip(targetedStatusAnalytics[statusId], show, format);
-                            } else if(!isActionSet) {
-                                DrawTargetTableTooltip(targetedActionAnalytics[action.Key], show, format);
-                            }
+                            DrawTargetTableTooltip(targeted, show, format);
                         }
                     }
                     if(ImGui.TableNextColumn()) {
@@ -1665,11 +1664,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                                 string format(ActionAnalytics x) {
                                     return x.Damage.ToString($"0");
                                 }
-                                if(isStatus) {
-                                    DrawTargetTableTooltip(targetedStatusAnalytics[statusId], show, format);
-                                } else if(!isActionSet) {
-                                    DrawTargetTableTooltip(targetedActionAnalytics[action.Key], show, format);
-                                }
+                                DrawTargetTableTooltip(targeted, show, format);
                             }
                         }
                     }
@@ -1682,11 +1677,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                             string format(ActionAnalytics x) {
                                 return x.AverageDamage.ToString($"0");
                             }
-                            if(isStatus) {
-                                DrawTargetTableTooltip(targetedStatusAnalytics[statusId], show, format);
-                            } else if(!isActionSet) {
-                                DrawTargetTableTooltip(targetedActionAnalytics[action.Key], show, format);
-                            }
+                            DrawTargetTableTooltip(targeted, show, format);
                         }
                     }
                     if(ImGui.TableNextColumn()) {
@@ -1698,26 +1689,20 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                             string format(ActionAnalytics x) {
                                 return x.Heal.ToString($"0");
                             }
-                            if(isStatus) {
-                                DrawTargetTableTooltip(targetedStatusAnalytics[statusId], show, format);
-                            } else if(!isActionSet) {
-                                DrawTargetTableTooltip(targetedActionAnalytics[action.Key], show, format);
-                            }
+                            DrawTargetTableTooltip(targeted, show, format);
                         }
                     }
                     if(ImGui.TableNextColumn()) {
                         if(!isUnknown) {
                             ImGuiHelper.DrawNumericCell($"{action.Value.AverageHeal:0}", -11f);
-                            bool show(ActionAnalytics x) {
-                                return x.Heal != 0;
-                            }
-                            string format(ActionAnalytics x) {
-                                return x.AverageHeal.ToString($"0");
-                            }
-                            if(isStatus) {
-                                DrawTargetTableTooltip(targetedStatusAnalytics[statusId], show, format);
-                            } else if(!isMedkit && !isActionSet) {
-                                DrawTargetTableTooltip(targetedActionAnalytics[action.Key], show, format);
+                            if(!isMedkit) {
+                                bool show(ActionAnalytics x) {
+                                    return x.Heal != 0;
+                                }
+                                string format(ActionAnalytics x) {
+                                    return x.AverageHeal.ToString($"0");
+                                }
+                                DrawTargetTableTooltip(targeted, show, format);
                             }
                         }
                     }
@@ -1730,11 +1715,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                             string format(ActionAnalytics x) {
                                 return x.MPDrain.ToString($"0");
                             }
-                            if(isStatus) {
-                                DrawTargetTableTooltip(targetedStatusAnalytics[statusId], show, format);
-                            } else if(!isActionSet) {
-                                DrawTargetTableTooltip(targetedActionAnalytics[action.Key], show, format);
-                            }
+                            DrawTargetTableTooltip(targeted, show, format);
                         }
                     }
                     if(ImGui.TableNextColumn()) {
@@ -1746,11 +1727,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                             string format(ActionAnalytics x) {
                                 return x.AverageMPDrain.ToString($"0");
                             }
-                            if(isStatus) {
-                                DrawTargetTableTooltip(targetedStatusAnalytics[statusId], show, format);
-                            } else if(!isActionSet) {
-                                DrawTargetTableTooltip(targetedActionAnalytics[action.Key], show, format);
-                            }
+                            DrawTargetTableTooltip(targeted, show, format);
                         }
                     }
                     if(ImGui.TableNextColumn()) {
@@ -1762,11 +1739,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                             string format(ActionAnalytics x) {
                                 return x.MPGain.ToString($"0");
                             }
-                            if(isStatus) {
-                                DrawTargetTableTooltip(targetedStatusAnalytics[statusId], show, format);
-                            } else if(!isActionSet) {
-                                DrawTargetTableTooltip(targetedActionAnalytics[action.Key], show, format);
-                            }
+                            DrawTargetTableTooltip(targeted, show, format);
                         }
                     }
                     if(ImGui.TableNextColumn()) {
@@ -1778,11 +1751,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                             string format(ActionAnalytics x) {
                                 return x.AverageMPGain.ToString($"0");
                             }
-                            if(isStatus) {
-                                DrawTargetTableTooltip(targetedStatusAnalytics[statusId], show, format);
-                            } else if(!isActionSet) {
-                                DrawTargetTableTooltip(targetedActionAnalytics[action.Key], show, format);
-                            }
+                            DrawTargetTableTooltip(targeted, show, format);
                         }
                     }
                     if(ImGui.TableNextColumn()) {
@@ -1794,22 +1763,18 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                             string format(ActionAnalytics x) {
                                 return x.StatusHits.ToString($"0");
                             }
-                            if(!isActionSet) {
-                                DrawTargetTableTooltip(targetedActionAnalytics[action.Key], show, format);
-                            }
+                            DrawTargetTableTooltip(targeted, show, format);
                         }
                     }
                     if(ImGui.TableNextColumn()) {
                         if(!isUnknown && !isMedkit && !isStatus) {
                             if(!float.IsNaN(action.Value.StatusEffectiveness)) {
                                 ImGuiHelper.DrawNumericCell($"{action.Value.StatusEffectiveness:P1}", -11f);
-                                if(!isActionSet) {
-                                    DrawTargetTableTooltip(targetedActionAnalytics[action.Key], x => {
-                                        return !float.IsNaN(x.StatusEffectiveness);
-                                    }, x => {
-                                        return x.StatusEffectiveness.ToString($"P1");
-                                    });
-                                }
+                                DrawTargetTableTooltip(targeted, x => {
+                                    return !float.IsNaN(x.StatusEffectiveness);
+                                }, x => {
+                                    return x.StatusEffectiveness.ToString($"P1");
+                                });
                             }
                         }
                     }
