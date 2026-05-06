@@ -1,4 +1,5 @@
-﻿using Dalamud.Hooking;
+﻿using Dalamud.Game.DutyState;
+using Dalamud.Hooking;
 using PvpStats.Types.Match;
 using PvpStats.Types.Match.Timeline;
 using System;
@@ -50,7 +51,7 @@ internal abstract class MatchManager<T> : IDisposable where T : PvpMatch {
         hook.Dispose();
     }
 
-    protected virtual void OnTerritoryChanged(ushort territoryId) {
+    protected virtual void OnTerritoryChanged(uint territoryId) {
         var dutyId = Plugin.GameState.GetCurrentDutyId();
         //Plugin.Log.Debug($"Territory changed: {territoryId}, Current duty: {dutyId}");
         if(IsMatchInProgress()) {
@@ -63,7 +64,7 @@ internal abstract class MatchManager<T> : IDisposable where T : PvpMatch {
         }
     }
 
-    protected virtual void OnDutyCompleted(object? sender, ushort p1) {
+    protected virtual void OnDutyCompleted(IDutyStateEventArgs args) {
         Plugin.Log.Debug("Duty has completed.");
     }
 

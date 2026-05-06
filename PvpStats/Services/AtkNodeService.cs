@@ -166,15 +166,15 @@ internal class AtkNodeService {
 
     internal static unsafe string ConvertAtkValueToString(AtkValue value) {
         switch(value.Type) {
-            case ValueType.Int:
-            case ValueType.UInt:
+            case AtkValueType.Int:
+            case AtkValueType.UInt:
                 return value.Int.ToString();
-            case ValueType.Bool:
+            case AtkValueType.Bool:
                 return (value.Int != 0).ToString();
-            case ValueType.String:
-            case ValueType.WideString:
-            case ValueType.ManagedString:
-            case ValueType.String8:
+            case AtkValueType.String:
+            case AtkValueType.WideString:
+            case AtkValueType.ManagedString:
+            case AtkValueType.String8:
                 return value.String.AsDalamudSeString().TextValue ?? "";
             default:
                 break;
@@ -192,7 +192,7 @@ internal class AtkNodeService {
 
             int internalCount = 0;
             var internalArray = stringArray->StringArray[0];
-            while(internalArray != null) {
+            while(internalArray.HasValue) {
                 ////internalArray = stringArray[internalCount];
                 //int secondInternalCount = 0;
                 //var secondInternalArray = internalArray[0];

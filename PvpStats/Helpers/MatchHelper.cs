@@ -19,7 +19,9 @@ public static class MatchHelper {
         { 1138, CrystallineConflictMap.RedSands },
         { 1139, CrystallineConflictMap.RedSands }, //custom match
         { 1293, CrystallineConflictMap.BaysideBattleground },
-        { 1294, CrystallineConflictMap.BaysideBattleground } //custom match
+        { 1294, CrystallineConflictMap.BaysideBattleground }, //custom match
+        { 1357, CrystallineConflictMap.ArcheiaHarmonias },
+        { 1358, CrystallineConflictMap.ArcheiaHarmonias }, //custom match
     };
 
     public static readonly Dictionary<ArenaTier, string> ArenaRankLookup = new() {
@@ -47,6 +49,7 @@ public static class MatchHelper {
             case 912:  //clockwork castletown
             case 967:  //red sands
             case 1046: //bayside battleground
+            case 1102: //archeia harmonias
                 return CrystallineConflictMatchType.Casual;
             case 838: //palaistra (assumed)
             case 841: //palaistra (assumed)
@@ -99,6 +102,16 @@ public static class MatchHelper {
             case 1054://bayside battleground
             case 1055://bayside battleground
             case 1056://bayside battleground
+            case 1103://archeia harmonias (assumed)
+            case 1104://archeia harmonias (assumed)
+            case 1105://archeia harmonias
+            case 1106://archeia harmonias
+            case 1107://archeia harmonias
+            case 1108://archeia harmonias (assumed)
+            case 1109://archeia harmonias (assumed)
+            case 1110://archeia harmonias (assumed)
+            case 1111://archeia harmonias (assumed)
+            case 1112://archeia harmonias (assumed)
                 return CrystallineConflictMatchType.Ranked;
             case 862: //palaistra
             case 863: //volcanic heart
@@ -106,6 +119,7 @@ public static class MatchHelper {
             case 923: //clockwork castletown
             case 978: //red sands
             case 1057: //bayside battleground
+            case 1113: //archeia harmonias
                 return CrystallineConflictMatchType.Custom;
             default:
                 return CrystallineConflictMatchType.Unknown;
@@ -124,6 +138,7 @@ public static class MatchHelper {
             CrystallineConflictMap.ClockworkCastleTown => "Clockwork Castletown",
             CrystallineConflictMap.RedSands => "The Red Sands",
             CrystallineConflictMap.BaysideBattleground => "Bayside Battleground",
+            CrystallineConflictMap.ArcheiaHarmonias => "Archeia Harmonias",
             _ => "Unknown",
         };
     }

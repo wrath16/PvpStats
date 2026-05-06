@@ -191,7 +191,7 @@ internal unsafe class DebugWindow : Window {
                     }
 
                     if(ImGui.Button("Print Object Table")) {
-                        foreach(IPlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player)) {
+                        foreach(IPlayerCharacter pc in _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Pc)) {
                             _plugin.Log.Debug($"0x{pc.GameObjectId.ToString("X2")} {pc.Name}");
                             //_plugin.Log.Debug($"team null? {isPlayerTeam is null} player team? {isPlayerTeam} is p member? {pc.StatusFlags.HasFlag(StatusFlags.PartyMember)} isSelf? {isSelf}");
                         }
@@ -415,9 +415,9 @@ internal unsafe class DebugWindow : Window {
 
                     ImGuiHelper.DrawRainbowTextByChar("Sarah Montcroix");
                     ImGui.NewLine();
-                    if(_plugin.ClientState.LocalPlayer != null) {
+                    if(_plugin.ObjectTable.LocalPlayer != null) {
                         using var child = ImRaii.Child("snapShotChild", new Vector2(200f, 125f) * ImGuiHelpers.GlobalScale, true, ImGuiWindowFlags.NoScrollbar);
-                        _plugin.WindowManager.DrawPlayerSnapshot(_plugin.ClientState.LocalPlayer.EntityId);
+                        _plugin.WindowManager.DrawPlayerSnapshot(_plugin.ObjectTable.LocalPlayer.EntityId);
                         //_plugin.WindowManager.DrawPlayerBars(_plugin.ClientState.LocalPlayer.MaxHp,
                         //    _plugin.ClientState.LocalPlayer.CurrentHp, _plugin.ClientState.LocalPlayer.ShieldPercentage,
                         //    _plugin.ClientState.LocalPlayer.MaxMp, _plugin.ClientState.LocalPlayer.CurrentMp);
@@ -830,9 +830,9 @@ internal unsafe class DebugWindow : Window {
             ImGui.TableNextColumn();
             ImGui.TableHeader("Statuses");
 
-            var players = _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player).Cast<IPlayerCharacter>();
+            var players = _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Pc).Cast<IPlayerCharacter>();
             var bnpcs = _plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.BattleNpc).Cast<IBattleNpc>();
-            var other = _plugin.ObjectTable.Where(o => o.ObjectKind is not ObjectKind.BattleNpc && o.ObjectKind is not ObjectKind.Player);
+            var other = _plugin.ObjectTable.Where(o => o.ObjectKind is not ObjectKind.BattleNpc && o.ObjectKind is not ObjectKind.Pc);
 
             List<IGameObject> objs = [.. players, .. bnpcs, .. other];
 
