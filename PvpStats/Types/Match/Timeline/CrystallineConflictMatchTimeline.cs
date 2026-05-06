@@ -151,6 +151,101 @@ internal class CrystallineConflictMatchTimeline : PvpMatchTimeline {
         return results;
     }
 
+    public Dictionary<string, Dictionary<uint, TargetedActionAnalytics>>? CreatePlayerTargetedActionSets() {
+        Dictionary<string, Dictionary<uint, TargetedActionAnalytics>> results = [];
+        Dictionary<uint, uint> actionIdLookup = [];
+
+        //create lookup for id -> action set
+        for(int i = 0; i < ActionSet.Sets.Count; i++) {
+            var actionSet = ActionSet.Sets[i];
+            foreach(var action in actionSet.Actions) {
+                actionIdLookup.Add(action.Key, (uint)(i + ActionSetOffset));
+            }
+        }
+
+        var processTargetedAnalytics = async (Dictionary<string, Dictionary<uint, TargetedActionAnalytics>> playerTargetedAnalytics, uint offset) => {
+            foreach(var player in playerTargetedAnalytics) {
+                //Dictionary<uint, TargetedActionAnalytics> resultAnalytics = [];
+                if(!results.TryGetValue(player.Key, out var resultAnalytics)) {
+                    resultAnalytics = new();
+                    results.Add(player.Key, resultAnalytics);
+                }
+
+                foreach(var actionAnalytics in player.Value) {
+                    if(actionIdLookup.TryGetValue(actionAnalytics.Key, out var setId)) {
+                        var setIndex = setId - ActionSetOffset;
+                        var actionParams = ActionSet.Sets[(int)setIndex].Actions[actionAnalytics.Key];
+
+                        if(!resultAnalytics.TryGetValue(setId, out var existingSet)) {
+                            existingSet = new();
+                            resultAnalytics.Add(setId, existingSet);
+                        }
+                        existingSet += actionAnalytics.Value;
+                        if(!actionParams.IncludeCasts) {
+                            existingSet.Casts -= actionAnalytics.Value.Casts;
+                        }
+                        if(!actionParams.IncludeTargets) {
+                            existingSet.Targets -= actionAnalytics.Value.Targets;
+                        }
+                        resultAnalytics[setId] = existingSet;
+                    }
+                    //add original
+                    resultAnalytics[actionAnalytics.Key + offset] = actionAnalytics.Value;
+                }
+            }
+        };
+        processTargetedAnalytics(PlayerTargetedActionAnalytics ?? [], 0);
+        processTargetedAnalytics(PlayerTargetedStatusAnalytics ?? [], StatusIdOffset);
+        return results;
+    }
+
+    public Dictionary<uint, Dictionary<uint, TargetedActionAnalytics>>? CreateNameIdTargetedActionSets() {
+        Dictionary<uint, Dictionary<uint, TargetedActionAnalytics>> results = [];
+        Dictionary<uint, uint> actionIdLookup = [];
+
+        //create lookup for id -> action set
+        for(int i = 0; i < ActionSet.Sets.Count; i++) {
+            var actionSet = ActionSet.Sets[i];
+            foreach(var action in actionSet.Actions) {
+                actionIdLookup.Add(action.Key, (uint)(i + ActionSetOffset));
+            }
+        }
+
+        var processTargetedAnalytics = async (Dictionary<uint, Dictionary<uint, TargetedActionAnalytics>> playerTargetedAnalytics, uint offset) => {
+            foreach(var nameId in playerTargetedAnalytics) {
+                if(!results.TryGetValue(nameId.Key, out var resultAnalytics)) {
+                    resultAnalytics = new();
+                    results.Add(nameId.Key, resultAnalytics);
+                }
+
+                foreach(var actionAnalytics in nameId.Value) {
+                    if(actionIdLookup.TryGetValue(actionAnalytics.Key, out var setId)) {
+                        var setIndex = setId - ActionSetOffset;
+                        var actionParams = ActionSet.Sets[(int)setIndex].Actions[actionAnalytics.Key];
+
+                        if(!resultAnalytics.TryGetValue(setId, out var existingSet)) {
+                            existingSet = new();
+                            resultAnalytics.Add(setId, existingSet);
+                        }
+                        existingSet += actionAnalytics.Value;
+                        if(!actionParams.IncludeCasts) {
+                            existingSet.Casts -= actionAnalytics.Value.Casts;
+                        }
+                        if(!actionParams.IncludeTargets) {
+                            existingSet.Targets -= actionAnalytics.Value.Targets;
+                        }
+                        resultAnalytics[setId] = existingSet;
+                    }
+                    //add original
+                    resultAnalytics[actionAnalytics.Key + offset] = actionAnalytics.Value;
+                }
+            }
+        };
+        processTargetedAnalytics(NameIdTargetedActionAnalytics ?? [], 0);
+        processTargetedAnalytics(NameIdTargetedStatusAnalytics ?? [], StatusIdOffset);
+        return results;
+    }
+
     public Dictionary<uint, Dictionary<uint, FlattenedActionAnalytics>>? SummarizeNameIdAnalytics(CrystallineConflictMatch match) {
         Dictionary<uint, Dictionary<uint, FlattenedActionAnalytics>>? results = new();
         //add actions
