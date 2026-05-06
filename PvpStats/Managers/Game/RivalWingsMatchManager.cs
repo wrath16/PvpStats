@@ -5,6 +5,7 @@ using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
+using Dalamud.Game.DutyState;
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
@@ -402,7 +403,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
         _leaveDutyHook.Original(p1);
     }
 
-    protected override void OnDutyCompleted(object? sender, ushort p1) {
+    protected override void OnDutyCompleted(IDutyStateEventArgs args) {
         Plugin.Log.Debug("Duty has completed.");
         _matchEnded = true;
         //re-enable duty leave button after 20 seconds as a fallback
@@ -639,7 +640,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                 }
 
                 //associate player Ids with aliases
-                foreach(IPlayerCharacter pc in Plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Player).Cast<IPlayerCharacter>()) {
+                foreach(IPlayerCharacter pc in Plugin.ObjectTable.Where(o => o.ObjectKind is ObjectKind.Pc).Cast<IPlayerCharacter>()) {
                     if(!_objIdToPlayer.ContainsKey(pc.GameObjectId)) {
                         try {
                             var worldName = Plugin.DataManager.GetExcelSheet<World>()?.GetRow(pc.HomeWorld.RowId).Name;

@@ -6,7 +6,9 @@ using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
+using GameObjectId = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObjectId;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using Lumina.Excel.Sheets;
 using PvpStats.Helpers;
@@ -21,6 +23,7 @@ using PvpStats.Types.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
@@ -52,9 +55,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
     [Signature("E8 ?? ?? ?? ?? 0F B7 0B 83 E9 64", DetourName = nameof(ProcessPacketActorControlDetour))]
     private readonly Hook<ProcessPacketActorControlDelegate> _processPacketActorControlHook = null!;
 
-    private unsafe delegate void ProcessPacketActionEffectDelegate(uint entityId, IntPtr sourceCharacter, IntPtr pos, ActionEffectHeader* effectHeader, ActionEffect* effectArray, ulong* effectTrail);
-    [Signature("40 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24", DetourName = nameof(ProcessPacketActionEffectDetour))]
-    private readonly Hook<ProcessPacketActionEffectDelegate> _processPacketActionEffectHook = null!;
+    private readonly Hook<ActionEffectHandler.Delegates.Receive>? _processPacketActionEffectHook;
 
     private delegate void ProcessKillDelegate(IntPtr agent, IntPtr killerPlayer, uint killStreak, IntPtr victimPlayer, uint localPlayerTeam);
     [Signature("40 55 53 41 54 41 55 41 57 48 8D 6C 24 ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 45 ?? 48 8B 01", DetourName = nameof(ProcessKillDetour))]
@@ -81,6 +82,12 @@ internal class CrystallineConflictMatchManager : IDisposable {
         _plugin.Framework.Update += OnFrameworkUpdate;
         _plugin.ClientState.TerritoryChanged += OnTerritoryChanged;
         _plugin.InteropProvider.InitializeFromAttributes(this);
+
+        unsafe {
+            _processPacketActionEffectHook = _plugin.InteropProvider.HookFromAddress<ActionEffectHandler.Delegates.Receive>(
+                ActionEffectHandler.MemberFunctionPointers.Receive, this.ProcessPacketActionEffectDetour
+            );
+        }
         _plugin.Log.Debug($"cc match end 1 address: 0x{_ccMatchEndHook!.Address.ToString("X2")}");
         _plugin.Log.Debug($"cc match end 2 address: 0x{_ccMatchEndSpectatorHook!.Address.ToString("X2")}");
         _plugin.Log.Debug($"cc process kill address: 0x{_processKillHook!.Address.ToString("X2")}");
@@ -204,7 +211,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 var owner = _plugin.ObjectTable.SearchByEntityId((killer?.OwnerId ?? 0));
                 Plugin.Log2.Debug($"Death detected: 0x{sourceEntityId:X2} {victim?.Name ?? ""} was deleted by: 0x{amount:X2} {killer?.Name ?? ""}, owner: 0x{killer?.OwnerId:X2} {owner?.Name ?? ""}");
 
-                if(victim?.ObjectKind is ObjectKind.Player) {
+                if(victim?.ObjectKind is ObjectKind.Pc) {
                     var victimWorld = _plugin.DataManager.GetExcelSheet<World>().GetRow((victim as IPlayerCharacter).HomeWorld.RowId).Name.ToString();
                     var victimAlias = (PlayerAlias)$"{victim.Name} {victimWorld}";
 
@@ -223,7 +230,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                                 KillerNameId = nameId,
                             });
                         }
-                    } else if(killer?.ObjectKind is ObjectKind.Player && killer.EntityId == victim.EntityId) {
+                    } else if(killer?.ObjectKind is ObjectKind.Pc && killer.EntityId == victim.EntityId) {
                         //add suicide death
                         if(matchingEvent == null) {
                             Plugin.Log2.Warning($"No credited killer found for suicide death for: {victimAlias}");
@@ -258,23 +265,23 @@ internal class CrystallineConflictMatchManager : IDisposable {
         }
     }
 
-    private unsafe void ProcessPacketActionEffectDetour(uint entityId, IntPtr sourceCharacter, IntPtr pos, ActionEffectHeader* effectHeader, ActionEffect* effectArray, ulong* effectTrail) {
+    private unsafe void ProcessPacketActionEffectDetour(uint casterEntityId, Character* casterPtr, Vector3* targetPos, ActionEffectHandler.Header* effectHeader, ActionEffectHandler.TargetEffects* effectArray, GameObjectId* effectTrail) {
         try {
             if(!_plugin.DebugMode && !IsMatchInProgress()) {
                 return;
             }
             var director = (CrystallineConflictContentDirector*)EventFramework.Instance()->GetInstanceContentDirector();
             var now = DateTime.UtcNow;
-            var actionId = effectHeader->ActionAnimationId;
-            uint targets = effectHeader->EffectCount;
+            var actionId = effectHeader->SpellId;
+            uint targets = effectHeader->NumTargets;
             uint? actorNameId = null;
             bool isPet = false;
 
-            var actor = _plugin.ObjectTable.SearchByEntityId(entityId);
+            var actor = _plugin.ObjectTable.SearchByEntityId(casterEntityId);
             var spell = _plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Action>(ClientLanguage.English).GetRow(actionId);
             if(_plugin.DebugMode) {
-                Plugin.Log2.Debug($"{actor?.Name} cast {spell.Name} {actionId} targets: {targets} display: {effectHeader->EffectDisplayType} " +
-            $"hidden anim: {effectHeader->HiddenAnimation} counter: {effectHeader->GlobalEffectCounter} rotation: {effectHeader->Rotation} variation: {effectHeader->Variation}");
+                Plugin.Log2.Debug($"{actor?.Name} cast {spell.Name} {actionId} targets: {targets} display: {effectHeader->ActionType} " +
+            $"hidden anim: {effectHeader->SourceSequence} counter: {effectHeader->GlobalSequence} rotation: {effectHeader->RotationInt} variation: {effectHeader->AnimationVariation}");
             }
 
             if(actor is not IBattleChara) return;
@@ -295,7 +302,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 actorWorld = _plugin.DataManager.GetExcelSheet<World>().GetRow((actor as IPlayerCharacter)!.HomeWorld.RowId).Name.ToString();
                 actorAlias = (PlayerAlias)$"{(actor as IPlayerCharacter)!.Name} {actorWorld}";
                 actionEvent = new(now, actionId, actorAlias) {
-                    Variation = effectHeader->Variation,
+                    Variation = effectHeader->AnimationVariation,
                     NameIdActor = actorNameId,
                     Snapshots = new() {
                         {actorAlias, new(actor as IBattleChara) }
@@ -304,7 +311,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
             }
 
             TargetedActionAnalytics targetedActionAnalytics = new() {
-                Casts = effectHeader->Variation == 0 ? 1 : 0,
+                Casts = effectHeader->AnimationVariation == 0 ? 1 : 0,
             };
             Dictionary<string, ActionAnalytics> playerActionAnalytics = new();
             Dictionary<uint, ActionAnalytics> nameIdActionAnalytics = new();
@@ -318,7 +325,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 if(!actionMap.TryGetValue(actionId, out targetEntityIds)) {
                     targetEntityIds = new HashSet<uint>();
                     actionMap[actionId] = targetEntityIds;
-                } else if(effectHeader->Variation == 0) {
+                } else if(effectHeader->AnimationVariation == 0) {
                     targetEntityIds.Clear();
                 }
             }
@@ -362,16 +369,16 @@ internal class CrystallineConflictMatchManager : IDisposable {
                 //Plugin.Log2.Debug(statuses);
 
                 for(var j = 0; j < 8; j++) {
-                    ref var actionEffect = ref effectArray[i * 8 + j];
-                    if(actionEffect.EffectType == 0)
+                    ref var actionEffect = ref effectArray[i].Effects[j];
+                    if(actionEffect.Type == 0)
                         continue;
                     //kek!
                     uint amount = actionEffect.Value;
-                    if((actionEffect.Flags2 & 0x40) == 0x40) {
-                        amount += (uint)actionEffect.Flags1 << 16;
+                    if((actionEffect.Param4 & 0x40) == 0x40) {
+                        amount += (uint)actionEffect.Param3 << 16;
                     }
                     //check for reflected effects onto the caster: chiten, lifesteal, etc.
-                    bool isReflected = (actionEffect.Flags2 & 0x80) == 0x80;
+                    bool isReflected = (actionEffect.Param4 & 0x80) == 0x80;
                     ActionAnalytics? reflectedActionAnalytics = null;
                     if(isReflected) {
                         if(actorAlias != null) {
@@ -391,48 +398,55 @@ internal class CrystallineConflictMatchManager : IDisposable {
                         }
                     }
                     if(_plugin.DebugMode) {
-                        Plugin.Log2.Debug($"{target?.Name} was hit by {actionEffect.EffectType} p0: {actionEffect.Param0} p1: {actionEffect.Param1} p2: {actionEffect.Param2} " +
-                        $"f1: {actionEffect.Flags1} f2: {actionEffect.Flags2} value: {actionEffect.Value} amount: {amount}");
+                        Plugin.Log2.Debug($"{target?.Name} was hit by {actionEffect.Type} p0: {actionEffect.Param0} p1: {actionEffect.Param1} p2: {actionEffect.Param2} " +
+                        $"p3: {actionEffect.Param3} p4: {actionEffect.Param4} value: {actionEffect.Value} amount: {amount}");
                     }
-                    if(actionEffect.EffectType == ActionEffectType.Damage
-                        || actionEffect.EffectType == ActionEffectType.BlockedDamage
-                        || actionEffect.EffectType == ActionEffectType.ParriedDamage) {
-                        if(isReflected) {
-                            reflectedActionAnalytics!.Damage += amount;
-                        } else {
-                            actionAnalytics.Damage += amount;
-                        }
-                    } else if(actionEffect.EffectType == ActionEffectType.Heal) {
-                        if(isReflected) {
-                            reflectedActionAnalytics!.Heal += amount;
-                            ////sacred claim exempt damage
-                            //if((target as IBattleChara).StatusList.Any(x => x.StatusId == 3025) && amount == 3000) {
+                    switch((ActionEffectType)actionEffect.Type) {
+                        case ActionEffectType.Damage:
+                        case ActionEffectType.BlockedDamage:
+                        case ActionEffectType.ParriedDamage:
+                            if(isReflected) {
+                                reflectedActionAnalytics!.Damage += amount;
+                            } else {
+                                actionAnalytics.Damage += amount;
+                            }
+                            break;
+                        case ActionEffectType.Heal:
+                            if(isReflected) {
+                                reflectedActionAnalytics!.Heal += amount;
+                                ////sacred claim exempt damage
+                                //if((target as IBattleChara).StatusList.Any(x => x.StatusId == 3025) && amount == 3000) {
 
-                            //}
-                        } else {
-                            actionAnalytics.Heal += amount;
-                        }
-                    } else if(actionEffect.EffectType == ActionEffectType.MpGain) {
-                        if(isReflected) {
+                                //}
+                            } else {
+                                actionAnalytics.Heal += amount;
+                            }
+                            break;
+                        case ActionEffectType.MpGain:
+                            if(isReflected) {
                             reflectedActionAnalytics!.MPGain += amount;
-                        } else {
-                            actionAnalytics.MPGain += amount;
-                        }
-                    } else if(actionEffect.EffectType == ActionEffectType.MpLoss) {
-                        if(isReflected) {
-                            reflectedActionAnalytics!.MPDrain += amount;
-                        } else {
-                            actionAnalytics.MPDrain += amount;
-                        }
-                    } else if(actionEffect.EffectType == ActionEffectType.ApplyStatusEffectTarget) {
-                        if(!isReflected) {
-                            actionAnalytics.StatusHits++;
-                        }
-                    } else if(actionEffect.EffectType == ActionEffectType.StatusNoEffect
-                        || actionEffect.EffectType == ActionEffectType.FullResistStatus) {
-                        if(!isReflected) {
-                            actionAnalytics.StatusMisses++;
-                        }
+                            } else {
+                                actionAnalytics.MPGain += amount;
+                            }
+                            break;
+                        case ActionEffectType.MpLoss:
+                            if(isReflected) {
+                                reflectedActionAnalytics!.MPDrain += amount;
+                            } else {
+                                actionAnalytics.MPDrain += amount;
+                            }
+                            break;
+                        case ActionEffectType.ApplyStatusEffectTarget:
+                            if(!isReflected) {
+                                actionAnalytics.StatusHits++;
+                            }
+                            break;
+                        case ActionEffectType.StatusNoEffect:
+                        case ActionEffectType.FullResistStatus:
+                            if(!isReflected) {
+                                actionAnalytics.StatusMisses++;
+                            }
+                            break;
                     }
                 }
 
@@ -468,19 +482,19 @@ internal class CrystallineConflictMatchManager : IDisposable {
 
             if(CombatHelper.IsLimitBreak(actionId) && actionEvent != null) {
                 if(!_plugin.DebugMode) {
-                    Plugin.Log2.Debug($"{actor?.Name} cast {spell.Name} {actionId} targets: {targets} display: {effectHeader->EffectDisplayType} " +
-                    $"hidden anim: {effectHeader->HiddenAnimation} counter: {effectHeader->GlobalEffectCounter} rotation: {effectHeader->Rotation} variation: {effectHeader->Variation}");
+                    Plugin.Log2.Debug($"{actor?.Name} cast {spell.Name} {actionId} targets: {targets} display: {effectHeader->ActionType} " +
+                    $"hidden anim: {effectHeader->SourceSequence} counter: {effectHeader->GlobalSequence} rotation: {effectHeader->RotationInt} variation: {effectHeader->AnimationVariation}");
                 }
-                if(effectHeader->Variation == 0) {
+                if(effectHeader->AnimationVariation == 0) {
                     _currentMatchTimeline?.LimitBreakCasts?.Add(actionEvent);
-                } else if(effectHeader->Variation == 2) {
+                } else if(effectHeader->AnimationVariation == 2) {
                     _currentMatchTimeline?.LimitBreakEffects?.Add(actionEvent);
                 } else {
-                    Plugin.Log2.Warning($"{spell.Name} unknown variation: {effectHeader->Variation}");
+                    Plugin.Log2.Warning($"{spell.Name} unknown variation: {effectHeader->AnimationVariation}");
                 }
             }
         } finally {
-            _processPacketActionEffectHook.Original(entityId, sourceCharacter, pos, effectHeader, effectArray, effectTrail);
+            _processPacketActionEffectHook!.Original(casterEntityId, casterPtr, targetPos, effectHeader, effectArray, effectTrail);
         }
     }
 
@@ -641,7 +655,7 @@ internal class CrystallineConflictMatchManager : IDisposable {
         _ccMatchEndSpectatorHook.Original(p1, p2, p3, p4);
     }
 
-    private void OnTerritoryChanged(ushort territoryId) {
+    private void OnTerritoryChanged(uint territoryId) {
         var dutyId = _plugin.GameState.GetCurrentDutyId();
         _plugin.Log.Debug($"Territory changed: {territoryId}, Current duty: {dutyId}");
         if(MatchHelper.CrystallineConflictMapLookup.ContainsKey(territoryId)) {

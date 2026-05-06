@@ -5,6 +5,7 @@ using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
+using Dalamud.Interface.Windowing;
 using Lumina.Excel.Sheets;
 using PvpStats.Helpers;
 using PvpStats.Types.Action;
@@ -1239,8 +1240,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
 
         if(snapshot != null) {
             if(tooltipSnapshot && ImGui.IsItemHovered()) {
-                using var tooltip = ImRaii.Tooltip();
-                if(tooltip) {
+                using (ImRaii.Tooltip()) {
                     Plugin.WindowManager.DrawPlayerSnapshot(snapshot);
                 }
             } else if(!tooltipSnapshot) {
@@ -1367,8 +1367,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             //Plugin.Log2.Debug($"{mEvent.Victim} mouse position: {mousePos} startPosition: {startPosPixels} endPosition: {endPosPixels}");
             if(mousePos.X >= startPosPixels.X && mousePos.X <= endPosPixels.X &&
                 mousePos.Y >= endPosPixels.Y && mousePos.Y <= startPosPixels.Y) {
-                using var tooltip = ImRaii.Tooltip();
-                if(tooltip) {
+                using (ImRaii.Tooltip()) {
                     DrawEvent(mEvent);
                 }
             }
@@ -1396,8 +1395,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
             Vector2 mousePos = ImGui.GetMousePos();
             if(mousePos.X >= startPosPixels.X && mousePos.X <= endPosPixels.X &&
                 mousePos.Y >= endPosPixels.Y && mousePos.Y <= startPosPixels.Y) {
-                using var tooltip = ImRaii.Tooltip();
-                if(tooltip) {
+                using (ImRaii.Tooltip()) {
                     DrawEvent(actionEvent);
                 }
             }
@@ -1569,7 +1567,7 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                     bool isActionSet = ((int)action.Key - CrystallineConflictMatchTimeline.ActionSetOffset) >= 0 && ((int)action.Key - CrystallineConflictMatchTimeline.UnknownId) < 0;
                     int setIndex = (int)(action.Key - CrystallineConflictMatchTimeline.ActionSetOffset);
 
-                    using var textColor = new ImRaii.Color();
+                    using var textColor = new ImRaii.ColorDisposable();
                     if(isActionSet) {
                         textColor.Push(ImGuiCol.Text, ImGuiColors.DalamudYellow);
                     }
