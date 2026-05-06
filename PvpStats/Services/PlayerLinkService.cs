@@ -2,6 +2,7 @@
 using Dalamud.Plugin.Ipc.Exceptions;
 using Lumina.Excel.Sheets;
 using PvpStats.Types.Player;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -137,7 +138,7 @@ internal class PlayerLinkService {
     //returns true if updates were made
     internal async Task BuildAutoLinksCache() {
         //if(!IsInitialized() && !Initialize()) return;
-        _plugin.Log.Information("Building player alias links cache from PlayerTrack IPC data...");
+        Plugin.Log2.Information("Building player alias links cache from PlayerTrack IPC data...");
         //get players
         var ccMatches = _plugin.CCCache.Matches.ToList();
         var flMatches = _plugin.FLCache.Matches.ToList();
@@ -168,16 +169,16 @@ internal class PlayerLinkService {
         List<PlayerAliasLink> autoLinks = [];
         try {
             autoLinks = GetPlayerNameHistory([.. allPlayers]);
-            _plugin.Log.Information($"players with previous aliases: {autoLinks.Count}");
+            Plugin.Log2.Information($"players with previous aliases: {autoLinks.Count}");
         } catch(Exception e) {
             if(e is IpcNotReadyError) {
                 if(_plugin.Configuration.EnableAutoPlayerLinking) {
-                    _plugin.Log.Error("Unable to query PlayerTrack IPC: check whether plugin is installed and up to date.");
+                    Plugin.Log2.Warning("Unable to query PlayerTrack IPC: check whether plugin is installed and up to date.");
                 } else {
-                    _plugin.Log.Information("PlayerTrack IPC unavailable.");
+                    Plugin.Log2.Information("PlayerTrack IPC unavailable.");
                 }
             } else {
-                _plugin.Log.Error(e, "PlayerTrack IPC error");
+                Plugin.Log2.Error(e, "PlayerTrack IPC error");
             }
         }
         if(autoLinks is null || autoLinks.Count <= 0) {
