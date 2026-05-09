@@ -55,7 +55,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
 
     public RivalWingsMatchDetail(Plugin plugin, RivalWingsMatch match) : base(plugin, plugin.RWCache, match) {
         SizeConstraints = new WindowSizeConstraints {
-            MinimumSize = new Vector2(520, 500),
+            MinimumSize = new Vector2(500, 500),
             MaximumSize = new Vector2(5000, 5000)
         };
         //Size = new Vector2(980,900);
@@ -286,7 +286,7 @@ internal class RivalWingsMatchDetail : MatchDetail<RivalWingsMatch> {
                 using var tab = ImRaii.TabItem("Scoreboard");
                 if(tab) {
                     if(CurrentTab != "Scoreboard") {
-                        SetWindowSize(new Vector2(975, 800));
+                        SetWindowSize(new Vector2(995, 800));
                         CurrentTab = "Scoreboard";
                     }
                     ImGuiHelper.HelpMarker("Right-click table header to show and hide columns including extra metrics.", false, true);
