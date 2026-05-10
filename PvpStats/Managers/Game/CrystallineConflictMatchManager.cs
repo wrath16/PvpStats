@@ -136,35 +136,43 @@ internal class CrystallineConflictMatchManager : IDisposable {
                     _currentMatch.GameVersion = Framework.Instance()->GameVersionString;
                 }
             }
-            _currentMatchTimeline = new() {
-                CrystalPosition = new(),
-                TeamProgress = new() {
+
+            _currentMatchTimeline = null;
+            if(_plugin.Configuration.EnableTimelineCC ?? true) {
+                _currentMatchTimeline ??= new();
+                _currentMatchTimeline.CrystalPosition = new();
+                _currentMatchTimeline.TeamProgress = new() {
                     {CrystallineConflictTeamName.Astra, new() },
                     {CrystallineConflictTeamName.Umbra, new() },
-                },
-                TeamMidProgress = new() {
+                };
+                _currentMatchTimeline.TeamMidProgress = new() {
                     {CrystallineConflictTeamName.Astra, new() },
                     {CrystallineConflictTeamName.Umbra, new() },
-                },
-                Kills = new(),
-                LimitBreakCasts = new(),
-                LimitBreakEffects = new(),
-                MapEvents = new(),
-#if DEBUG
-                NameIdTargetedActionAnalytics = new(),
-                PlayerTargetedActionAnalytics = new(),
-                PlayerMedkitAnalytics = new(),
-                PlayerTargetedStatusAnalytics = new(),
-                NameIdTargetedStatusAnalytics = new(),
-#endif
-            };
+                };
+                _currentMatchTimeline.Kills = new();
+                _currentMatchTimeline.LimitBreakCasts = new();
+                _currentMatchTimeline.LimitBreakEffects = new();
+                _currentMatchTimeline.MapEvents = new();
+            }
+
+            if(_plugin.Configuration.EnableActionAnalyticsCC ?? true) {
+                _currentMatchTimeline ??= new();
+                _currentMatchTimeline.NameIdTargetedActionAnalytics = new();
+                _currentMatchTimeline.PlayerTargetedActionAnalytics = new();
+                _currentMatchTimeline.PlayerMedkitAnalytics = new();
+                _currentMatchTimeline.PlayerTargetedStatusAnalytics = new();
+                _currentMatchTimeline.NameIdTargetedStatusAnalytics = new();
+            }
+
             _castTargets = [];
             _lastEventTimer = -1f;
             _scoreboardPayloadReceived = false;
             _plugin.Log.Information($"starting new match on {_currentMatch.Arena}");
             _plugin.DataQueue.QueueDataOperation(async () => {
                 await _plugin.CCCache.AddMatch(_currentMatch);
-                await _plugin.Storage.AddCCTimeline(_currentMatchTimeline);
+                if(_currentMatchTimeline != null) {
+                    await _plugin.Storage.AddCCTimeline(_currentMatchTimeline);
+                }
             });
         });
     }

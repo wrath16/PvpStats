@@ -635,6 +635,39 @@ internal class ConfigWindow : Window {
                 _plugin.Configuration.Save();
             });
         }
+
+        ImGui.Separator();
+        ImGui.TextColored(_plugin.Configuration.Colors.Header, "Enhanced Tracking Features");
+        ImGuiHelper.HelpMarker("Disabling these features can help save disk space.");
+
+        bool enableTimelineCC = _plugin.Configuration.EnableTimelineCC ?? true;
+        if(ImGui.Checkbox("Crystalline Conflict Timeline Tracking", ref enableTimelineCC)) {
+            _plugin.Configuration.EnableTimelineCC = enableTimelineCC;
+            _plugin.DataQueue.QueueDataOperation(() => {
+                _plugin.Configuration.Save();
+            });
+        }
+        bool enableActionAnalyticsCC = _plugin.Configuration.EnableActionAnalyticsCC ?? true;
+        if(ImGui.Checkbox("Crystalline Conflict Action Tracking", ref enableActionAnalyticsCC)) {
+            _plugin.Configuration.EnableActionAnalyticsCC = enableActionAnalyticsCC;
+            _plugin.DataQueue.QueueDataOperation(() => {
+                _plugin.Configuration.Save();
+            });
+        }
+        bool enableTimelineFL = _plugin.Configuration.EnableTimelineFL ?? true;
+        if(ImGui.Checkbox("Frontline Timeline Tracking", ref enableTimelineFL)) {
+            _plugin.Configuration.EnableTimelineFL = enableTimelineFL;
+            _plugin.DataQueue.QueueDataOperation(() => {
+                _plugin.Configuration.Save();
+            });
+        }
+        bool enableTimelineRW = _plugin.Configuration.EnableTimelineRW ?? true;
+        if(ImGui.Checkbox("Rival Wings Timeline Tracking", ref enableTimelineRW)) {
+            _plugin.Configuration.EnableTimelineRW = enableTimelineRW;
+            _plugin.DataQueue.QueueDataOperation(() => {
+                _plugin.Configuration.Save();
+            });
+        }
     }
 
     private void DrawMiscSettings() {

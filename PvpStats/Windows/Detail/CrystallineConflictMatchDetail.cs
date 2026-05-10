@@ -639,14 +639,16 @@ internal class CrystallineConflictMatchDetail : MatchDetail<CrystallineConflictM
                             }
                         }
                     }
-                    using(var tab = ImRaii.TabItem("Graphs")) {
-                        if(tab) {
-                            if(CurrentTab != "Graphs") {
-                                SetWindowSize(_savedGraphSize ?? _defaultGraphSize);
-                                CurrentTab = "Graphs";
+                    if(_timeline.Kills != null) {
+                        using(var tab = ImRaii.TabItem("Graphs")) {
+                            if(tab) {
+                                if(CurrentTab != "Graphs") {
+                                    SetWindowSize(_savedGraphSize ?? _defaultGraphSize);
+                                    CurrentTab = "Graphs";
+                                }
+                                _savedGraphSize = ImGui.GetWindowSize();
+                                DrawGraphs();
                             }
-                            _savedGraphSize = ImGui.GetWindowSize();
-                            DrawGraphs();
                         }
                     }
                     if(_timeline.PlayerTargetedActionAnalytics != null) {

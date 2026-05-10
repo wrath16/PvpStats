@@ -132,8 +132,11 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                     Arena = arena,
                     PluginVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString(),
                 };
-                _currentMatchTimeline = new() {
-                    StructureHealths = new() {
+
+                _currentMatchTimeline = null;
+                if(Plugin.Configuration.EnableTimelineRW ?? true) {
+                    _currentMatchTimeline = new() {
+                        StructureHealths = new() {
                         {RivalWingsTeamName.Falcons, new() {
                             { RivalWingsStructure.Core, new() },
                             { RivalWingsStructure.Tower1, new() },
@@ -145,7 +148,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                             { RivalWingsStructure.Tower2, new() },
                         } }
                     },
-                    MechCounts = new() {
+                        MechCounts = new() {
                         {RivalWingsTeamName.Falcons, new() {
                             { RivalWingsMech.Chaser, new() },
                             { RivalWingsMech.Oppressor, new() },
@@ -157,7 +160,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                             { RivalWingsMech.Justice, new() },
                         } }
                     },
-                    AllianceStacks = new() {
+                        AllianceStacks = new() {
                         { 0, new() },
                         { 1, new() },
                         { 2, new() },
@@ -165,9 +168,11 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                         { 4, new() },
                         { 5, new() },
                     },
-                    MercClaims = new(),
-                    MidClaims = new()
-                };
+                        MercClaims = new(),
+                        MidClaims = new()
+                    };
+                }
+                
                 unsafe {
                     if(FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance() != null) {
                         CurrentMatch.GameVersion = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->GameVersionString;
@@ -176,7 +181,9 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                 Plugin.Log.Information($"starting new match on {CurrentMatch.Arena}");
                 Plugin.DataQueue.QueueDataOperation(async () => {
                     await Plugin.RWCache.AddMatch(CurrentMatch);
-                    await Plugin.Storage.AddRWTimeline(_currentMatchTimeline);
+                    if(_currentMatchTimeline != null) {
+                        await Plugin.Storage.AddRWTimeline(_currentMatchTimeline);
+                    }
                 });
             });
             Reset();
@@ -514,7 +521,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
 
         try {
             //structure health
-            foreach(var team in _currentMatchTimeline!.StructureHealths!) {
+            foreach(var team in _currentMatchTimeline?.StructureHealths ?? []) {
                 foreach(var structure in team.Value) {
                     var lastEvent = structure.Value.LastOrDefault();
                     int? currentValue = null;
@@ -555,7 +562,7 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                 _mechTime[RivalWingsTeamName.Ravens][RivalWingsMech.Oppressor] += director->RavenOppressorCount * (now - _lastUpdate).TotalSeconds;
                 _mechTime[RivalWingsTeamName.Ravens][RivalWingsMech.Justice] += director->RavenJusticeCount * (now - _lastUpdate).TotalSeconds;
 
-                foreach(var team in _currentMatchTimeline.MechCounts) {
+                foreach(var team in _currentMatchTimeline?.MechCounts ?? []) {
                     foreach(var mech in team.Value) {
                         var lastEvent = mech.Value.LastOrDefault();
                         int? currentValue = null;
@@ -589,26 +596,26 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
 
                 //merc win
                 if(_lastMercControl == RivalWingsContentDirector.Team.None && director->MercControl != RivalWingsContentDirector.Team.None) {
-                    var lastMercClaim = _currentMatchTimeline.MercClaims.LastOrDefault();
+                    var lastMercClaim = _currentMatchTimeline?.MercClaims?.LastOrDefault();
                     if(lastMercClaim != null && (now - lastMercClaim.Timestamp).TotalSeconds <= 30) {
                         Plugin.Log2.Warning("Double merc claim event detected.");
                     } else {
                         Plugin.Log2.Debug($"Merc Claim Event: {(RivalWingsTeamName)director->MercControl}");
                         _mercCounts[(RivalWingsTeamName)director->MercControl]++;
-                        _currentMatchTimeline.MercClaims.Add(new(now, (RivalWingsTeamName)director->MercControl));
+                        _currentMatchTimeline?.MercClaims?.Add(new(now, (RivalWingsTeamName)director->MercControl));
                     }
                 }
 
                 //mid win
                 if(_lastFalconMidScore != 100 && director->FalconMidScore == 100) {
                     _midCounts[RivalWingsTeamName.Falcons][(RivalWingsSupplies)director->MidType]++;
-                    _currentMatchTimeline.MidClaims!.Add(new(now, RivalWingsTeamName.Falcons, (RivalWingsSupplies)director->MidType));
+                    _currentMatchTimeline?.MidClaims?.Add(new(now, RivalWingsTeamName.Falcons, (RivalWingsSupplies)director->MidType));
                     Plugin.Log2.Debug($"Mid Claim Event: {RivalWingsTeamName.Falcons} {(RivalWingsSupplies)director->MidType}");
                 }
 
                 if(_lastRavenMidScore != 100 && director->RavenMidScore == 100) {
                     _midCounts[RivalWingsTeamName.Ravens][(RivalWingsSupplies)director->MidType]++;
-                    _currentMatchTimeline.MidClaims!.Add(new(now, RivalWingsTeamName.Ravens, (RivalWingsSupplies)director->MidType));
+                    _currentMatchTimeline?.MidClaims?.Add(new(now, RivalWingsTeamName.Ravens, (RivalWingsSupplies)director->MidType));
                     Plugin.Log2.Debug($"Mid Claim Event: {RivalWingsTeamName.Ravens} {(RivalWingsSupplies)director->MidType}");
                 }
 
@@ -631,11 +638,11 @@ internal class RivalWingsMatchManager : MatchManager<RivalWingsMatch> {
                         _allianceStats[i] = allianceStats;
                     }
 
-                    var allianceStackList = _currentMatchTimeline.AllianceStacks[i];
-                    var lastEvent = allianceStackList.LastOrDefault();
+                    var allianceStackList = _currentMatchTimeline?.AllianceStacks?[i];
+                    var lastEvent = allianceStackList?.LastOrDefault();
                     var currentSoaring = alliance.SoaringStacks;
                     if(lastEvent == null || lastEvent.Count != currentSoaring) {
-                        allianceStackList.Add(new(now, currentSoaring));
+                        allianceStackList?.Add(new(now, currentSoaring));
                     }
                 }
 

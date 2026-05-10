@@ -100,18 +100,24 @@ internal class FrontlineMatchManager : MatchManager<FrontlineMatch> {
                 }
             }
             _maxObservedBattleHigh = [];
-            _currentMatchTimeline = new() {
-                TeamPoints = new() {
+
+            _currentMatchTimeline = null;
+            if(Plugin.Configuration.EnableTimelineFL ?? true) {
+                _currentMatchTimeline = new() {
+                    TeamPoints = new() {
                         {FrontlineTeamName.Maelstrom, new()},
                         {FrontlineTeamName.Adders, new()},
                         {FrontlineTeamName.Flames, new()},
                     },
-                SelfBattleHigh = new(),
-            };
+                    SelfBattleHigh = new(),
+                };
+            }
             Plugin.Log.Information($"Starting new match on {CurrentMatch.Arena}");
             Plugin.DataQueue.QueueDataOperation(async () => {
                 await Plugin.FLCache.AddMatch(CurrentMatch);
-                await Plugin.Storage.AddFLTimeline(_currentMatchTimeline);
+                if(_currentMatchTimeline != null) {
+                    await Plugin.Storage.AddFLTimeline(_currentMatchTimeline);
+                }
             });
         });
     }

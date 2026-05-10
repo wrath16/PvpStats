@@ -18,6 +18,12 @@ public class Configuration : IPluginConfiguration {
     public bool? EnableDBCachingCC { get; set; }
     public bool? EnableDBCachingFL { get; set; }
     public bool? EnableDBCachingRW { get; set; }
+
+    public bool? EnableTimelineCC { get; set; }
+    public bool? EnableActionAnalyticsCC { get; set; }
+    public bool? EnableTimelineFL { get; set; }
+    public bool? EnableTimelineRW { get; set; }
+
     public bool? DisableMatchGuardsRW { get; set; }
     public bool EnablePlayerLinking { get; set; } = true;
     public bool EnableAutoPlayerLinking { get; set; } = true;
