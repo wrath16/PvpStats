@@ -10,7 +10,6 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace PvpStats.Services;
-
 internal class StorageService {
     private const string CCTable = "ccmatch";
     private const string FLTable = "flmatch";
@@ -77,19 +76,6 @@ internal class StorageService {
     public void Dispose() {
         Database.Dispose();
     }
-
-    public PvpMatch? TryGetPvpMatch(string id) {
-        try {
-            var oid = new ObjectId(id);
-
-            return GetCCMatches().FindOne(x => x.Id == oid) as PvpMatch
-                ?? GetFLMatches().FindOne(x => x.Id == oid) as PvpMatch
-                ?? GetRWMatches().FindOne(x => x.Id == oid);
-        } catch {
-            return null;
-        }
-    }
-
     internal ILiteCollection<CrystallineConflictMatch> GetCCMatches() {
         return Database.GetCollection<CrystallineConflictMatch>(CCTable);
     }
@@ -97,7 +83,6 @@ internal class StorageService {
     internal async Task AddCCMatch(CrystallineConflictMatch match) {
         LogUpdate(match.Id.ToString());
         await WriteToDatabase(() => GetCCMatches().Insert(match));
-        _plugin.Ipc.OnMatchSaved(match.Id.ToString());
     }
 
     internal async Task AddCCMatches(IEnumerable<CrystallineConflictMatch> matches) {
@@ -122,7 +107,6 @@ internal class StorageService {
     internal async Task AddFLMatch(FrontlineMatch match) {
         LogUpdate(match.Id.ToString());
         await WriteToDatabase(() => GetFLMatches().Insert(match));
-        _plugin.Ipc.OnMatchSaved(match.Id.ToString());
     }
 
     internal async Task AddFLMatches(IEnumerable<FrontlineMatch> matches) {
@@ -147,7 +131,6 @@ internal class StorageService {
     internal async Task AddRWMatch(RivalWingsMatch match) {
         LogUpdate(match.Id.ToString());
         await WriteToDatabase(() => GetRWMatches().Insert(match));
-        _plugin.Ipc.OnMatchSaved(match.Id.ToString());
     }
 
     internal async Task AddRWMatches(IEnumerable<RivalWingsMatch> matches) {

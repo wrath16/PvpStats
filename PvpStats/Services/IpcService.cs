@@ -1,12 +1,13 @@
 
 using Dalamud.Plugin.Ipc;
+using LiteDB;
 using PvpStats.Types.Match;
 using System;
 
 namespace PvpStats.Services;
 
 internal class IpcService : IDisposable {
-    private Plugin _plugin;
+    private readonly Plugin _plugin;
     private readonly ICallGateProvider<string, bool> _onMatchSaved;
     private readonly ICallGateProvider<string, bool> _openMatchDetailsWindow;
 
@@ -24,7 +25,7 @@ internal class IpcService : IDisposable {
     }
 
     private bool OpenMatchDetailsWindow(string id) {
-        PvpMatch? match = _plugin.Storage.TryGetPvpMatch(id);
+        PvpMatch? match = TryGetPvpMatch(id);
         if(match == null) return false;
         _plugin.WindowManager.OpenMatchDetailsWindow(match);
         return true;
@@ -32,5 +33,17 @@ internal class IpcService : IDisposable {
 
     public void OnMatchSaved(string id) {
         _onMatchSaved.SendMessage(id);
+    }
+
+    public PvpMatch? TryGetPvpMatch(string id) {
+        try {
+            var oid = new ObjectId(id);
+
+            return _plugin.Storage.GetCCMatches().FindOne(x => x.Id == oid) as PvpMatch
+                ?? _plugin.Storage.GetFLMatches().FindOne(x => x.Id == oid) as PvpMatch
+                ?? _plugin.Storage.GetRWMatches().FindOne(x => x.Id == oid);
+        } catch {
+            return null;
+        }
     }
 }
