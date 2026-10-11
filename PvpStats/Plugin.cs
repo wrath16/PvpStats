@@ -63,6 +63,7 @@ public sealed class Plugin : IDalamudPlugin {
 
     internal DataQueue DataQueue { get; init; }
     internal LocalizationService Localization { get; init; }
+    internal IpcService Ipc { get; init; }
     internal StorageService Storage { get; init; }
     internal CCMatchCacheService CCCache { get; init; }
     internal FLMatchCacheService FLCache { get; init; }
@@ -123,6 +124,7 @@ public sealed class Plugin : IDalamudPlugin {
             Configuration.Initialize(this);
 
             DataQueue = new();
+            Ipc = new(this);
             Storage = new(this, $"{PluginInterface.GetPluginConfigDirectory()}\\{DatabaseName}");
             CCCache = new(this);
             FLCache = new(this);
@@ -202,6 +204,7 @@ public sealed class Plugin : IDalamudPlugin {
         FLMatchManager?.Dispose();
         RWMatchManager?.Dispose();
         WindowManager?.Dispose();
+        Ipc?.Dispose();
         Storage?.Dispose();
         DataQueue?.Dispose();
         GameState?.Dispose();
