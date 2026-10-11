@@ -3,6 +3,7 @@ using Dalamud.Plugin.Ipc;
 using LiteDB;
 using PvpStats.Types.Match;
 using System;
+using System.Linq;
 
 namespace PvpStats.Services;
 
@@ -39,9 +40,9 @@ internal class IpcService : IDisposable {
         try {
             var oid = new ObjectId(id);
 
-            return _plugin.Storage.GetCCMatches().FindOne(x => x.Id == oid) as PvpMatch
-                ?? _plugin.Storage.GetFLMatches().FindOne(x => x.Id == oid) as PvpMatch
-                ?? _plugin.Storage.GetRWMatches().FindOne(x => x.Id == oid);
+            return _plugin.CCCache.Matches.FirstOrDefault(x => x.Id == oid) as PvpMatch
+                ?? _plugin.FLCache.Matches.FirstOrDefault(x => x.Id == oid) as PvpMatch
+                ?? _plugin.RWCache.Matches.FirstOrDefault(x => x.Id == oid);
         } catch {
             return null;
         }
